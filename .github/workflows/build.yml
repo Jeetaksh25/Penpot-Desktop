@@ -65,17 +65,29 @@ jobs:
       - name: Install Clojure CLI
         # The win-install.ps1 script only installs Clojure as a PowerShell
         # module — it does NOT put clojure.exe anywhere.  The actual
-        # clojure.exe lives inside the zip it downloads from GitHub releases.
+        # clojure.exe lives inside the zip distributed from GitHub releases.
         # We download and extract that zip directly ourselves.
         shell: pwsh
         run: |
           $version = "1.12.0.1488"
-          $zipUrl = "https://github.com/clojure/brew-install/releases/download/$version/clojure-tools-$version.zip"
           $zipPath = "$env:TEMP\clojure-tools.zip"
           $installDir = "$env:USERPROFILE\.clojure"
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          Write-Host "Downloading Clojure CLI $version from GitHub releases..."
-          (New-Object Net.WebClient).DownloadFile($zipUrl, $zipPath)
+          # Try GitHub releases first, fall back to download.clojure.org
+          $urls = @(
+            "https://github.com/clojure/brew-install/releases/download/$version/clojure-tools-$version.zip",
+            "https://download.clojure.org/install/clojure-tools-$version.zip"
+          )
+          $downloaded = $false
+          foreach ($url in $urls) {
+            try {
+              Write-Host "Trying $url"
+              (New-Object Net.WebClient).DownloadFile($url, $zipPath)
+              $downloaded = $true
+              break
+            } catch { Write-Host "  failed" }
+          }
+          if (-not $downloaded) { throw "Could not download Clojure CLI from any URL" }
           Write-Host "Extracting to $installDir..."
           Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
           Remove-Item $zipPath -Force
