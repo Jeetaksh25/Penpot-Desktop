@@ -33,15 +33,26 @@ data/redis
 # ── Tooling binaries (downloaded in CI) ───────────────────────────────────
 /tools/postgres
 /tools/redis
+/tools/jre
 /tools/emsdk
 /tools/.emsdk_cache
 *.log
 
-# ── OS / Editor cruft ─────────────────────────────────────────────────────
+# ── OS / Editor cruft / reserved names ──────────────────────────────────
 .DS_Store
 Thumbs.db
 *.local
 *.tmp
+# Windows reserved device names (may be created by MSYS2/Git Bash)
+nul
+CON
+PRN
+AUX
+CLOCK$
+COM1
+COM2
+LPT1
+LPT2
 
 # ── IDE / AI ──────────────────────────────────────────────────────────────
 /.claude

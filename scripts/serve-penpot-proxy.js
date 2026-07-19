@@ -33,7 +33,10 @@ const LOCAL_PASSWORD = "penpot-local";
 const LOCAL_FULLNAME = "Penpot Desktop";
 const SESSION_COOKIE_NAME = "auth-token";
 
-const PROXY_PREFIXES = ["/api/", "/internal/", "/ws/"];
+// Also proxy /assets/ so that file thumbnails and asset images hosted by the
+// backend (e.g. /assets/by-id/...) are fetched with the correct Content-Type
+// from the backend, instead of getting served as index.html by the SPA fallback.
+const PROXY_PREFIXES = ["/api/", "/internal/", "/ws/", "/assets/"];
 
 const MIME = {
   ".html": "text/html; charset=utf-8",

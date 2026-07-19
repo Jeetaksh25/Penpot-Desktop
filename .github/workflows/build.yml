@@ -111,6 +111,7 @@ jobs:
       #   tools/jre/bin/java.exe    — jlink-minimized JRE (no system Java needed)
 
       - name: Create minimal JRE bundle via jlink
+        if: steps.cache-runtime.outputs.cache-hit != 'true'
         run: |
           # JAVA_HOME is already set by setup-java above.  jlink creates a
           # stripped-down runtime image (~50 MB) with just the modules the
