@@ -1,0 +1,46 @@
+# ── Dependencies ──────────────────────────────────────────────────────────
+/node_modules
+/penpot-source/**/node_modules
+/penpot-source/**/package-lock.json
+/package-lock.json
+
+# ── Build output ──────────────────────────────────────────────────────────
+/src-tauri/target
+/penpot-source/**/target
+/penpot-source/**/.shadow-cljs
+/penpot-source/**/dist
+/penpot-source/**/resources/public/*
+!/penpot-source/**/resources/public/index.html
+/penpot-source/**/.cpcache
+/penpot-source/**/.nrepl-port
+/dist
+
+# ── JAR artifacts (built in CI) ───────────────────────────────────────────
+/penpot-source/**/*.jar
+
+# ── Cargo lockfiles (reproducible builds) ─────────────────────────────────
+# Uncomment if you prefer deterministic Cargo builds:
+# /src-tauri/Cargo.lock
+/penpot-source/**/Cargo.lock
+
+# ── Runtime data (local dev only) ─────────────────────────────────────────
+/tools/data
+/data
+*.db
+
+# ── Tooling binaries (downloaded in CI) ───────────────────────────────────
+/tools/postgres
+/tools/redis
+/tools/emsdk
+/tools/.emsdk_cache
+*.log
+
+# ── OS / Editor cruft ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.local
+*.tmp
+
+# ── IDE / AI ──────────────────────────────────────────────────────────────
+/.claude
+/.serena

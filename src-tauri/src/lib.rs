@@ -1,0 +1,513 @@
+use std::io::{BufRead, BufReader};
+use std::net::TcpStream;
+use std::path::{Path, PathBuf};
+use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+use tauri::{Emitter, Manager};
+
+/// Configuration for the embedded Penpot JVM backend + local services.
+const BACKEND_JAR: &str = "penpot-source/backend/target/penpot.jar";
+const BACKEND_PORT: u16 = 3449;
+const FRONTEND_PORT: u16 = 1420;
+const POSTGRES_PORT: u16 = 5432;
+const REDIS_PORT: u16 = 6379;
+const BACKEND_HEALTH_TIMEOUT: Duration = Duration::from_secs(180);
+const SERVICE_HEALTH_TIMEOUT: Duration = Duration::from_secs(60);
+const HEALTH_INTERVAL: Duration = Duration::from_millis(500);
+
+const POSTGRES_BIN: &str = "tools/postgres/bin";
+const REDIS_BIN: &str = "tools/redis/Redis-8.8.0-Windows-x64-msys2";
+
+/// Tracks child processes so they can be killed on exit.
+/// Postgres manages its own daemon via pg_ctl, so only the JVM and Redis
+/// (run in the foreground) are held as Child handles here.
+pub struct BackendState {
+    pub jvm: Mutex<Option<Child>>,
+    pub redis: Mutex<Option<Child>>,
+}
+
+/// Returns the project root by walking up from the executable or current dir.
+fn project_root() -> PathBuf {
+    if let Ok(exe) = std::env::current_exe() {
+        let mut dir = exe.parent().map(Path::to_path_buf).unwrap_or_default();
+        // Typical dev layout:  <root>/src-tauri/target/debug/penpot-desktop.exe
+        if dir.file_name().map(|n| n == "debug" || n == "release").unwrap_or(false) {
+            dir.pop(); // target/debug|release -> target
+            if dir.file_name() == Some(std::ffi::OsStr::new("target")) {
+                dir.pop(); // drop target
+            }
+            if dir.file_name() == Some(std::ffi::OsStr::new("src-tauri")) {
+                dir.pop(); // drop src-tauri in dev layout
+            }
+        }
+        if dir.join(BACKEND_JAR).exists() {
+            return dir;
+        }
+    }
+    // Fallback: current working directory (dev mode from repo root).
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+}
+
+fn backend_jar_path() -> PathBuf {
+    project_root().join(BACKEND_JAR)
+}
+
+fn postgres_bin(root: &Path, exe: &str) -> PathBuf {
+    root.join(POSTGRES_BIN).join(exe)
+}
+
+fn redis_bin(root: &Path, exe: &str) -> PathBuf {
+    root.join(REDIS_BIN).join(exe)
+}
+
+/// True when something is already accepting TCP connections on `port`.
+fn port_open(port: u16) -> bool {
+    TcpStream::connect(("127.0.0.1", port)).is_ok()
+}
+
+/// Poll a port until it accepts connections or the timeout elapses.
+fn wait_for_port(name: &str, port: u16, timeout: Duration) -> Result<(), String> {
+    let start = Instant::now();
+    loop {
+        if port_open(port) {
+            return Ok(());
+        }
+        if start.elapsed() > timeout {
+            return Err(format!("{} did not become ready on port {}", name, port));
+        }
+        std::thread::sleep(HEALTH_INTERVAL);
+    }
+}
+
+/// Run a one-shot command, inheriting stdio, returning its stdout/stderr on failure.
+fn run_cmd(program: &Path, args: &[&str]) -> Result<(), String> {
+    let output = Command::new(program)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .map_err(|e| format!("failed to run {}: {}", program.display(), e))?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!(
+            "{} exited with {:?}\nstdout: {}\nstderr: {}",
+            program.display(),
+            output.status.code(),
+            stdout.trim(),
+            stderr.trim()
+        ))
+    }
+}
+
+/// True when `pg_ctl status` reports a running postmaster for our data dir.
+/// This is more reliable than a TCP `port_open` probe, which races with brief
+/// port unavailability during a stop/restart and can wrongly enter the start
+/// branch while a stale postmaster still holds the data-dir lock.
+fn pg_ctl_status(root: &Path) -> bool {
+    let data_dir = root.join("data/postgres");
+    let data_dir_s = data_dir.to_string_lossy().to_string();
+    Command::new(postgres_bin(root, "pg_ctl.exe"))
+        .args(["-D", data_dir_s.as_str(), "status"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+/// Launch the postmaster via `pg_ctl start` (no `-w`) and wait for `pg_ctl`
+/// itself to exit. Critically, stdio is set to `null` (not piped): `pg_ctl start`
+/// spawns `postgres.exe` as a long-lived grandchild that would inherit piped
+/// handles and keep them open forever, making `output()` block even after
+/// `pg_ctl` exits. With null stdio there is no pipe to wait on, so `wait()`
+/// returns as soon as `pg_ctl` has launched the postmaster; we then poll the
+/// port ourselves for readiness.
+fn pg_ctl_start(root: &Path, data_dir: &str, log: &str) -> Result<(), String> {
+    let mut child = Command::new(postgres_bin(root, "pg_ctl.exe"))
+        .args(["-D", data_dir, "-l", log, "start"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("failed to run pg_ctl start: {}", e))?;
+    let status = child
+        .wait()
+        .map_err(|e| format!("pg_ctl start wait failed: {}", e))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("pg_ctl start exited with {:?}", status.code()))
+    }
+}
+
+/// Start the local PostgreSQL instance. Initializes the data directory and
+/// creates the `penpot` user/database on first run. Reuses an already-running
+/// postmaster for this data dir; otherwise clears any stale lock left by a
+/// crashed/killed previous run and starts fresh with a bounded wait.
+fn start_postgres(root: &Path) -> Result<(), String> {
+    let data_dir = root.join("data/postgres");
+    let log_path = root.join("data/postgres.log");
+    let data_dir_s = data_dir.to_string_lossy().to_string();
+    let log_s = log_path.to_string_lossy().to_string();
+    std::fs::create_dir_all(&data_dir).ok();
+    let pid_file = data_dir.join("postmaster.pid");
+
+    if pg_ctl_status(root) {
+        eprintln!("[penpot-desktop] PostgreSQL already running.");
+    } else {
+        // A stale postmaster.pid (PID no longer alive) would make pg_ctl start
+        // refuse or hang; remove it before starting.
+        if pid_file.exists() {
+            let _ = std::fs::remove_file(&pid_file);
+        }
+
+        let fresh = !data_dir.join("PG_VERSION").exists();
+        if fresh {
+            eprintln!("[penpot-desktop] Initializing PostgreSQL data directory...");
+            run_cmd(
+                &postgres_bin(root, "initdb.exe"),
+                &[
+                    "-D",
+                    data_dir_s.as_str(),
+                    "--username=postgres",
+                    "--auth=trust",
+                    "--encoding=UTF8",
+                    "--locale=C",
+                ],
+            )?;
+        }
+
+        eprintln!("[penpot-desktop] Starting PostgreSQL...");
+        // Launch (pg_ctl_start returns once the postmaster is started) then
+        // poll the port ourselves — pg_ctl's `-w` readiness wait is unreliable
+        // on Windows, and `run_cmd`/`output()` would deadlock on the piped
+        // stdio inherited by the long-lived postmaster grandchild.
+        pg_ctl_start(root, data_dir_s.as_str(), log_s.as_str())?;
+        if wait_for_port("PostgreSQL", POSTGRES_PORT, Duration::from_secs(30)).is_err() {
+            // Recovery: stop anything still holding the lock, clear the pid,
+            // and retry once.
+            eprintln!("[penpot-desktop] PostgreSQL did not become ready; recovering...");
+            let _ = run_cmd(
+                &postgres_bin(root, "pg_ctl.exe"),
+                &[
+                    "-D",
+                    data_dir_s.as_str(),
+                    "-m",
+                    "fast",
+                    "-w",
+                    "-t",
+                    "15",
+                    "stop",
+                ],
+            );
+            let _ = std::fs::remove_file(&pid_file);
+            pg_ctl_start(root, data_dir_s.as_str(), log_s.as_str())?;
+            wait_for_port("PostgreSQL", POSTGRES_PORT, SERVICE_HEALTH_TIMEOUT)?;
+        }
+    }
+
+    // Always ensure the penpot role + database exist (idempotent), even when
+    // Postgres was started elsewhere — so a data dir initialized without the
+    // role (e.g. by an older start_services.bat) is repaired every boot.
+    ensure_postgres_role_db(root);
+
+    Ok(())
+}
+
+/// Run a scalar `psql` query and return the trimmed first cell of output.
+fn pg_scalar(root: &Path, sql: &str) -> Option<String> {
+    let out = Command::new(postgres_bin(root, "psql.exe"))
+        .args(["-U", "postgres", "-h", "localhost", "-p", "5432", "-tA", "-c", sql])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .ok()?;
+    if out.status.success() {
+        Some(String::from_utf8_lossy(&out.stdout).trim().to_string())
+    } else {
+        None
+    }
+}
+
+/// Create the `penpot` role and `penpot` database if they don't already exist.
+fn ensure_postgres_role_db(root: &Path) {
+    if pg_scalar(root, "SELECT 1 FROM pg_roles WHERE rolname='penpot'").as_deref() != Some("1") {
+        let _ = run_cmd(
+            &postgres_bin(root, "createuser.exe"),
+            &["-U", "postgres", "-h", "localhost", "-p", "5432", "-w", "penpot"],
+        );
+        eprintln!("[penpot-desktop] Created penpot role.");
+    }
+    if pg_scalar(root, "SELECT 1 FROM pg_database WHERE datname='penpot'").as_deref() != Some("1") {
+        let _ = run_cmd(
+            &postgres_bin(root, "createdb.exe"),
+            &[
+                "-U", "postgres", "-h", "localhost", "-p", "5432", "-O", "penpot", "penpot",
+            ],
+        );
+        eprintln!("[penpot-desktop] Created penpot database.");
+    }
+}
+
+/// Stop the local PostgreSQL instance gracefully.
+fn stop_postgres(root: &Path) {
+    if !port_open(POSTGRES_PORT) {
+        return;
+    }
+    let data_dir = root.join("data/postgres");
+    let data_dir_s = data_dir.to_string_lossy().to_string();
+    let _ = run_cmd(
+        &postgres_bin(root, "pg_ctl.exe"),
+        &["-D", data_dir_s.as_str(), "-m", "fast", "-w", "-t", "15", "stop"],
+    );
+    eprintln!("[penpot-desktop] PostgreSQL stopped.");
+}
+
+/// Start the local Redis instance in the foreground, returning the child so it
+/// can be killed on exit. No-op if something is already bound to the port.
+fn start_redis(root: &Path) -> Result<Option<Child>, String> {
+    if port_open(REDIS_PORT) {
+        eprintln!("[penpot-desktop] Redis already running on {}.", REDIS_PORT);
+        return Ok(None);
+    }
+
+    let data_dir = root.join("data/redis");
+    let data_dir_s = data_dir.to_string_lossy().to_string();
+    let port_s = REDIS_PORT.to_string();
+    std::fs::create_dir_all(&data_dir).ok();
+
+    eprintln!("[penpot-desktop] Starting Redis...");
+    let mut child = Command::new(redis_bin(root, "redis-server.exe"))
+        .args([
+            "--port",
+            port_s.as_str(),
+            "--loglevel",
+            "notice",
+            "--dir",
+            data_dir_s.as_str(),
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("failed to start redis: {}", e))?;
+
+    // Drain logs so the pipe buffer never blocks redis.
+    if let Some(stdout) = child.stdout.take() {
+        let _ = std::thread::spawn(move || {
+            for line in BufReader::new(stdout).lines().flatten() {
+                eprintln!("[redis] {}", line);
+            }
+        });
+    }
+    if let Some(stderr) = child.stderr.take() {
+        let _ = std::thread::spawn(move || {
+            for line in BufReader::new(stderr).lines().flatten() {
+                eprintln!("[redis] {}", line);
+            }
+        });
+    }
+
+    wait_for_port("Redis", REDIS_PORT, SERVICE_HEALTH_TIMEOUT)?;
+    Ok(Some(child))
+}
+
+fn backend_env() -> Vec<(&'static str, String)> {
+    vec![
+        ("PENPOT_TENANT", "default".into()),
+        ("PENPOT_HOST", "localhost".into()),
+        // Public URI is the frontend/proxy origin so any absolute URL the
+        // backend generates (assets, exports, redirects) is same-origin too.
+        ("PENPOT_PUBLIC_URI", format!("http://localhost:{}", FRONTEND_PORT)),
+        ("PENPOT_HTTP_SERVER_PORT", BACKEND_PORT.to_string()),
+        ("PENPOT_HTTP_SERVER_HOST", "localhost".into()),
+        ("PENPOT_DATABASE_URI", "postgresql://localhost/penpot".into()),
+        ("PENPOT_DATABASE_USERNAME", "penpot".into()),
+        ("PENPOT_DATABASE_PASSWORD", "penpot".into()),
+        ("PENPOT_REDIS_URI", format!("redis://localhost:{}", REDIS_PORT)),
+        ("PENPOT_OBJECTS_STORAGE_BACKEND", "fs".into()),
+        (
+            "PENPOT_OBJECTS_STORAGE_FS_DIRECTORY",
+            "data\\assets".into(),
+        ),
+        ("PENPOT_STORAGE_ASSETS_FS_DIRECTORY", "data\\assets".into()),
+        ("PENPOT_ASSETS_PATH", "/internal/assets/".into()),
+        ("PENPOT_SECRET_KEY", "desktop-local-secret-key-change-in-production".into()),
+        (
+            "PENPOT_FLAGS",
+            "disable-secure-session-cookies disable-email-verification disable-google-fonts-provider \
+             disable-dashboard-templates-section disable-telemetry enable-backend-worker \
+             enable-demo-users enable-cors disable-feature-render-wasm disable-render-switch \
+             disable-render-wasm-info disable-available-viewer-wasm disable-render-wasm-dpr"
+                .into(),
+        ),
+        (
+            "PENPOT_ALLOWED_ORIGINS",
+            "http://localhost:1420 http://localhost:3449".into(),
+        ),
+        ("PENPOT_TELEMETRY_ENABLED", "false".into()),
+    ]
+}
+
+fn which_java() -> Result<String, String> {
+    if let Ok(java_home) = std::env::var("JAVA_HOME") {
+        let exe = PathBuf::from(&java_home).join("bin/java.exe");
+        if exe.exists() {
+            return Ok(exe.to_string_lossy().into_owned());
+        }
+    }
+    Ok("java".into())
+}
+
+fn spawn_backend() -> Result<Child, String> {
+    let jar = backend_jar_path();
+    if !jar.exists() {
+        return Err(format!("Backend uberjar not found: {}", jar.display()));
+    }
+
+    let java = which_java()?;
+    let root = project_root();
+    let mut cmd = Command::new(java);
+    cmd.current_dir(&root)
+        .arg("-jar")
+        .arg(&jar)
+        .arg("-m")
+        .arg("app.main")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    for (key, value) in backend_env() {
+        cmd.env(key, value);
+    }
+
+    let mut child = cmd.spawn().map_err(|e| format!("Failed to start backend: {}", e))?;
+
+    // Drain stdout/stderr so they never fill the pipe buffer and block the JVM.
+    if let Some(stdout) = child.stdout.take() {
+        std::thread::spawn(move || {
+            for line in BufReader::new(stdout).lines().flatten() {
+                eprintln!("[penpot-backend] {}", line);
+            }
+        });
+    }
+    if let Some(stderr) = child.stderr.take() {
+        std::thread::spawn(move || {
+            for line in BufReader::new(stderr).lines().flatten() {
+                eprintln!("[penpot-backend] {}", line);
+            }
+        });
+    }
+
+    Ok(child)
+}
+
+/// Boot the local services, then the JVM backend, then open the window.
+/// Runs in a background thread so the Tauri setup() returns immediately.
+fn boot_backend(handle: tauri::AppHandle) {
+    let root = project_root();
+
+    // 1. Local data stores — everything the app writes lives under data/.
+    let _ = std::fs::create_dir_all(root.join("data/assets"));
+
+    // 2. PostgreSQL (init + create penpot db/user on first run).
+    if let Err(e) = start_postgres(&root) {
+        eprintln!("[penpot-desktop] PostgreSQL start failed: {}", e);
+        return;
+    }
+
+    // 3. Redis (foreground child, killed on exit).
+    let redis_child = match start_redis(&root) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("[penpot-desktop] Redis start failed: {}", e);
+            return;
+        }
+    };
+    if let Some(state) = handle.try_state::<BackendState>() {
+        let _ = state.redis.lock().map(|mut g| *g = redis_child);
+    }
+
+    // 4. JVM backend (the real Penpot API + Sente + binary file store).
+    match spawn_backend() {
+        Ok(child) => {
+            eprintln!("[penpot-desktop] JVM backend started (PID {}).", child.id());
+            if let Some(state) = handle.try_state::<BackendState>() {
+                let _ = state.jvm.lock().map(|mut g| *g = Some(child));
+            }
+            match wait_for_port("Backend", BACKEND_PORT, BACKEND_HEALTH_TIMEOUT) {
+                Ok(()) => {
+                    eprintln!(
+                        "[penpot-desktop] Backend ready at http://localhost:{}.",
+                        BACKEND_PORT
+                    );
+                    let _ = handle.emit("backend-ready", ());
+                    let _ = tauri::WebviewWindowBuilder::new(
+                        &handle,
+                        "main",
+                        tauri::WebviewUrl::External(
+                            format!("http://localhost:{}", FRONTEND_PORT).parse().unwrap(),
+                        ),
+                    )
+                    .title("Penpot Desktop")
+                    .inner_size(1280.0, 800.0)
+                    .min_inner_size(900.0, 600.0)
+                    .build();
+                }
+                Err(e) => eprintln!("[penpot-desktop] Backend failed to become ready: {}", e),
+            }
+        }
+        Err(e) => eprintln!("[penpot-desktop] Failed to start backend: {}", e),
+    }
+}
+
+fn shutdown_services(app: &tauri::AppHandle) {
+    if let Some(state) = app.try_state::<BackendState>() {
+        if let Ok(mut g) = state.redis.lock() {
+            if let Some(mut child) = g.take() {
+                let _ = child.kill();
+                let _ = child.wait();
+                eprintln!("[penpot-desktop] Redis stopped.");
+            }
+        }
+        if let Ok(mut g) = state.jvm.lock() {
+            if let Some(mut child) = g.take() {
+                let _ = child.kill();
+                let _ = child.wait();
+                eprintln!("[penpot-desktop] JVM backend stopped.");
+            }
+        }
+    }
+    stop_postgres(&project_root());
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_shell::init())
+        .manage(BackendState {
+            jvm: Mutex::new(None),
+            redis: Mutex::new(None),
+        })
+        .setup(|app| {
+            let handle = app.handle().clone();
+            std::thread::spawn(move || boot_backend(handle));
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if matches!(event, tauri::WindowEvent::Destroyed) {
+                shutdown_services(&window.app_handle());
+            }
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

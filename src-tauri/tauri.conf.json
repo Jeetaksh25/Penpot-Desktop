@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JonasKruckenberg/tauri/next/core/tauri-config-schema/schema.json",
+  "productName": "Penpot Desktop",
+  "version": "1.0.0",
+  "identifier": "com.penpot.desktop",
+  "build": {
+    "beforeDevCommand": "npm run serve:penpot",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build:penpot && node scripts/generate-icons.mjs",
+    "frontendDist": "../penpot-source/frontend/resources/public"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "nsis",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png"
+    ],
+    "windows": {
+      "wix": null,
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.png",
+        "installerHooks": false,
+        "languages": ["English"],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "Penpot Desktop",
+        "template": null
+      }
+    }
+  }
+}

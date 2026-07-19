@@ -1,0 +1,25 @@
+{
+  "name": "penpot-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "serve:penpot": "node scripts/inject-desktop-config.js && node scripts/serve-penpot-proxy.js",
+    "build:penpot": "cd penpot-source/frontend && cross-env PATH=\"$USERPROFILE/deps.clj:$PATH\" JAVA_TOOL_OPTIONS=\"-Xmx2048m -Xms512m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=256m\" pnpm run build:app:assets && pnpm run build:app && cd ../.. && node scripts/inject-desktop-config.js",
+    "dev": "npm run serve:penpot & npm run tauri dev",
+    "build": "npm run build:penpot && npm run tauri build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-fs": "^2.0.0",
+    "@tauri-apps/plugin-shell": "^2.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "cross-env": "^7.0.3",
+    "serve": "^14.2.4",
+    "typescript": "^5.6.0"
+  }
+}

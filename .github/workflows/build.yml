@@ -1,0 +1,209 @@
+# Penpot Desktop — Windows Installer Build
+#
+# Triggers:
+#   - Push a tag like v1.0.0, v1.1.0, etc. to produce a release installer.
+#   - Push to main (for pre-release / CI validation, no release artifact).
+#
+# What this workflow does:
+#   1. Sets up the full toolchain (Java, Clojure CLI, Node.js, pnpm, Rust).
+#   2. Builds the Clojure/JVM backend uberjar (penpot.jar).
+#   3. Installs frontend dependencies (pnpm install in penpot-source/frontend).
+#   4. Downloads portable PostgreSQL 16.4 and Redis 8.8.0 Windows binaries.
+#   5. Runs `pnpm tauri build` — Tauri's beforeBuildCommand builds the
+#      ClojureScript frontend; the Rust code is compiled; an NSIS installer
+#      is produced with the backend JAR, frontend assets, Postgres, and Redis
+#      bundled together.
+#   6. Uploads the installer as a workflow artifact.
+#   7. Creates a GitHub Release with the installer attached.
+#
+# Notes:
+#   - The WASM render engine (render-wasm) is NOT built in CI because it
+#     requires Emscripten 4.0.6 + pinned Rust 1.91.0. The app falls back to
+#     the SVG renderer, which works fine for the desktop use-case. To enable
+#     WASM rendering, add an Emscripten setup step and run build_render_wasm.bat.
+#   - PostgreSQL and Redis are bundled as portable binaries inside the
+#     installer, matching the paths expected by src-tauri/src/lib.rs.
+
+name: Build Windows Installer
+
+on:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g., v1.0.0)"
+        required: false
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  JAVA_TOOL_OPTIONS: "-Xmx2048m -Xms512m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=256m"
+
+jobs:
+  build:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # ── Toolchain ─────────────────────────────────────────────────────────
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Setup Clojure CLI
+        uses: DeLaGuardo/setup-clojure@12.5
+        with:
+          cli: "1.12.0.1488"
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        run: npm install -g pnpm@11.9.0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # ── Backend (JVM uberjar) ─────────────────────────────────────────────
+      # Built here — NOT inside Tauri's beforeBuildCommand — because compiling
+      # 100+ MB of Clojure deps is slow and JVM heap-constrained.
+
+      - name: Build backend JAR
+        run: |
+          cd penpot-source/backend
+          clojure -T:build clean
+          clojure -T:build jar
+          cd ../..
+        shell: bash
+
+      # ── Frontend dependencies (pnpm) ──────────────────────────────────────
+      # Tauri's beforeBuildCommand runs `npm run build:penpot` which calls
+      # pnpm inside penpot-source/frontend, so deps must be installed.
+
+      - name: Install frontend dependencies
+        run: |
+          cd penpot-source/frontend
+          pnpm install --frozen-lockfile
+          cd ../..
+        shell: bash
+
+      # ── Runtime binaries (bundled in installer) ───────────────────────────
+      # The Rust side expects tools/postgres/bin/ and
+      # tools/redis/Redis-8.8.0-Windows-x64-msys2/ relative to the exe.
+
+      - name: Download PostgreSQL portable (16.4)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tools/postgres
+          curl -fsSL -o pg.zip "https://get.enterprisedb.com/postgresql/postgresql-16.4-1-windows-x64-binaries.zip"
+          unzip -q pg.zip -d _pg_extract
+          # EnterpriseDB zip has a pgsql/ directory at the root
+          if [ -d "_pg_extract/pgsql" ]; then
+            cp -r _pg_extract/pgsql/* tools/postgres/
+          elif [ -d "_pg_extract/pg16" ]; then
+            cp -r _pg_extract/pg16/* tools/postgres/
+          else
+            echo "ERROR: unexpected PostgreSQL zip structure"
+            ls -la _pg_extract/
+            exit 1
+          fi
+          rm -rf _pg_extract pg.zip
+          # Verify the critical binary exists; fail the build if missing
+          test -f tools/postgres/bin/pg_ctl.exe || { echo "pg_ctl.exe not found after extraction!"; exit 1; }
+          echo "PostgreSQL 16.4 extracted OK — pg_ctl.exe found"
+
+      - name: Download Redis portable (8.8.0)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tools/redis
+          curl -fsSL -o redis.zip "https://github.com/redis-windows/redis-windows/releases/download/8.8.0/Redis-8.8.0-Windows-x64-msys2.zip"
+          unzip -q redis.zip -d tools/redis/
+          rm -f redis.zip
+          test -f tools/redis/Redis-8.8.0-Windows-x64-msys2/redis-server.exe || { echo "redis-server.exe not found after extraction!"; exit 1; }
+          echo "Redis 8.8.0 extracted OK — redis-server.exe found"
+
+      # ── Icons ─────────────────────────────────────────────────────────────
+
+      - name: Generate app icons
+        run: node scripts/generate-icons.mjs
+        shell: bash
+
+      # ── Tauri build (produces NSIS installer) ─────────────────────────────
+      # Tauri runs beforeBuildCommand (npm run build:penpot) which:
+      #   1. Builds CSS/assets, ClojureScript app, and libs
+      #   2. Injects desktop config into index.html
+      #   3. (icons already generated above)
+      # Then compiles the Rust side and packages the NSIS installer.
+
+      - name: Install root dependencies for Tauri CLI
+        run: npm install
+
+      - name: Build Tauri app (NSIS installer)
+        run: npm run tauri build -- --bundles nsis
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      # ── Artifacts ─────────────────────────────────────────────────────────
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Penpot-Desktop-Installer
+          path: src-tauri/target/release/*.exe
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload bundle artifact (debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Penpot-Desktop-MSBundle
+          path: src-tauri/target/release/bundle/
+          retention-days: 7
+
+      # ── Release ───────────────────────────────────────────────────────────
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Penpot Desktop ${{ github.ref_name }}
+          body: |
+            ## Penpot Desktop ${{ github.ref_name }}
+
+            Windows installer for Penpot Desktop — a fully offline, native
+            design tool powered by the real Penpot ClojureScript frontend and
+            Clojure/JVM backend.
+
+            ### What's included
+            - Full Penpot UI (ClojureScript SPA)
+            - Penpot JVM backend
+            - Local PostgreSQL 16.4 + Redis 8.8.0 (embedded)
+            - SVG renderer (WASM WebGL renderer available with manual build)
+
+            ### Installation
+            Download `Penpot-Desktop_*.exe` and run it. No prerequisites
+            required — PostgreSQL, Redis, and Java are bundled.
+          draft: false
+          prerelease: false
+          files: |
+            src-tauri/target/release/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
