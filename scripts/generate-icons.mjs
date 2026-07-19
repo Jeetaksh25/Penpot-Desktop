@@ -53,7 +53,7 @@ function getSvgContent() {
 // logo centred on a brand-colour background at exactly the requested size.
 
 function wrappedSvg(width) {
-  const logoViewBox = "62.2 0 387.7 512";  // ≈325×512
+  // The raw Penpot logo SVG has viewBox="62.2 0 387.7 512" (≈325×512).
   const logoW = 387.7 - 62.2;              // 325.5
   const logoH = 512;
   const padding = Math.round(width * 0.12); // 12 % padding inside the square
