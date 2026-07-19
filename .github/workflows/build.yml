@@ -152,6 +152,13 @@ jobs:
           test -f tools/redis/Redis-8.8.0-Windows-x64-msys2/redis-server.exe || { echo "redis-server.exe not found after extraction!"; exit 1; }
           echo "Redis 8.8.0 extracted OK — redis-server.exe found"
 
+      # ── Root dependencies ──────────────────────────────────────────────────
+      # Install root npm dependencies (sharp for icons, Tauri CLI for build).
+      # Must run before generate-icons.mjs since it imports sharp.
+
+      - name: Install root dependencies for Tauri CLI
+        run: npm ci
+
       # ── Icons ─────────────────────────────────────────────────────────────
       # Generate icons explicitly before the Tauri build so they exist even
       # if Tauri validates icon paths before running beforeBuildCommand.
@@ -165,9 +172,6 @@ jobs:
       # ── Frontend (ClojureScript) build ────────────────────────────────────
       # Built as an explicit step here (not inside beforeBuildCommand) so CI
       # output is transparent and failures are easy to diagnose.
-
-      - name: Install root dependencies for Tauri CLI
-        run: npm ci
 
       - name: Build Penpot frontend (ClojureScript)
         run: npm run build:penpot
