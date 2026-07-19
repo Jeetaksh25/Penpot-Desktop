@@ -129,8 +129,18 @@ async function main() {
   // 0. Verify git remote
   await checkRemote();
 
-  // 1. Ask for bump type
-  const bumpType = await ask("Bump type? (major / minor / patch / custom): ");
+  // 1. Ask for bump type (default: patch — just press Enter)
+  const bumpInput = await ask("Bump type?  [1] major  [2] minor  [3] patch (default)  [4] custom: ");
+  let bumpType;
+  switch (bumpInput.trim() || "3") {
+    case "1": bumpType = "major"; break;
+    case "2": bumpType = "minor"; break;
+    case "3": bumpType = "patch"; break;
+    case "4": bumpType = "custom"; break;
+    default:
+      console.error("Invalid choice. Enter 1-4.");
+      process.exit(1);
+  }
   let newVersion;
   if (bumpType === "custom") {
     newVersion = await ask("Enter full semver version (e.g., 2.0.0): ");
