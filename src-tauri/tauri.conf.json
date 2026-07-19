@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/JonasKruckenberg/tauri/next/core/tauri-config-schema/schema.json",
   "productName": "Penpot Desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.penpot.desktop",
   "build": {
     "beforeDevCommand": "npm run serve:penpot",
@@ -29,7 +29,9 @@
         "installMode": "currentUser",
         "installerIcon": "icons/icon.png",
         "installerHooks": false,
-        "languages": ["English"],
+        "languages": [
+          "English"
+        ],
         "displayLanguageSelector": false,
         "startMenuFolder": "Penpot Desktop",
         "template": null
