@@ -6,6 +6,8 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use tauri::{Emitter, Manager};
 
+mod proxy;
+
 /// Configuration for the embedded Penpot JVM backend + local services.
 const BACKEND_JAR: &str = "penpot-source/backend/target/penpot.jar";
 const BACKEND_PORT: u16 = 3449;
@@ -18,6 +20,7 @@ const HEALTH_INTERVAL: Duration = Duration::from_millis(500);
 
 const POSTGRES_BIN: &str = "tools/postgres/bin";
 const REDIS_BIN: &str = "tools/redis/Redis-8.8.0-Windows-x64-msys2";
+const JRE_DIR: &str = "tools/jre";
 
 /// Tracks child processes so they can be killed on exit.
 /// Postgres manages its own daemon via pg_ctl, so only the JVM and Redis
@@ -27,30 +30,80 @@ pub struct BackendState {
     pub redis: Mutex<Option<Child>>,
 }
 
-/// Returns the project root by walking up from the executable or current dir.
-fn project_root() -> PathBuf {
+/// Returns the project root (dev) or the resource directory (production).
+///
+/// **Dev mode**: walks up from the executable path (or current directory) and
+/// checks for both `penpot-source/backend/target/penpot.jar` and
+/// `tools/postgres/bin` — whichever exists first identifies the repo root.
+/// This avoids a wrong path when the backend JAR hasn't been built yet.
+///
+/// **Production**: uses Tauri's `resource_dir()` which mirrors the source
+/// layout thanks to `bundle.resources` in `tauri.conf.json`.
+/// Returns the project root (dev) or the resource directory (production).
+///
+/// Strategy:
+/// 1. Exe walk-up (dev) — walks parent dirs from the exe looking for
+///    `src-tauri/Cargo.toml` (unique to the real repo root).
+/// 2. Cwd walk-up (dev) — same check from current directory.
+/// 3. Resource dir (production) — Tauri's resource_dir via app handle.
+fn project_root(handle: Option<&tauri::AppHandle>) -> PathBuf {
+    // Sentinel: only the real repo root has `src-tauri/Cargo.toml` (dev) or
+    // the backend JAR (production, via bundle.resources).
+    let is_repo_root = |dir: &Path| -> bool {
+        dir.join("src-tauri/Cargo.toml").exists()
+            || dir.join(BACKEND_JAR).exists()
+    };
+
+    // Tier 1 — exe walk-up (primary dev path).
     if let Ok(exe) = std::env::current_exe() {
         let mut dir = exe.parent().map(Path::to_path_buf).unwrap_or_default();
-        // Typical dev layout:  <root>/src-tauri/target/debug/penpot-desktop.exe
         if dir.file_name().map(|n| n == "debug" || n == "release").unwrap_or(false) {
-            dir.pop(); // target/debug|release -> target
+            dir.pop();
             if dir.file_name() == Some(std::ffi::OsStr::new("target")) {
-                dir.pop(); // drop target
+                dir.pop();
             }
             if dir.file_name() == Some(std::ffi::OsStr::new("src-tauri")) {
-                dir.pop(); // drop src-tauri in dev layout
+                dir.pop();
             }
         }
-        if dir.join(BACKEND_JAR).exists() {
+        if is_repo_root(&dir) {
             return dir;
         }
     }
-    // Fallback: current working directory (dev mode from repo root).
-    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+
+    // Tier 2 — cwd walk-up (up to 5 levels).
+    if let Ok(cwd) = std::env::current_dir() {
+        let mut dir = cwd;
+        for _ in 0..5 {
+            if is_repo_root(&dir) {
+                return dir;
+            }
+            if !dir.pop() {
+                break;
+            }
+        }
+    }
+
+    // Tier 3 — Tauri resource dir (production via bundle.resources).
+    if let Some(h) = handle {
+        if let Ok(dir) = h.path().resource_dir() {
+            if is_repo_root(&dir) {
+                return dir;
+            }
+            if let Some(parent) = dir.parent() {
+                if is_repo_root(parent) {
+                    return parent.to_path_buf();
+                }
+            }
+        }
+    }
+
+    // Tier 4 — last resort.
+    PathBuf::from(".")
 }
 
-fn backend_jar_path() -> PathBuf {
-    project_root().join(BACKEND_JAR)
+fn backend_jar_path(root: &Path) -> PathBuf {
+    root.join(BACKEND_JAR)
 }
 
 fn postgres_bin(root: &Path, exe: &str) -> PathBuf {
@@ -59,6 +112,10 @@ fn postgres_bin(root: &Path, exe: &str) -> PathBuf {
 
 fn redis_bin(root: &Path, exe: &str) -> PathBuf {
     root.join(REDIS_BIN).join(exe)
+}
+
+fn jre_bin(root: &Path, exe: &str) -> PathBuf {
+    root.join(JRE_DIR).join("bin").join(exe)
 }
 
 /// True when something is already accepting TCP connections on `port`.
@@ -357,24 +414,30 @@ fn backend_env() -> Vec<(&'static str, String)> {
     ]
 }
 
-fn which_java() -> Result<String, String> {
+fn which_java(root: &Path) -> Result<String, String> {
+    // 1. Bundled JRE (production / CI — created by jlink in build pipeline).
+    let bundled = jre_bin(root, "java.exe");
+    if bundled.exists() {
+        return Ok(bundled.to_string_lossy().into_owned());
+    }
+    // 2. System JAVA_HOME.
     if let Ok(java_home) = std::env::var("JAVA_HOME") {
         let exe = PathBuf::from(&java_home).join("bin/java.exe");
         if exe.exists() {
             return Ok(exe.to_string_lossy().into_owned());
         }
     }
+    // 3. Fallback to PATH.
     Ok("java".into())
 }
 
-fn spawn_backend() -> Result<Child, String> {
-    let jar = backend_jar_path();
+fn spawn_backend(root: &Path) -> Result<Child, String> {
+    let jar = backend_jar_path(root);
     if !jar.exists() {
         return Err(format!("Backend uberjar not found: {}", jar.display()));
     }
 
-    let java = which_java()?;
-    let root = project_root();
+    let java = which_java(root)?;
     let mut cmd = Command::new(java);
     cmd.current_dir(&root)
         .arg("-jar")
@@ -412,7 +475,7 @@ fn spawn_backend() -> Result<Child, String> {
 /// Boot the local services, then the JVM backend, then open the window.
 /// Runs in a background thread so the Tauri setup() returns immediately.
 fn boot_backend(handle: tauri::AppHandle) {
-    let root = project_root();
+    let root = project_root(Some(&handle));
 
     // 1. Local data stores — everything the app writes lives under data/.
     let _ = std::fs::create_dir_all(root.join("data/assets"));
@@ -436,7 +499,7 @@ fn boot_backend(handle: tauri::AppHandle) {
     }
 
     // 4. JVM backend (the real Penpot API + Sente + binary file store).
-    match spawn_backend() {
+    match spawn_backend(&root) {
         Ok(child) => {
             eprintln!("[penpot-desktop] JVM backend started (PID {}).", child.id());
             if let Some(state) = handle.try_state::<BackendState>() {
@@ -448,18 +511,43 @@ fn boot_backend(handle: tauri::AppHandle) {
                         "[penpot-desktop] Backend ready at http://localhost:{}.",
                         BACKEND_PORT
                     );
+
+                    // 5. Start the same-origin proxy (Rust) in production builds.
+                    //    In debug/dev builds the Node.js serve-penpot-proxy.js serves
+                    //    this role (launched by beforeDevCommand).
+                    if !cfg!(debug_assertions) {
+                        let public_dir = root.join("public");
+                        let proxy_port = FRONTEND_PORT;
+                        std::thread::spawn(move || {
+                            // auto_login = true → transparently registers/logs
+                            // in a fixed local account so the user never sees
+                            // a login screen.
+                            proxy::start(public_dir, proxy_port, true);
+                        });
+                        // Give the proxy time to bind and establish the session.
+                        std::thread::sleep(Duration::from_millis(1000));
+                    }
+
                     let _ = handle.emit("backend-ready", ());
-                    let _ = tauri::WebviewWindowBuilder::new(
-                        &handle,
-                        "main",
+
+                    // Use Tauri's built-in asset server in production;
+                    // in dev the external proxy (serve-penpot-proxy.js) handles
+                    // both static files and API proxying on port 1420.
+                    let url = if cfg!(debug_assertions) {
                         tauri::WebviewUrl::External(
-                            format!("http://localhost:{}", FRONTEND_PORT).parse().unwrap(),
-                        ),
-                    )
-                    .title("Penpot Desktop")
-                    .inner_size(1280.0, 800.0)
-                    .min_inner_size(900.0, 600.0)
-                    .build();
+                            format!("http://localhost:{}", FRONTEND_PORT)
+                                .parse()
+                                .unwrap(),
+                        )
+                    } else {
+                        tauri::WebviewUrl::App("index.html".into())
+                    };
+
+                    let _ = tauri::WebviewWindowBuilder::new(&handle, "main", url)
+                        .title("Penpot Desktop")
+                        .inner_size(1280.0, 800.0)
+                        .min_inner_size(900.0, 600.0)
+                        .build();
                 }
                 Err(e) => eprintln!("[penpot-desktop] Backend failed to become ready: {}", e),
             }
@@ -485,7 +573,8 @@ fn shutdown_services(app: &tauri::AppHandle) {
             }
         }
     }
-    stop_postgres(&project_root());
+    let root = project_root(Some(app));
+    stop_postgres(&root);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

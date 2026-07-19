@@ -56,10 +56,10 @@ jobs:
 
       # ── Toolchain ─────────────────────────────────────────────────────────
 
-      - name: Setup Java 21
+      - name: Setup Java 23
         uses: actions/setup-java@v4
         with:
-          java-version: "21"
+          java-version: "23"
           distribution: "temurin"
 
       - name: Install Clojure CLI
@@ -105,17 +105,35 @@ jobs:
         shell: bash
 
       # ── Runtime binaries (bundled in installer) ───────────────────────────
-      # The Rust side expects tools/postgres/bin/ and
-      # tools/redis/Redis-8.8.0-Windows-x64-msys2/ relative to the exe.
+      # The Rust side expects:
+      #   tools/postgres/bin/       — PostgreSQL portable
+      #   tools/redis/Redis-.../    — Redis portable
+      #   tools/jre/bin/java.exe    — jlink-minimized JRE (no system Java needed)
 
-      - name: Cache PostgreSQL and Redis binaries
+      - name: Create minimal JRE bundle via jlink
+        run: |
+          # JAVA_HOME is already set by setup-java above.  jlink creates a
+          # stripped-down runtime image (~50 MB) with just the modules the
+          # Clojure/Penpot backend needs.
+          "$JAVA_HOME/bin/jlink" \
+            --module-path "$JAVA_HOME/jmods" \
+            --add-modules java.se,java.compiler,java.instrument,java.management.rmi,java.naming,java.rmi,java.scripting,java.sql.rowset,jdk.charsets,jdk.crypto.cryptoki,jdk.crypto.ec,jdk.httpserver,jdk.management.agent,jdk.naming.rmi,jdk.unsupported,jdk.xml.dom \
+            --output tools/jre \
+            --strip-debug --no-header-files --no-man-pages
+          echo "jlink image created:"
+          ls -lh tools/jre/bin/java.exe
+          du -sh tools/jre/
+        shell: bash
+
+      - name: Cache PostgreSQL, Redis, and JRE binaries
         id: cache-runtime
         uses: actions/cache@v4
         with:
           path: |
             tools/postgres
             tools/redis
-          key: runtime-binaries-2024-11-v1
+            tools/jre
+          key: runtime-binaries-2024-11-v2
 
       - name: Download PostgreSQL portable (16.4)
         if: steps.cache-runtime.outputs.cache-hit != 'true'
@@ -226,10 +244,11 @@ jobs:
             - Penpot JVM backend
             - Local PostgreSQL 16.4 + Redis 8.8.0 (embedded)
             - SVG renderer (WASM WebGL renderer available with manual build)
+            - Minimal JRE for Java 23 (bundled via jlink)
 
             ### Installation
             Download `Penpot-Desktop_*.exe` and run it. No prerequisites
-            required — PostgreSQL, Redis, and Java are bundled.
+            required — PostgreSQL, Redis, and Java JRE are all bundled.
           draft: false
           prerelease: false
           files: |

@@ -12,7 +12,9 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const OUT_DIR = path.join(ROOT, "icons");
+// Tauri resolves icon paths relative to src-tauri/tauri.conf.json.
+// Generate icons there so `bundle.icon` in tauri.conf.json finds them.
+const OUT_DIR = path.join(ROOT, "src-tauri", "icons");
 
 // ── Source logos ----------------------------------------------------------
 // The user placed these in data/assets/. We prefer the SVG for crisp vector

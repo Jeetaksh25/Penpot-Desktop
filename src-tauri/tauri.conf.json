@@ -23,12 +23,18 @@
       "icons/128x128.png",
       "icons/128x128@2x.png"
     ],
+    "resources": {
+      "../penpot-source/backend/target/penpot.jar": "penpot-source/backend/target/penpot.jar",
+      "../tools/postgres/bin/**/*": "tools/postgres/bin/",
+      "../tools/redis/Redis-8.8.0-Windows-x64-msys2/**/*": "tools/redis/Redis-8.8.0-Windows-x64-msys2/",
+      "../tools/jre/**/*": "tools/jre/"
+    },
     "windows": {
       "wix": null,
       "nsis": {
         "installMode": "currentUser",
         "installerIcon": "icons/icon.png",
-        "installerHooks": false,
+        "installerHooks": null,
         "languages": [
           "English"
         ],
