@@ -2,7 +2,8 @@
 /node_modules
 /penpot-source/**/node_modules
 /penpot-source/**/package-lock.json
-/package-lock.json
+# Root package-lock.json is committed for reproducible CI (npm ci).
+# /package-lock.json
 
 # ── Build output ──────────────────────────────────────────────────────────
 /src-tauri/target
