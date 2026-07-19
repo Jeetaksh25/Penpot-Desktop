@@ -63,11 +63,22 @@ jobs:
           distribution: "temurin"
 
       - name: Install Clojure CLI
-        # Use chocolatey on Windows (pre-installed on GitHub Actions runners).
-        # The official clojure installer puts clojure.exe / clojure.cmd into
-        # PATH for every shell, unlike the DeLaGuardo/setup-clojure action
-        # which only registers in PowerShell on Windows.
-        run: choco install clojure --version 1.12.0.1488 -y --no-progress
+        # Use the official Clojure CLI Windows installer (PowerShell script).
+        # This puts clojure.exe + clojure.jar into %USERPROFILE%\.clojure\bin\
+        # and registers it in the user PATH.  We also export to $GITHUB_PATH so
+        # the change propagates to every subsequent shell step (both pwsh and
+        # bash), not just the current session.
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+          Invoke-Expression (Invoke-WebRequest -Uri "https://download.clojure.org/install/win-install.ps1" -UseBasicParsing).Content
+          $cliDir = "$env:USERPROFILE\.clojure\bin"
+          if (Test-Path "$cliDir/clojure.exe") {
+            echo "Clojure CLI installed: $cliDir"
+          } else {
+            throw "clojure.exe not found after install at $cliDir"
+          }
+          echo "$cliDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
