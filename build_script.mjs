@@ -7,16 +7,15 @@
 //
 // This script:
 //   1. Reads the current version from package.json
-//   2. Asks which type of bump (major / minor / patch)
+//   2. Asks which type of bump (1=major / 2=minor / 3=patch)
 //   3. Updates the version in:
 //      - package.json
 //      - src-tauri/tauri.conf.json
 //      - src-tauri/Cargo.toml
-//   4. Generates a git tag
-//   5. Asks for confirmation before pushing
-//   6. If confirmed: commits, tags, and pushes to GitHub
+//   4. Generates icons
+//   5. Commits, tags, and pushes to GitHub
 //
-// GitHub Actions then builds the installer automatically.
+// GitHub Actions then builds the installer automatically — no local build.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -130,32 +129,20 @@ async function main() {
   await checkRemote();
 
   // 1. Ask for bump type (default: patch — just press Enter)
-  const bumpInput = await ask("Bump type?  [1] major  [2] minor  [3] patch (default)  [4] custom: ");
+  const bumpInput = await ask("Bump type?  [1] major  [2] minor  [3] patch (default): ");
   let bumpType;
   switch (bumpInput.trim() || "3") {
     case "1": bumpType = "major"; break;
     case "2": bumpType = "minor"; break;
     case "3": bumpType = "patch"; break;
-    case "4": bumpType = "custom"; break;
     default:
-      console.error("Invalid choice. Enter 1-4.");
+      console.error("Invalid choice. Enter 1-3.");
       process.exit(1);
   }
-  let newVersion;
-  if (bumpType === "custom") {
-    newVersion = await ask("Enter full semver version (e.g., 2.0.0): ");
-    if (!/^\d+\.\d+\.\d+$/.test(newVersion)) {
-      console.error("Invalid version format. Use semver: X.Y.Z");
-      process.exit(1);
-    }
-  } else {
-    newVersion = bumpVersion(currentVersion, bumpType);
-  }
+  const newVersion = bumpVersion(currentVersion, bumpType);
 
-  console.log(`\nVersion: ${currentVersion} → ${newVersion}\n`);
-
-  // 2. Confirm
-  const confirm = await ask(`Update to v${newVersion} and push to GitHub? (y/N): `);
+  // 2. Single confirmation — does everything: bump, tag, push. CI builds.
+  const confirm = await ask(`\n${currentVersion} → v${newVersion}. Push to GitHub? (y/N): `);
   if (confirm.toLowerCase() !== "y") {
     console.log("Aborted.");
     process.exit(0);
@@ -163,33 +150,19 @@ async function main() {
 
   // 3. Update version in files
   console.log("\n--- Updating version files ---");
-
-  // package.json
-  const updatedPkg = { ...pkgJson, version: newVersion };
-  writeFile("package.json", JSON.stringify(updatedPkg, null, 2) + "\n");
-
-  // src-tauri/tauri.conf.json
+  writeFile("package.json", JSON.stringify({ ...pkgJson, version: newVersion }, null, 2) + "\n");
   const tauriConf = JSON.parse(readFile("src-tauri/tauri.conf.json"));
   tauriConf.version = newVersion;
   writeFile("src-tauri/tauri.conf.json", JSON.stringify(tauriConf, null, 2) + "\n");
-
-  // src-tauri/Cargo.toml
   let cargoToml = readFile("src-tauri/Cargo.toml");
   cargoToml = cargoToml.replace(/^version\s*=\s*"[^"]+"/m, `version = "${newVersion}"`);
   writeFile("src-tauri/Cargo.toml", cargoToml);
 
-  // 4. Regenerate icons (in case version affects anything)
+  // 4. Regenerate icons
   console.log("\n--- Generating icons ---");
   exec("node scripts/generate-icons.mjs");
 
-  // 5. Check if we need to build first
-  const buildFirst = await ask("\nRun the full build (npm run build:penpot) before committing? (Y/n): ");
-  if (buildFirst.toLowerCase() !== "n") {
-    console.log("\n--- Building frontend + backend ---");
-    exec("npm run build:penpot");
-  }
-
-  // 6. Git operations
+  // 5. Git operations (no local build — CI handles everything)
   console.log("\n--- Git operations ---");
   exec("git add -A");
 
@@ -199,21 +172,13 @@ async function main() {
     console.log("  (nothing to commit — already up to date)");
   }
 
-  // Create tag
   try {
     exec(`git tag -a "v${newVersion}" -m "Penpot Desktop v${newVersion}"`);
   } catch {
     console.log(`  Tag v${newVersion} already exists — skipping.`);
   }
 
-  // 7. Final confirmation before push
-  const pushConfirm = await ask("\nPush to GitHub? (GitHub Actions will build the installer) (y/N): ");
-  if (pushConfirm.toLowerCase() !== "y") {
-    console.log("\nCommitted locally. Push manually when ready:");
-    console.log(`  git push origin main --tags`);
-    process.exit(0);
-  }
-
+  // 6. Push
   exec("git push origin main --tags");
 
   console.log("\n✓ Pushed! GitHub Actions is now building the installer.");
