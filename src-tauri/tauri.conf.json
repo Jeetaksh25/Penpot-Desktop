@@ -1,12 +1,12 @@
 {
   "$schema": "https://raw.githubusercontent.com/JonasKruckenberg/tauri/next/core/tauri-config-schema/schema.json",
   "productName": "Penpot Desktop",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "identifier": "com.penpot.desktop",
   "build": {
     "beforeDevCommand": "npm run serve:penpot",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build:penpot && node scripts/generate-icons.mjs",
+    "beforeBuildCommand": "node scripts/generate-icons.mjs",
     "frontendDist": "../penpot-source/frontend/resources/public"
   },
   "app": {

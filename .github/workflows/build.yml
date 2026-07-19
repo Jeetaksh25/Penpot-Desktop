@@ -63,43 +63,9 @@ jobs:
           distribution: "temurin"
 
       - name: Install Clojure CLI
-        # The win-install.ps1 script only installs Clojure as a PowerShell
-        # module — it does NOT put clojure.exe anywhere.  The actual
-        # clojure.exe lives inside the zip distributed from GitHub releases.
-        # We download and extract that zip directly ourselves.
-        shell: pwsh
-        run: |
-          $version = "1.12.0.1488"
-          $zipPath = "$env:TEMP\clojure-tools.zip"
-          $installDir = "$env:USERPROFILE\.clojure"
-          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          # Try GitHub releases first, fall back to download.clojure.org
-          $urls = @(
-            "https://github.com/clojure/brew-install/releases/download/$version/clojure-tools-$version.zip",
-            "https://download.clojure.org/install/clojure-tools-$version.zip"
-          )
-          $downloaded = $false
-          foreach ($url in $urls) {
-            try {
-              Write-Host "Trying $url"
-              (New-Object Net.WebClient).DownloadFile($url, $zipPath)
-              $downloaded = $true
-              break
-            } catch { Write-Host "  failed" }
-          }
-          if (-not $downloaded) { throw "Could not download Clojure CLI from any URL" }
-          Write-Host "Extracting to $installDir..."
-          Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
-          Remove-Item $zipPath -Force
-          # Find clojure.exe (might be at root or in a sub-directory)
-          $found = Get-ChildItem -Path $installDir -Recurse -Filter "clojure.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName
-          if (-not $found) {
-            Write-Host "Zip contents:"
-            Get-ChildItem -Path $installDir -Recurse -Depth 2 | Select-Object FullName
-            throw "clojure.exe not found anywhere under $installDir"
-          }
-          Write-Host "Clojure CLI installed: $found\clojure.exe"
-          echo "$found" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        uses: DeLaGuardo/setup-clojure@13.6.1
+        with:
+          cli: "1.12.0.1488"
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
@@ -128,8 +94,8 @@ jobs:
         shell: bash
 
       # ── Frontend dependencies (pnpm) ──────────────────────────────────────
-      # Tauri's beforeBuildCommand runs `npm run build:penpot` which calls
-      # pnpm inside penpot-source/frontend, so deps must be installed.
+      # The explicit build:penpot step below calls pnpm inside
+      # penpot-source/frontend, so deps must be installed first.
 
       - name: Install frontend dependencies
         run: |
@@ -196,16 +162,22 @@ jobs:
         run: node scripts/generate-icons.mjs
         shell: bash
 
-      # ── Tauri build (produces NSIS installer) ─────────────────────────────
-      # beforeBuildCommand in tauri.conf.json runs:
-      #   npm run build:penpot && node scripts/generate-icons.mjs
-      # This builds the ClojureScript frontend + assets, injects the desktop
-      # config into index.html, and regenerates icons (fast no-op since
-      # they already exist).  Then Tauri compiles the Rust side and packages
-      # the NSIS installer with Postgres + Redis + backend JAR.
+      # ── Frontend (ClojureScript) build ────────────────────────────────────
+      # Built as an explicit step here (not inside beforeBuildCommand) so CI
+      # output is transparent and failures are easy to diagnose.
 
       - name: Install root dependencies for Tauri CLI
         run: npm ci
+
+      - name: Build Penpot frontend (ClojureScript)
+        run: npm run build:penpot
+        shell: bash
+
+      # ── Tauri build (produces NSIS installer) ─────────────────────────────
+      # beforeBuildCommand in tauri.conf.json runs just node scripts/generate-icons.mjs
+      # (fast no-op since icons were already generated above).  Then Tauri
+      # compiles the Rust side and packages the NSIS installer with Postgres,
+      # Redis, backend JAR, and the pre-built frontend assets.
 
       - name: Build Tauri app (NSIS installer)
         run: npm run tauri build -- --bundles nsis
