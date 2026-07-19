@@ -63,26 +63,31 @@ jobs:
           distribution: "temurin"
 
       - name: Install Clojure CLI
-        # Use the official Clojure CLI Windows install script.
-        # IMPORTANT: Use WebClient.DownloadString() instead of
-        # Invoke-WebRequest.Content — in PowerShell 7+ the latter can return
-        # System.Byte[] for certain Content-Type headers, which breaks
-        # Invoke-Expression.  WebClient.DownloadString() always returns a
-        # plain string, so Invoke-Expression can consume it safely.
-        # After install, export the bin dir to $GITHUB_PATH so EVERY
-        # subsequent step (pwsh + bash) can find clojure.exe.
+        # The win-install.ps1 script only installs Clojure as a PowerShell
+        # module — it does NOT put clojure.exe anywhere.  The actual
+        # clojure.exe lives inside the zip it downloads from GitHub releases.
+        # We download and extract that zip directly ourselves.
         shell: pwsh
         run: |
+          $version = "1.12.0.1488"
+          $zipUrl = "https://github.com/clojure/brew-install/releases/download/$version/clojure-tools-$version.zip"
+          $zipPath = "$env:TEMP\clojure-tools.zip"
+          $installDir = "$env:USERPROFILE\.clojure"
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-          $script = (New-Object Net.WebClient).DownloadString('https://download.clojure.org/install/win-install.ps1')
-          Invoke-Expression $script
-          $cliDir = "$env:USERPROFILE\.clojure\bin"
-          if (Test-Path "$cliDir/clojure.exe") {
-            echo "Clojure CLI installed: $cliDir"
-          } else {
-            throw "clojure.exe not found after install at $cliDir"
+          Write-Host "Downloading Clojure CLI $version from GitHub releases..."
+          (New-Object Net.WebClient).DownloadFile($zipUrl, $zipPath)
+          Write-Host "Extracting to $installDir..."
+          Expand-Archive -Path $zipPath -DestinationPath $installDir -Force
+          Remove-Item $zipPath -Force
+          # Find clojure.exe (might be at root or in a sub-directory)
+          $found = Get-ChildItem -Path $installDir -Recurse -Filter "clojure.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName
+          if (-not $found) {
+            Write-Host "Zip contents:"
+            Get-ChildItem -Path $installDir -Recurse -Depth 2 | Select-Object FullName
+            throw "clojure.exe not found anywhere under $installDir"
           }
-          echo "$cliDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "Clojure CLI installed: $found\clojure.exe"
+          echo "$found" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
