@@ -26,7 +26,8 @@
 
 # ── Runtime data (local dev only) ─────────────────────────────────────────
 /tools/data
-/data
+data/postgres
+data/redis
 *.db
 
 # ── Tooling binaries (downloaded in CI) ───────────────────────────────────
