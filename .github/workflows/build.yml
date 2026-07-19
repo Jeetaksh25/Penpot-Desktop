@@ -2,7 +2,9 @@
 #
 # Triggers:
 #   - Push a tag like v1.0.0, v1.1.0, etc. to produce a release installer.
-#   - Push to main (for pre-release / CI validation, no release artifact).
+#   - Manual trigger via GitHub UI or with `gh workflow run build.yml`.
+#   - Does NOT fire on plain pushes to main — use build_script.mjs locally
+#     which tags, pushes, and then CI builds the installer.
 #
 # What this workflow does:
 #   1. Sets up the full toolchain (Java, Clojure CLI, Node.js, pnpm, Rust).
@@ -30,8 +32,6 @@ on:
   push:
     tags:
       - "v*"
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       version:
@@ -62,10 +62,12 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
-      - name: Setup Clojure CLI
-        uses: DeLaGuardo/setup-clojure@12.5
-        with:
-          cli: "1.12.0.1488"
+      - name: Install Clojure CLI
+        # Use chocolatey on Windows (pre-installed on GitHub Actions runners).
+        # The official clojure installer puts clojure.exe / clojure.cmd into
+        # PATH for every shell, unlike the DeLaGuardo/setup-clojure action
+        # which only registers in PowerShell on Windows.
+        run: choco install clojure --version 1.12.0.1488 -y --no-progress
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
@@ -81,6 +83,9 @@ jobs:
       # ── Backend (JVM uberjar) ─────────────────────────────────────────────
       # Built here — NOT inside Tauri's beforeBuildCommand — because compiling
       # 100+ MB of Clojure deps is slow and JVM heap-constrained.
+
+      - name: Verify Clojure CLI
+        run: clojure --version
 
       - name: Build backend JAR
         run: |
