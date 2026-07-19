@@ -126,6 +126,9 @@ async function main() {
   const currentVersion = pkgJson.version;
   console.log(`Current version: ${currentVersion}\n`);
 
+  // 0. Verify git remote
+  await checkRemote();
+
   // 1. Ask for bump type
   const bumpType = await ask("Bump type? (major / minor / patch / custom): ");
   let newVersion;
