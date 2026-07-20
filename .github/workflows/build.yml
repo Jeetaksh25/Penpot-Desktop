@@ -256,12 +256,17 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       # ── Artifacts ─────────────────────────────────────────────────────────
+      # Ship ONLY the NSIS setup exe (the actual installer). The previous
+      # `target/release/*.exe` glob also captured the raw penpot-desktop.exe
+      # app binary, which users mistook for the installer — running it just
+      # created a data folder with no window (the bundled resources live
+      # elsewhere). The proper installer is bundle/nsis/*-setup.exe.
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: Penpot-Desktop-Installer
-          path: src-tauri/target/release/*.exe
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
           compression-level: 0
           retention-days: 30
 
@@ -294,11 +299,13 @@ jobs:
             - Minimal JRE for Java 23 (bundled via jlink)
 
             ### Installation
-            Download `Penpot-Desktop_*.exe` and run it. No prerequisites
-            required — PostgreSQL, Redis, and Java JRE are all bundled.
+            Download `Penpot Desktop_*_x64-setup.exe` and run it. No
+            prerequisites required — PostgreSQL, Redis, and Java JRE are all
+            bundled. This is the NSIS installer (Start Menu + Desktop
+            shortcuts, uninstaller); it is NOT the raw app binary.
           draft: false
           prerelease: false
           files: |
-            src-tauri/target/release/*.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

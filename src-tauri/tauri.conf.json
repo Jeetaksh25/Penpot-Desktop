@@ -18,7 +18,10 @@
   "bundle": {
     "active": true,
     "targets": "nsis",
+    "license": "MPL-2.0",
+    "licenseFile": "../penpot-source/LICENSE",
     "icon": [
+      "icons/icon.ico",
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png"
@@ -26,6 +29,8 @@
     "resources": {
       "../penpot-source/backend/target/penpot.jar": "penpot-source/backend/target/penpot.jar",
       "../tools/postgres/bin/**/*": "tools/postgres/bin/",
+      "../tools/postgres/lib/**/*": "tools/postgres/lib/",
+      "../tools/postgres/share/**/*": "tools/postgres/share/",
       "../tools/redis/Redis-8.8.0-Windows-x64-msys2/**/*": "tools/redis/Redis-8.8.0-Windows-x64-msys2/",
       "../tools/jre/**/*": "tools/jre/"
     },
@@ -34,7 +39,7 @@
       "nsis": {
         "installMode": "currentUser",
         "installerIcon": "icons/icon.ico",
-        "installerHooks": null,
+        "installerHooks": "installer.nsh",
         "languages": [
           "English"
         ],

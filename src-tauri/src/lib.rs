@@ -472,6 +472,25 @@ fn spawn_backend(root: &Path) -> Result<Child, String> {
     Ok(child)
 }
 
+/// Evaluate JavaScript on the main webview window. No-op if the window
+/// is gone (e.g. the user closed it during boot). Safe to call from the
+/// boot thread — Tauri dispatches eval onto the webview.
+fn eval_main(handle: &tauri::AppHandle, js: &str) {
+    if let Some(win) = handle.get_webview_window("main") {
+        let _ = win.eval(js);
+    }
+}
+
+/// Update the status line on the loading page so the user sees boot progress
+/// (and failures) instead of a blank, invisible background process.
+fn set_boot_status(handle: &tauri::AppHandle, msg: &str) {
+    let json = serde_json::to_string(msg).unwrap_or_else(|_| "\"\"".into());
+    let js = format!(
+        "try{{var el=document.getElementById('boot-status');if(el)el.textContent={json};}}catch(e){{}}"
+    );
+    eval_main(handle, &js);
+}
+
 /// Boot the local services, then the JVM backend, then open the window.
 /// Runs in a background thread so the Tauri setup() returns immediately.
 fn boot_backend(handle: tauri::AppHandle) {
@@ -483,6 +502,7 @@ fn boot_backend(handle: tauri::AppHandle) {
     // 2. PostgreSQL (init + create penpot db/user on first run).
     if let Err(e) = start_postgres(&root) {
         eprintln!("[penpot-desktop] PostgreSQL start failed: {}", e);
+        set_boot_status(&handle, &format!("Failed to start PostgreSQL: {e}"));
         return;
     }
 
@@ -491,6 +511,7 @@ fn boot_backend(handle: tauri::AppHandle) {
         Ok(c) => c,
         Err(e) => {
             eprintln!("[penpot-desktop] Redis start failed: {}", e);
+            set_boot_status(&handle, &format!("Failed to start Redis: {e}"));
             return;
         }
     };
@@ -505,6 +526,7 @@ fn boot_backend(handle: tauri::AppHandle) {
             if let Some(state) = handle.try_state::<BackendState>() {
                 let _ = state.jvm.lock().map(|mut g| *g = Some(child));
             }
+            set_boot_status(&handle, "Starting Penpot backend…");
             match wait_for_port("Backend", BACKEND_PORT, BACKEND_HEALTH_TIMEOUT) {
                 Ok(()) => {
                     eprintln!(
@@ -530,29 +552,22 @@ fn boot_backend(handle: tauri::AppHandle) {
 
                     let _ = handle.emit("backend-ready", ());
 
-                    // Use Tauri's built-in asset server in production;
-                    // in dev the external proxy (serve-penpot-proxy.js) handles
-                    // both static files and API proxying on port 1420.
-                    let url = if cfg!(debug_assertions) {
-                        tauri::WebviewUrl::External(
-                            format!("http://localhost:{}", FRONTEND_PORT)
-                                .parse()
-                                .unwrap(),
-                        )
-                    } else {
-                        tauri::WebviewUrl::App("index.html".into())
-                    };
-
-                    let _ = tauri::WebviewWindowBuilder::new(&handle, "main", url)
-                        .title("Penpot Desktop")
-                        .inner_size(1280.0, 800.0)
-                        .min_inner_size(900.0, 600.0)
-                        .build();
+                    // The main window was already created at loading.html in
+                    // setup(); navigate it to the real SPA now that the backend
+                    // + proxy are up. location.replace keeps history clean.
+                    set_boot_status(&handle, "Loading workspace…");
+                    eval_main(&handle, "try{location.replace('index.html')}catch(e){}");
                 }
-                Err(e) => eprintln!("[penpot-desktop] Backend failed to become ready: {}", e),
+                Err(e) => {
+                    eprintln!("[penpot-desktop] Backend failed to become ready: {}", e);
+                    set_boot_status(&handle, &format!("Backend did not become ready: {e}"));
+                }
             }
         }
-        Err(e) => eprintln!("[penpot-desktop] Failed to start backend: {}", e),
+        Err(e) => {
+            eprintln!("[penpot-desktop] Failed to start backend: {}", e);
+            set_boot_status(&handle, &format!("Failed to start backend: {e}"));
+        }
     }
 }
 
@@ -589,6 +604,27 @@ pub fn run() {
         })
         .setup(|app| {
             let handle = app.handle().clone();
+
+            // Build the main window IMMEDIATELY at a lightweight loading page
+            // so the app is never an invisible background process while the
+            // backend boots (30–180s on first run) or if boot fails. boot_backend
+            // navigates this same window to the SPA once the backend is ready,
+            // or writes a failure message into its status line.
+            let loading_url = if cfg!(debug_assertions) {
+                tauri::WebviewUrl::External(
+                    format!("http://localhost:{}/loading.html", FRONTEND_PORT)
+                        .parse()
+                        .unwrap(),
+                )
+            } else {
+                tauri::WebviewUrl::App("loading.html".into())
+            };
+            let _ = tauri::WebviewWindowBuilder::new(&handle, "main", loading_url)
+                .title("Penpot Desktop")
+                .inner_size(1280.0, 800.0)
+                .min_inner_size(900.0, 600.0)
+                .build();
+
             std::thread::spawn(move || boot_backend(handle));
             Ok(())
         })

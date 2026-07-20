@@ -208,6 +208,44 @@ async function main() {
   await fs.writeFile(configPath, configJsContent.trim() + "\n", "utf-8");
   console.log(`Wrote ${configPath}`);
 
+  // Write a branded loading page next to index.html. The Rust app opens this
+  // page immediately on launch (before the backend boots) and updates
+  // #boot-status / navigates to index.html once the backend is ready, so the
+  // app is never an invisible background process.
+  const loadingPath = path.join(path.dirname(indexPath), "loading.html");
+  const loadingHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Penpot Desktop</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #1d1f26; color: #e6e7ee;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #wrap { display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; gap: 28px; }
+  #logo { width: 84px; height: 84px; border-radius: 20px; background: #5145ff;
+    display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; }
+  #title { font-size: 20px; font-weight: 600; letter-spacing: .3px; }
+  #boot-status { font-size: 14px; color: #9b9ca8; min-height: 1.2em; text-align: center; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #2e3140; border-top-color: #5145ff;
+    border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="logo">P</div>
+    <div id="title">Penpot Desktop</div>
+    <div class="spinner"></div>
+    <div id="boot-status">Starting Penpot Desktop…</div>
+  </div>
+</body>
+</html>
+`;
+  await fs.writeFile(loadingPath, loadingHtml, "utf-8");
+  console.log(`Wrote ${loadingPath}`);
+
   // Ensure a render worker stub exists until the real Emscripten WASM build is available.
   const renderWorkerDir = path.resolve(
     __dirname,

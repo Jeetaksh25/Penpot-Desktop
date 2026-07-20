@@ -34,6 +34,43 @@ const SIZES = [
   { name: "icon.png",        size: 1024 },
 ];
 
+// Sizes embedded in icon.ico (PNG-compressed entries, supported since Vista).
+// Tauri uses icon.ico for the Windows .exe icon AND the NSIS installer icon,
+// so it must be regenerated from the branding — the scaffolced default
+// icon.ico (blue/white Tauri logo) must not survive a build.
+const ICO_SIZES = [16, 32, 48, 64, 128, 256];
+
+/// Pack an array of {size, png: Buffer} into a Windows .ico file (PNG entries).
+function buildIco(entries) {
+  const headerSize = 6;
+  const dirEntrySize = 16;
+  const dirSize = headerSize + entries.length * dirEntrySize;
+  const parts = [];
+  // ICONDIR: reserved=0, type=1 (icon), count
+  const header = Buffer.alloc(headerSize);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(entries.length, 4);
+  parts.push(header);
+  let offset = dirSize;
+  for (const { size, png } of entries) {
+    const entry = Buffer.alloc(dirEntrySize);
+    // 0 in width/height means 256.
+    entry.writeUInt8(size >= 256 ? 0 : size, 0);
+    entry.writeUInt8(size >= 256 ? 0 : size, 1);
+    entry.writeUInt8(0, 2);            // palette
+    entry.writeUInt8(0, 3);            // reserved
+    entry.writeUInt16LE(1, 4);         // planes
+    entry.writeUInt16LE(32, 6);        // bpp
+    entry.writeUInt32LE(png.length, 8);
+    entry.writeUInt32LE(offset, 12);
+    parts.push(entry);
+    offset += png.length;
+  }
+  for (const { png } of entries) parts.push(png);
+  return Buffer.concat(parts);
+}
+
 // ── Pre-read source logo ─────────────────────────────────────────────────
 // The raw Penpot logo SVG has viewBox="62.2 0 387.7 512" — the logo content
 // occupies a 387.7×512 area starting at offset (62.2, 0).
@@ -128,6 +165,27 @@ async function main() {
     const kb = (stat.size / 1024).toFixed(1);
     console.log(`Generated ${name}  (${size}x${size}, ${kb} KB)`);
   }
+
+  // Build icon.ico from the branding so the Windows .exe and the NSIS
+  // installer both show the real Penpot icon instead of the default Tauri one.
+  const icoEntries = [];
+  for (const size of ICO_SIZES) {
+    let png;
+    if (svgExists) {
+      const svg = wrappedSvg(size);
+      png = await sharp(Buffer.from(svg)).png().toBuffer();
+    } else {
+      png = await sharp(PNG_SOURCE)
+        .resize(size, size, { fit: "contain", background: BRAND_BG })
+        .png()
+        .toBuffer();
+    }
+    icoEntries.push({ size, png });
+  }
+  const icoPath = path.join(OUT_DIR, "icon.ico");
+  fs.writeFileSync(icoPath, buildIco(icoEntries));
+  const icoKb = (fs.statSync(icoPath).size / 1024).toFixed(1);
+  console.log(`Generated icon.ico  (${ICO_SIZES.join(", ")}, ${icoKb} KB)`);
 
   console.log(`\nIcons written to ${OUT_DIR}`);
 }
