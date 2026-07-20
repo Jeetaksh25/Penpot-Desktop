@@ -33,7 +33,7 @@
       "wix": null,
       "nsis": {
         "installMode": "currentUser",
-        "installerIcon": "icons/icon.png",
+        "installerIcon": "icons/icon.ico",
         "installerHooks": null,
         "languages": [
           "English"
