@@ -45,6 +45,11 @@ env:
   CARGO_TERM_COLOR: always
   JAVA_TOOL_OPTIONS: "-Xmx2048m -Xms512m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=256m"
 
+# softprops/action-gh-release needs contents: write to create the release
+# from the tag push. The default GITHUB_TOKEN is read-only without this.
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Windows Installer
