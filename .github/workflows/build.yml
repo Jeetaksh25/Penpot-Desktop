@@ -21,8 +21,10 @@
 # Notes:
 #   - The WASM render engine (render-wasm) is NOT built in CI because it
 #     requires Emscripten 4.0.6 + pinned Rust 1.91.0. The app falls back to
-#     the SVG renderer, which works fine for the desktop use-case. To enable
-#     WASM rendering, add an Emscripten setup step and run build_render_wasm.bat.
+#     the SVG renderer, which works fine for the desktop use-case. A stub
+#     shared.js is generated automatically so the ClojureScript frontend can
+#     still compile. To enable WASM rendering, add an Emscripten setup step
+#     and run build_render_wasm.bat.
 #   - PostgreSQL and Redis are bundled as portable binaries inside the
 #     installer, matching the paths expected by src-tauri/src/lib.rs.
 
@@ -110,6 +112,16 @@ jobs:
       #   tools/redis/Redis-.../    — Redis portable
       #   tools/jre/bin/java.exe    — jlink-minimized JRE (no system Java needed)
 
+      - name: Cache PostgreSQL, Redis, and JRE binaries
+        id: cache-runtime
+        uses: actions/cache@v4
+        with:
+          path: |
+            tools/postgres
+            tools/redis
+            tools/jre
+          key: runtime-binaries-2024-11-v2
+
       - name: Create minimal JRE bundle via jlink
         if: steps.cache-runtime.outputs.cache-hit != 'true'
         run: |
@@ -125,16 +137,6 @@ jobs:
           ls -lh tools/jre/bin/java.exe
           du -sh tools/jre/
         shell: bash
-
-      - name: Cache PostgreSQL, Redis, and JRE binaries
-        id: cache-runtime
-        uses: actions/cache@v4
-        with:
-          path: |
-            tools/postgres
-            tools/redis
-            tools/jre
-          key: runtime-binaries-2024-11-v2
 
       - name: Download PostgreSQL portable (16.4)
         if: steps.cache-runtime.outputs.cache-hit != 'true'
@@ -201,10 +203,13 @@ jobs:
       # (fast no-op since icons were already generated above).  Then Tauri
       # compiles the Rust side and packages the NSIS installer with Postgres,
       # Redis, backend JAR, and the pre-built frontend assets.
+      #
+      # PowerShell is used here because Git Bash shadows MSVC's link.exe with
+      # Git's own /usr/bin/link.exe, which breaks Rust release builds on Windows.
 
       - name: Build Tauri app (NSIS installer)
         run: npm run tauri build -- --bundles nsis
-        shell: bash
+        shell: pwsh
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
