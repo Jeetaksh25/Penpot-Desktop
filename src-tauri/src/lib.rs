@@ -8,6 +8,20 @@ use tauri::{Emitter, Manager};
 
 mod proxy;
 
+/// Hide the console window for a spawned process. The Tauri app uses the
+/// `windows` subsystem (GUI, no parent console), so without this every
+/// console exe we launch — postgres, redis, java, initdb, psql, … — pops its
+/// own visible cmd window that stays open for the long-lived ones. The flag
+/// is inherited by grandchildren (e.g. `postgres.exe` under `pg_ctl`).
+#[cfg(windows)]
+fn silent(cmd: &mut Command) {
+    use std::os::windows::process::CommandExt;
+    // CREATE_NO_WINDOW = 0x08000000
+    cmd.creation_flags(0x0800_0000);
+}
+#[cfg(not(windows))]
+fn silent(_cmd: &mut Command) {}
+
 /// Configuration for the embedded Penpot JVM backend + local services.
 const BACKEND_JAR: &str = "penpot-source/backend/target/penpot.jar";
 const BACKEND_PORT: u16 = 3449;
@@ -139,11 +153,13 @@ fn wait_for_port(name: &str, port: u16, timeout: Duration) -> Result<(), String>
 
 /// Run a one-shot command, inheriting stdio, returning its stdout/stderr on failure.
 fn run_cmd(program: &Path, args: &[&str]) -> Result<(), String> {
-    let output = Command::new(program)
-        .args(args)
+    let mut cmd = Command::new(program);
+    cmd.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::piped());
+    silent(&mut cmd);
+    let output = cmd
         .output()
         .map_err(|e| format!("failed to run {}: {}", program.display(), e))?;
 
@@ -169,12 +185,13 @@ fn run_cmd(program: &Path, args: &[&str]) -> Result<(), String> {
 fn pg_ctl_status(root: &Path) -> bool {
     let data_dir = root.join("data/postgres");
     let data_dir_s = data_dir.to_string_lossy().to_string();
-    Command::new(postgres_bin(root, "pg_ctl.exe"))
-        .args(["-D", data_dir_s.as_str(), "status"])
+    let mut cmd = Command::new(postgres_bin(root, "pg_ctl.exe"));
+    cmd.args(["-D", data_dir_s.as_str(), "status"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .output()
+        .stderr(Stdio::null());
+    silent(&mut cmd);
+    cmd.output()
         .map(|o| o.status.success())
         .unwrap_or(false)
 }
@@ -187,11 +204,13 @@ fn pg_ctl_status(root: &Path) -> bool {
 /// returns as soon as `pg_ctl` has launched the postmaster; we then poll the
 /// port ourselves for readiness.
 fn pg_ctl_start(root: &Path, data_dir: &str, log: &str) -> Result<(), String> {
-    let mut child = Command::new(postgres_bin(root, "pg_ctl.exe"))
-        .args(["-D", data_dir, "-l", log, "start"])
+    let mut cmd = Command::new(postgres_bin(root, "pg_ctl.exe"));
+    cmd.args(["-D", data_dir, "-l", log, "start"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(Stdio::null());
+    silent(&mut cmd);
+    let mut child = cmd
         .spawn()
         .map_err(|e| format!("failed to run pg_ctl start: {}", e))?;
     let status = child
@@ -280,13 +299,13 @@ fn start_postgres(root: &Path) -> Result<(), String> {
 
 /// Run a scalar `psql` query and return the trimmed first cell of output.
 fn pg_scalar(root: &Path, sql: &str) -> Option<String> {
-    let out = Command::new(postgres_bin(root, "psql.exe"))
-        .args(["-U", "postgres", "-h", "localhost", "-p", "5432", "-tA", "-c", sql])
+    let mut cmd = Command::new(postgres_bin(root, "psql.exe"));
+    cmd.args(["-U", "postgres", "-h", "localhost", "-p", "5432", "-tA", "-c", sql])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .ok()?;
+        .stderr(Stdio::piped());
+    silent(&mut cmd);
+    let out = cmd.output().ok()?;
     if out.status.success() {
         Some(String::from_utf8_lossy(&out.stdout).trim().to_string())
     } else {
@@ -342,8 +361,13 @@ fn start_redis(root: &Path) -> Result<Option<Child>, String> {
     std::fs::create_dir_all(&data_dir).ok();
 
     eprintln!("[penpot-desktop] Starting Redis...");
-    let mut child = Command::new(redis_bin(root, "redis-server.exe"))
-        .args([
+    let mut cmd = Command::new(redis_bin(root, "redis-server.exe"));
+    // --bind 127.0.0.1 keeps redis on loopback only, so Windows Firewall
+    // never prompts (a 0.0.0.0 bind is what triggers the "redis-server.exe
+    // wants network access" dialog) and no admin / firewall rule is needed.
+    cmd.args([
+            "--bind",
+            "127.0.0.1",
             "--port",
             port_s.as_str(),
             "--loglevel",
@@ -353,7 +377,9 @@ fn start_redis(root: &Path) -> Result<Option<Child>, String> {
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::piped());
+    silent(&mut cmd);
+    let mut child = cmd
         .spawn()
         .map_err(|e| format!("failed to start redis: {}", e))?;
 
@@ -446,6 +472,7 @@ fn spawn_backend(root: &Path) -> Result<Child, String> {
         .arg("app.main")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    silent(&mut cmd);
 
     for (key, value) in backend_env() {
         cmd.env(key, value);
@@ -500,6 +527,7 @@ fn boot_backend(handle: tauri::AppHandle) {
     let _ = std::fs::create_dir_all(root.join("data/assets"));
 
     // 2. PostgreSQL (init + create penpot db/user on first run).
+    set_boot_status(&handle, "Starting local database…");
     if let Err(e) = start_postgres(&root) {
         eprintln!("[penpot-desktop] PostgreSQL start failed: {}", e);
         set_boot_status(&handle, &format!("Failed to start PostgreSQL: {e}"));
@@ -507,6 +535,7 @@ fn boot_backend(handle: tauri::AppHandle) {
     }
 
     // 3. Redis (foreground child, killed on exit).
+    set_boot_status(&handle, "Starting local cache…");
     let redis_child = match start_redis(&root) {
         Ok(c) => c,
         Err(e) => {
