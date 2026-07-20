@@ -85,6 +85,26 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      # ── Common module Java sources ─────────────────────────────────────────
+      # app.common.UUIDv8 (penpot-source/common/src/app/common/UUIDv8.java)
+      # MUST be compiled to penpot-source/common/target/classes/ BEFORE the
+      # backend uberjar is built. common's deps.edn :paths includes
+      # "target/classes", so the backend's b/uber pulls UUIDv8.class into
+      # penpot.jar via the penpot/common {:local/root "../common"} dep — but
+      # ONLY if the .class exists at uber time. target/ is gitignored, so a
+      # fresh CI checkout has no UUIDv8.class; without this step the uberjar
+      # ships without it and the backend dies on startup with
+      # ClassNotFoundException: app.common.UUIDv8 (the frontend build needs it
+      # too, via shadow-cljs). So this runs first, before the backend jar.
+
+      - name: Compile common module Java sources (UUIDv8)
+        run: |
+          cd penpot-source/common
+          clojure -T:build compile
+          test -f target/classes/app/common/UUIDv8.class || { echo "UUIDv8.class missing after compile!"; exit 1; }
+          cd ../..
+        shell: bash
+
       # ── Backend (JVM uberjar) ─────────────────────────────────────────────
       # Built here — NOT inside Tauri's beforeBuildCommand — because compiling
       # 100+ MB of Clojure deps is slow and JVM heap-constrained.
@@ -97,6 +117,12 @@ jobs:
           cd penpot-source/backend
           clojure -T:build clean
           clojure -T:build jar
+          # Regression guard: UUIDv8.class MUST be inside the uberjar, or the
+          # backend will crash on startup with ClassNotFoundException. This
+          # catches any future reordering that builds the jar before common
+          # is compiled.
+          jar tf target/penpot.jar | grep -q "app/common/UUIDv8.class" \
+            || { echo "UUIDv8.class missing from penpot.jar!"; exit 1; }
           cd ../..
         shell: bash
 
@@ -125,7 +151,7 @@ jobs:
             tools/postgres
             tools/redis
             tools/jre
-          key: runtime-binaries-2024-11-v2
+          key: runtime-binaries-2026-07-jdknet-v3
 
       - name: Create minimal JRE bundle via jlink
         if: steps.cache-runtime.outputs.cache-hit != 'true'
@@ -133,9 +159,15 @@ jobs:
           # JAVA_HOME is already set by setup-java above.  jlink creates a
           # stripped-down runtime image (~50 MB) with just the modules the
           # Clojure/Penpot backend needs.
+          # jdk.net is REQUIRED: the Redis client (lettuce/Netty) loads
+          # jdk.net.ExtendedSocketOptions at runtime; without it the backend
+          # crashes during integrant init with NoClassDefFoundError:
+          # jdk/net/ExtendedSocketOptions and port 3449 never opens.
+          # (jdeps underreports this — reflection/SPI deps — so it's listed
+          # explicitly. Don't remove it.)
           "$JAVA_HOME/bin/jlink" \
             --module-path "$JAVA_HOME/jmods" \
-            --add-modules java.se,java.compiler,java.instrument,java.management.rmi,java.naming,java.rmi,java.scripting,java.sql.rowset,jdk.charsets,jdk.crypto.cryptoki,jdk.crypto.ec,jdk.httpserver,jdk.management.agent,jdk.naming.rmi,jdk.unsupported,jdk.xml.dom \
+            --add-modules java.se,java.compiler,java.instrument,java.management.rmi,java.naming,java.rmi,java.scripting,java.sql.rowset,jdk.charsets,jdk.crypto.cryptoki,jdk.crypto.ec,jdk.httpserver,jdk.management.agent,jdk.naming.rmi,jdk.net,jdk.unsupported,jdk.xml.dom \
             --output tools/jre \
             --strip-debug --no-header-files --no-man-pages
           echo "jlink image created:"
@@ -193,22 +225,6 @@ jobs:
 
       - name: Generate app icons
         run: node scripts/generate-icons.mjs
-        shell: bash
-
-      # ── Common module Java sources ─────────────────────────────────────────
-      # The ClojureScript frontend imports app.common.UUIDv8, a Java class
-      # (penpot-source/common/src/app/common/UUIDv8.java) that must be
-      # compiled to penpot-source/common/target/classes/ before shadow-cljs
-      # runs. That target/ dir is gitignored, so a fresh CI checkout lacks
-      # UUIDv8.class and the frontend build fails with
-      # ClassNotFoundException: app.common.UUIDv8. Compile it here.
-
-      - name: Compile common module Java sources (UUIDv8)
-        run: |
-          cd penpot-source/common
-          clojure -T:build compile
-          test -f target/classes/app/common/UUIDv8.class || { echo "UUIDv8.class missing after compile!"; exit 1; }
-          cd ../..
         shell: bash
 
       # ── plugins-runtime (linked frontend dep) ──────────────────────────────

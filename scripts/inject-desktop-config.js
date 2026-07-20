@@ -213,6 +213,12 @@ async function main() {
   // #boot-status / navigates to index.html once the backend is ready, so the
   // app is never an invisible background process.
   const loadingPath = path.join(path.dirname(indexPath), "loading.html");
+  // Inline the real Penpot logo (white-on-dark) instead of a "P" placeholder,
+  // so the loading screen shows the actual brand mark. Read at inject time so
+  // it stays in sync with data/assets/penpot-light.svg.
+  const logoSvg = await fs
+    .readFile(path.resolve(__dirname, "../data/assets/penpot-light.svg"), "utf-8")
+    .catch(() => "");
   const loadingHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -224,8 +230,8 @@ async function main() {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   #wrap { display: flex; flex-direction: column; align-items: center; justify-content: center;
     height: 100%; gap: 28px; }
-  #logo { width: 84px; height: 84px; border-radius: 20px; background: #5145ff;
-    display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; }
+  #logo { display: flex; align-items: center; justify-content: center; }
+  #logo svg { height: 84px; width: auto; display: block; }
   #title { font-size: 20px; font-weight: 600; letter-spacing: .3px; }
   #boot-status { font-size: 14px; color: #9b9ca8; min-height: 1.2em; text-align: center; }
   .spinner { width: 28px; height: 28px; border: 3px solid #2e3140; border-top-color: #5145ff;
@@ -235,7 +241,7 @@ async function main() {
 </head>
 <body>
   <div id="wrap">
-    <div id="logo">P</div>
+    <div id="logo">${logoSvg}</div>
     <div id="title">Penpot Desktop</div>
     <div class="spinner"></div>
     <div id="boot-status">Starting Penpot Desktop…</div>
