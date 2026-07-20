@@ -206,6 +206,26 @@ jobs:
           cd ../..
         shell: bash
 
+      # ── plugins-runtime (linked frontend dep) ──────────────────────────────
+      # The frontend imports @penpot/plugins-runtime, a TypeScript lib linked
+      # via pnpm (link:../plugins/libs/plugins-runtime) whose package.json
+      # points at ./dist/index.js. dist/ is gitignored and the package lives in
+      # the SEparate penpot-source/plugins pnpm workspace (own lockfile), so a
+      # fresh CI checkout has neither its node_modules nor its built dist.
+      # Without this, build:app:libs (esbuild bundling target/index.js) fails:
+      # "Could not resolve @penpot/plugins-runtime". Install the runtime
+      # package's deps (filtered — skips the angular/vitest plugin example
+      # apps) and build it here.
+
+      - name: Build @penpot/plugins-runtime
+        run: |
+          cd penpot-source/plugins
+          pnpm install --frozen-lockfile --filter @penpot/plugins-runtime...
+          pnpm build:runtime
+          test -f libs/plugins-runtime/dist/index.js || { echo "plugins-runtime dist/index.js missing!"; exit 1; }
+          cd ../..
+        shell: bash
+
       # ── Frontend (ClojureScript) build ────────────────────────────────────
       # Built as an explicit step here (not inside beforeBuildCommand) so CI
       # output is transparent and failures are easy to diagnose.
