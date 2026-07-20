@@ -190,6 +190,22 @@ jobs:
         run: node scripts/generate-icons.mjs
         shell: bash
 
+      # ── Common module Java sources ─────────────────────────────────────────
+      # The ClojureScript frontend imports app.common.UUIDv8, a Java class
+      # (penpot-source/common/src/app/common/UUIDv8.java) that must be
+      # compiled to penpot-source/common/target/classes/ before shadow-cljs
+      # runs. That target/ dir is gitignored, so a fresh CI checkout lacks
+      # UUIDv8.class and the frontend build fails with
+      # ClassNotFoundException: app.common.UUIDv8. Compile it here.
+
+      - name: Compile common module Java sources (UUIDv8)
+        run: |
+          cd penpot-source/common
+          clojure -T:build compile
+          test -f target/classes/app/common/UUIDv8.class || { echo "UUIDv8.class missing after compile!"; exit 1; }
+          cd ../..
+        shell: bash
+
       # ── Frontend (ClojureScript) build ────────────────────────────────────
       # Built as an explicit step here (not inside beforeBuildCommand) so CI
       # output is transparent and failures are easy to diagnose.
