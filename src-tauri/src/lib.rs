@@ -652,11 +652,22 @@ pub fn run() {
             } else {
                 tauri::WebviewUrl::App("loading.html".into())
             };
-            let _ = tauri::WebviewWindowBuilder::new(&handle, "main", loading_url)
+            let main_window = tauri::WebviewWindowBuilder::new(&handle, "main", loading_url)
                 .title("Penpot Desktop")
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(900.0, 600.0)
                 .build();
+
+            // Debug release: auto-open DevTools in the packaged build so the
+            // webview Console + Network tabs are visible and the user can paste
+            // the real error (the installed app otherwise has no inspector).
+            // Remove once the boot/blank-screen issue is resolved.
+            #[cfg(not(debug_assertions))]
+            {
+                if let Ok(win) = &main_window {
+                    win.open_devtools();
+                }
+            }
 
             std::thread::spawn(move || boot_backend(handle));
             Ok(())

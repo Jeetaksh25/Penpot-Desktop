@@ -234,6 +234,7 @@ async function main() {
   #logo svg { height: 84px; width: auto; display: block; }
   #title { font-size: 20px; font-weight: 600; letter-spacing: .3px; }
   #boot-status { font-size: 14px; color: #9b9ca8; min-height: 1.2em; text-align: center; }
+  #boot-note { font-size: 12px; color: #6f7080; max-width: 380px; text-align: center; line-height: 1.4; margin-top: 6px; }
   .spinner { width: 28px; height: 28px; border: 3px solid #2e3140; border-top-color: #5145ff;
     border-radius: 50%; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -245,6 +246,7 @@ async function main() {
     <div id="title">Penpot Desktop</div>
     <div class="spinner"></div>
     <div id="boot-status">Starting Penpot Desktop…</div>
+    <div id="boot-note">First launch takes a little longer while the local database and backend start up — please wait.</div>
   </div>
 </body>
 </html>
