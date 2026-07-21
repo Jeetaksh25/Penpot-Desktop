@@ -418,13 +418,32 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
     let cors = cors_headers(header(&headers, "origin"));
 
     // ── CORS preflight ────────────────────────────────────────────────────
+    // Echo the client's `Access-Control-Request-Headers` verbatim. The
+    // Penpot SPA (served from http://tauri.localhost in the packaged build)
+    // makes credentialed cross-origin API calls to this proxy on :1420 and
+    // sends several custom headers — accept, x-external-session-id,
+    // x-session-id, x-event-origin, x-client, x-frontend-version, content-type.
+    // A fixed allow-list inevitably misses one and the browser blocks the
+    // preflight, so every API call fails with net::ERR_FAILED → blank screen
+    // + "Something wrong has happened". Echoing whatever was requested admits
+    // them all. (Dev is same-origin on :1420, so no preflight is ever sent —
+    // this only matters in the packaged build.)
     if method == "OPTIONS" {
+        let allow_headers = header(&headers, "access-control-request-headers")
+            .map(|h| h.to_string())
+            .unwrap_or_else(|| {
+                "content-type, authorization, cookie, accept, x-client, x-frontend-version, x-session-id, x-external-session-id, x-event-origin".to_string()
+            });
+        let origin = header(&headers, "origin").unwrap_or("*");
         let response = format!(
             "HTTP/1.1 204 No Content\r\n\
              Content-Length: 0\r\n\
-             Connection: close\r\n\
-             {}\r\n",
-            cors
+             Access-Control-Allow-Origin: {origin}\r\n\
+             Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS\r\n\
+             Access-Control-Allow-Headers: {allow_headers}\r\n\
+             Access-Control-Allow-Credentials: true\r\n\
+             Access-Control-Max-Age: 86400\r\n\
+             Connection: close\r\n\r\n"
         );
         let _ = stream.write_all(response.as_bytes());
         let _ = stream.flush();
