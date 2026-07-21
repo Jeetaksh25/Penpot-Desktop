@@ -2179,7 +2179,7 @@ dependencies = [
 
 [[package]]
 name = "penpot-desktop"
-version = "1.0.15"
+version = "1.0.18"
 dependencies = [
  "rusqlite",
  "serde",

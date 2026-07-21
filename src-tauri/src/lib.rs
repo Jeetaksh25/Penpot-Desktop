@@ -434,7 +434,11 @@ fn backend_env() -> Vec<(&'static str, String)> {
         ),
         (
             "PENPOT_ALLOWED_ORIGINS",
-            "http://localhost:1420 http://localhost:3449".into(),
+            // http://tauri.localhost is the Tauri WebView2 asset origin in the
+            // packaged build — the SPA runs there and makes cross-origin API/WS
+            // calls to this process on :1420. Without it the backend rejects the
+            // WebSocket upgrade's Origin and Sente never connects.
+            "http://localhost:1420 http://localhost:3449 http://tauri.localhost".into(),
         ),
         ("PENPOT_TELEMETRY_ENABLED", "false".into()),
     ]

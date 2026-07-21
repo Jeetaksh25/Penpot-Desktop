@@ -12,8 +12,8 @@
 // Logout is intercepted and returns a no-op success response so the
 // frontend's "log out" action doesn't delete the server-side session.
 
-use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
+use std::io::{self, BufRead, BufReader, Read, Write};
+use std::net::{TcpListener, TcpStream, Shutdown};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -22,18 +22,47 @@ use std::time::Duration;
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 
-/// CORS headers added to every proxied response so the Tauri WebView2
-/// (origin https://tauri.localhost) can make cross-origin fetch() calls
-/// to http://localhost:1420 where this proxy listens.
-const CORS_HEADERS: &str = "\
-    Access-Control-Allow-Origin: *\r\n\
-    Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS\r\n\
-    Access-Control-Allow-Headers: content-type, authorization, cookie, x-client, x-frontend-version\r\n\
-    Access-Control-Allow-Credentials: true\r\n";
+/// Build CORS headers that echo the request's `Origin`. The SPA is served by
+/// Tauri's embedded asset server at `http://tauri.localhost` but makes its API
+/// calls — with `credentials: "include"` — to this proxy at `http://localhost:1420`,
+/// i.e. a cross-origin, credentialed request. The CORS spec forbids
+/// `Access-Control-Allow-Origin: *` together with `Access-Control-Allow-Credentials:
+/// true`; the browser rejects the response and the fetch fails, which is exactly
+/// what produced the "Something wrong has happened" toast + blank screen in the
+/// packaged build. (Dev is same-origin on :1420, so CORS never applied there and
+/// dev kept working.) Echoing the request Origin satisfies the credentialed-
+/// request rule. When there is no Origin header (same-origin / non-browser) we
+/// fall back to `*`, which is valid because no credentialed cross-origin request
+/// is involved.
+fn cors_headers(origin: Option<&str>) -> String {
+    let allow = origin.unwrap_or("*");
+    format!(
+        "Access-Control-Allow-Origin: {}\r\n\
+         Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS\r\n\
+         Access-Control-Allow-Headers: content-type, authorization, cookie, x-client, x-frontend-version\r\n\
+         Access-Control-Allow-Credentials: true\r\n",
+        allow
+    )
+}
+
+/// Case-insensitive lookup of a request header's value. Returns a slice into
+/// the original header string, so the lifetime ties to `headers`.
+fn header<'a>(headers: &'a [String], name: &str) -> Option<&'a str> {
+    let prefix = format!("{}:", name.to_lowercase());
+    for h in headers {
+        if h.to_lowercase().starts_with(&prefix) {
+            return h.splitn(2, ':').nth(1).map(|v| v.trim());
+        }
+    }
+    None
+}
 
 // ── Proxy routes ────────────────────────────────────────────────────────────
 
-const PROXY_PREFIXES: &[&str] = &["/api/", "/internal/", "/ws/"];
+// /assets/ is proxied (not served as a static file) so backend-hosted asset
+// images (/assets/by-id/...) reach the JVM with the right Content-Type —
+// matching the Node dev proxy. Without it the SPA-fallback would 404 them.
+const PROXY_PREFIXES: &[&str] = &["/api/", "/internal/", "/ws/", "/assets/"];
 const BACKEND_HOST: &str = "127.0.0.1";
 const BACKEND_PORT: u16 = 3449;
 
@@ -118,7 +147,7 @@ fn read_body(reader: &mut dyn BufRead, headers: &[String]) -> Vec<u8> {
     body
 }
 
-fn send_response(stream: &mut TcpStream, status: &str, content_type: &str, body: &[u8]) {
+fn send_response(stream: &mut TcpStream, status: &str, content_type: &str, body: &[u8], cors: &str) {
     let response = format!(
         "HTTP/1.1 {}\r\n\
          Content-Type: {}\r\n\
@@ -126,7 +155,7 @@ fn send_response(stream: &mut TcpStream, status: &str, content_type: &str, body:
          Cache-Control: no-store\r\n\
          Connection: close\r\n\
          {}\r\n",
-        status, content_type, body.len(), CORS_HEADERS
+        status, content_type, body.len(), cors
     );
     let _ = stream.write_all(response.as_bytes());
     if !body.is_empty() {
@@ -318,12 +347,19 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
     let (method, path) = match parse_request_line(request_line) {
         Some(p) => p,
         None => {
-            send_response(&mut stream, "400 Bad Request", "text/plain", b"Bad request");
+            send_response(
+                &mut stream,
+                "400 Bad Request",
+                "text/plain",
+                b"Bad request",
+                &cors_headers(None),
+            );
             return;
         }
     };
 
     let headers = read_headers(&mut reader);
+    let cors = cors_headers(header(&headers, "origin"));
 
     // ── CORS preflight ────────────────────────────────────────────────────
     if method == "OPTIONS" {
@@ -332,7 +368,7 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
              Content-Length: 0\r\n\
              Connection: close\r\n\
              {}\r\n",
-            CORS_HEADERS
+            cors
         );
         let _ = stream.write_all(response.as_bytes());
         let _ = stream.flush();
@@ -340,16 +376,34 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
     }
 
     // ── WebSocket ─────────────────────────────────────────────────────────
+    // Proxy the upgrade to the JVM backend (raw byte relay after the 101
+    // handshake). The SPA opens ws://localhost:1420/ws/notifications for its
+    // Sente realtime channel; the previous 501 here left that channel dead in
+    // the packaged build (dev's Node proxy already relays WS). The webview
+    // origin (http://tauri.localhost) is allowed on the backend via
+    // PENPOT_ALLOWED_ORIGINS in lib.rs.
     let is_websocket = headers
         .iter()
         .any(|h| h.to_lowercase().contains("upgrade:") && h.to_lowercase().contains("websocket"));
     if is_websocket {
-        send_response(
-            &mut stream,
-            "501 Not Implemented",
-            "text/plain",
-            b"WebSocket proxy not available",
-        );
+        drop(reader); // release the borrow on `stream` so we can move it
+        handle_websocket_upgrade(stream, method, path, &headers);
+        return;
+    }
+
+    // Strip query parameters before matching routes below.
+    let clean_path = path.split('?').next().unwrap_or(path);
+
+    // ── Webview diagnostic channel ────────────────────────────────────────
+    // The page POSTs its window.onerror / unhandledrejection / console.error
+    // messages here (script injected by inject-desktop-config.js). Surface them
+    // on stderr so production webview errors are visible when the app is run
+    // from a terminal — the installed app has no DevTools. Mirrors the Node
+    // dev proxy; without this the POST fell through to the SPA fallback.
+    if method == "POST" && clean_path == "/__desktop_log" {
+        let body = read_body(&mut reader, &headers);
+        eprintln!("[webview] {}", String::from_utf8_lossy(&body));
+        send_response(&mut stream, "200 OK", "text/plain", b"ok", &cors);
         return;
     }
 
@@ -358,20 +412,17 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
     // frontend's logout request reached the backend it would destroy the
     // session and bounce the user back to the login screen. Instead we
     // intercept it and return an empty success.
-    // Strip query parameters before matching so cache-busting params don't
-    // bypass the intercept.
-    let clean_path = path.split('?').next().unwrap_or(path);
     if (clean_path == "/api/main/methods/logout" || clean_path == "/api/rpc/command/logout")
         && method != "OPTIONS"
     {
-        send_response(&mut stream, "200 OK", "application/transit+json", b"[\"^ \"]");
+        send_response(&mut stream, "200 OK", "application/transit+json", b"[\"^ \"]", &cors);
         return;
     }
 
     // ── API proxy ─────────────────────────────────────────────────────────
     if PROXY_PREFIXES.iter().any(|p| path.starts_with(p)) {
         let body = read_body(&mut reader, &headers);
-        proxy_request(&mut stream, method, path, &headers, &body);
+        proxy_request(&mut stream, method, path, &headers, &body, &cors);
         return;
     }
 
@@ -387,7 +438,7 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
              Cache-Control: no-store\r\n\
              Connection: close\r\n\
              {}\r\n",
-            ct, data.len(), CORS_HEADERS
+            ct, data.len(), cors
         );
         let _ = stream.write_all(response.as_bytes());
         let _ = stream.write_all(&data);
@@ -404,8 +455,7 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
                      Cache-Control: no-store\r\n\
                      Connection: close\r\n\
                      {}\r\n",
-                    data.len(),
-                    CORS_HEADERS
+                    data.len(), cors
                 );
                 let _ = stream.write_all(response.as_bytes());
                 let _ = stream.write_all(&data);
@@ -417,6 +467,7 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
                     "404 Not Found",
                     "text/plain",
                     b"index.html not found",
+                    &cors,
                 );
             }
         }
@@ -463,6 +514,7 @@ fn proxy_request(
     path: &str,
     headers: &[String],
     body: &[u8],
+    cors: &str,
 ) {
     let backend = format!("{}:{}", BACKEND_HOST, BACKEND_PORT);
     let mut backend_stream = match TcpStream::connect(&backend) {
@@ -473,6 +525,7 @@ fn proxy_request(
                 "502 Bad Gateway",
                 "text/plain",
                 &format!("Backend unreachable: {}", e).into_bytes(),
+                cors,
             );
             return;
         }
@@ -522,6 +575,7 @@ fn proxy_request(
             "502 Bad Gateway",
             "text/plain",
             &format!("Backend write error: {}", e).into_bytes(),
+            cors,
         );
         return;
     }
@@ -532,6 +586,7 @@ fn proxy_request(
                 "502 Bad Gateway",
                 "text/plain",
                 &format!("Backend write error: {}", e).into_bytes(),
+                cors,
             );
             return;
         }
@@ -542,7 +597,13 @@ fn proxy_request(
     let mut backend_reader = BufReader::new(&mut backend_stream);
     let mut response_line = String::new();
     if backend_reader.read_line(&mut response_line).unwrap_or(0) == 0 {
-        send_response(stream, "502 Bad Gateway", "text/plain", b"Empty backend response");
+        send_response(
+            stream,
+            "502 Bad Gateway",
+            "text/plain",
+            b"Empty backend response",
+            cors,
+        );
         return;
     }
 
@@ -561,7 +622,7 @@ fn proxy_request(
             response.push_str("\r\n");
         }
     }
-    response.push_str(CORS_HEADERS);
+    response.push_str(cors);
     response.push_str(&format!("Content-Length: {}\r\n", response_body.len()));
     response.push_str("Connection: close\r\n\r\n");
 
@@ -573,6 +634,109 @@ fn proxy_request(
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
+
+/// Proxy a WebSocket upgrade to the JVM backend. After forwarding the upgrade
+/// request and the backend's 101 response, the connection is a raw byte relay
+/// in both directions — WebSocket frames pass through opaquely, so no framing
+/// logic is needed. The auto-login session cookie is injected on the upgrade,
+/// matching how `proxy_request` injects it on HTTP requests.
+fn handle_websocket_upgrade(
+    mut client: TcpStream,
+    method: &str,
+    path: &str,
+    headers: &[String],
+) {
+    let mut backend = match TcpStream::connect((BACKEND_HOST, BACKEND_PORT)) {
+        Ok(s) => s,
+        Err(e) => {
+            let cors = cors_headers(header(headers, "origin"));
+            send_response(
+                &mut client,
+                "502 Bad Gateway",
+                "text/plain",
+                &format!("Backend unreachable: {}", e).into_bytes(),
+                &cors,
+            );
+            return;
+        }
+    };
+
+    // Forward the original upgrade request. Rewrite Host, drop the client's
+    // Cookie (we inject the auto-login session), and pass everything else —
+    // Upgrade / Connection / Sec-WebSocket-* / Origin — through unchanged so
+    // the backend's handshake succeeds.
+    let mut req = format!("{} {} HTTP/1.1\r\n", method, path);
+    let mut has_host = false;
+    for h in headers {
+        let lower = h.to_lowercase();
+        if lower.starts_with("host:") {
+            has_host = true;
+            req.push_str(&format!("Host: {}:{}\r\n", BACKEND_HOST, BACKEND_PORT));
+        } else if lower.starts_with("cookie:") {
+            // replaced by the injected session cookie below
+        } else {
+            req.push_str(h);
+            req.push_str("\r\n");
+        }
+    }
+    if !has_host {
+        req.push_str(&format!("Host: {}:{}\r\n", BACKEND_HOST, BACKEND_PORT));
+    }
+    if let Ok(guard) = AUTO_LOGIN_COOKIE.lock() {
+        if let Some(cookie) = guard.as_ref() {
+            req.push_str(&format!("Cookie: {}={}\r\n", SESSION_COOKIE_NAME, cookie));
+        }
+    }
+    req.push_str("\r\n");
+
+    if backend.write_all(req.as_bytes()).is_err() {
+        return;
+    }
+    let _ = backend.flush();
+
+    // Read the backend's 101 handshake (status line + headers) and forward it
+    // verbatim to the client. Stop at the blank line that ends the headers.
+    let mut br = BufReader::new(&mut backend);
+    let mut line = String::new();
+    loop {
+        line.clear();
+        if br.read_line(&mut line).unwrap_or(0) == 0 {
+            return;
+        }
+        if client.write_all(line.as_bytes()).is_err() {
+            return;
+        }
+        if line == "\r\n" || line == "\n" {
+            break;
+        }
+    }
+    // The BufReader may have pulled the first WS frame past the headers; flush
+    // any such buffered bytes to the client before switching to a raw relay.
+    let leftover = br.buffer().to_vec();
+    if !leftover.is_empty() {
+        let _ = client.write_all(&leftover);
+    }
+    let _ = client.flush();
+    drop(br); // release the borrow on `backend`
+
+    // Bidirectional raw relay. Each direction copies until its read side closes;
+    // shutting down the other end unblocks the peer's copy.
+    let mut client_rd = match client.try_clone() {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    let mut backend_rd = match backend.try_clone() {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    let relay = thread::spawn(move || {
+        let _ = io::copy(&mut client_rd, &mut backend);
+        let _ = backend.shutdown(Shutdown::Both);
+    });
+    let _ = io::copy(&mut backend_rd, &mut client);
+    let _ = client.shutdown(Shutdown::Both);
+    let _ = relay.join();
+}
 
 /// Start the proxy server in a background thread.
 ///
