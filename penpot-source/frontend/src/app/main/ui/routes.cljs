@@ -127,7 +127,18 @@
   (let [location        (.-location js/document)
         [base-path qs]  (str/split path "?")
         location-path   (dm/str (.-origin location) (.-pathname location))
-        valid-location? (= location-path (dm/str cf/public-uri))
+        ;; In the packaged desktop build the SPA is served by Tauri's asset
+        ;; server at http://tauri.localhost, while `cf/public-uri` is the
+        ;; API/WS origin (http://localhost:1420, set by the desktop injector
+        ;; so API calls reach the local backend proxy). The two origins differ
+        ;; by design, so this origin-equality guard — which exists to stop the
+        ;; SaaS app from being embedded on a foreign origin — would always
+        ;; fail in the desktop build and emit :not-found right after auto-login
+        ;; (the "Oops! 404 / Go to your Penpot" page). The guard is irrelevant
+        ;; for a single-user desktop app (there is no foreign origin to be
+        ;; embedded on), so accept any location when not running the SaaS build.
+        valid-location? (or (= location-path (dm/str cf/public-uri))
+                            (not cf/saas?))
         match           (rt/match router path)
         empty-path?     (or (= base-path "") (= base-path "/"))
         query-params    (u/query-string->map qs)]

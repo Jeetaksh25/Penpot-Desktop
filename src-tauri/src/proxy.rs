@@ -754,6 +754,15 @@ fn handle_websocket_upgrade(
         }
     };
 
+    // The listener sets a 30s read/write timeout on every accepted stream so a
+    // stuck HTTP request can't hold a thread forever. A WebSocket is long-lived
+    // and legitimately idle for >30s between frames, so that timeout would kill
+    // the Sente channel mid-session. Clear it on both ends before the raw relay.
+    let _ = client.set_read_timeout(None);
+    let _ = client.set_write_timeout(None);
+    let _ = backend.set_read_timeout(None);
+    let _ = backend.set_write_timeout(None);
+
     // Forward the original upgrade request. Rewrite Host, drop the client's
     // Cookie (we inject the auto-login session), and pass everything else —
     // Upgrade / Connection / Sec-WebSocket-* / Origin — through unchanged so
