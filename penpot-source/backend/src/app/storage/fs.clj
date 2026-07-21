@@ -19,7 +19,8 @@
    java.io.InputStream
    java.io.OutputStream
    java.nio.file.Files
-   java.nio.file.Path))
+   java.nio.file.Path
+   java.nio.file.attribute.FileAttribute))
 
 (set! *warn-on-reflection* true)
 
@@ -61,8 +62,9 @@
         path (fs/path (impl/id->path id))
         full (fs/normalize (fs/join base path))]
 
-    (when-not (fs/exists? (fs/parent full))
-      (fs/create-dir (fs/parent full)))
+    (let [parent (fs/parent full)]
+      (when-not (fs/exists? parent)
+        (Files/createDirectories parent (into-array FileAttribute []))))
 
     (with-open [^InputStream src (io/input-stream content)]
       (with-open [^OutputStream dst (io/output-stream full)]

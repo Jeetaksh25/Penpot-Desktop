@@ -411,8 +411,9 @@ fn backend_env(root: &Path) -> Vec<(&'static str, String)> {
     // becomes `D:\…\data\assets` on the first pass and gets the cwd prepended
     // AGAIN on the second → the doubled
     // `D:\Apps\Penpot Desktop\D:\Apps\Penpot Desktop\data\assets\…` that broke
-    // asset serving and template import. The backend jar is prebuilt (can't
-    // patch the Clojure), so this is fixed env-only: pass a drive-rooted,
+    // asset serving and template import. We now patch app.storage.fs to avoid
+    // the posix-only datoteka.fs/create-dir call, but the normalize doubling is
+    // still present, so this remains fixed env-only: pass a drive-rooted,
     // NO-drive-letter path (`\Apps\Penpot Desktop\data\assets`). Such a path
     // starts with `\` so fs/normalize leaves it untouched at every stage (no
     // doubling), and Java resolves `\…` against the backend CWD's current drive
