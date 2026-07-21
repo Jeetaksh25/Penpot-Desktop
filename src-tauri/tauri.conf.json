@@ -33,7 +33,8 @@
       "../tools/postgres/lib": "tools/postgres/lib/",
       "../tools/postgres/share": "tools/postgres/share/",
       "../tools/redis/Redis-8.8.0-Windows-x64-msys2": "tools/redis/Redis-8.8.0-Windows-x64-msys2/",
-      "../tools/jre": "tools/jre/"
+      "../tools/jre": "tools/jre/",
+      "../data/builtin-templates": "builtin-templates/"
     },
     "windows": {
       "wix": null,

@@ -501,9 +501,48 @@ fn spawn_backend(root: &Path) -> Result<Child, String> {
         .arg("-jar")
         .arg(&jar)
         .arg("-m")
-        .arg("app.main")
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+        .arg("app.main");
+
+    // In the packaged build the app uses the windows GUI subsystem (no
+    // console), so eprintln is lost and the JVM's exception stacktraces — the
+    // actual cause of any backend 500 / template-import / asset-write failure
+    // — would be invisible. Redirect backend stdout+stderr to
+    // <root>/data/backend.log (truncated each boot so the file reflects the
+    // current run; append mode keeps concurrent stdout/stderr writes atomic).
+    // The user can share this file to root-cause backend errors without
+    // DevTools. Dev keeps the piped+eprintln path so logs still appear in the
+    // `npm run dev` terminal.
+    let log_path = root.join("data").join("backend.log");
+    if cfg!(debug_assertions) {
+        cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
+    } else {
+        let _ = std::fs::create_dir_all(root.join("data"));
+        let _ = std::fs::remove_file(&log_path); // fresh log each boot
+        match std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+        {
+            Ok(log_file) => match log_file.try_clone() {
+                Ok(log_err) => {
+                    cmd.stdout(Stdio::from(log_file));
+                    cmd.stderr(Stdio::from(log_err));
+                }
+                Err(_) => {
+                    cmd.stdout(Stdio::from(log_file));
+                    cmd.stderr(Stdio::null());
+                }
+            },
+            Err(e) => {
+                eprintln!(
+                    "[penpot-desktop] Could not open backend log {}: {}",
+                    log_path.display(),
+                    e
+                );
+                cmd.stdout(Stdio::null()).stderr(Stdio::null());
+            }
+        }
+    }
     silent(&mut cmd);
 
     for (key, value) in backend_env(root) {
@@ -512,20 +551,29 @@ fn spawn_backend(root: &Path) -> Result<Child, String> {
 
     let mut child = cmd.spawn().map_err(|e| format!("Failed to start backend: {}", e))?;
 
-    // Drain stdout/stderr so they never fill the pipe buffer and block the JVM.
-    if let Some(stdout) = child.stdout.take() {
-        std::thread::spawn(move || {
-            for line in BufReader::new(stdout).lines().flatten() {
-                eprintln!("[penpot-backend] {}", line);
-            }
-        });
-    }
-    if let Some(stderr) = child.stderr.take() {
-        std::thread::spawn(move || {
-            for line in BufReader::new(stderr).lines().flatten() {
-                eprintln!("[penpot-backend] {}", line);
-            }
-        });
+    if cfg!(debug_assertions) {
+        // Dev: drain piped stdout/stderr to the terminal so backend logs are
+        // visible in the `npm run dev` console. (Release writes to backend.log.)
+        if let Some(stdout) = child.stdout.take() {
+            std::thread::spawn(move || {
+                for line in BufReader::new(stdout).lines().flatten() {
+                    eprintln!("[penpot-backend] {}", line);
+                }
+            });
+        }
+        if let Some(stderr) = child.stderr.take() {
+            std::thread::spawn(move || {
+                for line in BufReader::new(stderr).lines().flatten() {
+                    eprintln!("[penpot-backend] {}", line);
+                }
+            });
+        }
+    } else {
+        eprintln!(
+            "[penpot-desktop] JVM backend started (PID {}); log: {}",
+            child.id(),
+            log_path.display()
+        );
     }
 
     Ok(child)

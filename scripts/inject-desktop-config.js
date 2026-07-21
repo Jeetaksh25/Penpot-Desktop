@@ -261,7 +261,15 @@ async function main() {
   await fs.writeFile(loadingPath, loadingHtml, "utf-8");
   console.log(`Wrote ${loadingPath}`);
 
-  // Ensure a render worker stub exists until the real Emscripten WASM build is available.
+  // Ensure a render.js exists so the worker's importScripts('./render.js')
+  // (shadow-cljs.edn :prepend-js) does not 404. The real render.js is an
+  // Emscripten module produced by ensure-wasm-artifacts.js; this only writes
+  // a fallback if that artifact is somehow absent. The fallback is a TRUE
+  // no-op (no message listener, no postMessage, no globals): with render-wasm
+  // disabled via penpotFlags the worker uses the SVG renderer and never
+  // touches WasmModule. (A previous stub echoed raw JS objects back on every
+  // worker message -> host transit-decode -> JSON.parse("[object Object]")
+  // -> a continuous "Something wrong has happened" toast. The no-op avoids it.)
   const renderWorkerDir = path.resolve(
     __dirname,
     "../penpot-source/frontend/resources/public/js/worker",
@@ -273,14 +281,13 @@ async function main() {
     await fs.mkdir(renderWorkerDir, { recursive: true });
     await fs.writeFile(
       renderWorkerPath,
-      `// Stub render worker for desktop builds without Emscripten WASM.\n` +
-        `// The SVG renderer is used instead, so this worker receives no messages.\n` +
-        `self.addEventListener("message", function (event) {\n` +
-        `  self.postMessage({ error: "render-wasm not built", payload: event.data });\n` +
-        `});\n`,
+      `// No-op render.js stub for desktop builds without Emscripten WASM.\n` +
+        `// The worker imports this via importScripts; with render-wasm disabled\n` +
+        `// (penpotFlags) the SVG renderer is used and WasmModule is never used.\n` +
+        `// Intentionally no message listener, no postMessage, no globals.\n`,
       "utf-8",
     );
-    console.log(`Wrote stub ${renderWorkerPath}`);
+    console.log(`Wrote no-op stub ${renderWorkerPath}`);
   }
 }
 

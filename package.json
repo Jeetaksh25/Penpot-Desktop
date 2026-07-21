@@ -6,7 +6,7 @@
   "scripts": {
     "tauri": "tauri",
     "serve:penpot": "node scripts/inject-desktop-config.js && node scripts/serve-penpot-proxy.js",
-    "build:penpot": "node scripts/ensure-wasm-artifacts.js && cd penpot-source/frontend && cross-env PATH=\"$USERPROFILE/deps.clj:$PATH\" JAVA_TOOL_OPTIONS=\"-Xmx2048m -Xms512m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=256m\" pnpm run build:app:assets && pnpm run build:app && cd ../.. && node scripts/inject-desktop-config.js",
+    "build:penpot": "node scripts/ensure-wasm-artifacts.js && node scripts/fetch-templates.mjs && cd penpot-source/frontend && cross-env PATH=\"$USERPROFILE/deps.clj:$PATH\" JAVA_TOOL_OPTIONS=\"-Xmx2048m -Xms512m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=256m\" pnpm run build:app:assets && pnpm run build:app && cd ../.. && node scripts/inject-desktop-config.js",
     "dev": "npm run serve:penpot & npm run tauri dev",
     "build": "npm run build:penpot && npm run tauri build"
   },

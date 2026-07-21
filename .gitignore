@@ -28,6 +28,7 @@
 /tools/data
 data/postgres
 data/redis
+data/builtin-templates
 *.db
 
 # ── Tooling binaries (downloaded in CI) ───────────────────────────────────

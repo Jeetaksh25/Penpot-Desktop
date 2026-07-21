@@ -197,13 +197,31 @@ async function createStubs(missing) {
   if (needsWorker) {
     const dest = requiredArtifacts.find((a) => a.key === "worker-render-js").dest;
     await fs.mkdir(path.dirname(dest), { recursive: true });
+    // ponytail: a TRUE no-op. The real render.js is an Emscripten module
+    // (esbuild --global-name=WasmModule) that the worker imports via
+    // importScripts('./render.js') (shadow-cljs.edn :prepend-js). With no
+    // Emscripten build available (CI), this no-op stands in so importScripts
+    // does not 404. It deliberately registers NO message listener and defines
+    // NO globals: the worker's own on-message (app.worker) handles every
+    // message, and render-wasm is disabled via penpotFlags
+    // (disable-feature-render-wasm + disable-render-switch), so the SVG
+    // renderer is used and js/globalThis "WasmModule" is never dereferenced
+    // (app.worker.thumbnails/wasm-module is a delay only realized on the
+    // :thumbnails/generate-for-file-wasm path, which the host never sends
+    // when render-wasm is off).
+    //
+    // A prior version of this stub added `self.addEventListener("message",
+    // ... self.postMessage({error, payload: event.data})` — that echoed a
+    // raw JS object back on EVERY worker message, which the host ran through
+    // app.common.transit/decode-str -> JSON.parse("[object Object]") -> a
+    // continuous "Something wrong has happened" toast (visible whenever a
+    // draft was opened/edited). This no-op avoids that entirely.
     await fs.writeFile(
       dest,
-      `// Stub render worker for desktop builds without Emscripten WASM.\n` +
-        `// The SVG renderer is used instead, so this worker receives no messages.\n` +
-        `self.addEventListener("message", function (event) {\n` +
-        `  self.postMessage({ error: "render-wasm not built", payload: event.data });\n` +
-        `});\n`,
+      `// No-op render.js stub for desktop builds without Emscripten WASM.\n` +
+        `// The worker imports this via importScripts; with render-wasm disabled\n` +
+        `// (penpotFlags) the SVG renderer is used and WasmModule is never used.\n` +
+        `// Intentionally no message listener, no postMessage, no globals.\n`,
       "utf-8",
     );
     console.log(`Stubbed ${path.relative(repoRoot, dest)}`);
