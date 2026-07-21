@@ -130,14 +130,30 @@ fn read_headers(reader: &mut dyn BufRead) -> Vec<String> {
 }
 
 fn read_body(reader: &mut dyn BufRead, headers: &[String]) -> Vec<u8> {
+    // The Penpot backend emits its transit responses with
+    // `Transfer-Encoding: chunked` and NO Content-Length. A reader that only
+    // handles Content-Length returns an empty body here — which was the real
+    // blank-screen root cause: the `prepare-register-profile` token lived in a
+    // chunked body the proxy never decoded, so `extract_token` saw "" and the
+    // auto-login session was never established (and `proxy_request` forwarded
+    // every /api/ response with Content-Length: 0, blanking the SPA). Dev's
+    // Node proxy decodes chunked natively, which is why dev always worked.
+    let mut chunked = false;
     let mut len: usize = 0;
     for h in headers {
-        if h.to_lowercase().starts_with("content-length:") {
+        let lower = h.to_lowercase();
+        if lower.starts_with("transfer-encoding:") {
+            if lower.contains("chunked") {
+                chunked = true;
+            }
+        } else if lower.starts_with("content-length:") {
             if let Ok(v) = h.split(':').nth(1).map(|s| s.trim().parse::<usize>()).unwrap_or(Ok(0)) {
                 len = v;
             }
-            break;
         }
+    }
+    if chunked {
+        return read_chunked(reader);
     }
     if len == 0 {
         return Vec::new();
@@ -145,6 +161,46 @@ fn read_body(reader: &mut dyn BufRead, headers: &[String]) -> Vec<u8> {
     let mut body = vec![0u8; len];
     let _ = reader.read_exact(&mut body);
     body
+}
+
+/// Decode an HTTP/1.1 chunked transfer-encoded body. Each chunk is
+/// `<hex-size>[;ext]\r\n<data>\r\n`; a terminating `0\r\n` chunk ends the body,
+/// followed by optional trailers and a final blank line.
+fn read_chunked(reader: &mut dyn BufRead) -> Vec<u8> {
+    let mut out = Vec::new();
+    loop {
+        let mut size_line = String::new();
+        if reader.read_line(&mut size_line).unwrap_or(0) == 0 {
+            break;
+        }
+        let size_hex = size_line.trim().split(';').next().unwrap_or("").trim();
+        let size = match usize::from_str_radix(size_hex, 16) {
+            Ok(s) => s,
+            Err(_) => break,
+        };
+        if size == 0 {
+            // Drain any trailers up to the terminating blank line.
+            loop {
+                let mut trailer = String::new();
+                if reader.read_line(&mut trailer).unwrap_or(0) == 0 {
+                    break;
+                }
+                if trailer == "\r\n" || trailer == "\n" || trailer.is_empty() {
+                    break;
+                }
+            }
+            break;
+        }
+        let mut chunk = vec![0u8; size];
+        if reader.read_exact(&mut chunk).is_err() {
+            break;
+        }
+        out.extend_from_slice(&chunk);
+        // Consume the trailing CRLF after the chunk data.
+        let mut crlf = [0u8; 2];
+        let _ = reader.read_exact(&mut crlf);
+    }
+    out
 }
 
 fn send_response(stream: &mut TcpStream, status: &str, content_type: &str, body: &[u8], cors: &str) {
