@@ -14,7 +14,7 @@
 
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream, Shutdown};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -93,7 +93,11 @@ const MIME_TYPES: &[(&str, &str)] = &[
     (".svg", "image/svg+xml"),
     (".png", "image/png"),
     (".jpg", "image/jpeg"),
+    (".gif", "image/gif"),
     (".wasm", "application/wasm"),
+    (".woff", "font/woff"),
+    (".woff2", "font/woff2"),
+    (".ttf", "font/ttf"),
 ];
 
 fn mime_type(path: &str) -> &str {
@@ -408,7 +412,7 @@ fn establish_session() -> Option<String> {
 
 // ── Connection handler ──────────────────────────────────────────────────────
 
-fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
+fn handle_client(mut stream: TcpStream, public_dir: PathBuf, storage_dir: PathBuf) {
     let mut reader = BufReader::new(&mut stream);
 
     // Read the request line.
@@ -515,7 +519,7 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
     // ── API proxy ─────────────────────────────────────────────────────────
     if PROXY_PREFIXES.iter().any(|p| path.starts_with(p)) {
         let body = read_body(&mut reader, &headers, false);
-        proxy_request(&mut stream, method, path, &headers, &body, &cors);
+        proxy_request(&mut stream, method, path, &headers, &body, &cors, &storage_dir);
         return;
     }
 
@@ -524,11 +528,13 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
     if let Ok(data) = std::fs::read(&file_path) {
         let path_str = file_path.to_string_lossy();
         let ct = mime_type(&path_str);
+        // The JS/CSS/font bundles are cache-busted via `?version=…`, so a long
+        // max-age is safe and avoids re-fetching ~140M of JS on every launch.
         let response = format!(
             "HTTP/1.1 200 OK\r\n\
              Content-Type: {}\r\n\
              Content-Length: {}\r\n\
-             Cache-Control: no-store\r\n\
+             Cache-Control: max-age=3600, must-revalidate\r\n\
              Connection: close\r\n\
              {}\r\n",
             ct, data.len(), cors
@@ -537,7 +543,8 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
         let _ = stream.write_all(&data);
         let _ = stream.flush();
     } else {
-        // SPA fallback: serve index.html.
+        // SPA fallback: serve index.html. Stays no-store so injector changes
+        // to index.html are picked up immediately.
         let index_path = public_dir.join("index.html");
         match std::fs::read(&index_path) {
             Ok(data) => {
@@ -568,6 +575,10 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
 }
 
 fn resolve_path(path: &str, public_dir: &PathBuf) -> PathBuf {
+    // Strip the query string (`/js/main.js?version=…`) before mapping to disk,
+    // otherwise the `?version=…` becomes a literal filename component, the file
+    // is not found, and the SPA fallback serves index.html as text/javascript.
+    let path = path.split('?').next().unwrap_or(path);
     if path == "/" || path.is_empty() {
         return public_dir.join("index.html");
     }
@@ -608,6 +619,7 @@ fn proxy_request(
     headers: &[String],
     body: &[u8],
     cors: &str,
+    storage_dir: &Path,
 ) {
     let backend = format!("{}:{}", BACKEND_HOST, BACKEND_PORT);
     let mut backend_stream = match TcpStream::connect(&backend) {
@@ -702,6 +714,52 @@ fn proxy_request(
 
     let response_headers = read_headers(&mut backend_reader);
     let response_body = read_body(&mut backend_reader, &response_headers, true);
+
+    // ── Honor NGINX-style x-accel-redirect for fs-served assets ──────────
+    // `serve-object-from-fs` (backend http/assets.clj) returns 204 with
+    // `x-accel-redirect: /internal/assets/<rel>` (+ content-type, cache-control),
+    // expecting the reverse proxy to read the file from the fs storage dir and
+    // serve it. Without this, /assets/by-id/*, /assets/by-file-media-id/* and
+    // their /thumbnail variants all return 204 → broken images everywhere
+    // (uploaded media, profile photos, frame thumbnails). `<rel>` is the sharded
+    // id path (bb/aa/<rest>) under PENPOT_OBJECTS_STORAGE_FS_DIRECTORY.
+    if let Some(xar) = header(&response_headers, "x-accel-redirect") {
+        // Strip the `/internal/assets/` prefix (PENPOT_ASSETS_PATH) to get <rel>.
+        let rel = match xar.find("/internal/assets/") {
+            Some(i) => &xar[i + "/internal/assets/".len()..],
+            None => xar.trim_start_matches('/'),
+        };
+        // Path-traversal guard: reject any `..` segment so a crafted rel can't
+        // escape the storage dir.
+        let safe = !rel.split(|c| c == '/' || c == '\\').any(|seg| seg == "..");
+        if safe {
+            let file = storage_dir.join(rel);
+            if let Ok(data) = std::fs::read(&file) {
+                let ct = header(&response_headers, "content-type")
+                    .unwrap_or("application/octet-stream");
+                let cc = header(&response_headers, "cache-control")
+                    .map(|c| format!("Cache-Control: {}\r\n", c))
+                    .unwrap_or_default();
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\n\
+                     Content-Type: {}\r\n\
+                     Content-Length: {}\r\n\
+                     {}\
+                     Connection: close\r\n\
+                     {}\r\n",
+                    ct, data.len(), cc, cors
+                );
+                let _ = stream.write_all(response.as_bytes());
+                let _ = stream.write_all(&data);
+                let _ = stream.flush();
+                return;
+            }
+        }
+        // File missing on disk or unsafe rel → 404 rather than forwarding the
+        // empty 204 (which the <img> would render as a broken image).
+        send_response(stream, "404 Not Found", "text/plain", b"asset not found", cors);
+        return;
+    }
 
     // Reconstruct the response, stripping backend CORS and injecting ours.
     let mut response = response_line.clone();
@@ -840,13 +898,17 @@ fn handle_websocket_upgrade(
     let _ = relay.join();
 }
 
-/// Start the proxy server in a background thread.
+/// Start the proxy server: bind `port` (synchronously, so the listener is
+/// accepting before this returns — the Tauri window loads
+/// `http://localhost:<port>/loading.html` immediately after), then run the
+/// accept loop in a background thread.
 ///
-/// When `auto_login` is `true` (production), the proxy will try to
-/// authenticate a fixed local account with the backend and inject the
-/// session cookie on every proxied request. This gives the user a
-/// seamless single-user offline experience with no login screen.
-pub fn start(public_dir: PathBuf, port: u16, auto_login: bool) {
+/// Static files are served right away (the loading page is self-contained and
+/// needs no backend). Auto-login is NOT done here — it requires the JVM backend
+/// to be up, which happens later in `boot_backend`. Call `enable_auto_login()`
+/// once the backend is ready; until then proxied `/api/` requests simply carry
+/// no session cookie (and the SPA is not loaded yet, so none are made).
+pub fn start(public_dir: PathBuf, storage_dir: PathBuf, port: u16) {
     let addr = format!("0.0.0.0:{}", port);
 
     // Retry binding a few times (stale port from previous run).
@@ -880,32 +942,39 @@ pub fn start(public_dir: PathBuf, port: u16, auto_login: bool) {
     }
     let listener = listener.unwrap();
 
-    // ── Auto-login ────────────────────────────────────────────────────────
-    if auto_login {
-        if let Some(cookie) = establish_session() {
-            if let Ok(mut guard) = AUTO_LOGIN_COOKIE.lock() {
-                *guard = Some(cookie);
-            }
-        }
-        AUTO_LOGIN_DONE.store(true, Ordering::SeqCst);
-    }
-
     eprintln!("[penpot-proxy] Listening on http://localhost:{}", port);
     let public_dir = Arc::new(public_dir);
+    let storage_dir = Arc::new(storage_dir);
 
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                let dir = public_dir.clone();
-                let _ = stream.set_read_timeout(Some(Duration::from_secs(30)));
-                let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
-                thread::spawn(move || {
-                    handle_client(stream, (*dir).clone());
-                });
-            }
-            Err(e) => {
-                eprintln!("[penpot-proxy] Connection error: {}", e);
+    thread::spawn(move || {
+        for stream in listener.incoming() {
+            match stream {
+                Ok(stream) => {
+                    let dir = public_dir.clone();
+                    let sdir = storage_dir.clone();
+                    let _ = stream.set_read_timeout(Some(Duration::from_secs(30)));
+                    let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+                    thread::spawn(move || {
+                        handle_client(stream, (*dir).clone(), (*sdir).clone());
+                    });
+                }
+                Err(e) => {
+                    eprintln!("[penpot-proxy] Connection error: {}", e);
+                }
             }
         }
+    });
+}
+
+/// Establish the auto-login session against the (now-ready) JVM backend and
+/// arm the global cookie so every subsequent proxied request is authenticated.
+/// Called from `boot_backend` after the backend port is open. Gives the user a
+/// seamless single-user offline experience with no login screen.
+pub fn enable_auto_login() {
+    if let Some(cookie) = establish_session() {
+        if let Ok(mut guard) = AUTO_LOGIN_COOKIE.lock() {
+            *guard = Some(cookie);
+        }
     }
+    AUTO_LOGIN_DONE.store(true, Ordering::SeqCst);
 }

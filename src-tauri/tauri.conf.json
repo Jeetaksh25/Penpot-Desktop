@@ -7,7 +7,7 @@
     "beforeDevCommand": "npm run serve:penpot",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "node scripts/generate-icons.mjs",
-    "frontendDist": "../penpot-source/frontend/resources/public"
+    "frontendDist": "./embed"
   },
   "app": {
     "windows": [],
@@ -28,6 +28,7 @@
     ],
     "resources": {
       "../penpot-source/backend/target/penpot.jar": "penpot-source/backend/target/penpot.jar",
+      "../penpot-source/frontend/resources/public": "public/",
       "../tools/postgres/bin": "tools/postgres/bin/",
       "../tools/postgres/lib": "tools/postgres/lib/",
       "../tools/postgres/share": "tools/postgres/share/",

@@ -403,7 +403,24 @@ fn start_redis(root: &Path) -> Result<Option<Child>, String> {
     Ok(Some(child))
 }
 
-fn backend_env() -> Vec<(&'static str, String)> {
+fn backend_env(root: &Path) -> Vec<(&'static str, String)> {
+    // datoteka.fs/normalize prepends `*cwd* + sep` to any path NOT starting with
+    // the separator (`\` on Windows) — including absolute `D:\…` paths. The fs
+    // storage backend (penpot storage/fs.clj put-object/get-object-data) wraps
+    // fs/join in a redundant OUTER fs/normalize, so a relative `data\assets`
+    // becomes `D:\…\data\assets` on the first pass and gets the cwd prepended
+    // AGAIN on the second → the doubled
+    // `D:\Apps\Penpot Desktop\D:\Apps\Penpot Desktop\data\assets\…` that broke
+    // asset serving and template import. The backend jar is prebuilt (can't
+    // patch the Clojure), so this is fixed env-only: pass a drive-rooted,
+    // NO-drive-letter path (`\Apps\Penpot Desktop\data\assets`). Such a path
+    // starts with `\` so fs/normalize leaves it untouched at every stage (no
+    // doubling), and Java resolves `\…` against the backend CWD's current drive
+    // (the install drive, since spawn_backend sets cwd=root) at I/O time
+    // WITHOUT adding the drive to the Path string — so reads/writes land at
+    // <install>\data\assets, exactly where boot_backend creates the dir and the
+    // Rust proxy reads x-accel-redirected assets from.
+    let storage_dir = strip_drive_prefix(root.join("data").join("assets"));
     vec![
         ("PENPOT_TENANT", "default".into()),
         ("PENPOT_HOST", "localhost".into()),
@@ -417,11 +434,8 @@ fn backend_env() -> Vec<(&'static str, String)> {
         ("PENPOT_DATABASE_PASSWORD", "penpot".into()),
         ("PENPOT_REDIS_URI", format!("redis://localhost:{}", REDIS_PORT)),
         ("PENPOT_OBJECTS_STORAGE_BACKEND", "fs".into()),
-        (
-            "PENPOT_OBJECTS_STORAGE_FS_DIRECTORY",
-            "data\\assets".into(),
-        ),
-        ("PENPOT_STORAGE_ASSETS_FS_DIRECTORY", "data\\assets".into()),
+        ("PENPOT_OBJECTS_STORAGE_FS_DIRECTORY", storage_dir.clone()),
+        ("PENPOT_STORAGE_ASSETS_FS_DIRECTORY", storage_dir),
         ("PENPOT_ASSETS_PATH", "/internal/assets/".into()),
         ("PENPOT_SECRET_KEY", "desktop-local-secret-key-change-in-production".into()),
         (
@@ -434,14 +448,28 @@ fn backend_env() -> Vec<(&'static str, String)> {
         ),
         (
             "PENPOT_ALLOWED_ORIGINS",
-            // http://tauri.localhost is the Tauri WebView2 asset origin in the
-            // packaged build — the SPA runs there and makes cross-origin API/WS
-            // calls to this process on :1420. Without it the backend rejects the
-            // WebSocket upgrade's Origin and Sente never connects.
+            // The SPA now runs on the same http://localhost:1420 origin as the
+            // proxy (no more tauri.localhost split), so this is the API/WS
+            // origin. localhost:3449 is the backend directly; tauri.localhost
+            // is retained for the embedded loading page (harmless, no API).
             "http://localhost:1420 http://localhost:3449 http://tauri.localhost".into(),
         ),
         ("PENPOT_TELEMETRY_ENABLED", "false".into()),
     ]
+}
+
+/// Strip a leading `X:` Windows drive prefix from a path, returning the
+/// remaining `\…`-rooted string with no drive letter. Used for the fs storage
+/// env so datoteka's fs/normalize does not prepend the CWD a second time. See
+/// `backend_env` for the full rationale.
+fn strip_drive_prefix(p: PathBuf) -> String {
+    let s = p.to_string_lossy().into_owned();
+    let bytes = s.as_bytes();
+    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {
+        s[2..].to_string()
+    } else {
+        s
+    }
 }
 
 fn which_java(root: &Path) -> Result<String, String> {
@@ -478,7 +506,7 @@ fn spawn_backend(root: &Path) -> Result<Child, String> {
         .stderr(Stdio::piped());
     silent(&mut cmd);
 
-    for (key, value) in backend_env() {
+    for (key, value) in backend_env(root) {
         cmd.env(key, value);
     }
 
@@ -567,29 +595,23 @@ fn boot_backend(handle: tauri::AppHandle) {
                         BACKEND_PORT
                     );
 
-                    // 5. Start the same-origin proxy (Rust) in production builds.
-                    //    In debug/dev builds the Node.js serve-penpot-proxy.js serves
-                    //    this role (launched by beforeDevCommand).
+                    // 5. The same-origin proxy was started in setup() (static
+                    //    only, so the loading page could load immediately).
+                    //    Now that the JVM is ready, arm auto-login (registers
+                    //    / logs in the fixed local account on first boot) so
+                    //    the SPA never shows a login screen, then navigate the
+                    //    loading window to the SPA root. `/` resolves to the
+                    //    window's own origin (http://localhost:1420) in both
+                    //    dev (Node proxy) and release (Rust proxy), so this is
+                    //    NOT a cross-origin navigation. (Dev skips auto-login;
+                    //    the Node proxy / login screen handles dev.)
                     if !cfg!(debug_assertions) {
-                        let public_dir = root.join("public");
-                        let proxy_port = FRONTEND_PORT;
-                        std::thread::spawn(move || {
-                            // auto_login = true → transparently registers/logs
-                            // in a fixed local account so the user never sees
-                            // a login screen.
-                            proxy::start(public_dir, proxy_port, true);
-                        });
-                        // Give the proxy time to bind and establish the session.
-                        std::thread::sleep(Duration::from_millis(1000));
+                        proxy::enable_auto_login();
                     }
 
                     let _ = handle.emit("backend-ready", ());
-
-                    // The main window was already created at loading.html in
-                    // setup(); navigate it to the real SPA now that the backend
-                    // + proxy are up. location.replace keeps history clean.
                     set_boot_status(&handle, "Loading workspace…");
-                    eval_main(&handle, "try{location.replace('index.html')}catch(e){}");
+                    eval_main(&handle, "try{location.replace('/')}catch(e){}");
                 }
                 Err(e) => {
                     eprintln!("[penpot-desktop] Backend failed to become ready: {}", e);
@@ -638,36 +660,51 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle().clone();
 
+            // In the packaged build, start the same-origin Rust proxy BEFORE
+            // creating the window so http://localhost:1420/loading.html is
+            // reachable the instant the window loads. (Dev uses the Node proxy
+            // from beforeDevCommand.) The proxy binds synchronously here, then
+            // serves static files in a background thread; auto-login is deferred
+            // to boot_backend once the JVM is up. Serving the SPA from :1420
+            // makes the packaged build same-origin (SPA == public-uri ==
+            // rasterizer-uri == API), which is the root-cause fix for the
+            // rasterizer postMessage deadlock, template-thumbnail 404s, and
+            // cross-origin asset/CORS friction — exactly how dev already works.
+            if !cfg!(debug_assertions) {
+                let root = project_root(Some(&handle));
+                proxy::start(
+                    root.join("public"),
+                    root.join("data").join("assets"),
+                    FRONTEND_PORT,
+                );
+            }
+
             // Build the main window IMMEDIATELY at a lightweight loading page
             // so the app is never an invisible background process while the
             // backend boots (30–180s on first run) or if boot fails. boot_backend
             // navigates this same window to the SPA once the backend is ready,
-            // or writes a failure message into its status line.
-            let loading_url = if cfg!(debug_assertions) {
-                tauri::WebviewUrl::External(
-                    format!("http://localhost:{}/loading.html", FRONTEND_PORT)
-                        .parse()
-                        .unwrap(),
-                )
-            } else {
-                tauri::WebviewUrl::App("loading.html".into())
-            };
+            // or writes a failure message into its status line. Both dev (Node
+            // proxy) and release (Rust proxy) load loading.html from :1420, so
+            // boot_backend's later location.replace('/') stays same-origin.
+            let loading_url = tauri::WebviewUrl::External(
+                format!("http://localhost:{}/loading.html", FRONTEND_PORT)
+                    .parse()
+                    .unwrap(),
+            );
             let main_window = tauri::WebviewWindowBuilder::new(&handle, "main", loading_url)
                 .title("Penpot Desktop")
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(900.0, 600.0)
                 .build();
 
-            // Debug release: auto-open DevTools in the packaged build so the
-            // webview Console + Network tabs are visible and the user can paste
-            // the real error (the installed app otherwise has no inspector).
-            // Remove once the boot/blank-screen issue is resolved.
-            #[cfg(not(debug_assertions))]
-            {
-                if let Ok(win) = &main_window {
-                    win.open_devtools();
-                }
-            }
+            // DevTools are NOT auto-opened on launch (that was debug scaffolding
+            // for the boot/blank-screen issue, now resolved). They remain
+            // available on demand via the webview's right-click context menu
+            // ("Inspect") in the packaged build because the `tauri` crate is
+            // built with the `devtools` feature (see Cargo.toml) — so if
+            // something goes wrong the user can still open the Console/Network
+            // tabs without a separate inspector build.
+            let _ = &main_window;
 
             std::thread::spawn(move || boot_backend(handle));
             Ok(())

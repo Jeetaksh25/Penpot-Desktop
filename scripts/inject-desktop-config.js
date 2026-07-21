@@ -60,8 +60,13 @@ const publicUri = `http://${backendHost}:${frontendPort}`;
 
 // Flags that make sense for a single-user offline desktop app.
 // Demo users are enabled so the login screen can create a local profile.
-// Render-wasm flags are left at their Penpot defaults (enabled) now that the
-// real Emscripten WASM renderer is built.
+// Render-wasm is disabled on the FRONTEND to match the backend's PENPOT_FLAGS
+// (lib.rs). CI ships a stub js/worker/render.js (no Emscripten build); if the
+// frontend re-enables :feature-render-wasm (app.main.features/setup-wasm-features
+// does so unless `disable-render-switch` + `disable-feature-render-wasm` are
+// set), that stub receives worker messages and echoes raw JS objects back ->
+// wm/decode -> JSON.parse("[object Object]") -> a continuous "Something wrong
+// has happened" toast. The SVG renderer is used instead.
 const flags = [
   "disable-secure-session-cookies",
   "disable-telemetry",
@@ -69,6 +74,8 @@ const flags = [
   "enable-registration",
   "enable-demo-users",
   "enable-backend-worker",
+  "disable-feature-render-wasm",
+  "disable-render-switch",
 ].join(" ");
 
 const injectScript = `
