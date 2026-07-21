@@ -1,6 +1,6 @@
 [package]
 name = "penpot-desktop"
-version = "1.0.21"
+version = "1.0.22"
 description = "A powerful design and code generation tool"
 authors = ["Penpot Desktop"]
 edition = "2021"
