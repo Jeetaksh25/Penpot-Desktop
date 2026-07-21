@@ -129,15 +129,23 @@ fn read_headers(reader: &mut dyn BufRead) -> Vec<String> {
     headers
 }
 
-fn read_body(reader: &mut dyn BufRead, headers: &[String]) -> Vec<u8> {
-    // The Penpot backend emits its transit responses with
-    // `Transfer-Encoding: chunked` and NO Content-Length. A reader that only
-    // handles Content-Length returns an empty body here — which was the real
-    // blank-screen root cause: the `prepare-register-profile` token lived in a
-    // chunked body the proxy never decoded, so `extract_token` saw "" and the
-    // auto-login session was never established (and `proxy_request` forwarded
-    // every /api/ response with Content-Length: 0, blanking the SPA). Dev's
-    // Node proxy decodes chunked natively, which is why dev always worked.
+// Read an HTTP message body. `response` distinguishes a backend *response*
+// from a client *request* body — see the EOF note below.
+fn read_body(reader: &mut dyn BufRead, headers: &[String], response: bool) -> Vec<u8> {
+    // The Penpot backend emits its transit responses in one of two ways
+    // depending on the request's Connection header:
+    //   • keep-alive  -> `Transfer-Encoding: chunked`, no Content-Length
+    //   • close       -> NO Transfer-Encoding, NO Content-Length; the body is
+    //                    delimited by the server closing the socket.
+    // Both `rpc_call` and `proxy_request` send `Connection: close`, so the
+    // backend takes the second path. A reader that only handled Content-Length
+    // (and, after the chunked fix, chunked) still returned an empty body here
+    // — the real blank-screen / 401 root cause: the `prepare-register-profile`
+    // token lived in a close-delimited body the proxy never read, so
+    // `extract_token` saw "" and the auto-login session was never established,
+    // and `proxy_request` forwarded every /api/ response with Content-Length 0,
+    // blanking the SPA. Dev's Node proxy reads to EOF natively, which is why
+    // dev always worked.
     let mut chunked = false;
     let mut len: usize = 0;
     for h in headers {
@@ -155,12 +163,22 @@ fn read_body(reader: &mut dyn BufRead, headers: &[String]) -> Vec<u8> {
     if chunked {
         return read_chunked(reader);
     }
-    if len == 0 {
-        return Vec::new();
+    if len > 0 {
+        let mut body = vec![0u8; len];
+        let _ = reader.read_exact(&mut body);
+        return body;
     }
-    let mut body = vec![0u8; len];
-    let _ = reader.read_exact(&mut body);
-    body
+    // No Content-Length and not chunked. For responses, the body runs to EOF:
+    // we always send `Connection: close` to the backend, so it closes the
+    // socket after the body and `read_to_end` terminates. Only for responses —
+    // a request with no body on a keep-alive connection must NOT read to EOF,
+    // or it would block waiting for the client to close.
+    if response {
+        let mut out = Vec::new();
+        let _ = reader.read_to_end(&mut out);
+        return out;
+    }
+    Vec::new()
 }
 
 /// Decode an HTTP/1.1 chunked transfer-encoded body. Each chunk is
@@ -291,7 +309,7 @@ fn rpc_call(method: &str, params: &[(&str, &str)]) -> Result<(u16, Vec<String>, 
         .unwrap_or(0);
 
     let response_headers = read_headers(&mut reader);
-    let response_body = read_body(&mut reader, &response_headers);
+    let response_body = read_body(&mut reader, &response_headers, true);
     let body_str = String::from_utf8_lossy(&response_body).to_string();
 
     Ok((status_code, response_headers, body_str))
@@ -476,7 +494,7 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
     // from a terminal — the installed app has no DevTools. Mirrors the Node
     // dev proxy; without this the POST fell through to the SPA fallback.
     if method == "POST" && clean_path == "/__desktop_log" {
-        let body = read_body(&mut reader, &headers);
+        let body = read_body(&mut reader, &headers, false);
         eprintln!("[webview] {}", String::from_utf8_lossy(&body));
         send_response(&mut stream, "200 OK", "text/plain", b"ok", &cors);
         return;
@@ -496,7 +514,7 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf) {
 
     // ── API proxy ─────────────────────────────────────────────────────────
     if PROXY_PREFIXES.iter().any(|p| path.starts_with(p)) {
-        let body = read_body(&mut reader, &headers);
+        let body = read_body(&mut reader, &headers, false);
         proxy_request(&mut stream, method, path, &headers, &body, &cors);
         return;
     }
@@ -683,7 +701,7 @@ fn proxy_request(
     }
 
     let response_headers = read_headers(&mut backend_reader);
-    let response_body = read_body(&mut backend_reader, &response_headers);
+    let response_body = read_body(&mut backend_reader, &response_headers, true);
 
     // Reconstruct the response, stripping backend CORS and injecting ours.
     let mut response = response_line.clone();
