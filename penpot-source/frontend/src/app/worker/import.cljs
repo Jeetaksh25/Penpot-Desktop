@@ -25,19 +25,25 @@
 
 (defn- import-cause-message
   "Prefer the server `:hint` (full text, e.g. SSE error payload), then `:explain`
-   when present; avoid the generic `stream exception` wrapper when a payload exists."
+   when present; avoid the generic `stream exception` wrapper when a payload exists.
+   Falls back to `:type` + `:code` so Windows-specific backend errors (e.g.
+   imagemagick missing, posix:permissions) are visible in the import dialog."
   [cause default-msg]
   (let [data    (ex-data cause)
         hint    (some-> data :hint str/trim)
-        explain (some-> data :explain str/trim)]
+        explain (some-> data :explain str/trim)
+        type    (some-> data :type name str/trim)
+        code    (some-> data :code name str/trim)]
     (cond
       (not (str/blank? hint)) hint
       (not (str/blank? explain)) explain
+      (and (not (str/blank? type)) (not (str/blank? code)))
+      (str type " / " code)
       :else
       (let [msg (some-> (ex-message cause) str/trim)]
         (if (or (str/blank? msg) (= msg "stream exception"))
           default-msg
-          msg)))))
+          msg))))))
 
 ;; Upload changes batches size
 (def ^:const change-batch-size 100)

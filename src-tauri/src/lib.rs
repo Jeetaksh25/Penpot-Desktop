@@ -35,6 +35,7 @@ const HEALTH_INTERVAL: Duration = Duration::from_millis(500);
 const POSTGRES_BIN: &str = "tools/postgres/bin";
 const REDIS_BIN: &str = "tools/redis/Redis-8.8.0-Windows-x64-msys2";
 const JRE_DIR: &str = "tools/jre";
+const IMAGEMAGICK_DIR: &str = "tools/imagemagick";
 
 /// Tracks child processes so they can be killed on exit.
 /// Postgres manages its own daemon via pg_ctl, so only the JVM and Redis
@@ -130,6 +131,28 @@ fn redis_bin(root: &Path, exe: &str) -> PathBuf {
 
 fn jre_bin(root: &Path, exe: &str) -> PathBuf {
     root.join(JRE_DIR).join("bin").join(exe)
+}
+
+fn imagemagick_bin(root: &Path) -> PathBuf {
+    root.join(IMAGEMAGICK_DIR)
+}
+
+/// Prepend the bundled ImageMagick directory to PATH so the JVM backend can
+/// resolve `magick` without requiring a system-wide ImageMagick install.
+/// In dev mode, if the bundled directory is absent, the existing PATH is left
+/// unchanged so a system install can still be used.
+fn prepend_imagemagick_to_path(root: &Path) -> String {
+    let imagemagick = imagemagick_bin(root);
+    let imagemagick_s = imagemagick.to_string_lossy().to_string();
+    if !imagemagick.exists() {
+        return std::env::var("PATH").unwrap_or_default();
+    }
+    match std::env::var("PATH") {
+        Ok(path) if !path.is_empty() => {
+            format!("{}{}{}", imagemagick_s, std::env::consts::PATH_SEPARATOR, path)
+        }
+        _ => imagemagick_s,
+    }
 }
 
 /// True when something is already accepting TCP connections on `port`.
@@ -423,6 +446,8 @@ fn backend_env(root: &Path) -> Vec<(&'static str, String)> {
     // Rust proxy reads x-accel-redirected assets from.
     let storage_dir = strip_drive_prefix(root.join("data").join("assets"));
     vec![
+        // PATH must be first so later entries don't accidentally shadow it.
+        ("PATH", prepend_imagemagick_to_path(root)),
         ("PENPOT_TENANT", "default".into()),
         ("PENPOT_HOST", "localhost".into()),
         // Public URI is the frontend/proxy origin so any absolute URL the

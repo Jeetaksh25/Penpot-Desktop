@@ -12,7 +12,7 @@
 
 - **Native Penpot UI** — The real Penpot frontend (not a web wrapper) inside a Tauri window
 - **Fully offline** — No cloud, no accounts, no telemetry. All data stored locally
-- **Embedded backend** — PostgreSQL 16.4 + Redis 8.8.0 + JVM backend, all bundled
+- **Embedded backend** — PostgreSQL 16.4 + Redis 8.8.0 + ImageMagick 7.1.1 + JVM backend, all bundled
 - **Auto-login** — No login screen; you're instantly in the workspace
 - **SVG renderer** — Full canvas support (WebGL WASM renderer available with manual build)
 - **Code generation** — Export designs to ReactJS, NextJS, and XML (coming soon)

@@ -143,7 +143,7 @@ jobs:
       #   tools/redis/Redis-.../    — Redis portable
       #   tools/jre/bin/java.exe    — jlink-minimized JRE (no system Java needed)
 
-      - name: Cache PostgreSQL, Redis, and JRE binaries
+      - name: Cache PostgreSQL, Redis, JRE, and ImageMagick binaries
         id: cache-runtime
         uses: actions/cache@v4
         with:
@@ -151,7 +151,8 @@ jobs:
             tools/postgres
             tools/redis
             tools/jre
-          key: runtime-binaries-2026-07-jdknet-v3
+            tools/imagemagick
+          key: runtime-binaries-2026-07-jdknet-imagemagick-v1
 
       - name: Create minimal JRE bundle via jlink
         if: steps.cache-runtime.outputs.cache-hit != 'true'
@@ -209,6 +210,20 @@ jobs:
           rm -f redis.zip
           test -f tools/redis/Redis-8.8.0-Windows-x64-msys2/redis-server.exe || { echo "redis-server.exe not found after extraction!"; exit 1; }
           echo "Redis 8.8.0 extracted OK — redis-server.exe found"
+
+      - name: Download ImageMagick portable
+        if: steps.cache-runtime.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tools/imagemagick
+          # Portable Q16-HDRI x64 build.  If this URL rots, replace it with a
+          # newer version from https://imagemagick.org/archive/binaries/.
+          curl -fsSL -o imagemagick.zip "https://imagemagick.org/archive/binaries/ImageMagick-7.1.1-46-portable-Q16-HDRI-x64.zip"
+          unzip -q imagemagick.zip -d tools/imagemagick/
+          rm -f imagemagick.zip
+          test -f tools/imagemagick/magick.exe || { echo "magick.exe not found after extraction!"; ls -R tools/imagemagick/; exit 1; }
+          echo "ImageMagick extracted OK — magick.exe found"
 
       # ── Root dependencies ──────────────────────────────────────────────────
       # Install root npm dependencies (sharp for icons, Tauri CLI for build).
@@ -311,6 +326,7 @@ jobs:
             - Full Penpot UI (ClojureScript SPA)
             - Penpot JVM backend
             - Local PostgreSQL 16.4 + Redis 8.8.0 (embedded)
+            - ImageMagick 7.1.1 (embedded; required for thumbnails and media processing)
             - SVG renderer (WASM WebGL renderer available with manual build)
             - Minimal JRE for Java 23 (bundled via jlink)
 

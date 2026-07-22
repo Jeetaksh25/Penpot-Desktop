@@ -20,6 +20,7 @@
    java.io.OutputStream
    java.nio.file.Files
    java.nio.file.Path
+   java.nio.file.StandardOpenOption
    java.nio.file.attribute.FileAttribute))
 
 (set! *warn-on-reflection* true)
@@ -66,8 +67,18 @@
       (when-not (fs/exists? parent)
         (Files/createDirectories parent (into-array FileAttribute []))))
 
+    ;; Use java.nio directly for the output stream.  datoteka.io/output-stream
+    ;; may create missing parent directories using POSIX-only file attributes,
+    ;; which fails on Windows with "'posix:permissions' not supported as initial
+    ;; attribute".  We already create the parent above, so a plain NIO stream is
+    ;; sufficient and portable.
     (with-open [^InputStream src (io/input-stream content)]
-      (with-open [^OutputStream dst (io/output-stream full)]
+      (with-open [^OutputStream dst (Files/newOutputStream
+                                     full
+                                     (into-array java.nio.file.OpenOption
+                                                 [StandardOpenOption/CREATE
+                                                  StandardOpenOption/TRUNCATE_EXISTING
+                                                  StandardOpenOption/WRITE]))]
         (io/copy src dst)))
 
     object))
