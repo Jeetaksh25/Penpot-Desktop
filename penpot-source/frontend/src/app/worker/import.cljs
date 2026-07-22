@@ -43,7 +43,7 @@
       (let [msg (some-> (ex-message cause) str/trim)]
         (if (or (str/blank? msg) (= msg "stream exception"))
           default-msg
-          msg))))))
+          msg)))))
 
 ;; Upload changes batches size
 (def ^:const change-batch-size 100)
