@@ -152,7 +152,7 @@ jobs:
             tools/redis
             tools/jre
             tools/imagemagick
-          key: runtime-binaries-2026-07-jdknet-imagemagick-v1
+          key: runtime-binaries-2026-07-jdknet-imagemagick-v2
 
       - name: Create minimal JRE bundle via jlink
         if: steps.cache-runtime.outputs.cache-hit != 'true'
@@ -217,13 +217,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p tools/imagemagick
-          # Portable Q16-HDRI x64 build.  If this URL rots, replace it with a
-          # newer version from https://imagemagick.org/archive/binaries/.
-          curl -fsSL -o imagemagick.zip "https://imagemagick.org/archive/binaries/ImageMagick-7.1.1-46-portable-Q16-HDRI-x64.zip"
-          unzip -q imagemagick.zip -d tools/imagemagick/
-          rm -f imagemagick.zip
+          # Portable Q16-HDRI x64 build. The official imagemagick.org archive
+          # no longer hosts Windows portable zips — /archive/binaries/ now ships
+          # only MSIX + Linux tarballs + a Linux-only `magick` single binary.
+          # Windows portable builds live on SourceForge now, distributed as .7z
+          # (no .zip). 7z is preinstalled on GitHub Actions Windows runners.
+          # If this URL rots, browse
+          # https://sourceforge.net/projects/imagemagick/files/ for a newer
+          # version and update the version below.
+          curl -fL --retry 3 -o imagemagick.7z \
+            "https://downloads.sourceforge.net/project/imagemagick/7.1.2-27/ImageMagick-7.1.2-27-portable-Q16-HDRI-x64.7z"
+          7z x -y -bd imagemagick.7z -o"tools/imagemagick/" >/dev/null
+          rm -f imagemagick.7z
           test -f tools/imagemagick/magick.exe || { echo "magick.exe not found after extraction!"; ls -R tools/imagemagick/; exit 1; }
-          echo "ImageMagick extracted OK — magick.exe found"
+          echo "ImageMagick 7.1.2-27 extracted OK — magick.exe found"
 
       # ── Root dependencies ──────────────────────────────────────────────────
       # Install root npm dependencies (sharp for icons, Tauri CLI for build).
@@ -326,7 +333,7 @@ jobs:
             - Full Penpot UI (ClojureScript SPA)
             - Penpot JVM backend
             - Local PostgreSQL 16.4 + Redis 8.8.0 (embedded)
-            - ImageMagick 7.1.1 (embedded; required for thumbnails and media processing)
+            - ImageMagick 7.1.2 (embedded; required for thumbnails and media processing)
             - SVG renderer (WASM WebGL renderer available with manual build)
             - Minimal JRE for Java 23 (bundled via jlink)
 
