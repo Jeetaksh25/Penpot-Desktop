@@ -149,7 +149,7 @@ fn prepend_imagemagick_to_path(root: &Path) -> String {
     }
     match std::env::var("PATH") {
         Ok(path) if !path.is_empty() => {
-            format!("{}{}{}", imagemagick_s, std::env::consts::PATH_SEPARATOR, path)
+            format!("{}{}{}", imagemagick_s, if cfg!(windows) { ";" } else { ":" }, path)
         }
         _ => imagemagick_s,
     }
