@@ -90,7 +90,7 @@
   (let [type (str type)]
     (case type
       "react"        (react/generate objects shapes)
-      "nextjs"       (react/generate-nextjs objects shapes)
+      "nextjs"       (tailwind/generate-nextjs objects shapes)
       "react-native" (react-native/generate objects shapes)
       "android-xml"  (android-xml/generate objects shapes)
       "winui3-xml"   (winui3-xml/generate objects shapes)

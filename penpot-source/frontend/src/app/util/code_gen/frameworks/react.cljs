@@ -229,8 +229,3 @@
   "React (JSX) component."
   [objects shapes]
   (generate-react objects shapes false))
-
-(defn generate-nextjs
-  "Next.js page component (App Router, 'use client')."
-  [objects shapes]
-  (generate-react objects shapes true))

@@ -237,20 +237,35 @@
 ;; Component scaffolding
 ;; ---------------------------------------------------------------------------
 
+(defn- tailwind-header [nextjs?]
+  (dm/str
+   "// Generated with Tailwind CSS v3+ (JIT arbitrary values).\n"
+   "// No tailwind.config entries are required — every value is inline\n"
+   "// as an arbitrary utility (bg-[...], rounded-[...], text-[...]).\n\n"
+   (when nextjs? "\"use client\";\n\n")
+   "import React from \"react\";\n\n"))
+
 (defn generate
-  "React (JSX) component styled with Tailwind CSS utility classes."
+  "React (JSX) component styled with Tailwind CSS utility classes. When
+  `nextjs?` is true, emits a Next.js App Router page (a 'use client'
+  directive and the component named Page)."
+  ([objects shapes] (generate objects shapes false))
+  ([objects shapes nextjs?]
+   (let [roots     (fc/root-originals objects shapes)
+         origin    (fc/selection-origin roots)
+         size      (fc/selection-size roots)
+         body      (->> roots
+                       (keep #(render-shape objects % origin 1))
+                       (str/join "\n"))
+         comp-name (if nextjs? "Page"
+                     (or (some-> (seq roots) first fc/component-name) "Component"))
+         header    (tailwind-header nextjs?)]
+     (dm/fmt
+      "%export default function %() {\n  return (\n    <div className=\"relative w-[%px] h-[%px]\">\n%\n    </div>\n  );\n}\n"
+      header comp-name (fc/fmt-num (:width size)) (fc/fmt-num (:height size)) body))))
+
+(defn generate-nextjs
+  "Next.js page component (App Router, 'use client') styled with Tailwind
+  CSS utility classes (JIT arbitrary values)."
   [objects shapes]
-  (let [roots     (fc/root-originals objects shapes)
-        origin    (fc/selection-origin roots)
-        size      (fc/selection-size roots)
-        body      (->> roots
-                      (keep #(render-shape objects % origin 1))
-                      (str/join "\n"))
-        comp-name (or (some-> (seq roots) first fc/component-name) "Component")
-        header    (dm/str
-                  "// Generated with Tailwind CSS v3+ (JIT arbitrary values).\n"
-                  "// No tailwind.config entries are required — every value is inline\n"
-                  "// as an arbitrary utility (bg-[...], rounded-[...], text-[...]).\n\n")]
-    (dm/fmt
-     "%import React from \"react\";\n\nexport default function %() {\n  return (\n    <div className=\"relative w-[%px] h-[%px]\">\n%\n    </div>\n  );\n}\n"
-     header comp-name (fc/fmt-num (:width size)) (fc/fmt-num (:height size)) body)))
+  (generate objects shapes true))
