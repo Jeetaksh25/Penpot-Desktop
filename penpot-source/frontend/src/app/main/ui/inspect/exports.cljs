@@ -148,7 +148,8 @@
                         {:value "react-native" :label "React Native"}
                         {:value "android-xml" :label "Android XML"}
                         {:value "winui3-xml" :label "WinUI 3 XAML"}
-                        {:value "flutter" :label "Flutter"}]]
+                        {:value "flutter" :label "Flutter"}
+                        {:value "tailwind" :label "Tailwind CSS"}]]
 
     (mf/use-effect
      (mf/deps shapes)

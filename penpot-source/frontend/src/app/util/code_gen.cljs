@@ -12,6 +12,7 @@
    [app.util.code-gen.frameworks.flutter :as flutter]
    [app.util.code-gen.frameworks.react :as react]
    [app.util.code-gen.frameworks.react-native :as react-native]
+   [app.util.code-gen.frameworks.tailwind :as tailwind]
    [app.util.code-gen.frameworks.winui3-xml :as winui3-xml]
    [app.util.code-gen.markup-html :as html]
    [app.util.code-gen.markup-svg :as svg]
@@ -53,12 +54,13 @@
 
 ;; ---------------------------------------------------------------------------
 ;; UI-framework code generation (React, Next.js, React Native, Android XML,
-;; WinUI 3 XAML, Flutter). Each produces a single self-contained source file.
+;; WinUI 3 XAML, Flutter, Tailwind CSS). Each produces a single self-contained
+;; source file.
 ;; ---------------------------------------------------------------------------
 
 (def framework-types
   "Set of markup-type strings that are handled as UI-framework code export."
-  #{"react" "nextjs" "react-native" "android-xml" "winui3-xml" "flutter"})
+  #{"react" "nextjs" "react-native" "android-xml" "winui3-xml" "flutter" "tailwind"})
 
 (defn framework?
   "True when `type` is one of the UI-framework code export targets (i.e. not
@@ -75,7 +77,8 @@
    "react-native" {:extension "jsx"  :mtype "text/jsx"          :label "React Native"}
    "android-xml"  {:extension "xml"  :mtype "application/xml"    :label "Android XML"}
    "winui3-xml"   {:extension "xaml" :mtype "application/xaml+xml" :label "WinUI 3 XAML"}
-   "flutter"      {:extension "dart" :mtype "text/x-dart"       :label "Flutter"}})
+   "flutter"      {:extension "dart" :mtype "text/x-dart"       :label "Flutter"}
+   "tailwind"     {:extension "jsx"  :mtype "text/jsx"          :label "Tailwind CSS"}})
 
 (defn framework-extension [type] (:extension (framework-meta (str type)) "txt"))
 (defn framework-mtype [type] (:mtype (framework-meta (str type)) "text/plain"))
@@ -92,6 +95,7 @@
       "android-xml"  (android-xml/generate objects shapes)
       "winui3-xml"   (winui3-xml/generate objects shapes)
       "flutter"      (flutter/generate objects shapes)
+      "tailwind"     (tailwind/generate objects shapes)
       "")))
 
 (defn download-framework-code!
