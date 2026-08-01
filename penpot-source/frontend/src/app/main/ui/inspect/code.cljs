@@ -20,6 +20,7 @@
    [app.main.ui.components.code-block :refer [code-block*]]
    [app.main.ui.components.copy-button :refer [copy-button*]]
    [app.main.ui.components.radio-buttons :refer [radio-button radio-buttons]]
+   [app.main.ui.components.select :refer [select]]
    [app.main.ui.hooks.resize :refer [use-resize-hook]]
    [app.main.ui.icons :as deprecated-icon]
    [app.main.ui.shapes.text.fontfaces :refer [shapes->fonts]]
@@ -35,6 +36,20 @@
 
 (def embed-images? true)
 (def remove-localhost? true)
+
+;; Markup / code-export format options shown in the Inspect "Code" panel.
+;; The first two (html, svg) are the classic markup targets; the rest are
+;; UI-framework code exporters that produce a single self-contained source
+;; file (no separate CSS section, no "Copy all code").
+(def markup-options
+  [{:value "html"         :label "HTML"}
+   {:value "svg"           :label "SVG"}
+   {:value "react"         :label "React"}
+   {:value "nextjs"        :label "Next.js"}
+   {:value "react-native"  :label "React Native"}
+   {:value "android-xml"   :label "Android XML"}
+   {:value "winui3-xml"    :label "WinUI 3 XAML"}
+   {:value "flutter"       :label "Flutter"}])
 
 (def page-template
   "<!DOCTYPE html>
@@ -146,11 +161,23 @@
             (-> (cg/generate-style-code objects style-type shapes all-children)
                 (cb/format-code style-type)))))
 
+        framework?
+        (cg/framework? markup-type)
+
+        framework-code
+        (mf/use-memo
+         (mf/deps markup-type shapes)
+         (fn []
+           (when framework?
+             (cg/generate-framework-code objects markup-type shapes))))
+
         markup-code
         (mf/use-memo
-         (mf/deps markup-type shapes images-data)
+         (mf/deps markup-type shapes images-data framework-code)
          (fn []
-           (cg/generate-formatted-markup-code objects markup-type shapes)))
+           (if framework?
+             framework-code
+             (cg/generate-formatted-markup-code objects markup-type shapes))))
 
         on-markup-copied
         (mf/use-fn
@@ -211,6 +238,19 @@
                         {::ev/name "copy-inspect-code"
                          ::ev/origin origin
                          :type "all"})))))
+
+        handle-download-code
+        (mf/use-fn
+         (mf/deps markup-type framework-code shapes)
+         (fn []
+           (when (and framework? (some? framework-code))
+             (let [base-name (:name (first shapes))
+                   origin (if (= :workspace from) "workspace" "viewer")]
+               (cg/download-framework-code! base-name markup-type framework-code)
+               (st/emit! (ev/event
+                          {::ev/name "download-inspect-code"
+                           ::ev/origin origin
+                           :type markup-type}))))))
 
         ;;handle-open-review
         ;;(mf/use-fn
@@ -278,52 +318,57 @@
     [:div {:class (stl/css-case :element-options true
                                 :viewer-code-block (= :viewer from))}
      [:div {:class (stl/css :attributes-block)}
-      [:button {:class (stl/css :download-button)
-                :on-click handle-copy-all-code}
-       "Copy all code"]]
+      (if framework?
+        [:button {:class (stl/css :download-button)
+                  :on-click handle-download-code}
+         "Download"]
+        [:button {:class (stl/css :download-button)
+                  :on-click handle-copy-all-code}
+         "Copy all code"])]
 
      #_[:div.attributes-block
         [:button.download-button {:on-click handle-open-review}
          "Preview"]]
 
-     [:div {:class (stl/css-case :code-block true
-                                 :collapsed collapsed-css?)}
-      [:div {:class (stl/css :code-row-lang)}
-       [:button {:class (stl/css :toggle-btn)
-                 :data-type "css"
-                 :on-click handle-collapse}
-        [:span {:class (stl/css-case
-                        :collapsabled-icon true
-                        :rotated collapsed-css?)}
-         deprecated-icon/arrow]]
+     (when-not framework?
+       [:div {:class (stl/css-case :code-block true
+                                   :collapsed collapsed-css?)}
+        [:div {:class (stl/css :code-row-lang)}
+         [:button {:class (stl/css :toggle-btn)
+                   :data-type "css"
+                   :on-click handle-collapse}
+          [:span {:class (stl/css-case
+                          :collapsabled-icon true
+                          :rotated collapsed-css?)}
+           deprecated-icon/arrow]]
 
-       [:div {:class (stl/css :code-lang-option)}
-        "CSS"]
-       ;; We will have a select when we have more than one option
-       ;;  [:& select {:default-value style-type
-       ;;              :class (stl/css :code-lang-select)
-       ;;              :on-change set-style
-       ;;              :options [{:label "CSS" :value "css"}]}]
+         [:div {:class (stl/css :code-lang-option)}
+          "CSS"]
+         ;; We will have a select when we have more than one option
+         ;;  [:& select {:default-value style-type
+         ;;              :class (stl/css :code-lang-select)
+         ;;              :on-change set-style
+         ;;              :options [{:label "CSS" :value "css"}]}]
 
-       [:div {:class (stl/css :action-btns)}
-        [:button {:class (stl/css :expand-button)
-                  :on-click on-expand}
-         deprecated-icon/code]
+         [:div {:class (stl/css :action-btns)}
+          [:button {:class (stl/css :expand-button)
+                    :on-click on-expand}
+           deprecated-icon/code]
 
-        [:> copy-button* {:data copy-css-fn
-                          :class (stl/css :css-copy-btn)
-                          :on-copied on-style-copied}]]]
+          [:> copy-button* {:data copy-css-fn
+                            :class (stl/css :css-copy-btn)
+                            :on-copied on-style-copied}]]]
 
-      (when-not collapsed-css?
-        [:div {:class (stl/css :code-row-display)
-               :style {:--code-height (dm/str (or style-size 400) "px")}}
-         [:> code-block* {:type style-type
-                          :code style-code}]])
+        (when-not collapsed-css?
+          [:div {:class (stl/css :code-row-display)
+                 :style {:--code-height (dm/str (or style-size 400) "px")}}
+           [:> code-block* {:type style-type
+                            :code style-code}]])
 
-      [:div {:class (stl/css :resize-area)
-             :on-pointer-down on-style-pointer-down
-             :on-lost-pointer-capture on-style-lost-pointer-capture
-             :on-pointer-move on-style-pointer-move}]]
+        [:div {:class (stl/css :resize-area)
+               :on-pointer-down on-style-pointer-down
+               :on-lost-pointer-capture on-style-lost-pointer-capture
+               :on-pointer-move on-style-pointer-move}]])
 
      [:div {:class (stl/css-case :code-block true
                                  :collapsed collapsed-markup?)}
@@ -336,20 +381,17 @@
                         :rotated collapsed-markup?)}
          deprecated-icon/arrow]]
 
-       [:& radio-buttons {:selected markup-type
-                          :on-change set-markup
-                          :class (stl/css :code-lang-options)
-                          :wide true
-                          :name "listing-style"}
-        [:& radio-button {:value "html"
-                          :id :html}]
-        [:& radio-button {:value "svg"
-                          :id :svg}]]
+       [:& select {:default-value markup-type
+                   :options markup-options
+                   :on-change set-markup
+                   :dropdown-class (stl/css :code-lang-select)
+                   :class (stl/css :code-lang-options)}]
 
        [:div {:class (stl/css :action-btns)}
-        [:button {:class (stl/css :expand-button)
-                  :on-click on-expand}
-         deprecated-icon/code]
+        (when-not framework?
+          [:button {:class (stl/css :expand-button)
+                    :on-click on-expand}
+           deprecated-icon/code])
 
         [:> copy-button* {:data copy-html-fn
                           :class (stl/css :html-copy-btn)

@@ -17,6 +17,7 @@
    [app.main.features :as features]
    [app.main.repo :as rp]
    [app.main.store :as st]
+   [app.util.code-gen :as cg]
    [app.util.dom :as dom]
    [app.util.websocket :as ws]
    [beicon.v2.core :as rx]
@@ -179,23 +180,89 @@
   (and (wasm-export-enabled? state)
        (contains? wasm-export-types (:type export))))
 
+;; ---------------------------------------------------------------------------
+;; UI-framework code export (React, Next.js, React Native, Android XML,
+;; WinUI 3 XAML, Flutter). These are generated entirely on the client and
+;; downloaded as a source file; they never go through the backend :export
+;; RPC (which only knows png/jpeg/webp/svg/pdf).
+;; ---------------------------------------------------------------------------
+
+(defn- code-export?
+  "True when `export` is a UI-framework code export target."
+  [export]
+  (cg/framework? (name (:type export))))
+
+(defn- resolve-export-objects
+  "Resolve the page objects map for an export spec, working in both the
+  workspace state layout (`:files file-id ... :pages-index page-id`) and
+  the viewer state layout (`:viewer :pages page-id`). Falls back to an
+  empty map so generation degrades gracefully instead of crashing."
+  [state export]
+  (let [file-id (:file-id export)
+        page-id (:page-id export)]
+    (or (when (and file-id page-id)
+          (not-empty (dsh/lookup-page-objects state file-id page-id)))
+        (when page-id
+          (get-in state [:viewer :pages page-id :objects]))
+        {})))
+
+(defn- export-root-shape
+  "The root shape to generate code for. Prefer the original (un-truncated)
+  shape looked up from `objects` so children/fills/etc. are intact; fall
+  back to the shape carried by the export spec, then to a bare id map."
+  [objects export]
+  (or (get objects (:object-id export))
+      (:shape export)
+      {:id (:object-id export)}))
+
+(defn- generate-and-download-code!
+  "Generate the framework source for a single code export spec and
+  trigger its browser download. Returns nil."
+  [state export]
+  (let [objects (resolve-export-objects state export)
+        shape   (export-root-shape objects export)
+        type    (name (:type export))
+        code    (cg/generate-framework-code objects type [shape])]
+    (cg/download-framework-code! (:name export) type code)
+    nil))
+
+(defn request-code-export
+  "Event: generate and download one or more UI-framework code exports
+  entirely on the client (no backend round-trip)."
+  [{:keys [exports]}]
+  (ptk/reify ::request-code-export
+    ptk/WatchEvent
+    (watch [_ state _]
+      (doseq [export exports]
+        (generate-and-download-code! state export))
+      (rx/of (clear-export-state uuid/zero)))))
+
 (defn request-simple-export
   [{:keys [export]}]
   (ptk/reify ::request-simple-export
     ptk/UpdateEvent
     (update [_ state]
       (cond-> state
-        (not (use-wasm-export? state export))
+        (and (not (use-wasm-export? state export))
+             (not (code-export? export)))
         (update :export assoc :in-progress true :id uuid/zero)))
 
     ptk/WatchEvent
     (watch [_ state _]
-      (if (use-wasm-export? state export)
+      (cond
+        (code-export? export)
+        (do
+          (generate-and-download-code! state export)
+          (rx/of (clear-export-state uuid/zero)))
+
+        (use-wasm-export? state export)
         (do
           (case (:type export)
             :pdf (wasm.exports/export-pdf export)
             (wasm.exports/export-image export))
           (rx/empty))
+
+        :else
         (let [profile-id (:profile-id state)
               params     {:exports [export]
                           :profile-id profile-id
@@ -221,7 +288,23 @@
   (ptk/reify ::request-multiple-export
     ptk/WatchEvent
     (watch [_ state _]
-      (let [resource-id (volatile! nil)
+      (let [{code-exports true asset-exports false}
+            (group-by code-export? exports)]
+
+        ;; Code exports are produced on the client. If any are present we
+        ;; handle them here, then either finish (no asset exports remain)
+        ;; or continue with the backend flow for the asset-only subset.
+        (cond
+          (and (seq code-exports) (seq asset-exports))
+          (do (doseq [e code-exports] (generate-and-download-code! state e))
+              (rx/of (request-multiple-export (assoc params :exports asset-exports))))
+
+          (seq code-exports)
+          (do (doseq [e code-exports] (generate-and-download-code! state e))
+              (rx/of (clear-export-state uuid/zero)))
+
+          :else
+          (let [resource-id (volatile! nil)
             profile-id  (:profile-id state)
             ws-conn     (:ws-conn state)
             params      (cond->
@@ -278,13 +361,29 @@
               (rx/take 1)
               (rx/delay default-timeout)
               (rx/map #(clear-export-state @resource-id))
-              (rx/take-until (rx/delay 6000 stopper))))))))
+              (rx/take-until (rx/delay 6000 stopper))))))))))
 
 (defn request-export
   [{:keys [exports] :as params}]
-  (if (= 1 (count exports))
-    (request-simple-export (assoc params :export (first exports)))
-    (request-multiple-export params)))
+  (let [{code-exports true asset-exports false}
+        (group-by code-export? exports)]
+    (cond
+      ;; Mixed batch: emit the code exports and re-dispatch the
+      ;; asset-only subset through the normal backend flow.
+      (and (seq code-exports) (seq asset-exports))
+      (ptk/reify ::request-export-mixed
+        ptk/WatchEvent
+        (watch [_ _ _]
+          (rx/of (request-code-export {:exports code-exports})
+                 (request-export (assoc params :exports asset-exports)))))
+
+      (seq code-exports)
+      (request-code-export {:exports code-exports})
+
+      :else
+      (if (= 1 (count asset-exports))
+        (request-simple-export (assoc params :export (first asset-exports)))
+        (request-multiple-export (assoc params :exports asset-exports))))))
 
 (defn retry-last-export
   []

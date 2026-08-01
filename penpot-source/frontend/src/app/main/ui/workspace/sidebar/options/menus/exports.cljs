@@ -200,7 +200,13 @@
                         {:value "jpeg" :label "JPG"}
                         {:value "webp" :label "WEBP"}
                         {:value "svg" :label "SVG"}
-                        {:value "pdf" :label "PDF"}]]
+                        {:value "pdf" :label "PDF"}
+                        {:value "react" :label "React"}
+                        {:value "nextjs" :label "Next.js"}
+                        {:value "react-native" :label "React Native"}
+                        {:value "android-xml" :label "Android XML"}
+                        {:value "winui3-xml" :label "WinUI 3 XAML"}
+                        {:value "flutter" :label "Flutter"}]]
 
     [:div {:class (stl/css :element-set)}
      [:div {:class (stl/css :element-title)}

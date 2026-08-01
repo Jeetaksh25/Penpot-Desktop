@@ -8,7 +8,15 @@
   (:require
    [app.common.schema :as sm]))
 
-(def types #{:png :jpeg :webp :svg :pdf})
+(def types
+  "Export target types. The first five are rendered asset formats handled
+  by the backend :export RPC. The remainder are UI-framework code exports
+  (React, Next.js, React Native, Android XML, WinUI 3 XAML, Flutter)
+  which are generated entirely on the client and never reach the backend;
+  they are included here so a shape's :exports spec validates when a code
+  format is configured."
+  #{:png :jpeg :webp :svg :pdf
+    :react :nextjs :react-native :android-xml :winui3-xml :flutter})
 
 (def schema:export
   [:map {:title "ShapeExport"}
