@@ -21,6 +21,7 @@
    [app.main.ui.debug.icons-preview :refer [icons-preview*]]
    [app.main.ui.debug.playground :refer [playground*]]
    [app.main.ui.ds.product.loader :refer [loader*]]
+   [app.main.ui.components.window-titlebar :refer [window-titlebar*]]
    [app.main.ui.error-boundary :refer [error-boundary*]]
    [app.main.ui.exports.files]
    [app.main.ui.frame-preview :as frame-preview]
@@ -379,11 +380,27 @@
 
     (dom/prevent-browser-gesture-navigation!)
 
-    [:& (mf/provider ctx/current-route) {:value route}
-     [:& (mf/provider ctx/current-profile) {:value profile}
-      (if edata
-        [:> static/exception-page* {:data edata :route route}]
-        [:> error-boundary* {:fallback static/exception-page*}
-         [:> notifications/current-notification*]
-         (when route
-           [:> page* {:route route :profile profile}])])]]))
+    ;; App shell: a full-height flex COLUMN with the custom window titlebar
+    ;; (drag region + theme toggle + minimize/maximize/close) fixed at the
+    ;; top, and the page tree below it filling the rest. The window is
+    ;; borderless (`decorations(false)` in lib.rs), so this titlebar IS the
+    ;; window chrome. Inline styles avoid coupling the root ns to a SCSS
+    ;; module; the titlebar owns its own scoped styles. Page roots that were
+    ;; `height:100vh` are switched to `height:100%` so they fill this content
+    ;; area instead of overflowing it by the titlebar's 32px.
+    [:div {:style {:height "100vh"
+                   :display "flex"
+                   :flexDirection "column"
+                   :overflow "hidden"}}
+     [:& window-titlebar* {:profile profile}]
+     [:div {:style {:flex "1 1 auto"
+                    :minHeight 0
+                    :overflow "hidden"}}
+      [:& (mf/provider ctx/current-route) {:value route}
+       [:& (mf/provider ctx/current-profile) {:value profile}
+        (if edata
+          [:> static/exception-page* {:data edata :route route}]
+          [:> error-boundary* {:fallback static/exception-page*}
+           [:> notifications/current-notification*]
+           (when route
+             [:> page* {:route route :profile profile}])])]]]]))

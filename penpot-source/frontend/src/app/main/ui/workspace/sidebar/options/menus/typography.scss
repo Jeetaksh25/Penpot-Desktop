@@ -359,6 +359,65 @@
   row-gap: var(--sp-xxs);
 }
 
+// Feature 2 — the font selector header is a flex row: the search bar grows
+// to fill, and the in-project "Add custom font" affordance sits at the
+// trailing edge so users can import fonts without leaving the workspace.
+.font-selector-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xxs);
+
+  > :first-child {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+}
+
+.font-import-affordance {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-inline-end: var(--sp-xxs);
+}
+
+.font-import-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: $sz-28;
+  block-size: $sz-28;
+  border: none;
+  border-radius: $br-8;
+  background: transparent;
+  color: var(--color-foreground-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-background-quaternary);
+    color: var(--color-foreground-primary);
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.7;
+  }
+}
+
+// Small CSS spinner shown in place of the "+" while fonts are uploading.
+.font-import-spinner {
+  inline-size: 14px;
+  block-size: 14px;
+  border: 2px solid var(--color-background-quaternary);
+  border-top-color: var(--color-accent-primary);
+  border-radius: 50%;
+  animation: font-import-spin 0.8s linear infinite;
+}
+
+@keyframes font-import-spin {
+  to { transform: rotate(360deg); }
+}
+
 .header-title {
   @include t.use-typography("headline-small");
 

@@ -233,22 +233,26 @@ async function main() {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Penpot Desktop</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #1d1f26; color: #e6e7ee;
+  /* Warm peach design-studio boot screen — matches ds/colors.scss dark theme
+     (mocha-950 surface, cream text, peach-coral accent). The window is
+     borderless, so #wrap is a Tauri drag region (move + double-click
+     maximize) until the SPA's custom titlebar takes over. */
+  html, body { margin: 0; height: 100%; background: #1c1612; color: #fffaf6;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   #wrap { display: flex; flex-direction: column; align-items: center; justify-content: center;
     height: 100%; gap: 28px; }
   #logo { display: flex; align-items: center; justify-content: center; }
   #logo svg { height: 84px; width: auto; display: block; }
   #title { font-size: 20px; font-weight: 600; letter-spacing: .3px; }
-  #boot-status { font-size: 14px; color: #9b9ca8; min-height: 1.2em; text-align: center; }
-  #boot-note { font-size: 12px; color: #6f7080; max-width: 380px; text-align: center; line-height: 1.4; margin-top: 6px; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #2e3140; border-top-color: #5145ff;
+  #boot-status { font-size: 14px; color: #9a7f70; min-height: 1.2em; text-align: center; }
+  #boot-note { font-size: 12px; color: #6e564a; max-width: 380px; text-align: center; line-height: 1.4; margin-top: 6px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #362b24; border-top-color: #ff7a52;
     border-radius: 50%; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-  <div id="wrap">
+  <div id="wrap" data-tauri-drag-region="true">
     <div id="logo">${logoSvg}</div>
     <div id="title">Penpot Desktop</div>
     <div class="spinner"></div>

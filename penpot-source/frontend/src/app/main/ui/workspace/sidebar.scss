@@ -16,8 +16,11 @@
   max-width: var(--left-sidebar-width-max);
   width: var(--right-sidebar-width);
   background-color: var(--panel-background-color);
-  height: 100vh;
-  max-height: 100vh;
+  // Fill the .workspace grid track (which is now 100% = 100vh-32px below the
+  // custom titlebar), not the viewport — 100vh would overflow by the titlebar
+  // height and the bottom 32px would be clipped by .workspace's overflow:hidden.
+  height: 100%;
+  max-height: 100%;
   z-index: deprecated.$z-index-1;
 
   .resize-area {
@@ -57,7 +60,7 @@
   grid-area: right-sidebar;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  height: 100vh;
+  height: 100%;
   width: var(--right-sidebar-width);
   background-color: var(--panel-background-color);
   z-index: deprecated.$z-index-1;
@@ -74,7 +77,7 @@
     display: grid;
     grid-template-columns: 100%;
     grid-template-rows: 100%;
-    height: calc(100vh - deprecated.$s-52);
+    height: calc(100% - deprecated.$s-52);
     overflow: hidden;
   }
 }
@@ -165,7 +168,7 @@
 .versions-tab {
   width: 100%;
   overflow: hidden;
-  height: calc(100vh - deprecated.$s-88);
+  height: calc(100% - deprecated.$s-88);
 }
 
 .history-tab {

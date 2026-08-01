@@ -127,6 +127,9 @@ importers:
       lodash.debounce:
         specifier: ^4.0.8
         version: 4.0.8
+      lucide-react:
+        specifier: ^0.460.0
+        version: 0.460.0(react@19.2.7)
       map-stream:
         specifier: 0.0.7
         version: 0.0.7
@@ -1489,7 +1492,7 @@ packages:
     engines: {node: '>= 10.0.0'}
 
   '@penpot/svgo@https://codeload.github.com/penpot/svgo/tar.gz/65b3a645df9edbe3c00acf4267dd06c2ca736021':
-    resolution: {gitHosted: true, tarball: https://codeload.github.com/penpot/svgo/tar.gz/65b3a645df9edbe3c00acf4267dd06c2ca736021}
+    resolution: {gitHosted: true, integrity: sha512-hG/pgVEWhmHEFMU+evGZkB5kHauff5Zo6ZO+Ro7HY0efsQTJft6svM4isH5jDISeSVrZ1CDGnhWBXuqkztsTWw==, tarball: https://codeload.github.com/penpot/svgo/tar.gz/65b3a645df9edbe3c00acf4267dd06c2ca736021}
     version: 3.3.0
 
   '@penpot/ua-parser@https://codeload.github.com/penpot/ua-parser/tar.gz/90b970f39f2dc08378b975a0f01045b4ec8e89a4':
@@ -3948,6 +3951,11 @@ packages:
   lru-cache@6.0.0:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
+
+  lucide-react@0.460.0:
+    resolution: {integrity: sha512-BVtq/DykVeIvRTJvRAgCsOwaGL8Un3Bxh8MbDxMhEWlZay3T4IpEKDEpwt5KZ0KJMHzgm6jrltxlT5eXOWXDHg==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -9313,6 +9321,10 @@ snapshots:
     dependencies:
       yallist: 4.0.0
     optional: true
+
+  lucide-react@0.460.0(react@19.2.7):
+    dependencies:
+      react: 19.2.7
 
   lz-string@1.5.0: {}
 

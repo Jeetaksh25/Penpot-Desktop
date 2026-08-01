@@ -12,7 +12,9 @@
 .settings-bar-right {
   min-inline-size: px2rem(252);
   inline-size: 100%;
-  block-size: 100vh;
+  // Fill the grid track (workspace .workspace / viewer .inspect-layout, both
+  // now 100% = 100vh-32px below the custom titlebar), not the viewport.
+  block-size: 100%;
   position: relative;
   inset-inline-start: unset;
   inset-inline-end: unset;
@@ -20,7 +22,8 @@
   overflow: hidden;
 
   &.viewer-code {
-    block-size: calc(100vh - $sz-48);
+    // Below the 48px viewer-header within the (now 100vh-32px) viewer layout.
+    block-size: calc(100% - $sz-48);
   }
 }
 

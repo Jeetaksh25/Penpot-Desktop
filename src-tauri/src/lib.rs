@@ -799,6 +799,12 @@ pub fn run() {
                 .title("Penpot Desktop")
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(900.0, 600.0)
+                // Borderless window — the OS titlebar is replaced by the
+                // in-app `window-titlebar` component (custom drag region +
+                // minimize/maximize/close + theme toggle). See
+                // `window_titlebar.cljs` and the `core:window:allow-*`
+                // permissions in `capabilities/default.json`.
+                .decorations(false)
                 .build();
 
             // DevTools are NOT auto-opened on launch (that was debug scaffolding

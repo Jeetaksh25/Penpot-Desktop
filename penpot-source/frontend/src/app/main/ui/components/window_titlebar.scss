@@ -1,0 +1,99 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "ds/_utils.scss" as *;
+
+// Custom (borderless) window titlebar. The OS chrome is removed via
+// `.decorations(false)` in lib.rs; this bar provides a Tauri drag region
+// (the left title area) plus the theme toggle and minimize/maximize/close
+// controls. Every color uses the `--color-*` custom properties emitted by
+// ds/colors.scss, so the bar follows the peach light/dark theme with the
+// rest of the app.
+
+.window-titlebar {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 32px;
+  block-size: 32px;
+  inline-size: 100%;
+  background-color: var(--color-background-primary);
+  border-block-end: 1px solid var(--color-background-quaternary);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.titlebar-drag {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  block-size: 100%;
+  padding-inline-start: px2rem(12);
+  cursor: default;
+}
+
+.titlebar-title {
+  font-size: px2rem(12);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: var(--color-foreground-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titlebar-controls {
+  display: flex;
+  align-items: stretch;
+  block-size: 100%;
+}
+
+.titlebar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  block-size: 100%;
+  inline-size: px2rem(40);
+  border: none;
+  background: transparent;
+  color: var(--color-foreground-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    background-color: var(--color-background-quaternary);
+    color: var(--color-foreground-primary);
+  }
+
+  &:active {
+    background-color: var(--color-background-tertiary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: -2px;
+  }
+}
+
+// The theme toggle sits a little to the LEFT of the minimize button, with a
+// visible gap between it and the window-control cluster (per request).
+.titlebar-theme-toggle {
+  inline-size: px2rem(36);
+  margin-inline-end: px2rem(8);
+}
+
+// Close uses the conventional red on hover, independent of theme.
+.titlebar-btn-close {
+  &:hover {
+    background-color: #e23a3a;
+    color: #ffffff;
+  }
+
+  &:active {
+    background-color: #c92f2f;
+    color: #ffffff;
+  }
+}

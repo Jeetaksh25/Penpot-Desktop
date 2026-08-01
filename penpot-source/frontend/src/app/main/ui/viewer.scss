@@ -7,7 +7,8 @@
 @use "refactor/common-refactor.scss" as deprecated;
 
 .viewer-layout {
-  height: 100vh;
+  // Fill the app-shell content area (below the custom titlebar), not 100vh.
+  height: 100%;
   display: grid;
   grid-template-rows: deprecated.$s-48 auto;
   grid-template-columns: 1fr;
@@ -41,7 +42,8 @@
   display: grid;
   grid-template-rows: deprecated.$s-48 auto;
   grid-template-columns: 1fr;
-  height: 100vh;
+  // Fill the app-shell content area (below the custom titlebar), not 100vh.
+  height: 100%;
   margin-top: 0;
   user-select: none;
 }
@@ -67,7 +69,11 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  height: calc(100vh - deprecated.$s-48);
+  // Fill the .viewer-content grid area (100vh-80px: titlebar + viewer-header),
+  // not the viewport — matches the .inspect-layout and [data-fullscreen]
+  // overrides below. 100vh-48px would overflow by the 32px titlebar and the
+  // bottom of the share-viewer canvas would be clipped.
+  height: 100%;
   overflow: auto;
 }
 
@@ -219,11 +225,13 @@
 
 [data-fullscreen="true"] .viewer-content {
   transform: translateY(-#{deprecated.$s-48});
-  height: 100vh;
+  // Fill the app-shell content area (below the custom titlebar), not 100vh.
+  height: 100%;
 }
 
 [data-fullscreen="true"] .viewer-section {
-  height: 100vh;
+  // Fill the app-shell content area (below the custom titlebar), not 100vh.
+  height: 100%;
 }
 
 [data-force-visible="true"] .viewer-go-next {

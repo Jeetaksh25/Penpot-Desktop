@@ -10,8 +10,10 @@
   @extend %new-scrollbar;
 
   width: 100vw;
-  height: 100vh;
-  max-height: 100vh;
+  // height:100% (not 100vh) so the workspace fills the app-shell content
+  // area below the 32px custom titlebar instead of overflowing it.
+  height: 100%;
+  max-height: 100%;
   user-select: none;
   display: grid;
   grid-template: "left-sidebar viewport right-sidebar" 1fr / auto 1fr auto;

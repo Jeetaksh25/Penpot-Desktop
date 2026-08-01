@@ -12,6 +12,7 @@
    [app.common.data :as d]
    [app.common.data.macros :as dm]
    [app.common.exceptions :as ex]
+   [app.common.media :as cm]
    [app.common.types.text :as txt]
    [app.main.constants :refer [max-input-length]]
    [app.main.data.common :as dcm]
@@ -25,6 +26,7 @@
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.editable-select :refer [editable-select]]
+   [app.main.ui.components.file-uploader :refer [file-uploader]]
    [app.main.ui.components.numeric-input :as deprecated-input]
    [app.main.ui.components.radio-buttons :refer [radio-button radio-buttons]]
    [app.main.ui.components.search-bar :refer [search-bar*]]
@@ -39,8 +41,10 @@
    [app.util.keyboard :as kbd]
    [app.util.strings :as ust]
    [app.util.timers :as tm]
+   [beicon.v2.core :as rx]
    [cuerdas.core :as str]
    [goog.events :as events]
+   [okulary.core :as l]
    [rumext.v2 :as mf]))
 
 (defn- attr->string [value]
@@ -149,6 +153,153 @@
                 (comp (filter #(contains? backends (:backend %)))))]
     (into [] xform fonts)))
 
+;; Same accept string the dashboard Fonts page uses (see
+;; `app.main.ui.dashboard.fonts/accept-font-types`). The extra `,ttf,...`
+;; entries work around a Chromium `<input accept>` quirk so all common font
+;; formats are pickable.
+(def ^:private accept-font-types
+  (str (str/join "," cm/font-types)
+       ",.ttf,application/font-woff,.woff,.woff2,.otf"))
+
+;; The team's already-installed custom fonts (item-id -> font, each carrying a
+;; :font-id), read from the same store path the dashboard Fonts page uses
+;; (`dashboard.fonts/ref:fonts`). We pass this to `fts/merge-and-group-fonts`
+;; so importing an extra variant of an existing family reuses that family's
+;; font-id instead of creating a duplicate family.
+(def ^:private ref:installed-fonts
+  (l/derived :fonts st/state))
+
+;; In-project custom-font import, surfaced directly in the font selector so
+;; the user doesn't have to leave the workspace for the dashboard Fonts page.
+;; Reuses the proven dashboard pipeline: `fts/process-upload` (opentype.js
+;; parse + per-variant grouping) -> `fts/merge-and-group-fonts` (assigns
+;; :font-id, reusing an existing family's id or a fresh uuid per new family)
+;; -> `fts/upload-font-variant` (chunked blob upload -> `:create-font-variant`)
+;; -> per variant `fts/add-font` (progressive picker update), then a single
+;; `fts/fetch-fonts` once all variants land. The `fetch-fonts` call is
+;; CRITICAL: it is the only path that runs `fonts/register! :custom`, which
+;; refreshes the picker's `fonts/fonts` db so the newly imported family shows
+;; up immediately. `fts/add-font` alone updates state :fonts but does NOT
+;; refresh the picker. `merge-and-group-fonts` is REQUIRED because
+;; process-upload items carry no :font-id and :create-font-variant's backend
+;; schema requires font-id as a UUID.
+(mf/defc font-import-affordance*
+  {::mf/private true}
+  []
+  (let [team-id   (mf/use-ctx ctx/current-team-id)
+        read-only (mf/use-ctx ctx/workspace-read-only?)
+        installed-fonts (mf/deref ref:installed-fonts)
+
+        importing* (mf/use-state false)
+        importing  (deref importing*)
+        input-ref  (mf/use-ref)
+
+        on-click
+        (mf/use-fn
+         (fn [event]
+           ;; Stop propagation so the click doesn't bubble into the
+           ;; selector's keydown/focus handling or select a font row.
+           (dom/stop-propagation event)
+           (some-> (mf/ref-val input-ref) dom/click)))
+
+        upload-one
+        (mf/use-fn
+         (mf/deps team-id)
+         ;; Upload one processed item. Emits [item font] on success, or nil
+         ;; on a per-item failure (after surfacing an error toast). nil keeps
+         ;; the outer stream alive so the completion counter still decrements.
+         (fn [item]
+           (->> (fts/upload-font-variant item)
+                ;; Mirror the dashboard: a small floor so the
+                ;; uploading->uploaded transition is visible, not a flicker
+                ;; on fast machines.
+                (rx/delay-at-least 2000)
+                (rx/map (fn [font] [item font]))
+                (rx/catch
+                 (fn [cause]
+                   (js/console.error "Font import failed" cause)
+                   (st/emit! (ntf/error
+                              (tr "errors.bad-font"
+                                  (or (first (:names item)) "font"))))
+                   (rx/of nil))))))
+
+        on-selected
+        (mf/use-fn
+         (mf/deps upload-one team-id installed-fonts)
+         (fn [blobs]
+           (if (or (nil? team-id) (empty? blobs))
+             nil
+             (let [remaining (volatile! 0)
+                   on-item
+                   (fn [pair]
+                     (when-let [[_item font] pair]
+                       ;; Per-variant: update local :fonts state so the picker
+                       ;; list updates progressively as each variant lands.
+                       (st/emit! (fts/add-font font)))
+                     (when (zero? (vswap! remaining dec))
+                       ;; CRITICAL: refresh the picker ONCE after every variant
+                       ;; has uploaded. `fetch-fonts` -> `fonts-fetched` ->
+                       ;; `fonts/register! :custom` is the only path that
+                       ;; refreshes the picker's `fonts/fonts` db (add-font
+                       ;; alone does not). Firing it once at the end — not per
+                       ;; variant — avoids N redundant :get-font-variants RPCs
+                       ;; and N fonts/register! re-registrations.
+                       (st/emit! (fts/fetch-fonts team-id))
+                       (reset! importing* false)))]
+               (reset! importing* true)
+               (->> (fts/process-upload blobs team-id)
+                    (rx/subs!
+                     (fn [result]
+                       ;; Assign :font-id BEFORE uploading. process-upload
+                       ;; items carry no :font-id, and :create-font-variant's
+                       ;; backend schema requires font-id as a UUID, so without
+                       ;; this every upload fails validation and no font is
+                       ;; ever imported. merge-and-group-fonts reuses an
+                       ;; existing family's id (from installed-fonts) or
+                       ;; generates a single fresh uuid shared across all
+                       ;; variants of a new family — mirroring the dashboard
+                       ;; Fonts page.
+                       (let [merged (fts/merge-and-group-fonts {} installed-fonts result)
+                             items  (into [] (vals merged))]
+                         (if (empty? items)
+                           ;; process-upload already surfaced a toast for any
+                           ;; unreadable files (its internal `errors`
+                           ;; subscription), so — mirroring the dashboard —
+                           ;; emit nothing here and the user sees a single
+                           ;; notification instead of two.
+                           (reset! importing* false)
+                           (do
+                             (vreset! remaining (count items))
+                             (->> (rx/from items)
+                                  (rx/mapcat upload-one)
+                                  (rx/subs!
+                                   on-item
+                                   (fn [cause]
+                                     (js/console.error "Font import stream error" cause)
+                                     (reset! importing* false))))))))
+                     (fn [error]
+                       (js/console.error "Font process-upload error" error)
+                       (reset! importing* false)
+                       (st/emit! (ntf/error (tr "errors.generic"))))))))))]
+    (when (and team-id (not read-only))
+      [:div {:class (stl/css :font-import-affordance)}
+       [:button {:type "button"
+                 :class (stl/css-case :font-import-btn true
+                                      :is-importing importing)
+                 :disabled importing
+                 :title (tr "labels.add-custom-font")
+                 :aria-label (tr "labels.add-custom-font")
+                 :on-click on-click}
+        (if importing
+          [:span {:class (stl/css :font-import-spinner)}]
+          [:> icon* {:icon-id i/add :size "s"}])]
+       ;; Hidden file input — zero new Tauri permissions (HTML file dialog).
+       [:& file-uploader {:input-id "font-selector-import"
+                          :accept accept-font-types
+                          :multi true
+                          :ref input-ref
+                          :on-selected on-selected}]])))
+
 (mf/defc font-selector*
   [{:keys [on-select on-close current-font show-recent full-size]}]
   (let [selected     (mf/use-state current-font)
@@ -238,10 +389,12 @@
      [:div {:class (stl/css-case :font-selector-dropdown true
                                  :font-selector-dropdown-full-size full-size?)}
       [:div {:class (stl/css :header)}
-       [:> search-bar* {:on-change on-filter-change
-                        :value (:term state)
-                        :auto-focus true
-                        :placeholder (tr "workspace.options.search-font")}]
+       [:div {:class (stl/css :font-selector-header-row)}
+        [:> search-bar* {:on-change on-filter-change
+                         :value (:term state)
+                         :auto-focus true
+                         :placeholder (tr "workspace.options.search-font")}]
+        [:> font-import-affordance*]]
        (when (and recent-fonts show-recent)
          [:section {:class (stl/css :show-recent)}
           [:p {:class (stl/css :header-title)} (tr "workspace.options.recent-fonts")]

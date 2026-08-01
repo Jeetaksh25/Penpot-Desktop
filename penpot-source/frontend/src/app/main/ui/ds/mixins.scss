@@ -35,8 +35,10 @@
 /// @param {Bool} $include-placeholder - Include placeholder styles
 
 @mixin custom-scrollbar(
-  $thumb-color: #aab5ba4d,
-  $thumb-hover-color: #aab5bab3,
+  // Warm taupe thumb (was cool blue-gray #aab5ba) so scrollbars match the
+  // peach theme on both light and dark surfaces.
+  $thumb-color: #a98c7a4d,
+  $thumb-hover-color: #a98c7ab3,
   $size: $sz-12,
   $radius: $br-8,
   $border: $b-2,

@@ -41,7 +41,7 @@
 
 (mf/defc selection-component*
   [{:keys [children]}]
-  [:span {:style {:background "#ccc" :display "inline-block"}} children])
+  [:span {:style {:background "var(--text-editor-selection-background-color)" :display "inline-block"}} children])
 
 (defn- render-block
   [block shape]
@@ -249,8 +249,7 @@
        :custom-style-fn (partial styles-fn shape)
        :block-renderer-fn #(render-block % shape)
        :ref on-editor
-       :editor-state state
-       :style #js {:border "1px solid red"}}]]))
+       :editor-state state}]]))
 
 (defn translate-point-from-viewport
   "Translate a point in the viewport into client coordinates"

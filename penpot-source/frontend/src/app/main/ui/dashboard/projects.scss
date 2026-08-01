@@ -23,11 +23,13 @@
 
 .dashboard-projects {
   user-select: none;
-  block-size: calc(100vh - px2rem(80));
+  // .dashboard shrank from 100vh to 100% (100vh-32px) to fit below the custom
+  // titlebar, so account for the extra 32px in the viewport-based heuristic.
+  block-size: calc(100vh - px2rem(112));
 }
 
 .with-team-hero {
-  block-size: calc(100vh - px2rem(360));
+  block-size: calc(100vh - px2rem(392));
 }
 
 .dashboard-shared {

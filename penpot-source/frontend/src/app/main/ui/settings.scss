@@ -13,7 +13,8 @@
   display: grid;
   grid-template-rows: deprecated.$s-48 1fr;
   grid-template-columns: deprecated.$s-40 deprecated.$s-256 1fr;
-  height: 100vh;
+  // Fill the app-shell content area (below the custom titlebar), not 100vh.
+  height: 100%;
 }
 
 .dashboard-content {
