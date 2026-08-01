@@ -8,6 +8,7 @@
   (:require-macros [app.main.style :as stl])
   (:require
    ["react-virtualized" :as rvt]
+   ["@tauri-apps/api/core" :refer [invoke]]
    [app.common.data :as d]
    [app.common.data.macros :as dm]
    [app.common.exceptions :as ex]
@@ -15,6 +16,7 @@
    [app.main.constants :refer [max-input-length]]
    [app.main.data.common :as dcm]
    [app.main.data.fonts :as fts]
+   [app.main.data.notifications :as ntf]
    [app.main.data.shortcuts :as dsc]
    [app.main.data.workspace.libraries :as dwl]
    [app.main.data.workspace.undo :as dwu]
@@ -67,7 +69,33 @@
   {::mf/wrap [mf/memo]}
   [{:keys [font is-current on-click style]}]
   (let [item-ref (mf/use-ref)
-        on-click (mf/use-fn (mf/deps font) #(on-click font))]
+        on-click (mf/use-fn (mf/deps font) #(on-click font))
+
+        ;; Feature 1 — optional offline download for Google fonts. Pre-caches
+        ;; the family's CSS2 + every variant + the menu-preview TTF into the
+        ;; app-data fonts cache via the `fonts_download_family` Tauri command,
+        ;; so the family then renders + exports fully offline. The proxy serves
+        ;; the cached files at the same URLs, so no online/offline branching in
+        ;; the SPA. The button is rendered only for Google fonts (Feature 1
+        ;; Phase 3 "download" affordance); the click is stopped so it doesn't
+        ;; also select the font.
+        google?    (= (:backend font) :google)
+        on-download (mf/use-fn
+                     (mf/deps font)
+                     (fn [event]
+                       (dom/stop-propagation event)
+                       (let [name (:name font)]
+                         (-> (invoke "fonts_download_family"
+                                     #js {:query   (fonts/gfont-css-query font)
+                                          :menuUrl (:menu font)})
+                             (.then (fn [_]
+                                      (st/emit!
+                                       (ntf/info
+                                        (dm/str "Cached '" name "' for offline use.")))))
+                             (.catch (fn [_]
+                                       (st/emit!
+                                        (ntf/error
+                                         (dm/str "Couldn't cache '" name "' for offline.")))))))))]
 
     (mf/use-effect
      (mf/deps is-current)
@@ -77,13 +105,33 @@
            (when-not (dom/is-in-viewport? element)
              (dom/scroll-into-view! element))))))
 
+    ;; Feature 1 — render the family name in its own typeface (like word
+    ;; editors). For Google fonts we inject a one-file "menu" @font-face
+    ;; (lightweight); for custom uploaded fonts we ensure the family is loaded.
+    ;; Builtin fonts (e.g. Source Sans Pro) are already loaded as the UI font.
+    (mf/use-effect
+     (mf/deps (:id font))
+     (fn []
+       (let [backend (:backend font)]
+         (cond
+           (= :google backend) (fonts/ensure-gfont-preview! (:id font))
+           (= :custom backend) (fonts/ensure-loaded! (:id font))
+           :else nil))))
+
     [:div {:class (stl/css :font-wrapper)
            :style style
            :ref item-ref
            :on-click on-click}
      [:div {:class  (stl/css-case :font-item true
                                   :selected is-current)}
-      [:span {:class (stl/css :font-item-label)} (:name font)]
+      [:span {:class (stl/css :font-item-label)
+              :style {:font-family (fonts/css-font-family (:family font))}} (:name font)]
+      (when google?
+        [:> icon-button* {:variant "action"
+                           :aria-label "Download family for offline use"
+                           :icon i/download
+                           :class (stl/css :font-download-btn)
+                           :on-click on-download}])
       (when is-current
         [:> icon* {:icon-id i/tick
                    :size "s"}])]]))

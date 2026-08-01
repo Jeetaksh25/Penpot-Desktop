@@ -8,6 +8,14 @@ use tauri::{Emitter, Manager};
 
 mod proxy;
 
+// Feature modules. `commands` is the shared foundation (F1): path helpers +
+// the trivial `ping` bridge check. `llm` is the closed AI layer (F4). `fonts`
+// is added in Feature 1. Each module owns its `#[tauri::command]`s; they are
+// all registered together in a single `generate_handler![…]` below.
+mod commands;
+mod llm;
+mod fonts;
+
 /// Hide the console window for a spawned process. The Tauri app uses the
 /// `windows` subsystem (GUI, no parent console), so without this every
 /// console exe we launch — postgres, redis, java, initdb, psql, … — pops its
@@ -466,7 +474,11 @@ fn backend_env(root: &Path) -> Vec<(&'static str, String)> {
         ("PENPOT_SECRET_KEY", "desktop-local-secret-key-change-in-production".into()),
         (
             "PENPOT_FLAGS",
-            "disable-secure-session-cookies disable-email-verification disable-google-fonts-provider \
+            // Feature 1: `disable-google-fonts-provider` is REMOVED so the
+            // frontend registers the baked Google Fonts library and the font
+            // picker shows it. The proxy serves /internal/gfonts/* (online by
+            // default; offline cache on demand) instead of the nginx upstream.
+            "disable-secure-session-cookies disable-email-verification \
              disable-dashboard-templates-section disable-telemetry enable-backend-worker \
              enable-demo-users enable-cors disable-feature-render-wasm disable-render-switch \
              disable-render-wasm-info disable-available-viewer-wasm disable-render-wasm-dpr"
@@ -731,6 +743,18 @@ pub fn run() {
             jvm: Mutex::new(None),
             redis: Mutex::new(None),
         })
+        // The desktop app previously had NO invoke_handler — the frontend talked
+        // to the JVM backend solely over the same-origin HTTP/WS proxy. This is
+        // the first `.invoke_handler`, registering the foundation (F1 `ping`)
+        // and the closed AI layer (F4 `llm_*`). Feature 1 appends the `fonts_*`
+        // commands here. One `generate_handler!` lists every feature's commands.
+        .invoke_handler(tauri::generate_handler![
+            commands::ping,
+            llm::llm_get_config,
+            llm::llm_set_config,
+            llm::llm_generate,
+            fonts::fonts_download_family,
+        ])
         .setup(|app| {
             let handle = app.handle().clone();
 
@@ -746,9 +770,15 @@ pub fn run() {
             // cross-origin asset/CORS friction — exactly how dev already works.
             if !cfg!(debug_assertions) {
                 let root = project_root(Some(&handle));
+                // Feature 1 — the on-demand offline font cache lives under the
+                // OS app-data dir (survives upgrades, never in the installer).
+                // The proxy's /internal/gfonts routes read/write it.
+                let fonts_cache = commands::fonts_cache_dir(&handle)
+                    .unwrap_or_else(|_| root.join("data").join("fonts").join("gfonts"));
                 proxy::start(
                     root.join("public"),
                     root.join("data").join("assets"),
+                    fonts_cache,
                     FRONTEND_PORT,
                 );
             }

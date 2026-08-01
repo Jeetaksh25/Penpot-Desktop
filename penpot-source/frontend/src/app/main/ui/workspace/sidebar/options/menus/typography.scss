@@ -382,6 +382,25 @@
   &.selected {
     color: var(--color-foreground-primary);
   }
+
+  // Feature 1 — the per-family "download for offline" affordance is hidden
+  // until the row is hovered so it doesn't crowd the picker.
+  &:hover,
+  &:focus-within {
+    .font-download-btn {
+      opacity: 1;
+    }
+  }
+}
+
+.font-download-btn {
+  // Feature 1 — Google-font "download for offline" button (Phase 3). Sits at
+  // the trailing edge of the row (the label is flex-grow:1), subtle until the
+  // row is hovered/focused.
+  align-self: center;
+  margin-inline-start: var(--sp-xxs);
+  opacity: 0;
+  transition: opacity 120ms ease;
 }
 
 .font-item-label {
@@ -390,6 +409,12 @@
 
   flex-grow: 1;
   min-inline-size: 0;
+  // Feature 1 — the family name is rendered in its own typeface (the
+  // font-family is set inline per row by font-item*). A slightly larger,
+  // relaxed size makes each family's typeface readable in the picker.
+  font-size: 15px;
+  line-height: 1.35;
+  letter-spacing: normal;
 }
 
 .font-selector-dropdown-full-size {

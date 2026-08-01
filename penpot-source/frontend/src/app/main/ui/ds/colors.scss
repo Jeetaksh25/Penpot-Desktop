@@ -6,71 +6,98 @@
 
 @use "sass:color";
 
-$mint-150: #7efff5;
-$mint-250: #00d1b8;
-$mint-700: #426158;
-$mint-150-60: #7efff599;
-$mint-250-10: #00d1b81a;
-$mint-250-70: #00d1b8b3;
+// ── Peach design-studio palette ─────────────────────────────────────────────
+//
+// The app is rebranded as a warm, design-studio tool rather than Penpot's
+// cold mint/purple. The whole chrome is driven by the CSS custom properties
+// emitted in the two `:global` blocks below; components consume
+// `var(--color-*)`, so remapping here propagates everywhere. Both the light
+// and the dark (`:global(.default)`) themes are warm peach so whichever the
+// user picks feels like the same studio.
+//
+// Semantic colors (success / warning / error / info) are deliberately left
+// recognizable — green / orange / red / blue — because deviating from those
+// hurts usability. The peach family owns accents, actions, surfaces, and text.
+
+// Coral / peach accent ramp (light → dark).
+$peach-100: #fff1e6;
+$peach-150: #ffe3d1;
+$peach-200: #ffd0b8;
+$peach-300: #ffb599;
+$peach-400: #ff9e80;
+$peach-500: #ff7a52;   // primary coral
+$peach-600: #ee5a30;   // action / hover
+$peach-700: #c2442a;
+$peach-800: #8c3220;
+$peach-pink: #ff8fa6;  // quaternary — a warm pink sibling for life
+
+// Warm neutrals — LIGHT surfaces + text (cream / sand / espresso).
+$cream-0:   #fffaf6;   // page background — warmest white
+$cream-50:  #fdf4ee;
+$cream-100: #faece2;
+$cream-200: #f3e0d3;
+$cream-300: #ead3c3;
+$sand-600:  #8a6f60;   // secondary text + icons on light
+$espresso-900: #2a201a; // primary text on light — warm near-black
+
+// Warm neutrals — DARK surfaces + text (mocha).
+$mocha-1000: #15100d;  // darkest (panel recesses)
+$mocha-950:  #1c1612;  // default dark background
+$mocha-900:  #241c17;
+$mocha-850:  #2c231d;
+$mocha-800:  #362b24;
+$mocha-700:  #4a3a31;
+$mocha-600:  #6e564a;
+$mocha-500:  #9a7f70;  // secondary text + icons on dark
+
+// Workspace canvas (the backdrop behind artboards).
+$canvas-light: #ece3db;
+$canvas-dark:  #2c231d;
+
+// ── Neutral + semantic SCSS vars kept for other files that `@use` them ──────
+$black: #000;
+$white: #fff;
+$white-60: #fff9;
+$white-90: #ffffffe6;
+$gray-50:  #f3f4f6;
+$gray-100: #eef0f2;
+$gray-200: #e8eaee;
+$gray-800: #2e3434;
+$gray-900: #212426;
+$gray-950: #18181a;
+$gray-950-60: #18181a99;
+$gray-950-90: #18181ae6;
+
 $green-200: #a7e8d9;
 $green-500: #2d9f8f;
 $green-950: #0a2927;
+
 $orange-200: #fedeac;
 $orange-500: #fe9c07;
 $orange-950: #3d2501;
+
 $red-200: #ffcada;
 $red-400: #c80857;
 $red-500: #ff3277;
 $red-950: #500124;
-$pink-400: #ff6fe0;
-$purple-200: #e1d2f5;
-$purple-400: #bb97d8;
-$purple-500: #a977d1;
-$purple-600: #8c33eb;
-$purple-700: #6911d4;
-$purple-600-10: #8c33eb1a;
-$purple-600-70: #8c33ebb3;
-$purple-700-60: #6911d499;
-$aqua-200: #ddf7ff;
-$aqua-400: #77e1f3;
-$aqua-600: #59acbb;
-$aqua-800: #1d4464;
-$violet-300: #a7a9ff;
-$violet-600: #6c6dad;
-$violet-700: #484c74;
-$violet-800: #272941;
+
 $blue-200: #bae3fd;
 $blue-500: #0e9be9;
 $blue-950: #082c49;
-$cobalt-700: #1345aa;
-$black: #000;
-$gray-950: #18181a;
-$gray-950-60: #18181a99;
-$gray-950-90: #18181ae6;
-$gray-900: #212426;
-$gray-800: #2e3434;
-$gray-200: #e8eaee;
-$gray-100: #eef0f2;
-$gray-50: #f3f4f6;
-$white: #fff;
-$white-60: #fff9;
-$white-90: #ffffffe6;
-$blue-teal-700: #495e74;
-$grayish-blue-500: #8f9da3;
-$grayish-red: #bfbfbf;
 
+// ── Light theme ─────────────────────────────────────────────────────────────
 :global(.light) {
-  --color-accent-primary: #{$purple-700};
-  --color-accent-primary-muted: #{$purple-200};
-  --color-accent-secondary: #{$cobalt-700};
-  --color-accent-tertiary: #{$purple-600};
-  --color-accent-quaternary: #{$pink-400};
-  --color-accent-overlay: #{$purple-700-60};
-  --color-accent-select: #{$purple-600-10};
-  --color-accent-background-select: #{$purple-600-70};
-  --color-accent-action: #{$purple-400};
-  --color-accent-action-hover: #{$purple-500};
-  --color-accent-off: #{$gray-50};
+  --color-accent-primary: #{$peach-500};
+  --color-accent-primary-muted: #{$peach-200};
+  --color-accent-secondary: #{$peach-700};
+  --color-accent-tertiary: #{$peach-400};
+  --color-accent-quaternary: #{$peach-pink};
+  --color-accent-overlay: #{color.change($peach-500, $alpha: 0.6)};
+  --color-accent-select: #{color.change($peach-500, $alpha: 0.1)};
+  --color-accent-background-select: #{color.change($peach-500, $alpha: 0.7)};
+  --color-accent-action: #{$peach-600};
+  --color-accent-action-hover: #{$peach-700};
+  --color-accent-off: #{$cream-100};
   --color-accent-success: #{$green-500};
   --color-background-success: #{$green-200};
   --color-accent-warning: #{$orange-500};
@@ -80,42 +107,43 @@ $grayish-red: #bfbfbf;
   --color-foreground-error: #{$red-500};
   --color-accent-info: #{$blue-500};
   --color-background-info: #{$blue-200};
-  --color-background-default: #{$white};
-  --color-accent-default: #{$gray-100};
-  --color-icon-default: #{$blue-teal-700};
-  --color-background-disabled: #{$gray-200};
+  --color-background-default: #{$cream-0};
+  --color-accent-default: #{$cream-200};
+  --color-icon-default: #{$sand-600};
+  --color-background-disabled: #{$cream-200};
   --color-background-primary: #{$white};
-  --color-background-secondary: #{$gray-200};
-  --color-background-tertiary: #{$gray-50};
-  --color-background-quaternary: #{$gray-100};
-  --color-foreground-primary: #{$black};
-  --color-foreground-secondary: #{$blue-teal-700};
+  --color-background-secondary: #{$cream-200};
+  --color-background-tertiary: #{$cream-50};
+  --color-background-quaternary: #{$cream-100};
+  --color-foreground-primary: #{$espresso-900};
+  --color-foreground-secondary: #{$sand-600};
   --color-static-white: #{$white};
   --color-static-black: #{$black};
-  --color-shadow-dark: #{color.change($gray-200, $alpha: 0.6)};
-  --color-shadow-light: #{color.change($black, $alpha: 0.3)};
+  --color-shadow-dark: #{color.change($cream-300, $alpha: 0.55)};
+  --color-shadow-light: #{color.change($espresso-900, $alpha: 0.10)};
   --color-overlay-default: #{$white-60};
   --color-overlay-onboarding: #{$white-90};
-  --color-canvas: #{$grayish-red};
-  --color-token-background: #{$aqua-200};
-  --color-token-border: #{$aqua-400};
-  --color-token-accent: #{$aqua-600};
-  --color-token-foreground: #{$aqua-800};
+  --color-canvas: #{$canvas-light};
+  --color-token-background: #{$peach-150};
+  --color-token-border: #{$peach-300};
+  --color-token-accent: #{$peach-600};
+  --color-token-foreground: #{$espresso-900};
   --color-badge-premium: #{$orange-500};
 }
 
+// ── Dark theme (default) ────────────────────────────────────────────────────
 :global(.default) {
-  --color-accent-primary: #{$mint-150};
-  --color-accent-primary-muted: #{$mint-700};
-  --color-accent-secondary: #{$purple-400};
-  --color-accent-tertiary: #{$mint-250};
-  --color-accent-quaternary: #{$pink-400};
-  --color-accent-overlay: #{$mint-150-60};
-  --color-accent-select: #{$mint-250-10};
-  --color-accent-background-select: #{$mint-250-70};
-  --color-accent-action: #{$purple-400};
-  --color-accent-action-hover: #{$purple-500};
-  --color-accent-off: #{$gray-50};
+  --color-accent-primary: #{$peach-300};
+  --color-accent-primary-muted: #{$peach-700};
+  --color-accent-secondary: #{$peach-400};
+  --color-accent-tertiary: #{$peach-500};
+  --color-accent-quaternary: #{$peach-pink};
+  --color-accent-overlay: #{color.change($peach-300, $alpha: 0.6)};
+  --color-accent-select: #{color.change($peach-300, $alpha: 0.1)};
+  --color-accent-background-select: #{color.change($peach-300, $alpha: 0.7)};
+  --color-accent-action: #{$peach-500};
+  --color-accent-action-hover: #{$peach-600};
+  --color-accent-off: #{$mocha-800};
   --color-accent-success: #{$green-500};
   --color-background-success: #{$green-950};
   --color-accent-warning: #{$orange-500};
@@ -125,26 +153,26 @@ $grayish-red: #bfbfbf;
   --color-foreground-error: #{$red-500};
   --color-accent-info: #{$blue-500};
   --color-background-info: #{$blue-950};
-  --color-background-default: #{$gray-950};
-  --color-accent-default: #{$gray-800};
-  --color-icon-default: #{$grayish-blue-500};
-  --color-background-disabled: #{$gray-800};
-  --color-background-primary: #{$gray-950};
-  --color-background-secondary: #{$black};
-  --color-background-tertiary: #{$gray-900};
-  --color-background-quaternary: #{$gray-800};
-  --color-foreground-primary: #{$white};
-  --color-foreground-secondary: #{$grayish-blue-500};
+  --color-background-default: #{$mocha-950};
+  --color-accent-default: #{$mocha-800};
+  --color-icon-default: #{$mocha-500};
+  --color-background-disabled: #{$mocha-800};
+  --color-background-primary: #{$mocha-950};
+  --color-background-secondary: #{$mocha-1000};
+  --color-background-tertiary: #{$mocha-900};
+  --color-background-quaternary: #{$mocha-800};
+  --color-foreground-primary: #{$cream-0};
+  --color-foreground-secondary: #{$mocha-500};
   --color-static-white: #{$white};
   --color-static-black: #{$black};
-  --color-shadow-dark: #{color.change($black, $alpha: 0.6)};
-  --color-shadow-light: #{color.change($black, $alpha: 0.3)};
-  --color-overlay-default: #{$gray-950-60};
-  --color-overlay-onboarding: #{$gray-950-90};
-  --color-canvas: #{$grayish-red};
-  --color-token-background: #{$violet-800};
-  --color-token-border: #{$violet-700};
-  --color-token-accent: #{$violet-600};
-  --color-token-foreground: #{$violet-300};
+  --color-shadow-dark: #{color.change($mocha-1000, $alpha: 0.6)};
+  --color-shadow-light: #{color.change($mocha-1000, $alpha: 0.3)};
+  --color-overlay-default: #{color.change($mocha-1000, $alpha: 0.6)};
+  --color-overlay-onboarding: #{color.change($mocha-1000, $alpha: 0.9)};
+  --color-canvas: #{$canvas-dark};
+  --color-token-background: #{$mocha-800};
+  --color-token-border: #{$mocha-700};
+  --color-token-accent: #{$peach-400};
+  --color-token-foreground: #{$peach-200};
   --color-badge-premium: #{$orange-200};
 }

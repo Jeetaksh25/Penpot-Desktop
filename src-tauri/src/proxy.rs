@@ -17,6 +17,7 @@ use std::net::{TcpListener, TcpStream, Shutdown};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::OnceLock;
 use std::thread;
 use std::time::Duration;
 
@@ -108,6 +109,122 @@ fn mime_type(path: &str) -> &str {
         }
     }
     "application/octet-stream"
+}
+
+// ── Google Fonts proxy (Feature 1) ──────────────────────────────────────────
+//
+// See the intercept in `handle_client`. The frontend's `process-gfont-css`
+// rewrites `https://fonts.gstatic.com/s` in the CSS to our `/internal/gfonts
+// /font` route, so the browser asks us for the font files; we fetch them from
+// gstatic (TLS) and cache them on disk. CSS is served live from googleapis
+// (online) unless the optional offline download pre-cached it.
+
+/// A shared blocking HTTP client for Google Fonts fetches. Built once (TLS
+/// init is non-trivial) and reused across proxy threads. The desktop proxy
+/// runs on plain std threads, so it MUST use the blocking client — the async
+/// client panics if driven outside its own runtime.
+fn gfonts_client() -> &'static reqwest::blocking::Client {
+    static CLI: OnceLock<reqwest::blocking::Client> = OnceLock::new();
+    CLI.get_or_init(|| {
+        reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(30))
+            .user_agent("PenpotDesktop/1.0 (gfonts-proxy)")
+            .build()
+            .expect("gfonts blocking client build")
+    })
+}
+
+/// Lowercase-alnum slug for cache filenames (query strings, family names).
+fn slugify(s: &str) -> String {
+    s.chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c.to_ascii_lowercase() } else { '-' })
+        .collect::<String>()
+        .trim_matches('-')
+        .to_string()
+}
+
+fn gfonts_fetch(
+    client: &reqwest::blocking::Client,
+    url: &str,
+) -> Result<Vec<u8>, String> {
+    let resp = client
+        .get(url)
+        .send()
+        .map_err(|e| format!("gfonts fetch {url} failed: {e}"))?;
+    let status = resp.status();
+    let body = resp
+        .bytes()
+        .map_err(|e| format!("gfonts read {url} failed: {e}"))?
+        .to_vec();
+    if !status.is_success() {
+        return Err(format!("gfonts {url} returned {status}"));
+    }
+    Ok(body)
+}
+
+/// `/internal/gfonts/css?family=…` → `https://fonts.googleapis.com/css2?family=…`.
+/// Serves a pre-cached CSS (offline download) if present, else fetches live.
+fn handle_gfonts_css(
+    stream: &mut TcpStream,
+    path: &str,
+    cache_dir: &Path,
+    client: &reqwest::blocking::Client,
+    cors: &str,
+) {
+    let query = path.split_once('?').map(|(_, q)| q).unwrap_or("");
+    let slug = slugify(&format!("css-{query}"));
+    let cached = cache_dir.join("css").join(format!("{slug}.css"));
+    if let Ok(data) = std::fs::read(&cached) {
+        send_response(stream, "200 OK", "text/css; charset=utf-8", &data, cors);
+        return;
+    }
+    let url = format!("https://fonts.googleapis.com/css2?{query}");
+    match gfonts_fetch(client, &url) {
+        Ok(body) => {
+            let _ = std::fs::create_dir_all(cache_dir.join("css"));
+            let _ = std::fs::write(&cached, &body);
+            send_response(stream, "200 OK", "text/css; charset=utf-8", &body, cors);
+        }
+        Err(e) => {
+            eprintln!("[penpot-proxy] gfonts css: {e}");
+            send_response(stream, "502 Bad Gateway", "text/plain", e.as_bytes(), cors);
+        }
+    }
+}
+
+/// `/internal/gfonts/font/<rest>` → `https://fonts.gstatic.com/s/<rest>`.
+/// Serves from the disk cache when present (offline), else fetches + caches.
+fn handle_gfonts_font(
+    stream: &mut TcpStream,
+    rest: &str,
+    cache_dir: &Path,
+    client: &reqwest::blocking::Client,
+    cors: &str,
+) {
+    // Path-traversal guard: a crafted `rest` must not escape the cache dir.
+    if rest.split(|c| c == '/' || c == '\\').any(|seg| seg == "..") || rest.is_empty() {
+        send_response(stream, "400 Bad Request", "text/plain", b"bad font path", cors);
+        return;
+    }
+    let cached = cache_dir.join("font").join(rest);
+    if let Ok(data) = std::fs::read(&cached) {
+        send_response(stream, "200 OK", mime_type(rest), &data, cors);
+        return;
+    }
+    let url = format!("https://fonts.gstatic.com/s/{rest}");
+    match gfonts_fetch(client, &url) {
+        Ok(body) => {
+            if let Some(parent) = cached.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let _ = std::fs::write(&cached, &body);
+            send_response(stream, "200 OK", mime_type(rest), &body, cors);
+        }
+        Err(e) => {
+            eprintln!("[penpot-proxy] gfonts font: {e}");
+            send_response(stream, "502 Bad Gateway", "text/plain", e.as_bytes(), cors);
+        }
+    }
 }
 
 // ── HTTP helpers ────────────────────────────────────────────────────────────
@@ -412,7 +529,7 @@ fn establish_session() -> Option<String> {
 
 // ── Connection handler ──────────────────────────────────────────────────────
 
-fn handle_client(mut stream: TcpStream, public_dir: PathBuf, storage_dir: PathBuf) {
+fn handle_client(mut stream: TcpStream, public_dir: PathBuf, storage_dir: PathBuf, fonts_cache_dir: PathBuf) {
     let mut reader = BufReader::new(&mut stream);
 
     // Read the request line.
@@ -513,6 +630,27 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf, storage_dir: PathBu
         && method != "OPTIONS"
     {
         send_response(&mut stream, "200 OK", "application/transit+json", b"[\"^ \"]", &cors);
+        return;
+    }
+
+    // ── Google Fonts (Feature 1) ──────────────────────────────────────────
+    // Intercept `/internal/gfonts/*` BEFORE the `/internal/` prefix is proxied
+    // to the JVM backend — the upstream Penpot backend has NO gfonts routes
+    // (they're nginx-only in hosted Penpot), so without this the font CSS/font
+    // requests 404 at the backend and Google Fonts never load. We fetch from
+    // fonts.googleapis.com / fonts.gstatic.com over TLS here, and cache font
+    // files + (for offline-downloaded families) the CSS under the app-data
+    // fonts cache so already-used fonts work offline and the optional
+    // `fonts_download_family` command can pre-warm the cache for full offline.
+    if method == "GET" && clean_path == "/internal/gfonts/css" {
+        drop(reader); // release the borrow on `stream` before we hand it on
+        handle_gfonts_css(&mut stream, path, &fonts_cache_dir, gfonts_client(), &cors);
+        return;
+    }
+    if method == "GET" && clean_path.starts_with("/internal/gfonts/font/") {
+        let rest = &clean_path["/internal/gfonts/font/".len()..];
+        drop(reader);
+        handle_gfonts_font(&mut stream, rest, &fonts_cache_dir, gfonts_client(), &cors);
         return;
     }
 
@@ -908,7 +1046,7 @@ fn handle_websocket_upgrade(
 /// to be up, which happens later in `boot_backend`. Call `enable_auto_login()`
 /// once the backend is ready; until then proxied `/api/` requests simply carry
 /// no session cookie (and the SPA is not loaded yet, so none are made).
-pub fn start(public_dir: PathBuf, storage_dir: PathBuf, port: u16) {
+pub fn start(public_dir: PathBuf, storage_dir: PathBuf, fonts_cache_dir: PathBuf, port: u16) {
     let addr = format!("0.0.0.0:{}", port);
 
     // Retry binding a few times (stale port from previous run).
@@ -945,6 +1083,7 @@ pub fn start(public_dir: PathBuf, storage_dir: PathBuf, port: u16) {
     eprintln!("[penpot-proxy] Listening on http://localhost:{}", port);
     let public_dir = Arc::new(public_dir);
     let storage_dir = Arc::new(storage_dir);
+    let fonts_cache_dir = Arc::new(fonts_cache_dir);
 
     thread::spawn(move || {
         for stream in listener.incoming() {
@@ -952,10 +1091,11 @@ pub fn start(public_dir: PathBuf, storage_dir: PathBuf, port: u16) {
                 Ok(stream) => {
                     let dir = public_dir.clone();
                     let sdir = storage_dir.clone();
+                    let fcdir = fonts_cache_dir.clone();
                     let _ = stream.set_read_timeout(Some(Duration::from_secs(30)));
                     let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
                     thread::spawn(move || {
-                        handle_client(stream, (*dir).clone(), (*sdir).clone());
+                        handle_client(stream, (*dir).clone(), (*sdir).clone(), (*fcdir).clone());
                     });
                 }
                 Err(e) => {

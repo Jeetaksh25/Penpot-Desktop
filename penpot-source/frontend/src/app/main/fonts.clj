@@ -38,6 +38,10 @@
      :uuid (uuid/random)
      :family family
      :name family
+     ;; Feature 1 — Google Fonts "menu" TTF: a tiny subset font Google serves
+     ;; specifically for picker previews. Baked at compile time so the frontend
+     ;; can render each family's name in its own typeface in the font picker.
+     :menu (get font "menu")
      :variants (into [] (comp (map (fn [variant] (parse-gfont-variant variant files)))
                               (filter identity))
                      variants)}))

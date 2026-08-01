@@ -133,15 +133,22 @@
 
 ;; --- LOADER: GOOGLE
 
-(defn- generate-gfonts-url
+(defn gfont-css-query
+  "The css2 query string the proxy's `/internal/gfonts/css` route caches on
+  (filename `slugify(\"css-<query>\")`) and that the `fonts_download_family`
+  Tauri command pre-warms for offline. MUST match what `generate-gfonts-url`
+  emits so the online path and the offline pre-warm share one cache file."
   [{:keys [family variants]}]
-  (let [query (dm/str "family=" family ":"
-                      (str/join "," (map :id variants))
-                      "&display=block")]
-    (dm/str
-     (-> cf/public-uri
-         (u/join "internal/gfonts/css")
-         (assoc :query query)))))
+  (dm/str "family=" family ":"
+          (str/join "," (map :id variants))
+          "&display=block"))
+
+(defn- generate-gfonts-url
+  [font]
+  (dm/str
+   (-> cf/public-uri
+       (u/join "internal/gfonts/css")
+       (assoc :query (gfont-css-query font)))))
 
 (defn- process-gfont-css
   [css]
@@ -155,6 +162,55 @@
        (rx/catch (fn [err]
                    (log/wrn :hint "cannot find the font" :cause err)
                    (rx/empty)))))
+
+;; Feature 1 — Google Fonts menu preview.
+;;
+;; The font picker renders each family's NAME in its own typeface. Loading the
+;; full family CSS (every variant) just for the picker would be heavy, so we
+;; load Google's tiny "menu" TTF (one file per family) via a dedicated
+;; @font-face. The TTF is served by the proxy's /internal/gfonts/font route
+;; (online by default; cached for offline once used or pre-warmed via the
+;; optional `fonts_download_family` shell command).
+
+(defonce ^:private preview-loaded (l/atom #{}))
+
+(defn css-font-family
+  "Quote a font-family for safe inline-CSS use (handles spaces, e.g.
+  \"ADLaM Display\"). CSS treats quoted and unquoted family names as equal as
+  long as the name string matches, so quoting is always safe."
+  [family]
+  (when (some? family)
+    (str "\"" family "\"")))
+
+(defn- gfont-menu-uri
+  "Map a Google `menu` TTF URL (https://fonts.gstatic.com/s/<rest>) to the
+  same-origin proxy route the CSS rewriter uses, so the proxy fetches/caches it."
+  [menu-url]
+  (let [gstatic "https://fonts.gstatic.com/s"
+        base    (u/join cf/public-uri "internal/gfonts/font")]
+    (str/replace menu-url gstatic (dm/str base))))
+
+(defn- gfont-menu-face-css
+  [font]
+  (dm/str "@font-face { font-family: \"" (:family font) "\"; "
+          "font-style: normal; font-weight: 400; font-display: swap; "
+          "src: url(" (gfont-menu-uri (:menu font)) "); }"))
+
+(defn ensure-gfont-preview!
+  "Inject a one-file @font-face for a Google Font's menu TTF so the picker can
+  render the family name in its own typeface. Idempotent. No-op for non-google
+  fonts or fonts without a menu URL (those families are already loadable via
+  their normal loader / are system fonts)."
+  [font-id]
+  (when (exists? js/window)
+    (let [font (get @fontsdb font-id)]
+      (when (and (= (:backend font) :google)
+                 (string? (:menu font))
+                 (not (str/blank? (:menu font)))
+                 (not (contains? @preview-loaded font-id)))
+        (swap! preview-loaded conj font-id)
+        (add-font-css! (dm/str "gfont-menu-" font-id)
+                       (gfont-menu-face-css font))))))
 
 (defmethod load-font :google
   [{:keys [id ::on-loaded] :as font}]
