@@ -422,6 +422,11 @@
                           :subsections [:alignment]
                           :fn #(emit-when-no-readonly (dw/distribute-objects :vertical))}
 
+   :tidy-up             {:tooltip (ds/meta (ds/alt "T"))
+                          :command (ds/c-mod "alt+t")
+                          :subsections [:alignment]
+                          :fn #(emit-when-no-readonly (dw/tidy-up))}
+
    ;; MAIN MENU
 
    :toggle-rulers        {:tooltip (ds/meta-shift "R")

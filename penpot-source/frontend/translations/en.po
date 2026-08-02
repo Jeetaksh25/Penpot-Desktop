@@ -10320,3 +10320,16 @@ msgstr "Save"
 
 msgid "workspace.ai.settings.key-set"
 msgstr "•••• set (leave blank to keep)"
+
+#: src/app/main/data/workspace/shortcuts.cljs
+msgid "shortcuts.tidy-up"
+msgstr "Tidy up"
+
+#: src/app/main/data/workspace/shortcuts.cljs
+msgid "workspace.shape.menu.tidy-up"
+msgstr "Tidy up"
+
+#: src/app/main/data/workspace/shortcuts.cljs
+msgid "workspace.smart-selection.spacing"
+msgstr "Spacing"
+

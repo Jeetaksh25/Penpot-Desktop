@@ -60,6 +60,7 @@
    [app.main.data.workspace.selection :as dws]
    [app.main.data.workspace.shape-layout :as dwsl]
    [app.main.data.workspace.shapes :as dwsh]
+   [app.main.data.workspace.smart-selection :as ssm]
    [app.main.data.workspace.thumbnails :as dwth]
    [app.main.data.workspace.transforms :as dwt]
    [app.main.data.workspace.undo :as dwu]
@@ -1033,6 +1034,47 @@
                   (dwt/position-shapes moved)
                   (ptk/data-event :layout/update {:ids selected})
                   (dwu/commit-undo-transaction undo-id))))))))
+
+;; --- Tidy Up (Smart Selection, Figma parity gap #8)
+;; Arranges a selection of 3+ uniformly-spaced siblings into a uniform
+;; row/column/grid. Reuses the same `position-shapes` primitive as the
+;; alignment events above and the same undo/transaction pattern. The
+;; detector is the only guard: if the selection is not a uniform
+;; layout, `detect-smart-selection` returns nil and this is a no-op.
+
+(defn can-tidy-up? [selected]
+  (>= (count selected) 3))
+
+(defn tidy-up
+  ([] (tidy-up nil))
+  ([selected]
+   (ptk/reify ::tidy-up
+     ptk/WatchEvent
+     (watch [_ state _]
+       (let [objects  (dsh/lookup-page-objects state)
+             selected (or selected (dsh/lookup-selected state))
+             shapes   (into [] (keep (d/getf objects)) selected)]
+         (when (can-tidy-up? selected)
+           (let [layout (ssm/detect-smart-selection shapes)]
+             (when (some? layout)
+               (let [positions (ssm/tidy-up-positions layout)
+                     moved
+                     (into []
+                           (keep (fn [shape]
+                                   (let [id (:id shape)
+                                         r  (:selrect shape)
+                                         [x y] (get positions id)]
+                                     (when (and (some? x) (some? y))
+                                       (gsh/move shape
+                                                 (gpt/point (- x (:x r))
+                                                            (- y (:y r)))))))
+                                 shapes))
+                     undo-id (js/Symbol)]
+                 (when (seq moved)
+                   (rx/of (dwu/start-undo-transaction undo-id)
+                          (dwt/position-shapes moved)
+                          (ptk/data-event :layout/update {:ids selected})
+                          (dwu/commit-undo-transaction undo-id))))))))))))
 
 ;; --- Shape Proportions
 

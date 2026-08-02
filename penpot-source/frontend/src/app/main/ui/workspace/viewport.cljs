@@ -51,6 +51,7 @@
    [app.main.ui.workspace.viewport.rulers :as rulers]
    [app.main.ui.workspace.viewport.scroll-bars :as scroll-bars]
    [app.main.ui.workspace.viewport.selection :as selection]
+   [app.main.ui.workspace.viewport.smart-selection :as smart-selection]
    [app.main.ui.workspace.viewport.snap-distances :as snap-distances]
    [app.main.ui.workspace.viewport.snap-points :as snap-points]
    [app.main.ui.workspace.viewport.top-bar :refer [grid-edition-bar*
@@ -497,6 +498,14 @@
            :disabled (or drawing-tool edition @space? @mod?)
            :on-move-selected on-move-selected
            :on-context-menu on-menu-selected}])
+
+       ;; Smart Selection overlay (parity gap #8). Purely additive: the
+       ;; layer renders nothing unless `detect-smart-selection` returns
+       ;; a uniform layout, so existing behavior is unchanged otherwise.
+       (when (and show-selection-handlers? (seq selected-shapes))
+         [:> smart-selection/smart-selection-layer*
+          {:shapes selected-shapes
+           :zoom zoom}])
 
        (when show-text-editor?
          [:> text-edition-outline*

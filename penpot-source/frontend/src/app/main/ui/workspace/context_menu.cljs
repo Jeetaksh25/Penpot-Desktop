@@ -364,7 +364,9 @@
         do-mask-group   #(st/emit! (dw/mask-group))
         do-unmask-group #(st/emit! (dw/unmask-group))
         do-create-artboard-from-selection
-        #(st/emit! (dwsh/create-artboard-from-selection))]
+        #(st/emit! (dwsh/create-artboard-from-selection))
+
+        do-tidy-up #(st/emit! (dw/tidy-up))]
 
     [:*
      (when (not (or any-in-copy? any-is-variant?))
@@ -391,6 +393,11 @@
         [:> menu-entry* {:title (tr "workspace.shape.menu.create-artboard-from-selection")
                          :shortcut (sc/get-tooltip :artboard-selection)
                          :on-click do-create-artboard-from-selection}]
+
+        (when (>= (count shapes) 3)
+          [:> menu-entry* {:title (tr "workspace.shape.menu.tidy-up")
+                           :shortcut (sc/get-tooltip :tidy-up)
+                           :on-click do-tidy-up}])
         [:> menu-separator* {}]])]))
 
 (mf/defc context-focus-mode-menu*
