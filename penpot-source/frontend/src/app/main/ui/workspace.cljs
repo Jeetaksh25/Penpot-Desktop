@@ -23,6 +23,7 @@
    [app.main.ui.hooks.resize :refer [use-resize-observer]]
    [app.main.ui.modal :refer [modal-container*]]
    [app.main.ui.workspace.colorpicker]
+   [app.main.ui.workspace.ai-bar :refer [ai-bar*]]
    [app.main.ui.workspace.context-menu :refer [context-menu*]]
    [app.main.ui.workspace.coordinates :as coordinates]
    [app.main.ui.workspace.libraries]
@@ -277,6 +278,9 @@
               :file file
               :wglobal wglobal
               :layout layout}])
+          ;; AI design bar (Feature 3 + 4) — floats above the viewport.
+          (when (and file-loaded? page-id)
+            [:> ai-bar*])
           (when (or (not (and file-loaded? page-id))
                     ;; in wasm renderer, extend the pixel loader until the first frame is rendered
                     ;; but do not apply it when switching pages

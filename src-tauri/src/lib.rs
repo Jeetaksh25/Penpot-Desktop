@@ -754,6 +754,8 @@ pub fn run() {
             llm::llm_get_config,
             llm::llm_set_config,
             llm::llm_generate,
+            llm::llm_cancel,
+            llm::llm_clear_memory,
             fonts::fonts_download_family,
             code_export::write_code_zip,
         ])

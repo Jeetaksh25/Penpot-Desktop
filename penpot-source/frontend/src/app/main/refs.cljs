@@ -243,6 +243,19 @@
 (def current-hover
   (l/derived :hover workspace-local))
 
+;; AI design bar (Feature 3 + 4) — ephemeral UI state in :workspace-local.
+(def ai-busy
+  (l/derived :ai-busy workspace-local))
+
+(def ai-stage
+  (l/derived :ai-stage workspace-local))
+
+(def ai-preview
+  (l/derived :ai-preview workspace-local))
+
+(def ai-error
+  (l/derived :ai-error workspace-local))
+
 (def context-menu
   (l/derived :context-menu workspace-local))
 

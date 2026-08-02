@@ -10109,3 +10109,159 @@ msgstr "Click to close the path"
 
 msgid "notifications.invitation-canceled"
 msgstr "This invitation is no longer available."
+
+msgid "workspace.ai.bar.placeholder"
+msgstr "Describe a design to generate — e.g. 'a SaaS dashboard landing page in the Linear design language'"
+
+msgid "workspace.ai.bar.url-placeholder"
+msgstr "Reference URL (optional — AI will study the site's design language)"
+
+msgid "workspace.ai.bar.attach"
+msgstr "Attach images"
+
+msgid "workspace.ai.bar.mode-max"
+msgstr "Max quality"
+
+msgid "workspace.ai.bar.mode-auto"
+msgstr "Auto"
+
+msgid "workspace.ai.bar.update-selection"
+msgstr "Update only the selection"
+
+msgid "workspace.ai.bar.settings"
+msgstr "AI settings"
+
+msgid "workspace.ai.bar.cancel"
+msgstr "Cancel"
+
+msgid "workspace.ai.bar.generate"
+msgstr "Generate"
+
+msgid "workspace.ai.bar.working"
+msgstr "Working…"
+
+msgid "workspace.ai.bar.need-prompt"
+msgstr "Add a prompt or attach an image first."
+
+msgid "workspace.ai.bar.invalid-spec"
+msgstr "The AI returned an invalid design — try rephrasing the prompt."
+
+msgid "workspace.ai.bar.error-generic"
+msgstr "AI generation failed."
+
+msgid "workspace.ai.bar.stage-starting"
+msgstr "Starting…"
+
+msgid "workspace.ai.bar.stage-fetching"
+msgstr "Studying reference URLs…"
+
+msgid "workspace.ai.bar.stage-scouting"
+msgstr "Scouting the design language…"
+
+msgid "workspace.ai.bar.stage-generating"
+msgstr "Generating the design…"
+
+msgid "workspace.ai.bar.stage-finalizing"
+msgstr "Finalizing…"
+
+msgid "workspace.ai.bar.preview-title"
+msgstr "Preview"
+
+msgid "workspace.ai.bar.preview-region"
+msgstr "Region update"
+
+msgid "workspace.ai.bar.preview-full"
+msgstr "Full board"
+
+msgid "workspace.ai.bar.preview-empty"
+msgstr "No frames were generated. Try a more specific prompt."
+
+msgid "workspace.ai.bar.regenerate"
+msgstr "Regenerate"
+
+msgid "workspace.ai.bar.apply"
+msgstr "Apply to canvas"
+
+msgid "workspace.ai.settings.title"
+msgstr "AI settings"
+
+msgid "workspace.ai.settings.loading"
+msgstr "Loading…"
+
+msgid "workspace.ai.settings.saved"
+msgstr "AI settings saved."
+
+msgid "workspace.ai.settings.memory-cleared"
+msgstr "Conversation memory cleared."
+
+msgid "workspace.ai.settings.section-transport"
+msgstr "Transport"
+
+msgid "workspace.ai.settings.section-deepinfra"
+msgstr "DeepInfra (production)"
+
+msgid "workspace.ai.settings.section-ollama"
+msgstr "Ollama (local)"
+
+msgid "workspace.ai.settings.section-url"
+msgstr "URL fetching"
+
+msgid "workspace.ai.settings.section-memory"
+msgstr "Memory"
+
+msgid "workspace.ai.settings.provider"
+msgstr "Provider"
+
+msgid "workspace.ai.settings.mode"
+msgstr "Default quality mode"
+
+msgid "workspace.ai.settings.deepinfra-glm"
+msgstr "GLM model slug (drawing)"
+
+msgid "workspace.ai.settings.deepinfra-kimi"
+msgstr "Kimi model slug (vision)"
+
+msgid "workspace.ai.settings.deepinfra-key"
+msgstr "DeepInfra API key"
+
+msgid "workspace.ai.settings.deepinfra-base"
+msgstr "DeepInfra base URL"
+
+msgid "workspace.ai.settings.ollama-url"
+msgstr "Ollama URL"
+
+msgid "workspace.ai.settings.ollama-glm"
+msgstr "GLM model slug (drawing)"
+
+msgid "workspace.ai.settings.ollama-kimi"
+msgstr "Kimi model slug (vision)"
+
+msgid "workspace.ai.settings.ollama-key"
+msgstr "Ollama API key (optional)"
+
+msgid "workspace.ai.settings.firecrawl-key"
+msgstr "Firecrawl API key (optional, for URL screenshots)"
+
+msgid "workspace.ai.settings.firecrawl-base"
+msgstr "Firecrawl base URL"
+
+msgid "workspace.ai.settings.memory-enabled"
+msgstr "Enable conversation memory"
+
+msgid "workspace.ai.settings.memory-turns"
+msgstr "Memory turns to keep"
+
+msgid "workspace.ai.settings.timeout"
+msgstr "Request timeout (seconds)"
+
+msgid "workspace.ai.settings.clear-memory"
+msgstr "Clear memory"
+
+msgid "workspace.ai.settings.cancel"
+msgstr "Cancel"
+
+msgid "workspace.ai.settings.save"
+msgstr "Save"
+
+msgid "workspace.ai.settings.key-set"
+msgstr "•••• set (leave blank to keep)"
