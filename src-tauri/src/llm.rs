@@ -540,8 +540,13 @@ fn extract_urls(prompt: &str) -> Vec<String> {
                     }
                     end += 1;
                 }
+                // Strip trailing punctuation that is not part of the URL. The
+                // right-bracket is included so the [Reference URL: <url>] wrapper
+                // (attach-url in ai_gen.cljs) yields a clean URL — but it is
+                // stripped only when TRAILING, so an IPv6-literal authority's
+                // mid-URL closing bracket (http://[::1]/path) is left intact.
                 let s = prompt[start..end]
-                    .trim_end_matches(&[',', '.', ')', ';', '!', '?'][..])
+                    .trim_end_matches(&[',', '.', ')', ';', '!', '?', ']'][..])
                     .to_string();
                 if !out.contains(&s) {
                     out.push(s);
@@ -899,7 +904,7 @@ DESIGN-LANGUAGE FIRST. Before drawing, decide the design language:
 
 Rules:
 - Every shape id and frame id must be unique. Interactions reference existing frame/shape ids.
-- Coordinates are relative to the PARENT (frame for top-level shapes, group for nested). Prefer flex on frames when content is a list; use absolute layout only for genuine free placement.
+- Coordinates are PAGE-ABSOLUTE: each shape's x/y is its position measured from the board origin (0,0), NOT relative to its parent frame/group. A child that should sit 20px in and 300px down inside a frame placed at (420,0) MUST be emitted at x=440, y=300. (The consumer writes x/y verbatim as absolute page coordinates; emitting relative coords would collapse every off-origin frame's children toward the page origin.) Prefer flex on frames when content is a list; use absolute layout only for genuine free placement.
 - Colors are hex strings. Keep contrast readable (AA). Use the brief's palette; do NOT invent clashing colors.
 - For text shapes, set `content` + `font-family` + `font-size` + text color via `fills`. Use widely available fonts ("Inter", "Source Sans Pro", "Roboto", "Geist") unless the brief/prompt names a font.
 - If the user asks for a "prototype", "interactive", "app", "flow", or "screens", ALWAYS include `interactions` and at least one `flow` with a `starting-frame`. If only a static design is requested, omit them.
@@ -935,9 +940,19 @@ const COMBINED_PROMPT_AUTO: &str = r#"You are the design engine inside a Penpot-
 
 {DESIGN_SPEC_SHAPE}
 
+Rules:
+- Every shape id and frame id must be unique. Interactions reference existing frame/shape ids.
+- Coordinates are PAGE-ABSOLUTE: each shape's x/y is its position measured from the board origin (0,0), NOT relative to its parent frame/group. A child that should sit 20px in and 300px down inside a frame placed at (420,0) MUST be emitted at x=440, y=300. (The consumer writes x/y verbatim as absolute page coordinates; emitting relative coords would collapse every off-origin frame's children toward the page origin.) Prefer flex on frames when content is a list; use absolute layout only for genuine free placement.
+- Colors are hex strings, AA-contrast on their background. Use the reference's palette; do NOT invent clashing colors.
+- For text shapes, set `content` + `font-family` + `font-size` + text color via `fills`. Use widely available fonts ("Inter", "Source Sans Pro", "Roboto", "Geist") unless the brief/prompt names a font.
+- If the user asks for a "prototype", "interactive", "app", "flow", or "screens", ALWAYS include `interactions` and at least one `flow` with a `starting-frame`. If only a static design is requested, omit them.
+- Ground the layout, colors, and hierarchy in the reference visuals; do NOT copy copyrighted text verbatim — paraphrase real placeholder copy.
+- Honor the requested frame size for the primary frame. If a frame preset is given, the first/primary frame uses those dimensions.
+- For `target: "update-selection"`, emit ONE frame sized exactly to the selection bounds containing ONLY the updated region. Do not touch anything outside the selection. Keep ids stable where the user might want continuity.
+
 {ANTI_SLOP_RULES}
 
-Follow the reference's real design language exactly. If the user asks for a prototype/interactive/app/flow/screens, include `interactions` and at least one `flow` with a `starting-frame`. Honor the requested frame size for the primary frame. For `target: "update-selection"`, emit ONE frame sized to the selection bounds with ONLY the updated region.
+Follow the reference's real design language exactly. Honor the requested frame size for the primary frame.
 
 Output ONLY the JSON object."#;
 
@@ -1443,7 +1458,7 @@ pub async fn llm_generate(
         if let Some(sel) = &request.options.selection {
             let b = &sel.bounds;
             prompt_text.push_str(&format!(
-                "\n\n--- REGION UPDATE — modify ONLY this region ---\nSelection bounds: {:.0}×{:.0} at ({:.0},{:.0}).\nCurrent content of the region (JSON):\n{}\nThe user wants to UPDATE ONLY this region per their prompt. Do not change anything outside it. Emit target=\"update-selection\" with ONE frame of size {:.0}×{:.0} containing the updated shapes (coordinates relative to that frame).",
+                "\n\n--- REGION UPDATE — modify ONLY this region ---\nSelection bounds: {:.0}×{:.0} at ({:.0},{:.0}).\nCurrent content of the region (JSON):\n{}\nThe user wants to UPDATE ONLY this region per their prompt. Do not change anything outside it. Emit target=\"update-selection\" with ONE frame (starting at 0,0) of size {:.0}×{:.0} containing the updated shapes with PAGE-ABSOLUTE coordinates (x/y measured from the frame's 0,0 origin, since the frame is placed at the selection origin downstream).",
                 b.width, b.height, b.x, b.y,
                 serde_json::to_string(&sel.shapes).unwrap_or_else(|_| "{}".into()),
                 b.width.max(40.0), b.height.max(40.0)
@@ -1510,6 +1525,14 @@ pub async fn llm_generate(
     emit_progress(&app, "finalizing", "parsing");
 
     let spec = extract_json(&raw)?;
+
+    // If cancelled/superseded while the (uninterruptible) HTTP request was in
+    // flight, skip the memory append + "done" event. The frontend gen-id guard
+    // drops this result anyway; persisting the (user-rejected) turn would leak
+    // it into every subsequent generation's context via memory_transcript.
+    if check_aborted().is_err() {
+        return Ok(spec);
+    }
 
     // ── Persist memory turn ──
     if use_mem {

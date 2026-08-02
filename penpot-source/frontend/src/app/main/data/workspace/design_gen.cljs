@@ -33,8 +33,11 @@
   (:require
    [app.common.data :as d]
    [app.common.files.changes-builder :as pcb]
+   [app.common.geom.point :as gpt]
    [app.common.geom.shapes :as gsh]
+   [app.common.geom.shapes.transforms :as gtr]
    [app.common.types.design-spec :as cds]
+   [app.common.types.text :as txt]
    [app.common.uuid :as uuid]
    [app.main.data.changes :as dch]
    [app.main.data.helpers :as dsh]
@@ -89,7 +92,14 @@
                                              {:fill-color   (:fill-color f "#cccccc")
                                               :fill-opacity (:fill-opacity f 1)}))
                                       (:fills s))
-                         :content (-> s :content :text)}))))
+                         ;; Use the canonical content->text so paragraph
+                         ;; boundaries are preserved (paragraphs join with
+                         ;; \"\\n\"). The naive (:content :text) is nil (no
+                         ;; top-level :text) and a flat walk glues paragraphs
+                         ;; together with no separator.
+                         :content (if-let [c (:content s)]
+                                    (txt/content->text c)
+                                    "")}))))
             selected))))
 
 ;; ── Internal: tree preparation ─────────────────────────────────────────────
@@ -111,20 +121,28 @@
           obj-map
           interactions))
 
-(defn- offset-top-frames
-  "Translate top-level frames (parent-id == uuid/zero) by [ox oy]. Used for
-   region updates so the new board lands where the selection was."
+(defn- translate-tree
+  "Translate EVERY shape in the generated tree by [ox oy] using the canonical
+   `gtr/move`, which keeps :selrect/:points/:x/:y/:position-data (and path
+   :content) consistent as a unit. Used for region updates so the new board
+   lands exactly where the selection was.
+
+   Two correctness points vs. a naive `assoc :x :y`:
+     - Render/hit geometry lives in :selrect/:points, NOT :x/:y. `gtr/move`
+       updates them together, so the renderer draws at the offset position.
+       A bare `assoc :x :y` leaves :points at the spec origin → the board
+       renders at (0,0) instead of (ox,oy).
+     - In the spec every shape's :x/:y is page-absolute (children are NOT
+       relative to their frame), so ALL shapes — frames and descendants —
+       must be translated, not just top-level frames."
   [obj-map ox oy]
   (if (and (zero? ox) (zero? oy))
     obj-map
-    (reduce-kv (fn [m id s]
-                (if (= uuid/zero (:parent-id s))
-                  (assoc m id (assoc s
-                                     :x (+ (or (:x s) 0) ox)
-                                     :y (+ (or (:y s) 0) oy)))
-                  m))
-              obj-map
-              obj-map)))
+    (let [delta (gpt/point ox oy)]
+      (reduce-kv (fn [m id s]
+                   (assoc m id (gtr/move s delta)))
+                 obj-map
+                 obj-map))))
 
 ;; ── The apply event ──────────────────────────────────────────────────────────
 
@@ -133,7 +151,10 @@
 
   Options:
     :spec        the DesignSpec map (required)
-    :target      \"full\" | \"update-selection\" (default \"full\")
+    :target      \"new-board\" | \"update-selection\" (default \"new-board\").
+                 \"new-board\" = a fresh board (the backend's own default and
+                 the value it injects into the LLM prompt); only
+                 \"update-selection\" triggers region-update placement.
     :select?     whether to select the new top-level frames after commit
                  (default true)
 
@@ -142,28 +163,35 @@
   access. Emits one undo transaction. On invalid spec, emits a warning toast
   and aborts cleanly (no partial commit)."
   [{:keys [spec target select?]
-    :or {target "full" select? true}
+    :or {target "new-board" select? true}
     :as opts}]
   (ptk/reify ::apply-design-spec
     ptk/WatchEvent
     (watch [it state _]
       (let [page-id (:current-page-id state)
             page    (dsh/lookup-page state)
-            objects (dsh/lookup-page-objects state)]
-        (if (or (nil? spec) (not (try (cds/check-design-spec spec)
-                                     (catch :default _ false))))
+            objects (dsh/lookup-page-objects state)
+            ;; Validate AND expand in one guarded step. `check-design-spec`
+            ;; returns the spec on success and throws ex-info on failure;
+            ;; `spec->shape-tree` can also throw on malformed nested :shapes
+            ;; (the schema validates children only as [:vector :any]). Any
+            ;; throw → nil → invalid-spec toast, no partial commit.
+            tree (try
+                   (when (and spec (cds/check-design-spec spec))
+                     (cds/spec->shape-tree spec))
+                   (catch :default _ nil))]
+        (if (nil? tree)
           ;; Invalid/absent spec — surface to the user, do not touch the canvas.
           (rx/of (ntf/info (tr "workspace.ai.bar.invalid-spec")))
 
-          (let [tree        (cds/spec->shape-tree spec)
-                is-update   (= target "update-selection")
+          (let [is-update   (= target "update-selection")
                 ;; Region update origin = current selection top-left.
                 bounds      (when is-update (selection-bounds state))
                 ox          (or (some-> bounds :x) 0)
                 oy          (or (some-> bounds :y) 0)
                 obj-map     (-> (:objects tree)
                                 (bake-interactions (:interactions tree))
-                                (offset-top-frames ox oy))
+                                (translate-tree ox oy))
                 order       (:order tree)
                 flows       (:flows tree)
                 selected    (when is-update (dsh/lookup-selected state))

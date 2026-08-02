@@ -55,15 +55,36 @@
 .ais-x { border: none; background: transparent; color: #94a3b8; font-size: 20px; cursor: pointer; line-height: 1; }
 ")
 
+(defn- safe-int
+  "Parse `v` to a non-negative int in a sane range; if blank/NaN (e.g. the
+  user cleared the number input before typing a new value) fall back to
+  `default`. Prevents three failure classes against the backend's non-Option
+  `u64`/`usize` fields: NaN → JSON null, a negative int (e.g. '-5' parses to
+  -5, not NaN, and serde rejects `integer -5 expected u64`), and an absurdly
+  large value (parseInt yields a float-exponent Number that overflows u64)."
+  [v default]
+  (let [n (js/parseInt v)]
+    (cond
+      (js/isNaN n) default
+      (neg? n)    default
+      :else       (min n 100000))))
+
 (defn- field
   [{:keys [label hint value on-change type placeholder]}]
   [:div.ais-field
    [:span.ais-label label]
    [:input.ais-input
-    (cond-> {:value (or value "")
-             :on-change on-change
+    ;; Controlled when a :value is supplied (text fields: model slug, base
+    ;; URL — they bind to cfg so the loaded value renders). UNcontrolled when
+    ;; no :value is supplied (the API-key/password fields: the backend masks
+    ;; keys to a presence flag, so we show a "key set" placeholder and let the
+    ;; user type freely — a forced :value "" would make these React controlled
+    ;; inputs bound to the constant empty string and every keystroke would be
+    ;; reverted, making it impossible to enter a key on a packaged install).
+    (cond-> {:on-change on-change
              :placeholder placeholder}
-      type (assoc :type type))]
+      (some? value) (assoc :value (or value ""))
+      type          (assoc :type type))]
    (when hint [:span.ais-hint hint])])
 
 (mf/defc ai-settings*
@@ -106,9 +127,9 @@
                                    :ollama_kimi_model       (:ollama_kimi_model cfg "")
                                    :firecrawl_api_key       (:firecrawl_api_key cfg "")
                                    :firecrawl_base          (:firecrawl_base cfg "")
-                                   :timeout_secs            (js/parseInt (:timeout_secs cfg 240))
+                                   :timeout_secs            (safe-int (:timeout_secs cfg 240) 240)
                                    :memory_enabled          (boolean (:memory_enabled cfg true))
-                                   :memory_max_turns        (js/parseInt (:memory_max_turns cfg 6))}]
+                                   :memory_max_turns        (safe-int (:memory_max_turns cfg 6) 6)}]
                        (-> (ai/invoke-set-config payload)
                            (p/then (fn [_]
                                      (reset! saving* false)
@@ -215,5 +236,5 @@
          [:div {:style #js {"display" "flex" "gap" "10px"}}
           [:button.ais-btn.ais-btn-ghost {:on-click on-close :disabled saving}
            (tr "workspace.ai.settings.cancel")]
-          [:button.ais-btn.ais-btn-primary {:on-click save :disabled saving}
+          [:button.ais-btn.ais-btn-primary {:on-click save :disabled (or saving (nil? cfg))}
            (tr "workspace.ai.settings.save")]]]])]))

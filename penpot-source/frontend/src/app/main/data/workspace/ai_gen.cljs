@@ -29,6 +29,14 @@
 
 ;; ── Files → backend FileInput ────────────────────────────────────────────────
 
+;; Monotonic generation id used to drop stale results. The backend HTTP
+;; request cannot be interrupted mid-flight (reqwest has no cancel token here),
+;; so a cancelled generation still resolves eventually. Each generate-design
+;; call captures a fresh id; cancel-generation (and any new generation) bumps
+;; the atom, so a late-arriving result whose captured id no longer matches
+;; `@gen-id` is dropped instead of clobbering the preview / busy / error state.
+(def ^:private gen-id (atom 0))
+
 (defn file->input
   "Read a browser File/Blob into a backend FileInput map {:name :mime :base64}.
    Returns a promesa promise. The base64 string is raw (no data: prefix); the
@@ -67,7 +75,7 @@
                   extracts them via `extract_urls`)
      :files       vector of FileInput maps ({:name :mime :base64} or {:path})
      :options     map with:
-       :target        \"full\" | \"update-selection\" (default \"full\")
+       :target        \"new-board\" | \"update-selection\" (default \"new-board\")
        :quality       \"max\" | \"auto\" (default: backend config)
        :frame-preset  \"mobile\" | \"web\" | \"auto\" …
        :frame-width   / :frame-height  (override preset)
@@ -76,7 +84,7 @@
        :selection     {:bounds {:x :y :width :height} :shapes <snippet>} for
                       region updates (Feature 4)"
   [{:keys [prompt files options]}]
-  (let [opts (-> {:target       (:target options "full")
+  (let [opts (-> {:target       (:target options "new-board")
                   :quality      (:quality options)
                   :frame_preset  (:frame-preset options)
                   :frame_width   (:frame-width options)
@@ -174,7 +182,7 @@
 
 (defn set-ai-preview
   "Store the generated spec + target so the bar can show the preview modal.
-   `preview` is {:spec <clj spec> :target \"full\"|\"update-selection\"} or nil."
+   `preview` is {:spec <clj spec> :target \"new-board\"|\"update-selection\"} or nil."
   [preview]
   (ptk/reify ::set-ai-preview
     ptk/UpdateEvent
@@ -213,7 +221,7 @@
    Keys:
      :prompt   prompt string (URL references already embedded by the caller)
      :files    vector of FileInput maps ({:name :mime :base64})
-     :options  {:target \"full\"|\"update-selection\"
+     :options  {:target \"new-board\"|\"update-selection\"
                 :quality \"max\"|\"auto\"
                 :frame-preset \"mobile\"|\"web\"|…
                 :frame-width / :frame-height
@@ -222,7 +230,8 @@
   (ptk/reify ::generate-design
     ptk/WatchEvent
     (watch [_ state _]
-      (let [target     (:target options "full")
+      (let [my-id      (swap! gen-id inc)
+            target     (:target options "new-board")
             is-update  (= target "update-selection")
             bounds     (when is-update (dg/selection-bounds state))
             ;; Only attach a selection context when we actually have a non-empty
@@ -236,14 +245,20 @@
                         selection (assoc :selection selection))
             request    (build-request {:prompt prompt :files files :options opts})
 
+            ;; gen-id guard: drop the result if this generation was cancelled
+            ;; or superseded while the (uninterruptible) HTTP request was in
+            ;; flight — otherwise a cancelled run would still pop its preview
+            ;; and a fast cancel+regenerate would race the wrong spec in.
             handle     (fn [result]
-                         (let [spec (js->clj result :keywordize-keys true)]
-                           (st/emit! (set-ai-busy false)
-                                     (set-ai-error nil)
-                                     (set-ai-preview {:spec spec :target target}))))
+                         (when (= my-id @gen-id)
+                           (let [spec (js->clj result :keywordize-keys true)]
+                             (st/emit! (set-ai-busy false)
+                                       (set-ai-error nil)
+                                       (set-ai-preview {:spec spec :target target})))))
             handle-err (fn [err]
-                         (st/emit! (set-ai-busy false)
-                                   (set-ai-error (err->str err))))]
+                         (when (= my-id @gen-id)
+                           (st/emit! (set-ai-busy false)
+                                     (set-ai-error (err->str err)))))]
         ;; Detached promise: fires side-effects via st/emit! when it resolves.
         (-> (invoke-generate request)
             (p/then handle)
@@ -257,6 +272,11 @@
   (ptk/reify ::cancel-generation
     ptk/WatchEvent
     (watch [_ _ _]
+      ;; Invalidate any in-flight generation so its late-arriving result is
+      ;; dropped by the gen-id guard in generate-design. The backend HTTP
+      ;; request itself can't be interrupted (no cancel token), but this
+      ;; guarantees a cancelled run never clobbers the preview/busy/error state.
+      (swap! gen-id inc)
       ;; Detached promise: clears busy when the backend acknowledges. We also
       ;; clear it immediately below so the UI reacts without waiting on IPC.
       (-> (invoke-cancel)

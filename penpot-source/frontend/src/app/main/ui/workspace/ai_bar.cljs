@@ -175,8 +175,10 @@
         show-settings (deref show-settings*)
 
         ;; Effective target: region update only when something is selected AND
-        ;; the user hasn't disabled it.
-        target (if (and has-sel? update-sel?) "update-selection" "full")
+        ;; the user hasn't disabled it. Otherwise "new-board" — the backend's
+        ;; documented placement value (it injects `[placement target: …]` into
+        ;; the LLM prompt), so the model sees a value it was taught.
+        target (if (and has-sel? update-sel?) "update-selection" "new-board")
 
         on-prompt  (mf/use-fn (fn [e] (reset! prompt* (.. e -target -value))))
         on-url     (mf/use-fn (fn [e] (reset! url* (.. e -target -value))))
@@ -234,7 +236,14 @@
                     (fn [e] (st/emit! (ai/set-ai-error (str e))))))))))
 
         on-cancel
-        (mf/use-fn (fn [] (st/emit! (ai/cancel-generation))))
+        (mf/use-fn (fn []
+                     ;; Clear the local stage text immediately: a cancelled
+                     ;; generation's HTTP request can't be interrupted, so the
+                     ;; backend may never emit its "done" progress event (it
+                     ;; returns early when it notices the abort). Without this
+                     ;; the spinner would spin beside the (now-hidden) busy flag.
+                     (reset! stage* nil)
+                     (st/emit! (ai/cancel-generation))))
 
         on-apply
         (mf/use-fn
@@ -270,7 +279,16 @@
                         (= s "generating") (reset! stage* (tr "workspace.ai.bar.stage-generating"))
                         (= s "finalizing") (reset! stage* (tr "workspace.ai.bar.stage-finalizing"))
                         :else (reset! stage* (str d))))))]
-        (fn [] (p/then unp (fn [u] (when (fn? u) (u)))))))
+        (fn [] (-> unp
+                   (p/then (fn [u] (when (fn? u) (u))))
+                   (p/catch (fn [_] nil)))))
+
+    ;; On error the backend returns Err BEFORE emitting the "done" progress
+    ;; event, so the stage* set by "generating"/"finalizing" would never clear
+    ;; and the spinner would spin forever beside the red error box. Clear the
+    ;; stage text whenever an error appears.
+    (mf/with-effect [error*]
+      (when error* (reset! stage* nil)))
 
     ;; Single root: a display:contents wrapper so the absolute bar + fixed
     ;; modals position against the workspace :section / viewport, not this div.
@@ -333,7 +351,9 @@
           [:button.ai-btn.ai-btn-ghost {:on-click on-cancel}
            (spinner) (tr "workspace.ai.bar.cancel")]
           [:button.ai-btn.ai-btn-primary {:on-click on-generate
-                                          :disabled (and (str/empty? prompt) (empty? attachments))}
+                                          :disabled (and (str/empty? prompt)
+                                                          (str/empty? url)
+                                                          (empty? attachments))}
            (tr "workspace.ai.bar.generate")])]
 
        ;; stage + error
