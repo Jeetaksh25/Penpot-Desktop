@@ -54,7 +54,7 @@
             :stroke-opacity
             :stroke-color-gradient
             :stroke-cap-start
-            :stroke-cap-end :stroke-join :stroke-miter-limit
+            :stroke-cap-end :stroke-join :stroke-miter-limit :stroke-width-mode :stroke-top :stroke-right :stroke-bottom :stroke-left
 
             :exports
 
@@ -163,7 +163,7 @@
            :stroke-opacity
            :stroke-color-gradient
            :stroke-cap-start
-           :stroke-cap-end :stroke-join :stroke-miter-limit
+           :stroke-cap-end :stroke-join :stroke-miter-limit :stroke-width-mode :stroke-top :stroke-right :stroke-bottom :stroke-left
 
            :shadow
 
@@ -221,7 +221,7 @@
              :stroke-opacity
              :stroke-color-gradient
              :stroke-cap-start
-             :stroke-cap-end :stroke-join :stroke-miter-limit
+             :stroke-cap-end :stroke-join :stroke-miter-limit :stroke-width-mode :stroke-top :stroke-right :stroke-bottom :stroke-left
 
              :shadow
 
@@ -279,7 +279,7 @@
            :stroke-opacity
            :stroke-color-gradient
            :stroke-cap-start
-           :stroke-cap-end :stroke-join :stroke-miter-limit
+           :stroke-cap-end :stroke-join :stroke-miter-limit :stroke-width-mode :stroke-top :stroke-right :stroke-bottom :stroke-left
 
            :shadow
 
@@ -336,7 +336,7 @@
            :stroke-opacity
            :stroke-color-gradient
            :stroke-cap-start
-           :stroke-cap-end :stroke-join :stroke-miter-limit
+           :stroke-cap-end :stroke-join :stroke-miter-limit :stroke-width-mode :stroke-top :stroke-right :stroke-bottom :stroke-left
 
            :shadow
 
@@ -458,7 +458,7 @@
               :stroke-opacity
               :stroke-color-gradient
               :stroke-cap-start
-              :stroke-cap-end :stroke-join :stroke-miter-limit
+              :stroke-cap-end :stroke-join :stroke-miter-limit :stroke-width-mode :stroke-top :stroke-right :stroke-bottom :stroke-left
 
               :shadow
 
@@ -516,7 +516,7 @@
            :stroke-opacity
            :stroke-color-gradient
            :stroke-cap-start
-           :stroke-cap-end :stroke-join :stroke-miter-limit
+           :stroke-cap-end :stroke-join :stroke-miter-limit :stroke-width-mode :stroke-top :stroke-right :stroke-bottom :stroke-left
 
            :shadow
 

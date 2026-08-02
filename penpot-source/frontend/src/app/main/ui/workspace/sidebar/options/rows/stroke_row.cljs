@@ -44,6 +44,8 @@
            on-stroke-cap-switch
            on-stroke-join-change
            on-stroke-miter-limit-change
+           on-stroke-width-mode-change
+           on-stroke-side-change
            on-toggle-visibility
            disable-drag
            on-focus
@@ -242,6 +244,28 @@
          (mf/deps index on-stroke-miter-limit-change)
          #(on-stroke-miter-limit-change index %))
 
+        ;; Figma-parity per-side stroke widths (rect/frame).
+        stroke-width-mode  (or (:stroke-width-mode stroke) :uniform)
+        per-side?           (= stroke-width-mode :per-side)
+        stroke-side-top     (or (:stroke-top stroke)    (:stroke-width stroke) 0)
+        stroke-side-right   (or (:stroke-right stroke)  (:stroke-width stroke) 0)
+        stroke-side-bottom  (or (:stroke-bottom stroke) (:stroke-width stroke) 0)
+        stroke-side-left    (or (:stroke-left stroke)   (:stroke-width stroke) 0)
+
+        on-toggle-per-side
+        (mf/use-fn
+         (mf/deps index on-stroke-width-mode-change stroke-width-mode)
+         (fn []
+           (on-stroke-width-mode-change index
+                                         (if (= stroke-width-mode :per-side) :uniform :per-side)
+                                         (or (:stroke-width stroke) 0))))
+
+        on-side-change
+        (mf/use-fn
+         (mf/deps index on-stroke-side-change)
+         (fn [side value]
+           (on-stroke-side-change index side value)))
+
         on-toggle-visibility
         (mf/use-fn
          (mf/deps index on-toggle-visibility)
@@ -347,6 +371,48 @@
                        :options stroke-style-options
                        :disabled hidden?
                        :on-change on-style-change}]])])
+
+     ;; Figma-parity: per-side stroke widths toggle + inputs (rect/frame).
+     [:div {:class (stl/css :stroke-caps-options)
+            :data-testid "stroke.per-side-options"}
+      [:> icon-button* {:variant (if per-side? "secondary" "ghost")
+                        :aria-label (tr "workspace.options.stroke.per-side")
+                        :on-click on-toggle-per-side
+                        :icon i/stroke-size}]
+      (when per-side?
+        [:> numeric-input-wrapper* {:on-change #(on-side-change :stroke-top %)
+                                     :text-icon "T" :min 0
+                                     :on-focus on-focus :on-blur on-blur
+                                     :attr :stroke-top
+                                     :class (stl/css :numeric-input-wrapper)
+                                     :property (tr "workspace.options.stroke.side-top")
+                                     :value stroke-side-top}])
+      (when per-side?
+        [:> numeric-input-wrapper* {:on-change #(on-side-change :stroke-right %)
+                                     :text-icon "R" :min 0
+                                     :on-focus on-focus :on-blur on-blur
+                                     :attr :stroke-right
+                                     :tooltip-placement "top-left"
+                                     :class (stl/css :numeric-input-wrapper)
+                                     :property (tr "workspace.options.stroke.side-right")
+                                     :value stroke-side-right}])
+      (when per-side?
+        [:> numeric-input-wrapper* {:on-change #(on-side-change :stroke-bottom %)
+                                     :text-icon "B" :min 0
+                                     :on-focus on-focus :on-blur on-blur
+                                     :attr :stroke-bottom
+                                     :class (stl/css :numeric-input-wrapper)
+                                     :property (tr "workspace.options.stroke.side-bottom")
+                                     :value stroke-side-bottom}])
+      (when per-side?
+        [:> numeric-input-wrapper* {:on-change #(on-side-change :stroke-left %)
+                                     :text-icon "L" :min 0
+                                     :on-focus on-focus :on-blur on-blur
+                                     :attr :stroke-left
+                                     :tooltip-placement "top-left"
+                                     :class (stl/css :numeric-input-wrapper)
+                                     :property (tr "workspace.options.stroke.side-left")
+                                     :value stroke-side-left}])]
 
      ;; Stroke Dash / Gap (only visible for dashed style)
      (when (= stroke-style :dashed)

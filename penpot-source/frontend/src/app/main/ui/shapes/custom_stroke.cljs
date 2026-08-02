@@ -380,6 +380,86 @@
 ;; able to draw the stroke in the three cases. See discussion at:
 ;; https://stackoverflow.com/questions/7241393/can-you-control-how-an-svgs-stroke-width-is-drawn
 
+;; Figma-parity: per-side stroke widths. SVG has no per-side stroke
+;; support, so for :stroke-width-mode :per-side on rect/frame we draw
+;; four independent <line> elements (one per edge) in the shape's local
+;; space, inside the shape transform. Square line-caps extend each edge
+;; half its own width past the corner point, filling the corners so that
+;; equal widths render a clean miter and unequal widths let the wider
+;; edge dominate — a close match to Figma's per-side stroke rendering.
+;; Stroke alignment is honored as a perpendicular outward/inward offset
+;; of each edge by half its own width. Corner radius is NOT followed
+;; (edges are straight corner-to-corner); when radius>0 the fill stays
+;; rounded while the stroke is square-cornered — a known limitation.
+;; Dash style is applied per edge using that edge's own width. Join/
+;; miter-limit/caps (arrow markers) do not apply to rect edges and are
+;; ignored in per-side mode.
+(defn- per-side-dasharray
+  [style width dash gap]
+  (let [w+5  (+ 5 width)
+        w+1  (+ 1 width)
+        w+10 (+ 10 width)]
+    (case style
+      :mixed  (str/concat "" w+5 "," w+5 "," w+1 "," w+5)
+      :dotted (str/concat "0," w+5)
+      :dashed (str/concat "" (or dash w+10) "," (or gap w+10))
+      "")))
+
+(mf/defc per-side-stroke
+  {::mf/wrap-props false}
+  [{:keys [shape stroke index render-id]}]
+  (let [x      (dm/get-prop shape :x)
+        y      (dm/get-prop shape :y)
+        w      (dm/get-prop shape :width)
+        h      (dm/get-prop shape :height)
+        t      (gsh/transform-str shape)
+
+        style  (:stroke-style stroke :solid)
+        base-w (:stroke-width stroke 0)
+        top    (or (:stroke-top stroke) base-w 0)
+        right  (or (:stroke-right stroke) base-w 0)
+        bottom (or (:stroke-bottom stroke) base-w 0)
+        left   (or (:stroke-left stroke) base-w 0)
+
+        align  (:stroke-alignment stroke :center)
+        ;; Outward offset of each edge by half its own width.
+        ;; center = 0, outer = +half (outward), inner = -half (inward).
+        oy-top    (case align :outer (- 0 (/ top 2))    :inner (/ top 2)    0)
+        ox-right  (case align :outer (/ right 2)       :inner (- 0 (/ right 2))  0)
+        oy-bottom (case align :outer (/ bottom 2)      :inner (- 0 (/ bottom 2)) 0)
+        ox-left   (case align :outer (- 0 (/ left 2))   :inner (/ left 2)   0)
+
+        gradient (:stroke-color-gradient stroke)
+        image    (:stroke-image stroke)
+        color    (:stroke-color stroke)
+        opacity  (:stroke-opacity stroke)
+        paint    (cond
+                   (some? gradient) (dm/fmt "url(#stroke-color-gradient-%-%)" render-id index)
+                   (some? image)    (dm/fmt "url(#stroke-fill-%-%)" render-id index)
+                   (some? color)    color
+                   :else            "none")
+
+        dash-top    (per-side-dasharray style top    (:stroke-dash stroke) (:stroke-gap stroke))
+        dash-right  (per-side-dasharray style right (:stroke-dash stroke) (:stroke-gap stroke))
+        dash-bottom (per-side-dasharray style bottom (:stroke-dash stroke) (:stroke-gap stroke))
+        dash-left   (per-side-dasharray style left   (:stroke-dash stroke) (:stroke-gap stroke))
+
+        line-props (fn [x1 y1 x2 y2 width dash]
+                     #js {:x1 x1 :y1 y1 :x2 x2 :y2 y2
+                          :stroke paint
+                          :strokeWidth width
+                          :strokeOpacity opacity
+                          :strokeLinecap "square"
+                          :strokeDasharray dash})]
+
+    [:g.stroke-shape {:transform t}
+     [:defs
+      [:& stroke-defs {:shape shape :stroke stroke :render-id render-id :index index}]]
+     [:> :line (line-props x              (+ y oy-top)    (+ x w)        (+ y oy-top)    top    dash-top)]
+     [:> :line (line-props (+ x w ox-right) y              (+ x w ox-right) (+ y h)        right  dash-right)]
+     [:> :line (line-props (+ x w)         (+ y h oy-bottom) x            (+ y h oy-bottom) bottom dash-bottom)]
+     [:> :line (line-props (+ x ox-left)   (+ y h)        (+ x ox-left)   y              left   dash-left)]]))
+
 (mf/defc shape-custom-stroke
   {::mf/wrap-props false}
   [props]
@@ -400,9 +480,24 @@
         closed?         (or (not ^boolean (cfh/path-shape? shape))
                             (not ^boolean (path/shape-with-open-path? shape)))
         inner?          (= :inner stroke-position)
-        outer?          (= :outer stroke-position)]
+        outer?          (= :outer stroke-position)
+
+        ;; Figma-parity per-side stroke widths (rect/frame only).
+        per-side?       (and (not= stroke-style :none)
+                             (= (:stroke-width-mode stroke) :per-side)
+                             (or ^boolean (cfh/rect-shape? shape)
+                                 ^boolean (cfh/frame-shape? shape))
+                             (let [base  stroke-width
+                                   top    (or (:stroke-top stroke)    base 0)
+                                   right  (or (:stroke-right stroke)  base 0)
+                                   bottom (or (:stroke-bottom stroke) base 0)
+                                   left   (or (:stroke-left stroke)   base 0)]
+                               (or (> top 0) (> right 0) (> bottom 0) (> left 0))))]
 
     (cond
+      per-side?
+      [:& per-side-stroke {:shape shape :stroke stroke :index index :render-id render-id}]
+
       (and has-stroke? inner? closed?)
       [:& inner-stroke {:shape shape :stroke stroke :index index} child]
 

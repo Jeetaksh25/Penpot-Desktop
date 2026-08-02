@@ -8421,6 +8421,22 @@ msgstr "Round"
 msgid "workspace.options.stroke.join.bevel"
 msgstr "Bevel"
 
+msgid "workspace.options.stroke.per-side"
+msgstr "Per-side stroke widths"
+
+msgid "workspace.options.stroke.side-top"
+msgstr "Top"
+
+msgid "workspace.options.stroke.side-right"
+msgstr "Right"
+
+msgid "workspace.options.stroke.side-bottom"
+msgstr "Bottom"
+
+msgid "workspace.options.stroke.side-left"
+msgstr "Left"
+
+
 
 #: src/app/main/ui/workspace/sidebar/options/rows/stroke_row.cljs:137
 msgid "workspace.options.stroke.outer"

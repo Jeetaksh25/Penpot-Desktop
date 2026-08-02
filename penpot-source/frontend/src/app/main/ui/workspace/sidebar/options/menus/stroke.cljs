@@ -29,6 +29,11 @@
    :stroke-style
    :stroke-alignment
    :stroke-width
+   :stroke-width-mode
+   :stroke-top
+   :stroke-right
+   :stroke-bottom
+   :stroke-left
    :stroke-dash
    :stroke-gap
    :stroke-color
@@ -171,6 +176,28 @@
             (st/emit! (udw/trigger-bounding-box-cloaking ids))
             (st/emit! (dc/change-stroke-attrs ids {:stroke-miter-limit value} index))))
 
+        ;; Figma-parity per-side stroke widths. Toggling to :per-side seeds
+        ;; the four side widths from the current uniform stroke-width so the
+        ;; shape does not jump; toggling back to :uniform just flips the mode
+        ;; (side widths stay on the stroke but are ignored by the renderer).
+        on-stroke-width-mode-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [index mode width]
+           (st/emit! (udw/trigger-bounding-box-cloaking ids))
+           (let [attrs (if (= mode :per-side)
+                         {:stroke-width-mode :per-side
+                          :stroke-top width :stroke-right width
+                          :stroke-bottom width :stroke-left width}
+                         {:stroke-width-mode :uniform})]
+             (st/emit! (dc/change-stroke-attrs ids attrs index)))))
+
+        on-stroke-side-change
+        (fn [index side value]
+          (when-not (str/empty? value)
+            (st/emit! (udw/trigger-bounding-box-cloaking ids))
+            (st/emit! (dc/change-stroke-attrs ids {side value} index))))
+
         on-stroke-cap-switch
         (fn [index]
           (let [stroke-cap-start (get-in values [:strokes index :stroke-cap-start])
@@ -259,6 +286,8 @@
                               :on-stroke-cap-switch on-stroke-cap-switch
                               :on-stroke-join-change on-stroke-join-change
                               :on-stroke-miter-limit-change on-stroke-miter-limit-change
+                              :on-stroke-width-mode-change on-stroke-width-mode-change
+                              :on-stroke-side-change on-stroke-side-change
                               :on-toggle-visibility on-toggle-visibility
                               :disable-drag disable-drag
                               :on-focus on-focus

@@ -139,6 +139,16 @@
    [:stroke-style {:optional true}
     [::sm/one-of #{:solid :dotted :dashed :mixed}]]
    [:stroke-width {:optional true} ::sm/safe-number]
+   ;; Figma-parity: per-side stroke widths (top/right/bottom/left) for
+   ;; rect/frame. :stroke-width-mode :uniform (default, absent) keeps the
+   ;; legacy single-width behavior; :per-side renders four independent
+   ;; edge strokes (see custom_stroke.cljs per-side-stroke).
+   [:stroke-width-mode {:optional true}
+    [::sm/one-of #{:uniform :per-side}]]
+   [:stroke-top {:optional true} ::sm/safe-number]
+   [:stroke-right {:optional true} ::sm/safe-number]
+   [:stroke-bottom {:optional true} ::sm/safe-number]
+   [:stroke-left {:optional true} ::sm/safe-number]
    [:stroke-dash {:optional true} ::sm/safe-number]
    [:stroke-gap {:optional true} ::sm/safe-number]
    [:stroke-alignment {:optional true}
