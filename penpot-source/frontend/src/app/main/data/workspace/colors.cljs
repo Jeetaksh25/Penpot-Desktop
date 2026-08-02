@@ -702,6 +702,18 @@
                         (-> state
                             (assoc :type :radial-gradient)
                             (assoc :editing-stop 0)
+                            (update :current-color dissoc :image))
+
+                        (= :angular gradient-type)
+                        (-> state
+                            (assoc :type :angular-gradient)
+                            (assoc :editing-stop 0)
+                            (update :current-color dissoc :image))
+
+                        (= :diamond gradient-type)
+                        (-> state
+                            (assoc :type :diamond-gradient)
+                            (assoc :editing-stop 0)
                             (update :current-color dissoc :image)))))))))))
 
 (defn- recent-color-equal?
@@ -795,7 +807,9 @@
       :gradient (-> gradient
                     (assoc :type (case type
                                    :linear-gradient :linear
-                                   :radial-gradient :radial))
+                                   :radial-gradient :radial
+                                   :angular-gradient :angular
+                                   :diamond-gradient :diamond))
                     (assoc :stops (mapv clear-color-components stops))
                     (dissoc :shape-id))})))
 

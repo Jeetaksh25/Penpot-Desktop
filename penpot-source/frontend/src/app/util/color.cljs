@@ -25,14 +25,24 @@
 
         stops-css (str/join "," (map parse-stop stops))]
 
-    (if (= type :linear)
-      (str/fmt "linear-gradient(to bottom, %s)" stops-css)
+    (condp = type
+      :linear  (str/fmt "linear-gradient(to bottom, %s)" stops-css)
+      ;; CSS conic-gradient maps stop offset 0..1 to angle 0..360deg, which
+      ;; matches our wedge renderer's sweep. `from 0deg at center` is a
+      ;; reasonable preview default; the on-canvas handle sets the real
+      ;; center/angle on the shape, this CSS is only for small swatches.
+      :angular (str/fmt "conic-gradient(from 0deg at 50%% 50%%, %s)" stops-css)
+      ;; Diamond has no native CSS gradient; fall back to radial for the
+      ;; tiny swatch previews (the canvas renderer also approximates
+      ;; diamond as radial in v1).
       (str/fmt "radial-gradient(circle, %s)" stops-css))))
 
 (defn gradient-type->string [type]
   (case type
     :linear (tr "workspace.gradients.linear")
     :radial (tr "workspace.gradients.radial")
+    :angular (tr "workspace.gradients.angular")
+    :diamond (tr "workspace.gradients.diamond")
     nil))
 
 ;; TODO: REMOVE `VALUE` WHEN COLOR IS INTEGRATED

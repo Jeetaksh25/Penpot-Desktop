@@ -96,8 +96,11 @@
                             :gradient gradient
                             :shape obj}]
              (case (d/name (:type gradient))
-               "linear" [:> grad/linear-gradient props]
-               "radial" [:> grad/radial-gradient props]))))
+               "linear"  [:> grad/linear-gradient props]
+               "radial"  [:> grad/radial-gradient props]
+               "angular" [:> grad/angular-gradient props]
+               ;; diamond approximated as radial in v1 (see gradients.cljs).
+               "diamond" [:> grad/radial-gradient props]))))
 
 
        (let [fill-id (dm/str "fill-" obj-index "-" render-id)]

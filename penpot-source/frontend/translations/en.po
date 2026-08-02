@@ -6699,6 +6699,14 @@ msgstr "Linear gradient"
 msgid "workspace.gradients.radial"
 msgstr "Radial gradient"
 
+#: src/app/util/color.cljs:36
+msgid "workspace.gradients.angular"
+msgstr "Angular gradient"
+
+#: src/app/util/color.cljs:37
+msgid "workspace.gradients.diamond"
+msgstr "Diamond gradient"
+
 #: src/app/main/ui/workspace/main_menu.cljs:288
 msgid "workspace.header.menu.disable-dynamic-alignment"
 msgstr "Disable dynamic alignment"

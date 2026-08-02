@@ -90,7 +90,7 @@
    [:image schema:image]])
 
 (def gradient-types
-  #{:linear :radial})
+  #{:linear :radial :angular :diamond})
 
 (def schema:gradient
   [:map {:title "Gradient" :closed true}

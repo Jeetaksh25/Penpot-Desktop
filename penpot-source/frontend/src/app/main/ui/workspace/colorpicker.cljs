@@ -133,7 +133,9 @@
                                  (if-let [gradient (:gradient data)]
                                    (case (:type gradient)
                                      :linear :linear-gradient
-                                     :radial :radial-gradient)
+                                     :radial :radial-gradient
+                                     :angular :angular-gradient
+                                     :diamond :diamond-gradient)
                                    :color))
 
         active-color-tab*      (hooks/use-persisted-state ::color-tab "ramp")
@@ -153,7 +155,8 @@
 
         color-type             (get state :type :color)
         selected-mode          (case color-type
-                                 (:linear-gradient :radial-gradient)
+                                 (:linear-gradient :radial-gradient
+                                  :angular-gradient :diamond-gradient)
                                  :gradient
 
                                  color-type)

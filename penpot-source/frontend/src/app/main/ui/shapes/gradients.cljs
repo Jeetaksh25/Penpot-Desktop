@@ -15,6 +15,7 @@
    [app.common.geom.shapes :as gsh]
    [app.main.ui.context :as muc]
    [app.main.ui.shapes.export :as ed]
+   [app.common.types.color :as clr]
    [app.util.object :as obj]
    [rumext.v2 :as mf]))
 
@@ -115,6 +116,52 @@
                :stop-color color
                :stop-opacity opacity}])]))
 
+(mf/defc angular-gradient
+  {::mf/wrap-props false}
+  [{:keys [id gradient shape]}]
+  ;; Figma "angular"/conic gradient. SVG has no native conic gradient, so we
+  ;; approximate it with N thin wedge sectors swept around the center, each
+  ;; filled with the gradient color interpolated at its midpoint angle. The
+  ;; wedges live in a userSpaceOnUse <pattern> sized to the shape bounds, so
+  ;; `fill="url(#id)"` paints the shape with the sweep. The pattern clips
+  ;; wedges to the bounds, which is correct because the fill only shows
+  ;; inside the shape geometry anyway. 90 wedges (4° each) is visually smooth
+  ;; at typical zoom; raising the step count converges to the exact conic.
+  ;; start-x/y is the conic center; end-x/y defines the 0° ray direction.
+  (let [x      (dm/get-prop shape :x)
+        y      (dm/get-prop shape :y)
+        w      (dm/get-prop shape :width)
+        h      (dm/get-prop shape :height)
+
+        cx     (+ x (* (:start-x gradient) w))
+        cy     (+ y (* (:start-y gradient) h))
+        ex     (+ x (* (:end-x gradient) w))
+        ey     (+ y (* (:end-y gradient) h))
+        start  (js/Math.atan2 (- ey cy) (- ex cx))
+        r      (js/Math.sqrt (+ (* w w) (* h h)))
+        steps  90
+        stops  (vec (sort-by :offset (:stops gradient)))
+
+        wedge (fn [a1 a2]
+                (let [x1 (+ cx (* r (js/Math.cos a1)))
+                      y1 (+ cy (* r (js/Math.sin a1)))
+                      x2 (+ cx (* r (js/Math.cos a2)))
+                      y2 (+ cy (* r (js/Math.sin a2)))]
+                  (dm/str "M " cx " " cy " L " x1 " " y1 " A " r " " r " 0 0 1 " x2 " " y2 " Z")))]
+
+    [:> :pattern {:id id
+                  :patternUnits "userSpaceOnUse"
+                  :x x :y y :width w :height h}
+     (for [i (range steps)
+           :let [a1   (+ start (* i (/ (* 2 js/Math.PI) steps)))
+                 a2   (+ start (* (inc i) (/ (* 2 js/Math.PI) steps)))
+                 off  (/ (+ i 0.5) steps)
+                 col  (clr/interpolate-gradient stops off)]]
+       [:path {:key (dm/str id "-w-" i)
+               :d (wedge a1 a2)
+               :fill (:color col)
+               :fill-opacity (:opacity col)}])]))
+
 (mf/defc gradient
   {::mf/wrap-props false}
   [props]
@@ -136,4 +183,10 @@
       (case (:type gradient)
         :linear [:> linear-gradient props]
         :radial [:> radial-gradient props]
+        ;; Figma-parity conic (proper wedge approximation) + diamond
+        ;; (approximated as radial in v1 — SVG has no native diamond
+        ;; gradient and the wedge method does not apply; a true
+        ;; Manhattan-distance diamond is deferred to the polish round).
+        :angular [:> angular-gradient props]
+        :diamond [:> radial-gradient props]
         nil))))

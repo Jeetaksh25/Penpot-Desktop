@@ -241,8 +241,11 @@
     [:*
      (when (some? gradient)
        (case (:type gradient)
-         :linear [:> grad/linear-gradient props]
-         :radial [:> grad/radial-gradient props]))
+         :linear  [:> grad/linear-gradient props]
+         :radial  [:> grad/radial-gradient props]
+         :angular [:> grad/angular-gradient props]
+         ;; diamond approximated as radial in v1 (see gradients.cljs).
+         :diamond [:> grad/radial-gradient props]))
 
      (when (:stroke-image stroke)
        ;; We need to make the pattern size and the image fit so it's not repeated
