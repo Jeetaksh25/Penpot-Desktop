@@ -23,11 +23,14 @@
    [app.common.data :as d]
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
+   [app.common.geom.matrix :as gmt]
    [app.common.types.color :as clr]
+   [app.common.types.path :as path]
    [app.common.types.text :as types.text]
    [app.config :as cfg]
    [app.main.fonts :as fonts]
    [app.util.code-gen.common :as cgc]
+   [app.util.code-gen.markup-svg :as markup-svg]
    [app.util.code-gen.style-css-values :as scv]
    [cuerdas.core :as str]))
 
@@ -76,6 +79,22 @@
 (defn component-name
   [shape]
   (pascal (sanitize-identifier (:name shape))))
+
+(defn kebab-name
+  "Lowercase kebab-case identifier for package / npm names."
+  [s]
+  (let [s (or s "export")]
+    (-> (.toLowerCase (str s))
+        (str/replace #"[^a-z0-9]+" "-")
+        (str/replace #"^[_-]+|[_-]+$" ""))))
+
+(defn snake-name
+  "Lowercase snake_case identifier for file names (Android layouts, Dart)."
+  [s]
+  (let [s (or s "export")]
+    (-> (.toLowerCase (str s))
+        (str/replace #"[^a-z0-9]+" "_")
+        (str/replace #"^[_-]+|[_-]+$" ""))))
 
 ;; ---------------------------------------------------------------------------
 ;; Geometry (all relative, computed from original objects)
@@ -381,3 +400,137 @@
   cgc/svg-markup? but exposed for the framework generators."
   [shape]
   (cgc/svg-markup? shape))
+
+;; ---------------------------------------------------------------------------
+;; Native-SVG / PNG-raster helpers (Phase C/D)
+;; ---------------------------------------------------------------------------
+
+(defn path-d-string
+  "The SVG `d`-attribute string for a path/bool shape's `:content`, in
+  the shape's LOCAL coordinate space (origin at the shape's bounding-box
+  top-left, exactly as Penpot's own path renderer treats it — the on-canvas
+  position is carried separately by :transform). Returns \"\" when the
+  shape has no path content."
+  [shape]
+  (let [c (:content shape)]
+    (cond
+      (nil? c) ""
+      (path/content? c) (.toString c)
+      :else (some-> (path/content c) (.toString)))))
+
+(defn identity-transform?
+  "True when the shape's :transform is nil or the identity matrix (no
+  rotation/scale/skew/translation baked into the path's local frame)."
+  [shape]
+  (let [t (:transform shape)]
+    (or (nil? t)
+        (= t (gmt/matrix)))))
+
+(defn- single-solid-fill
+  "The single solid fill map of a shape, or nil if the shape has zero or
+  many fills, or its only fill is a gradient/image/hidden."
+  [shape]
+  (let [fills (remove :hidden (:fills shape))]
+    (when (= 1 (count fills))
+      (let [f (first fills)]
+        (when (and (some? (:fill-color f))
+                   (nil? (:fill-color-gradient f))
+                   (nil? (:fill-image f)))
+          f)))))
+
+(defn- single-inner-color-stroke
+  "The single inner-aligned solid-color stroke map of a shape, or nil when
+  the shape has zero/many strokes, a non-solid style, a gradient/image
+  stroke, line caps, or a non-inner alignment (center/outer need mask
+  machinery). nil strokes are also acceptable (no stroke at all)."
+  [shape]
+  (let [strokes (remove :hidden (:strokes shape))]
+    (cond
+      (empty? strokes) nil
+      (not= 1 (count strokes)) nil
+      :else
+      (let [s (first strokes)]
+        (when (and (some? (:stroke-color s))
+                   (nil? (:stroke-color-gradient s))
+                   (nil? (:stroke-image s))
+                   (#{:solid :dashed :dotted} (:stroke-style s))
+                   (= :inner (:stroke-alignment s))
+                   (nil? (:stroke-cap-start s))
+                   (nil? (:stroke-cap-end s)))
+          s)))))
+
+(defn simple-svg?
+  "Conservative predicate: a shape that can be emitted as a lone native
+  vector element (VectorDrawable / single <path>) WITHOUT masks, defs,
+  filters or transforms. True ONLY for a :path shape with a single solid
+  fill (or none), at most one inner-aligned solid-color stroke, no
+  shadow/blur, no svg-attrs, and an identity transform. Everything else
+  (bools, svg-raw, masks, multi-fill, gradients, non-inner strokes,
+  shadows, transforms, multi-subpath-with-effects) is left to the PNG
+  raster fallback. Defaults to false on any doubt — a false negative
+  simply rasterizes, which is always correct."
+  [shape]
+  (and (cfh/path-shape? shape)
+       (identity-transform? shape)
+       (nil? (:svg-attrs shape))
+       (nil? (:shadow shape))
+       (nil? (:blur shape))
+       (nil? (:background-blur shape))
+       (not (cfh/mask-shape? shape))
+       (or (single-solid-fill shape)
+           (empty? (remove :hidden (:fills shape))))
+       (or (single-inner-color-stroke shape)
+           (empty? (remove :hidden (:strokes shape))))
+       (str/not-blank (path-d-string shape))))
+
+(defn solid-fill-hex
+  "The `#AARRGGBB` hex of a simple-svg? shape's single solid fill, or
+  `#00000000` (transparent) when it has no fill."
+  [shape]
+  (if-let [f (single-solid-fill shape)]
+    (fill->argb-hex f)
+    "#00000000"))
+
+(defn simple-stroke
+  "The `{:color #AARRGGBB :width n}` of a simple-svg? shape's single inner
+  stroke, or nil when it has no stroke."
+  [shape]
+  (when-let [s (single-inner-color-stroke shape)]
+    {:color (fill->argb-hex {:color (:stroke-color s)
+                            :opacity (:stroke-opacity s)})
+     :width (d/nilv (:stroke-width s) 1)}))
+
+(defn svg-xml
+  "The full `<svg ...>...</svg>` string for an svg-shape, produced by the
+  same renderer the web frameworks use (markup-svg/generate-svg). This
+  carries the correct viewBox, transform, fills, strokes, masks and
+  gradients — so it is a faithful representation for native-SVG libraries
+  (react-native-svg `SvgXml`, flutter_svg `SvgPicture.string`) even for
+  shapes `simple-svg?` rejects. Returns \"\" if generation yields nothing."
+  [objects shape]
+  (or (markup-svg/generate-svg objects shape) ""))
+
+;; ---------------------------------------------------------------------------
+;; Component-instance hoisting (Phase E)
+;; ---------------------------------------------------------------------------
+
+;; Dynamic map of {instance-id -> comp-name}, bound by a framework's
+;; `generate-project` while rendering the primary tree. When non-nil,
+;; `render-shape` emits a `<CompName/>` reference for any top-level
+;; instance head whose id is in the map, instead of recursing into it.
+;; Default nil => no hoisting => byte-identical behavior to pre-hoisting.
+(def ^:dynamic *hoist-map* nil)
+
+(defn hoisted-instance?
+  "True when `shape` is a top-level instance head that the current
+  `*hoist-map*` has hoisted (so render-shape should emit a reference
+  instead of recursing)."
+  [shape]
+  (and (true? (:component-root shape))
+       (some? *hoist-map*)
+       (contains? *hoist-map* (:id shape))))
+
+(defn hoisted-name
+  "The component reference name for a hoisted instance, or nil."
+  [shape]
+  (get *hoist-map* (:id shape)))

@@ -188,3 +188,42 @@
      (fc/fmt-num (:width size))
      (fc/fmt-num (:height size))
      body)))
+
+;; ---------------------------------------------------------------------------
+;; Multi-file WinUI 3 project (Feature 2 code export)
+;; ---------------------------------------------------------------------------
+
+(defn- comp-name-from [roots]
+  (or (some-> (seq roots) first fc/component-name) "ExportPage"))
+
+(defn- page-xaml [comp-name body]
+  (dm/fmt
+   "<!-- WinUI 3 (Windows App SDK) XAML page. -->\n<Page\n    x:Class=\"PenpotExport.%\"\n    xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\"\n    xmlns:x=\"http://schemas.microsoft.com/winfx/2006/xaml\">\n%\n</Page>\n"
+   comp-name body))
+
+(defn- page-xaml-cs [comp-name]
+  (dm/fmt
+   "using Microsoft.UI.Xaml.Controls;\n\nnamespace PenpotExport;\n\npublic sealed partial class % : Page\n{\n    public %()\n    {\n        InitializeComponent();\n    }\n}\n"
+   comp-name comp-name))
+
+(defn- winui-readme [comp-name]
+  (dm/fmt
+   "# %\n\nGenerated with Penpot Desktop (WinUI 3 / Windows App SDK).\n\n## Use\n\nPlace `%.xaml` and `%.xaml.cs` in a WinUI 3 project (unpackaged or\nMSIX) under the `PenpotExport` namespace. The layout uses a root\n`Canvas` with `Canvas.Left` / `Canvas.Top` for absolute positioning.\n\nRemote images load via `Image Source` (WinUI supports http(s) URIs).\n"
+   comp-name comp-name comp-name))
+
+(defn generate-project
+  "Multi-file WinUI 3 page. The `:primary` file (`<Page>.xaml`) wraps the\nsingle-string `generate` output (the `<Canvas>` fragment) inside a\n`<Page>` with an `x:Class`. The code-behind (`<Page>.xaml.cs`) wires up\nthe partial class; a README explains integration."
+  [objects shapes opts]
+  (let [roots (fc/root-originals objects shapes)
+        comp-name (comp-name-from roots)
+        primary-path (dm/str comp-name ".xaml")
+        body (generate objects shapes)]
+    {:files {primary-path (page-xaml comp-name body)
+             (dm/str comp-name ".xaml.cs") (page-xaml-cs comp-name)
+             "README.md" (winui-readme comp-name)}
+     :binary-assets []
+     :raster-requests []
+     :primary primary-path
+     :label "WinUI 3 XAML"
+     :uses-rn-svg? false
+     :uses-masked-view? false}))

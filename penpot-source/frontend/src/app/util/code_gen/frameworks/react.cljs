@@ -229,3 +229,59 @@
   "React (JSX) component."
   [objects shapes]
   (generate-react objects shapes false))
+
+;; ---------------------------------------------------------------------------
+;; Multi-file Vite project (Feature 2 code export)
+;; ---------------------------------------------------------------------------
+
+(defn- comp-name-from [roots]
+  (or (some-> (seq roots) first fc/component-name) "Component"))
+
+(defn- vite-index-html [comp-name]
+  (dm/fmt
+   "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>%</title>\n  </head>\n  <body>\n    <div id=\"root\"></div>\n    <script type=\"module\" src=\"/src/main.jsx\"></script>\n  </body>\n</html>\n"
+   comp-name))
+
+(defn- vite-main-jsx [comp-name fontface?]
+  (dm/str
+   "import React from \"react\";\nimport ReactDOM from \"react-dom/client\";\n"
+   "import " comp-name " from \"./" comp-name ".jsx\";\n"
+   (when fontface? "import \"./index.css\";\n")
+   "\nReactDOM.createRoot(document.getElementById(\"root\")).render(\n  <React.StrictMode>\n    <" comp-name " />\n  </React.StrictMode>\n);\n"))
+
+(defn- vite-config []
+  "import { defineConfig } from \"vite\";\nimport react from \"@vitejs/plugin-react\";\n\nexport default defineConfig({\n  plugins: [react()],\n});\n")
+
+(defn- react-package-json [comp-name]
+  (dm/fmt
+   "{\n  \"name\": \"%\",\n  \"private\": true,\n  \"version\": \"0.0.0\",\n  \"type\": \"module\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"vite build\",\n    \"preview\": \"vite preview\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.3.1\",\n    \"react-dom\": \"^18.3.1\"\n  },\n  \"devDependencies\": {\n    \"@vitejs/plugin-react\": \"^4.3.1\",\n    \"vite\": \"^5.4.0\"\n  }\n}\n"
+   (fc/kebab-name comp-name)))
+
+(defn- react-readme [comp-name]
+  (dm/fmt
+   "# %\n\nGenerated with Penpot Desktop (React + Vite).\n\n## Run\n\n```bash\nnpm install\nnpm run dev\n```\n\nThe component lives in `src/%.jsx`. All children are absolutely positioned\nrelative to the selection's bounding box, so the layout matches the Penpot\ncanvas 1:1.\n"
+   comp-name comp-name))
+
+(defn generate-project
+  "Multi-file Vite + React project. The `:primary` file (`src/<Comp>.jsx`)\nis the single-string `generate` output (kept identical to the Inspect\npanel preview). The scaffold — entry, index.html, vite config, package.json,\nREADME — is added around it. `src/index.css` (and its `import` in main.jsx)\nis only emitted when `opts` carries non-empty `:fontfaces-css`."
+  [objects shapes opts]
+  (let [roots (fc/root-originals objects shapes)
+        comp-name (comp-name-from roots)
+        fontface-css (or (:fontfaces-css opts) "")
+        fontface? (not (str/blank? fontface-css))
+        primary-path (dm/str "src/" comp-name ".jsx")
+        primary (generate objects shapes)
+        files (cond-> {primary-path primary
+                      "src/main.jsx" (vite-main-jsx comp-name fontface?)
+                      "index.html" (vite-index-html comp-name)
+                      "vite.config.js" (vite-config)
+                      "package.json" (react-package-json comp-name)
+                      "README.md" (react-readme comp-name)}
+                fontface? (assoc "src/index.css" fontface-css))]
+    {:files files
+     :binary-assets []
+     :raster-requests []
+     :primary primary-path
+     :label "React"
+     :uses-rn-svg? false
+     :uses-masked-view? false}))

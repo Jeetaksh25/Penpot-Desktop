@@ -98,6 +98,58 @@
       "tailwind"     (tailwind/generate objects shapes)
       "")))
 
+;; ---------------------------------------------------------------------------
+;; Multi-file project export. Each framework emits a runnable project tree
+;; (component + scaffold + manifest), reused for the "Export code…" modal's
+;; ZIP output. The single-string `generate-framework-code` above stays the
+;; Inspect panel's preview path and is the `:primary` file of the project.
+;;
+;; Return shape (a "project map"):
+;;   {:files          {<path> <content-string>}      ; text files
+;;    :binary-assets  [{:path <path> :bytes <Uint8Array>}]  ; populated by the
+;;                                                          ; data event after
+;;                                                          ; rasterizing
+;;    :raster-requests [{:shape-id <id> :name <file> :scale <n>}]  ; complex
+;;                                                          ; svg-shapes the
+;;                                                          ; data event must
+;;                                                          ; rasterize to PNG
+;;    :primary        <path>          ; the main component file (Inspect preview)
+;;    :label         <str>           ; framework display label
+;;    :uses-rn-svg?   <bool>          ; RN: react-native-svg dep needed
+;;    :uses-masked-view? <bool>}     ; RN: @react-native-masked-view needed
+;;
+;; `opts` may carry:
+;;   :fontfaces-css <str>   ; @font-face CSS for web frameworks' globals.css
+;;   :fonts-data   {url -> data-uri}   ; font binaries to bundle into /fonts
+;;   :images-data  {url -> data-uri}   ; (optional) embedded images
+;;   :scale        <n>      ; raster scale (default 2)
+
+(defn empty-project
+  "A blank project map used as the fallback / base for merging."
+  [type]
+  {:files {} :binary-assets [] :raster-requests []
+   :primary nil :label (framework-label type)
+   :uses-rn-svg? false :uses-masked-view? false})
+
+(defn generate-framework-project
+  "Generate a multi-file project tree for a UI-framework export. Returns a
+  project map (see `empty-project` for the shape). The single-string
+  `generate-framework-code` is the `:primary` file of the returned tree."
+  ([objects type shapes]
+   (generate-framework-project objects type shapes nil))
+  ([objects type shapes opts]
+   (let [type (str type)
+         opts (or opts {})]
+     (case type
+       "react"        (react/generate-project objects shapes opts)
+       "nextjs"       (tailwind/generate-nextjs-project objects shapes opts)
+       "react-native" (react-native/generate-project objects shapes opts)
+       "android-xml"  (android-xml/generate-project objects shapes opts)
+       "winui3-xml"   (winui3-xml/generate-project objects shapes opts)
+       "flutter"      (flutter/generate-project objects shapes opts)
+       "tailwind"     (tailwind/generate-project objects shapes opts)
+       (empty-project type)))))
+
 (defn download-framework-code!
   "Trigger a browser download of generated framework code. `base-name` is
   used (sanitized) for the file name; the framework's extension is appended."

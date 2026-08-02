@@ -94,6 +94,97 @@
     (fc/container? shape) "FrameLayout"
     :else "View"))
 
+;; ---------------------------------------------------------------------------
+;; Native-SVG / PNG-raster (Phase C/D)
+;; ---------------------------------------------------------------------------
+
+;; Dynamic accumulator bound ONLY by `generate-project` while rendering
+;; the layout tree. render-shape's svg branch records a VectorDrawable
+;; (simple shapes) or a raster-request (complex shapes) into it and emits
+;; an `<ImageView android:src="@drawable/<name>"/>` reference. When nil
+;; (the single-string Inspect-panel preview) the svg branch emits a
+;; placeholder `<View>` with a comment — no drawables are produced.
+(def ^:dynamic *svg-acc* nil)
+
+(defn- layout-attrs-only
+  "Position + size + alpha layout attributes for an svg-shape, WITHOUT the
+  `android:background` (the drawable itself carries the fill/stroke, so a
+  background on the ImageView would double up or clash)."
+  [objects shape origin]
+  (let [pos (fc/rel-position objects shape origin)
+        size (fc/shape-size shape)
+        opacity (fc/shape-opacity shape)]
+    (str
+     (dm/fmt "\n        android:layout_width=\"%dp\"" (fc/fmt-num (:width size)))
+     (dm/fmt "\n        android:layout_height=\"%dp\"" (fc/fmt-num (:height size)))
+     (dm/fmt "\n        android:layout_marginStart=\"%dp\"" (fc/fmt-num (:left pos)))
+     (dm/fmt "\n        android:layout_marginTop=\"%dp\"" (fc/fmt-num (:top pos)))
+     (when opacity (dm/fmt "\n        android:alpha=\"%\"" (fc/fmt-num opacity))))))
+
+(defn- vector-drawable
+  "Build a VectorDrawable XML for a `simple-svg?` shape. The path's `d`
+  string is in the shape's local coordinate space (origin at its bounding
+  box top-left), so `viewportWidth/Height` are the shape's pixel size and
+  no `<group>` transform is needed."
+  [shape]
+  (let [size (fc/shape-size shape)
+        d (fc/path-d-string shape)
+        fill (fc/solid-fill-hex shape)
+        stroke (fc/simple-stroke shape)]
+    (dm/str
+     "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+     "<vector xmlns:android=\"http://schemas.android.com/apk/res/android\"\n"
+     "    android:width=\"" (fc/fmt-num (:width size)) "dp\"\n"
+     "    android:height=\"" (fc/fmt-num (:height size)) "dp\"\n"
+     "    android:viewportWidth=\"" (fc/fmt-num (:width size)) "\"\n"
+     "    android:viewportHeight=\"" (fc/fmt-num (:height size)) "\">\n"
+     "    <path\n"
+     "        android:pathData=\"" (escape-xml d) "\"\n"
+     "        android:fillColor=\"" fill "\""
+     (when stroke
+       (dm/str "\n        android:strokeColor=\"" (:color stroke) "\"\n"
+               "        android:strokeWidth=\"" (fc/fmt-num (:width stroke)) "\""))
+     " />\n"
+     "</vector>\n")))
+
+(defn- drawable-name-for
+  "A stable, unique lowercase drawable resource name for `shape`, de-duped
+    against names already recorded in `*svg-acc*` (across both .xml and
+    .png paths). Android resource names must be [a-z0-9_] and not start
+    with a digit."
+  [shape]
+  (let [raw (fc/snake-name (or (:name shape) "shape"))
+        base (cond (str/blank? raw) "shape"
+                   (re-matches #"^\d.*" raw) (dm/str "s_" raw)
+                   :else raw)]
+    (loop [n base i 2]
+      (let [used (:used @*svg-acc*)
+            xml-path (dm/str "res/drawable/" n ".xml")
+            png-path (dm/str "res/drawable/" n ".png")]
+        (if (or (contains? used xml-path) (contains? used png-path))
+          (recur (dm/str base "_" i) (inc i))
+          n)))))
+
+(defn- register-svg-shape
+  "Record `shape` in `*svg-acc*` as a VectorDrawable (when `simple-svg?`)
+  or a raster-request (otherwise), and return the drawable resource name
+  the layout should reference via `@drawable/<name>`."
+  [shape]
+  (let [n (drawable-name-for shape)
+        simple? (fc/simple-svg? shape)
+        xml-path (dm/str "res/drawable/" n ".xml")
+        png-path (dm/str "res/drawable/" n ".png")]
+    (vswap! *svg-acc*
+            (fn [a]
+              (let [a (assoc a :used (conj (:used a) xml-path png-path))]
+                (if simple?
+                  (assoc-in a [:drawables xml-path] (vector-drawable shape))
+                  (update a :rasters conj {:shape-id (:id shape)
+                                           :name n
+                                           :scale 2
+                                           :binary-path png-path})))))
+    n))
+
 (defn- render-shape
   ([objects shape origin] (render-shape objects shape origin 1))
   ([objects shape origin level]
@@ -102,6 +193,20 @@
          attrs (box-attrs objects shape origin level)]
      (cond
        (fc/hidden? shape) nil
+
+       (fc/svg-shape? shape)
+       ;; Native SVG: simple shapes become a VectorDrawable in
+       ;; `res/drawable/<name>.xml`; complex shapes are rasterized to a
+       ;; PNG at `@drawable/<name>` (recorded as a `:raster-request` and
+       ;; resolved by the export pipeline). In the Inspect-panel preview
+       ;; (`*svg-acc*` unbound) a placeholder `<View>` + comment is emitted.
+       (let [lattrs (layout-attrs-only objects shape origin)]
+         (if (nil? *svg-acc*)
+           (dm/fmt "%<!-- SVG shape — export to project to emit res/drawable/%.xml\n     (VectorDrawable if simple, raster PNG if complex) -->\n%<View%\n        android:background=\"#00000000\" />"
+                   (fc/snake-name (or (:name shape) "shape")) ind lattrs)
+           (let [dname (register-svg-shape shape)]
+             (dm/fmt "%<ImageView\n        xmlns:android=\"http://schemas.android.com/apk/res/android\"%\n        android:src=\"@drawable/%\" />"
+                     ind lattrs dname))))
 
        (cfh/text-shape? shape)
        (let [typo (fc/extract-typography shape)
@@ -156,3 +261,71 @@
      (fc/fmt-num (:width size))
      (fc/fmt-num (:height size))
      body)))
+
+;; ---------------------------------------------------------------------------
+;; Multi-file Android project tree (Feature 2 code export)
+;; ---------------------------------------------------------------------------
+
+(defn- comp-name-from [roots]
+  (or (some-> (seq roots) first fc/component-name) "Export"))
+
+(defn- colors-xml []
+  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n    <color name=\"black\">#FF000000</color>\n    <color name=\"white\">#FFFFFFFF</color>\n</resources>\n")
+
+(defn- strings-xml [comp-name]
+  (dm/fmt
+   "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n    <string name=\"app_name\">%</string>\n</resources>\n"
+   comp-name))
+
+(defn- dimens-xml []
+  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources />\n")
+
+(defn- styles-xml []
+  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n    <style name=\"Theme.PenpotExport\" parent=\"android:Theme.Material.Light.NoActionBar\" />\n</resources>\n")
+
+(defn- android-manifest []
+  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">\n    <application\n        android:label=\"@string/app_name\"\n        android:theme=\"@style/Theme.PenpotExport\">\n        <activity\n            android:name=\".MainActivity\"\n            android:exported=\"true\">\n            <intent-filter>\n                <action android:name=\"android.intent.action.MAIN\" />\n                <category android:name=\"android.intent.category.LAUNCHER\" />\n            </intent-filter>\n        </activity>\n    </application>\n</manifest>\n")
+
+(defn- android-build-gradle []
+  "plugins {\n    id \"com.android.application\"\n}\n\nandroid {\n    namespace \"com.penpot.export\"\n    compileSdk 34\n\n    defaultConfig {\n        applicationId \"com.penpot.export\"\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName \"1.0\"\n    }\n}\n\ndependencies {\n    implementation \"androidx.appcompat:appcompat:1.6.1\"\n}\n")
+
+(defn- android-readme [comp-name]
+  (dm/fmt
+   "# %\n\nGenerated with Penpot Desktop (Android layout XML).\n\n## Use\n\nThe layout lives in `res/layout/%.xml`. Drop the `res/` tree and\n`AndroidManifest.xml` into an Android Studio project (or merge into an\nexisting module) and adjust `AndroidManifest.xml`'s `.MainActivity`.\n\nKnown limitations: corner radius / gradients / borders on containers and\ncomplex SVG shapes need a drawable resource (VectorDrawable / custom) —\nsee the inline comments. Remote images need a loader such as Coil/Glide.\n"
+   comp-name (fc/snake-name comp-name)))
+
+(defn generate-project
+  "Multi-file Android project tree. The `:primary` file
+  (`res/layout/<name>.xml`) is the layout for the selection. The scaffold
+  adds the `res/values/` resource tables, a manifest stub, an app
+  `build.gradle` and a README. Native-SVG (Phase C): every svg-shape in
+  the tree becomes either a VectorDrawable in `res/drawable/<name>.xml`
+  (simple — single path, solid fill, inner stroke, no transform/mask)
+  or a raster-request (complex) resolved to `res/drawable/<name>.png` by
+  the export pipeline; the layout references both as `@drawable/<name>`.
+  Component-instance hoisting (Phase E) is NOT applied to Android —
+  instances flatten inline (Android has no component primitive in XML)."
+  [objects shapes opts]
+  (let [roots (fc/root-originals objects shapes)
+        comp-name (comp-name-from roots)
+        layout-name (fc/snake-name comp-name)
+        primary-path (dm/str "res/layout/" layout-name ".xml")
+        acc (volatile! {:drawables {} :rasters [] :used #{}})
+        primary (binding [*svg-acc* acc]
+                  (generate objects shapes))
+        final @acc]
+    {:files (merge {primary-path primary
+                    "res/values/colors.xml" (colors-xml)
+                    "res/values/strings.xml" (strings-xml comp-name)
+                    "res/values/dimens.xml" (dimens-xml)
+                    "res/values/styles.xml" (styles-xml)
+                    "AndroidManifest.xml" (android-manifest)
+                    "build.gradle" (android-build-gradle)
+                    "README.md" (android-readme comp-name)}
+                   (:drawables final))
+     :binary-assets []
+     :raster-requests (:rasters final)
+     :primary primary-path
+     :label "Android XML"
+     :uses-rn-svg? false
+     :uses-masked-view? false}))

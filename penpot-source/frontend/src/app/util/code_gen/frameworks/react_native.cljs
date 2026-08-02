@@ -14,6 +14,7 @@
    [app.common.files.helpers :as cfh]
    [app.config :as cfg]
    [app.util.code-gen.frameworks.common :as fc]
+   [app.util.code-gen.frameworks.components :as fcomp]
    [cuerdas.core :as str]))
 
 (defn- indent [n] (str/repeat "  " n))
@@ -116,9 +117,27 @@
      (cond
        (fc/hidden? shape) nil
 
+       ;; Hoisted component instance → emit a reference instead of recursing.
+       (fc/hoisted-instance? shape)
+       (let [comp-name (fc/hoisted-name shape)
+             pos (fc/rel-position objects shape origin)
+             size (fc/shape-size shape)]
+         (dm/fmt "%<% style={{position: \"absolute\", left: %, top: %, width: %, height: %}} />"
+                 ind comp-name
+                 (fc/fmt-num (:left pos)) (fc/fmt-num (:top pos))
+                 (fc/fmt-num (:width size)) (fc/fmt-num (:height size))))
+
        (fc/svg-shape? shape)
-       (dm/fmt "%// SVG shape — render with react-native-svg\n%<View style={{%}} />"
-               ind ind style-str)
+       ;; Native SVG via react-native-svg `SvgXml`, fed the same `<svg>`
+       ;; string the web frameworks produce (carries viewBox, transform,
+       ;; fills, masks). Works for every svg-shape — no PNG fallback needed.
+       (let [xml (fc/svg-xml objects shape)
+             size (fc/shape-size shape)]
+         (if (str/blank? xml)
+           (dm/fmt "%<View style={{%}} />" ind style-str)
+           (dm/fmt "%<View style={{%}}>\n%  <SvgXml xml={`%`} width={%} height={%} />\n%</View>"
+                   ind style-str ind xml
+                   (fc/fmt-num (:width size)) (fc/fmt-num (:height size)) ind)))
 
        (cfh/text-shape? shape)
        (let [typo (fc/extract-typography shape)
@@ -159,18 +178,150 @@
 (defn escape-jsx-text [s]
   (js/JSON.stringify (str s)))
 
-(defn generate
+(defn- has-svg?
+  "True when any svg-shape is reachable from `shapes` through `objects`."
   [objects shapes]
+  (letfn [(walk [s] (or (fc/svg-shape? s)
+                        (some walk (fc/children-of objects s))))]
+    (some walk shapes)))
+
+(defn- rn-imports
+  "Build the RN import block, conditionally adding `SvgXml` from
+  `react-native-svg` and one import line per hoisted component name."
+  [svg? comp-names]
+  (dm/str
+   "import React from \"react\";\n"
+   "import { View, Text, Image, ImageBackground } from \"react-native\";\n"
+   (when svg? "import { SvgXml } from \"react-native-svg\";\n")
+   (str/join "" (map #(dm/str "import " % " from \"./components/" % "\";\n") comp-names))
+   "\n"))
+
+(defn- render-component
+  "Render a RN component source string. `hoist-map` (when non-nil) makes
+  `render-shape` emit `<CompName/>` references for hoisted instances;
+  `comp-names` is the list of those names (for the import block). When
+  both are nil/empty this is byte-identical to the legacy single-file
+  `generate`."
+  [objects shapes hoist-map comp-names]
   (let [roots (fc/root-originals objects shapes)
         origin (fc/selection-origin roots)
         size (fc/selection-size roots)
-        body (->> roots
-                  (keep #(render-shape objects % origin 1))
-                  (str/join "\n"))
-        comp-name (or (some-> (seq roots) first fc/component-name) "Component")]
+        svg? (has-svg? objects roots)
+        body (binding [fc/*hoist-map* hoist-map]
+              (->> roots
+                   (keep #(render-shape objects % origin 1))
+                   (str/join "\n")))
+        comp-name (or (some-> (seq roots) first fc/component-name) "Component")
+        imports (rn-imports svg? comp-names)]
     (dm/fmt
-     "import React from \"react\";\nimport { View, Text, Image, ImageBackground } from \"react-native\";\n\nexport default function %() {\n  return (\n    <View style={{position: \"relative\", width: %, height: %}}>\n%\n    </View>\n  );\n}\n"
-     comp-name
+     "%export default function %() {\n  return (\n    <View style={{position: \"relative\", width: %, height: %}}>\n%\n    </View>\n  );\n}\n"
+     imports comp-name
      (fc/fmt-num (:width size))
      (fc/fmt-num (:height size))
      body)))
+
+(defn generate
+  "Single-string Inspect-panel preview (no hoisting — the preview can't
+  represent multi-file components)."
+  [objects shapes]
+  (render-component objects shapes nil nil))
+
+(defn- component-root-style
+  "The def instance's box style as a RELATIVE root (drop absolute
+  position/left/top, keep width/height/background/border/radius). Used for
+  a hoisted component's root container."
+  [objects shape origin]
+  (let [pairs (box-style objects shape origin)
+        kept (->> pairs (remove #(#{:position :left :top} (first %))))]
+    (into [[:position "relative]] kept)))
+
+(defn- render-hoisted-component
+  "Render one hoisted component as its own `components/<name>.jsx` source
+  string. The definition instance's children are rendered relative to
+  the instance head's origin (with `*hoist-map*` rebound to nil so nested
+  instances are not re-hoisted), wrapped in a relative root carrying the
+  instance's own background/border."
+  [objects spec]
+  (let [{:keys [comp-name def children origin size]} spec
+        body (binding [fc/*hoist-map* nil]
+              (->> children
+                   (keep #(render-shape objects % origin 1))
+                   (str/join "\n")))
+        root-style (style->js (component-root-style objects def origin))
+        svg? (has-svg? objects [def])
+        imports (rn-imports svg? [])]
+    (dm/fmt
+     "%export default function %() {\n  return (\n    <View style={{%}}>\n%\n    </View>\n  );\n}\n"
+     imports comp-name root-style body)))
+
+;; ---------------------------------------------------------------------------
+;; Multi-file React Native project (Feature 2 code export)
+;; ---------------------------------------------------------------------------
+
+(defn- comp-name-from [roots]
+  (or (some-> (seq roots) first fc/component-name) "App"))
+
+(defn- rn-app-json [comp-name]
+  (dm/fmt
+   "{\n  \"name\": \"%\",\n  \"displayName\": \"%\"\n}\n"
+   (fc/kebab-name comp-name) comp-name))
+
+(defn- rn-babel-config []
+  "module.exports = {\n  presets: [\"module:metro-react-native-babel-preset\"],\n};\n")
+
+(defn- rn-package-json [comp-name uses-svg? uses-masked-view?]
+  (dm/str
+   "{\n"
+     "  \"name\": \"" (fc/kebab-name comp-name) "\",\n"
+     "  \"version\": \"0.0.1\",\n"
+     "  \"private\": true,\n"
+     "  \"scripts\": {\n"
+     "    \"start\": \"react-native start\",\n"
+     "    \"android\": \"react-native run-android\",\n"
+     "    \"ios\": \"react-native run-ios\"\n"
+     "  },\n"
+     "  \"dependencies\": {\n"
+     "    \"react\": \"18.3.1\",\n"
+     "    \"react-native\": \"0.75.0\""
+     (when uses-svg? ",\n    \"react-native-svg\": \"^15.3.0\"")
+     (when uses-masked-view? ",\n    \"@react-native-masked-view/masked-view\": \"^0.3.1\"")
+     "\n  }\n"
+     "}\n")))
+
+(defn- rn-readme [comp-name]
+  (dm/fmt
+   "# %\n\nGenerated with Penpot Desktop (React Native).\n\n## Run\n\n```bash\nnpm install\nnpx react-native run-android   # or: run-ios\n```\n\nThe component lives in `%.jsx`. Register it in your app entry:\n\n```js\nimport { AppRegistry } from \"react-native\";\nimport % from \"./%.jsx\";\nAppRegistry.registerComponent(\"%\", () => %);\n```\n\nAll children are absolutely positioned relative to the selection's bounding\nbox (React Native supports `position: \"absolute\"`).\n"
+   comp-name comp-name comp-name comp-name (fc/kebab-name comp-name) comp-name))
+
+(defn generate-project
+  "Multi-file React Native project. The `:primary` file (`<Comp>.jsx`) is
+  the component for the selection; native SVG shapes are emitted via
+  `react-native-svg` `SvgXml` (so `:uses-rn-svg?` is true whenever an
+  svg-shape is reachable). Component-instance hoisting (Phase E) emits
+  one `components/<Comp>.jsx` per hoisted component and replaces every
+  instance with a `<CompName/>` reference."
+  [objects shapes opts]
+  (let [roots (fc/root-originals objects shapes)
+        comp-name (comp-name-from roots)
+        hoist (fcomp/collect-hoistable objects roots)
+        comp-names (mapv :comp-name (:specs hoist))
+        primary-path (dm/str comp-name ".jsx")
+        primary (render-component objects shapes (:hoist-map hoist) comp-names)
+        comp-files (into {}
+                         (for [spec (:specs hoist)]
+                           [(dm/str "components/" (:comp-name spec) ".jsx")
+                            (render-hoisted-component objects spec)]))
+        uses-svg? (boolean (or (:uses-rn-svg? opts) (has-svg? objects roots)))
+        uses-masked-view? (boolean (:uses-masked-view? opts))]
+    {:files (merge {primary-path primary
+                    "package.json" (rn-package-json comp-name uses-svg? uses-masked-view?)
+                    "app.json" (rn-app-json comp-name)
+                    "babel.config.js" (rn-babel-config)
+                    "README.md" (rn-readme comp-name)}
+                   comp-files)
+     :binary-assets []
+     :raster-requests []
+     :primary primary-path
+     :label "React Native"
+     :uses-rn-svg? uses-svg?
+     :uses-masked-view? uses-masked-view?}))

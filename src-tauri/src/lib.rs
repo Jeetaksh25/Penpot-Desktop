@@ -15,6 +15,7 @@ mod proxy;
 mod commands;
 mod llm;
 mod fonts;
+mod code_export;
 
 /// Hide the console window for a spawned process. The Tauri app uses the
 /// `windows` subsystem (GUI, no parent console), so without this every
@@ -754,6 +755,7 @@ pub fn run() {
             llm::llm_set_config,
             llm::llm_generate,
             fonts::fonts_download_family,
+            code_export::write_code_zip,
         ])
         .setup(|app| {
             let handle = app.handle().clone();

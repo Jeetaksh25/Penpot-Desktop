@@ -14,6 +14,7 @@
    [app.common.files.helpers :as cfh]
    [app.config :as cfg]
    [app.util.code-gen.frameworks.common :as fc]
+   [app.util.code-gen.frameworks.components :as fcomp]
    [cuerdas.core :as str]))
 
 (defn- indent [n] (str/repeat "  " n))
@@ -25,6 +26,20 @@
       (str/replace "$" "\\$")))
 
 (defn- dart-string [s] (dm/fmt "'%'" (escape-dart s)))
+
+(defn- escape-dart-ml
+  "Escape a string for a single-quoted Dart string literal, also turning
+  real newlines into `\\n` escapes (a single-quoted Dart literal cannot
+  span a physical line). Used for embedding raw SVG markup."
+  [s]
+  (-> (str s)
+      (str/replace "\\" "\\\\")
+      (str/replace "'" "\\'")
+      (str/replace "$" "\\$")
+      (str/replace "\r" "")
+      (str/replace "\n" "\\n")))
+
+(defn- dart-svg-string [s] (dm/fmt "'%'" (escape-dart-ml s)))
 
 (defn- rgba-string->color [rgba-str]
   (let [nums (->> (re-seq #"\d+\.?\d*" (or rgba-str ""))
@@ -120,10 +135,26 @@
      (cond
        (fc/hidden? shape) nil
 
-       (fc/svg-shape? shape)
+       ;; Hoisted component instance → emit a reference instead of recursing.
+       (fc/hoisted-instance? shape)
        (positioned objects shape origin
-                    (opacity-wrap
-                     (dm/fmt "// SVG shape — render with flutter_svg\n        SizedBox()")))
+                   (opacity-wrap
+                    (dm/fmt "%()" (fc/hoisted-name shape))))
+
+       (fc/svg-shape? shape)
+       ;; Native SVG via flutter_svg `SvgPicture.string`, fed the same `<svg>`
+       ;; string the web frameworks produce (carries viewBox, transform,
+       ;; fills, masks). Works for every svg-shape — no PNG fallback needed.
+       (let [xml (fc/svg-xml objects shape)
+             size (fc/shape-size shape)]
+         (positioned objects shape origin
+                     (opacity-wrap
+                      (if (str/blank? xml)
+                        "SizedBox()"
+                        (dm/fmt "SvgPicture.string(\n          %,\n          width: %,\n          height: %,\n        )"
+                                (dart-svg-string xml)
+                                (fc/fmt-num (:width size))
+                                (fc/fmt-num (:height size)))))))
 
        (cfh/text-shape? shape)
        (let [typo (fc/extract-typography shape)
@@ -178,19 +209,108 @@
                    (opacity-wrap
                     (dm/fmt "Container(\n          decoration: %,\n        )" (box-decoration shape))))))))
 
-(defn generate
+(defn- has-svg?
+  "True when any svg-shape is reachable from `shapes` through `objects`."
   [objects shapes]
-  (let [roots (fc/root-originals objects shapes)
-        origin (fc/selection-origin roots)
-        size (fc/selection-size roots)
-        body (->> roots
-                  (keep #(render-shape objects % origin 2))
-                  (map #(str/concat (indent 1) %))
-                  (str/join ",\n"))
-        comp-name (or (some-> (seq roots) first fc/component-name) "ExportedWidget")]
+  (letfn [(walk [s] (or (fc/svg-shape? s)
+                        (some walk (fc/children-of objects s))))]
+    (some walk shapes)))
+
+(defn- render-widget
+  "Render a Flutter `StatelessWidget` source string for `shapes` placed
+  relative to `origin`, sized to `size`. `hoist-map` (when non-nil) makes
+  `render-shape` emit `CompName()` references for hoisted instances, and
+  `comp-names` adds one `import 'widgets/<name>.dart';` line per hoisted
+  component so those references resolve. The `flutter_svg` import is
+  emitted only when an svg-shape is reachable, so a non-SVG, non-hoisted
+  selection is byte-identical to the legacy single-file output."
+  [objects shapes origin size comp-name hoist-map comp-names]
+  (let [svg? (has-svg? objects shapes)
+        imports (dm/str "import 'package:flutter/material.dart';\n"
+                        (when svg? "import 'package:flutter_svg/flutter_svg.dart';\n")
+                        (str/join "" (map #(dm/str "import 'widgets/" (fc/snake-name %) ".dart';\n") comp-names)))
+        body (binding [fc/*hoist-map* hoist-map]
+              (->> shapes
+                    (keep #(render-shape objects % origin 2))
+                    (map #(str/concat (indent 1) %))
+                    (str/join ",\n")))]
     (dm/fmt
-     "import 'package:flutter/material.dart';\n\nclass % extends StatelessWidget {\n  const %({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return SizedBox(\n      width: %,\n      height: %,\n      child: Stack(\n        children: [\n%,\n        ],\n      ),\n    );\n  }\n}\n"
-     comp-name comp-name
+     "%\nclass % extends StatelessWidget {\n  const %({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return SizedBox(\n      width: %,\n      height: %,\n      child: Stack(\n        children: [\n%,\n        ],\n      ),\n    );\n  }\n}\n"
+     imports comp-name comp-name
      (fc/fmt-num (:width size))
      (fc/fmt-num (:height size))
      body)))
+
+(defn generate
+  "Single-string Inspect-panel preview (no hoisting — the preview can't
+  represent multi-file components)."
+  [objects shapes]
+  (let [roots (fc/root-originals objects shapes)]
+    (render-widget objects roots
+                   (fc/selection-origin roots)
+                   (fc/selection-size roots)
+                   (comp-name-from roots) nil nil)))
+
+(defn- render-hoisted-component
+  "Render one hoisted component as its own `lib/widgets/<name>.dart`
+  source string. The definition instance's children are rendered relative
+  to the instance head's origin (with `*hoist-map*` rebound to nil so
+  nested instances are not re-hoisted; no sibling imports — a hoisted
+  component flattens its instances inline)."
+  [objects spec]
+  (let [{:keys [comp-name children origin size]} spec]
+    (render-widget objects children origin size comp-name nil nil)))
+
+;; ---------------------------------------------------------------------------
+;; Multi-file Flutter project (Feature 2 code export)
+;; ---------------------------------------------------------------------------
+
+(defn- comp-name-from [roots]
+  (or (some-> (seq roots) first fc/component-name) "ExportedWidget"))
+
+(defn- pubspec-yaml []
+  "name: penpot_export\ndescription: Generated with Penpot Desktop.\npublish_to: 'none'\nversion: 1.0.0+1\n\nenvironment:\n  sdk: ^3.5.0\n\ndependencies:\n  flutter:\n    sdk: flutter\n  flutter_svg: ^2.0.10\n\nflutter:\n  uses-material-design: true\n")
+
+(defn- analysis-options []
+  "include: package:flutter_lints/flutter.yaml\n")
+
+(defn- flutter-readme [comp-name]
+  (dm/fmt
+   "# %\n\nGenerated with Penpot Desktop (Flutter).\n\n## Run\n\n```bash\nflutter pub get\nflutter run\n```\n\nThe widget lives in `lib/%.dart` — a `StatelessWidget` using a `Stack`\nwith `Positioned` children for absolute layout.\n"
+   comp-name (fc/snake-name comp-name)))
+
+(defn generate-project
+  "Multi-file Flutter project. The `:primary` file (`lib/<name>.dart`) is
+  the widget for the selection; native SVG shapes are emitted via
+  `flutter_svg` `SvgPicture.string` (so `:uses-rn-svg?` is true whenever an
+  svg-shape is reachable — `pubspec.yaml` already declares `flutter_svg`).
+  Component-instance hoisting (Phase E) emits one `lib/widgets/<name>.dart`
+  per hoisted component and replaces every instance with a `CompName()`
+  reference."
+  [objects shapes opts]
+  (let [roots (fc/root-originals objects shapes)
+        comp-name (comp-name-from roots)
+        file-name (fc/snake-name comp-name)
+        primary-path (dm/str "lib/" file-name ".dart")
+        hoist (fcomp/collect-hoistable objects roots)
+        comp-names (mapv :comp-name (:specs hoist))
+        primary (render-widget objects roots
+                               (fc/selection-origin roots)
+                               (fc/selection-size roots)
+                               comp-name (:hoist-map hoist) comp-names)
+        comp-files (into {}
+                        (for [spec (:specs hoist)]
+                          [(dm/str "lib/widgets/" (fc/snake-name (:comp-name spec)) ".dart")
+                           (render-hoisted-component objects spec)]))
+        uses-svg? (boolean (or (:uses-rn-svg? opts) (has-svg? objects roots)))]
+    {:files (merge {primary-path primary
+                    "pubspec.yaml" (pubspec-yaml)
+                    "analysis_options.yaml" (analysis-options)
+                    "README.md" (flutter-readme comp-name)}
+                   comp-files)
+     :binary-assets []
+     :raster-requests []
+     :primary primary-path
+     :label "Flutter"
+     :uses-rn-svg? uses-svg?
+     :uses-masked-view? false}))

@@ -62,12 +62,12 @@ Add to `src-tauri/Cargo.toml`, pin versions, update the build cache key. **Land 
 **Needed by:** code export (zip), AI generation (reqwest), code-to-design (reqwest+zip), relay (tungstenite — later).
 
 ### F3 — DesignSpec schema + `apply-design-spec`  ✅ in scope (land now)
-- [ ] Create `penpot-source/common/src/app/common/types/design_spec.cljc`: a small Malli schema for generated designs (`:frames` → `:shapes` with a constrained subset of `shape.cljc` attrs) **and prototypes** (`:interactions`, `:flows` — see Feature 3 for the prototype fields).
-- [ ] Add `spec->shapes` that emits valid Penpot shape maps via `cts/setup-shape`.
-- [ ] Create `penpot-source/frontend/src/app/main/data/workspace/design_gen.cljs` with `apply-design-spec`, mirroring `app.plugins.api/create-shape` (`pcb/empty-changes`, `pcb/add-object`, `dch/commit-changes`, undo transaction).
-- [ ] Add a preview renderer: pass generated shapes through `app.main.render` for a modal preview before commit.
+- [x] Create `penpot-source/common/src/app/common/types/design_spec.cljc`: a small Malli schema for generated designs (`:frames` → `:shapes` with a constrained subset of `shape.cljc` attrs) **and prototypes** (`:interactions`, `:flows` — see Feature 3 for the prototype fields). — Landed: `schema:design-spec` at `design_spec.cljc:97-102` includes `:frames`, `:shapes`, and optional `:interactions`/`:flows` (`schema:interaction` :79, `schema:flow` :91); `check-design-spec` at :104.
+- [x] Add `spec->shapes` that emits valid Penpot shape maps via `cts/setup-shape`. — Landed as `spec->shape-tree` (`design_spec.cljc:367`): builds frames + nested shapes via `cts/setup-shape`, mints UUIDs, validates/drops bad interactions via `ctsi/check-interaction`, returns `{:objects :order :id-map :interactions :flows}`. (Doc named it `spec->shapes`; actual symbol is `spec->shape-tree`.)
+- [ ] Create `penpot-source/frontend/src/app/main/data/workspace/design_gen.cljs` with `apply-design-spec`, mirroring `app.plugins.api/create-shape` (`pcb/empty-changes`, `pcb/add-object`, `dch/commit-changes`, undo transaction). — **Not started.** No `design_gen.cljs`, no `apply-design-spec` symbol anywhere in `penpot-source/frontend`; the converter exists in common but is never invoked from a workspace data namespace. This is the missing half blocking Feature 3.
+- [ ] Add a preview renderer: pass generated shapes through `app.main.render` for a modal preview before commit. — **Not started.**
 
-**Needed by:** AI design generation (Feature 3), code-to-design (Feature 5, later), optional Figma parity in-app AI (Feature 4).
+**Status:** CLJS-common half DONE, frontend commit/preview half NOT-DONE. **Needed by:** AI design generation (Feature 3), code-to-design (Feature 5, later), optional Figma parity in-app AI (Feature 4).
 
 ### F4 — LLM provider abstraction in Rust (Kimi K2.6)  ✅ in scope (land now)
 The AI layer uses **Kimi K2.6** as the underlying model. Two interchangeable providers, same model:
@@ -75,13 +75,13 @@ The AI layer uses **Kimi K2.6** as the underlying model. Two interchangeable pro
 - **DeepInfra** (`https://api.deepinfra.com`) — **production**, same Kimi K2.6 model. Users get a monthly/yearly plan.
 
 The provider is a **closed implementation detail** — the UI exposes no model/provider selector to the end user; switching is a config-file/build flag concern.
-- [ ] Create `src-tauri/src/llm.rs` with a provider enum: `deepinfra` (default, production), `ollama` (local testing).
-- [ ] Read config from a JSON file in the app data dir; **never expose the API key to the frontend.** DeepInfra key ships from a bundled config or a first-run settings entry; Ollama needs no key.
-- [ ] Implement `generate(prompt, system, images, context, provider) -> DesignSpec` with JSON response parsing + timeout. Both providers speak the OpenAI-compatible chat-completions shape; DeepInfra and Ollama both accept `model: "kimi-k2.6"` (or the DeepInfra slug `moonshotai/Kimi-K2.6` — confirm the exact slug at implementation time).
-- [ ] Add URL-reference fetching in the orchestrator: if the prompt contains a URL, **the shell visits it first**, extracts text/HTML/CSS/assets, and includes that as context *before* calling the model. (See Feature 3 Phase 3.)
-- [ ] Add Tauri commands `llm_generate`, `llm_get_config`, `llm_set_config` registered via F1. The frontend calls `llm_generate` with `{prompt, files, options}` and receives a DesignSpec (or a streamed progress token).
+- [x] Create `src-tauri/src/llm.rs` with a provider enum: `deepinfra` (default, production), `ollama` (local testing). — Landed (`llm.rs`, 692 lines; `mod llm;` at `lib.rs:16`). **Deviation:** implemented as a `String` discriminator (`LlmConfig.provider`, default `"deepinfra"` at :61, alt `"ollama"`) rather than a Rust enum — functionally equivalent, defer the enum refactor unless it bites.
+- [x] Read config from a JSON file in the app data dir; **never expose the API key to the frontend.** DeepInfra key ships from a bundled config or a first-run settings entry; Ollama needs no key. — Landed: `load_config`/`save_config` over `<appdata>/llm.json` (`llm.rs:91-112`); `llm_get_config` returns `LlmConfigView` with `deepinfra_api_key_set: bool` (:556), never the key itself.
+- [x] Implement `generate(prompt, system, images, context, provider) -> DesignSpec` with JSON response parsing + timeout. Both providers speak the OpenAI-compatible chat-completions shape; DeepInfra and Ollama both accept `model: "kimi-k2.6"` (or the DeepInfra slug `moonshotai/Kimi-K2.6` — confirm the exact slug at implementation time). — Landed, inlined into the async `llm_generate` command (`llm.rs:570-643`) rather than a standalone `generate` fn: `call_deepinfra` (:426) + `call_ollama` (:470) with reqwest timeout (`timeout_secs`, default 180), then `extract_json` (:506) parses/validates. DeepInfra slug confirmed as `moonshotai/Kimi-K2.6` in `default_deepinfra_model`.
+- [x] Add URL-reference fetching in the orchestrator: if the prompt contains a URL, **the shell visits it first**, extracts text/HTML/CSS/assets, and includes that as context *before* calling the model. (See Feature 3 Phase 3.) — Landed in `llm.rs` (not a separate `url_ref.rs`): `extract_urls` (:155) regex-scans the prompt, `fetch_url_context` (:191) extracts visible text / inline `<style>` / `<img>`+`<link>` URLs (capped); invoked in `llm_generate` at :585-593 before the provider call; unfetchable URLs surface a non-blocking `[could not fetch …]` note. **Gap:** referenced image assets are NOT downloaded and passed as vision inputs (Feature 3 Phase 3 still-open item).
+- [x] Add Tauri commands `llm_generate`, `llm_get_config`, `llm_set_config` registered via F1. The frontend calls `llm_generate` with `{prompt, files, options}` and receives a DesignSpec (or a streamed progress token). — Landed: all three commands at `llm.rs:550/563/571`, registered in the `invoke_handler` at `lib.rs:751-757`. **Gap:** no frontend caller yet (Feature 3 Phase 2) and no streamed progress token — `llm_generate` returns the full `serde_json::Value` synchronously.
 
-**Needed by:** AI design generation (Feature 3), code-to-design (Feature 5), Figma parity in-app AI (Feature 4).
+**Status:** F4 backend effectively DONE. **Needed by:** AI design generation (Feature 3), code-to-design (Feature 5), Figma parity in-app AI (Feature 4).
 
 ### F5 — MCP server sidecar + MCP plugin auto-load  ⏸ deferred (optional, later)
 Only needed for Feature 6 (MCP Server) and Feature 5 (code-to-design shared execution path). **Do not land now.** If an in-scope feature turns out to need it, land only the required piece.
@@ -149,52 +149,77 @@ Full offline binaries are **not** bundled by default (package-size budget). User
 
 ---
 
-## Feature 2 — Code export: React, Next.js, React Native, Android XML
+## Feature 2 — Code export: React, Next.js, React Native, Android XML (+ WinUI3, Flutter, Tailwind)
 
 One-click export of a Penpot frame/page/file to runnable code. The codebase already has a complete HTML+CSS code generator (`app.util.code-gen`); this feature adds new formatters on top of it.
 
+> **Status (polished, 2026-08-02):** Maximal-scope polish round landed, including the three deferred fidelity phases (C/D/E). Feature 2 now ships **multi-file runnable project scaffolds** for all 7 frameworks, **bundled @font-face fonts**, a **native Save-As dialog + Rust `write_code_zip`** primary path (with an in-browser blob fallback), **native SVG for mobile + PNG raster fallback**, **component-instance hoisting**, and **golden tests**. What landed:
+> - Every framework is a self-contained emitter under `penpot-source/frontend/src/app/util/code_gen/frameworks/` (`react.cljs`, `react_native.cljs`, `android_xml.cljs`, `winui3_xml.cljs`, `flutter.cljs`, `tailwind.cljs`) sharing geometry helpers in `frameworks/common.cljs`, dispatched from `code_gen.cljs`. The doc's per-framework `markup_*.cljs` + `style_*.cljs` split and `code_gen/common.cljs` target-keyed multimethod were **not** used.
+> - **Two-tier emission:** the single-string `generate` is kept for the Inspect panel preview; each framework also gains `generate-project` returning `{:files {path→str} :binary-assets [{:path :bytes}] :raster-requests [] :primary :label :uses-rn-svg? :uses-masked-view?}`, dispatched by `generate-framework-project` in `code_gen.cljs`.
+> - **Multi-file scaffolds (per-framework `generate-project`):** React (Vite: `src/<Comp>.jsx` + `main.jsx` + `index.html` + `vite.config.js` + `package.json` + `README.md`, `src/index.css` only when fonts are bundled); Next.js (**App Router**: `app/page.jsx` + `app/layout.jsx` + `app/globals.css` + `package.json` + `tailwind.config.js` + `postcss.config.js` + `next.config.mjs` + `.gitignore` + `README.md`); Tailwind (Vite+Tailwind: `src/<Comp>.jsx` + `index.css` + configs + `README.md`); RN (`<Comp>.jsx` + `package.json` + `app.json` + `babel.config.js` + `README.md`, deps conditionally include `react-native-svg`/masked-view); Android (`res/layout/<name>.xml` + `res/values/{colors,strings,dimens,styles}.xml` + `AndroidManifest.xml` + `build.gradle` + `README.md`); Flutter (`lib/<name>.dart` + `pubspec.yaml` + `analysis_options.yaml` + `README.md`); WinUI 3 (`<Page>.xaml` + `<Page>.xaml.cs` + `README.md`).
+> - **@font-face bundling:** `app/main/data/exports/code.cljs` `bundle-fonts!` decodes the font data-URIs the Inspect panel already resolves, writes them as `public/fonts/<name>.<ext>` binary assets, and rewrites the `@font-face src` to `/fonts/<name>.<ext>`. Only web frameworks (React/Next.js/Tailwind) bundle fonts; RN/Android/Flutter/WinUI use platform font loading and ignore `:fontfaces-css`.
+> - **Native Save-As + ZIP:** `app/main/data/exports/code.cljs` `request-code-project-export` (ptk/WatchEvent) opens the native Save-As dialog (`@tauri-apps/plugin-dialog` `save()`) and `invoke`s the Rust `write_code_zip` command (`src-tauri/src/code_export.rs`, registered in `lib.rs`) which assembles the ZIP via the `zip` crate. Falls back to an in-browser `app.util.zip` (`@zip.js/zip.js` BlobWriter) blob download when the dialog/`invoke` is unavailable (web/preview) or the native write fails.
+> - **Entry point:** the Inspect panel's **Download button** (`ui/inspect/code.cljs:244-265` → `code/request-code-project-export`) — always reachable, already has `fontfaces-css` / `fonts-data` in scope. No separate `ui/exports/code.cljs` modal was added (the inspect panel is the surface).
+> - **Phase C — native SVG for mobile:** RN emits svg-shapes via `react-native-svg` `SvgXml` and Flutter via `flutter_svg` `SvgPicture.string` (both fed the same `<svg>` the web frameworks produce, so all svg-shapes — paths, bools, masks, gradients — render natively, no raster needed); `:uses-rn-svg?` is true whenever an svg-shape is reachable and the `package.json`/`pubspec.yaml` declare the dep. Android has no inline-SVG view, so simple svg-shapes (`simple-svg?` in `frameworks/common.cljs`: a lone path, single solid fill, ≤1 inner solid stroke, identity transform, no mask/attrs/shadow) become a `res/drawable/<name>.xml` **VectorDrawable**; complex svg-shapes record a `:raster-request` and the layout references `@drawable/<name>` (resolved to a PNG in Phase D).
+> - **Phase D — PNG raster pipeline:** `data/exports/code.cljs` `resolve-rasters!` resolves each `:raster-request` via the backend export RPC (`rp/cmd! :export` `:export-shapes :png :wait true`), fetches the returned URI (`http/fetch-data-uri`), decodes the base64 PNG, and adds it to `:binary-assets` at the request's `:binary-path` (default `assets/<name>.png`). Page-id/file-id are resolved from potok state (workspace `:current-page-id`, viewer route `:query-params`, `:current-file-id` in both) — no UI plumbing. Individual raster failures are warned and dropped so one bad shape never aborts the export.
+> - **Phase E — component-instance hoisting:** `frameworks/components.cljs` `collect-hoistable` detects ≥2 untouched local instances of the same component (objects-only — the export pipeline has no file/libraries, so cross-file/variants/touched/main-instances flatten inline), and returns `{:hoist-map {id→name} :specs [...]}`. RN and Flutter `generate-project` emit one `components/<Comp>.jsx` / `lib/widgets/<name>.dart` per hoisted component and replace every instance with a `<Comp/>` / `CompName()` reference (with the matching import); Android/WinUI flatten inline (no component primitive). When nothing is hoisted, `:hoist-map` is empty and output is byte-identical to the pre-hoisting code.
+> - The **dead Rust modules** (`codegen.rs`, `codegen_react.rs`, `codegen_winui.rs`, `db.rs`) are **deleted**; `rusqlite` dropped from `Cargo.toml`.
+> - **Golden tests:** `test/frontend_tests/code_gen_framework_test.cljs` covers both the single-string preview (per-framework snippet assertions) and the multi-file project (file-key-set + `:primary` + `:label` + `:raster-requests` empty + `@font-face` opt-in + empty/unknown-selection fallbacks), plus Phase C/D/E: `simple-svg?` predicate, Android VectorDrawable + raster-request recording, `collect-hoistable` dedup/skip, and Flutter + RN hoisting (multi-file). Tests use pure-data fixtures (paths via `path/from-plain`, bool/instance shapes) and never invoke the live React SVG renderer.
+>
+> The checkboxes below reflect the *as-built* polished state. Items marked `[x] (as-built: …)` note where the implementation diverged from the original spec but is considered done; remaining `[ ]` are deferred optional polish.
+
 ### Phase 0 — Architecture decision
-- [ ] **Do NOT revive the dead Rust modules** `src-tauri/src/codegen.rs`, `codegen_react.rs`, `codegen_winui.rs`, `db.rs`. They reference undefined structs, have no autolayout mapping, and are not compiled today. Either delete them or move them to `src-tauri/src/_archived/`.
-- [ ] Build all emit logic in ClojureScript under `penpot-source/frontend/src/app/util/code_gen/`; use the Rust shell only for file I/O / ZIP writing.
+- [x] **Do NOT revive the dead Rust modules** `src-tauri/src/codegen.rs`, `codegen_react.rs`, `codegen_winui.rs`, `db.rs`. — **Done:** deleted in the polish round; `rusqlite` dropped from `Cargo.toml` (only `db.rs` used it).
+- [x] (as-built) Build all emit logic in ClojureScript under `penpot-source/frontend/src/app/util/code_gen/`; use the Rust shell only for file I/O / ZIP writing. — Done: emit logic is CLJS (`code_gen/frameworks/*.cljs`); the Rust shell does file I/O / ZIP via `code_export.rs` `write_code_zip`.
 
 ### Phase 1 — Shared shape-walk refactor
-- [ ] Extract the recursion in `penpot-source/frontend/src/app/util/code_gen/markup_html.cljs` into a multimethod in `penpot-source/frontend/src/app/util/code_gen/common.cljs` keyed by target (`:html`, `:react`, `:react-native`, `:android-xml`) so each formatter only implements leaf emission.
-- [ ] Keep `markup_html.cljs` as the first consumer.
+- [ ] Extract the recursion in `penpot-source/frontend/src/app/util/code_gen/markup_html.cljs` into a multimethod in `penpot-source/frontend/src/app/util/code_gen/common.cljs` keyed by target (`:html`, `:react`, `:react-native`, `:android-xml`) so each formatter only implements leaf emission. — **Not done as specified.** No `defmulti`/`defmethod` in `code_gen/`. Instead a separate `frameworks/common.cljs` provides shared geometry helpers (`rel-position`, `selection-origin`) consumed by each framework's `generate` fn — a different refactor shape.
+- [x] Keep `markup_html.cljs` as the first consumer. — Unchanged; still serves the `"html"` target via `generate-formatted-markup-code`.
 
 ### Phase 2 — React / TSX export
-- [ ] Create `code_gen/markup_react.cljs`: JSX walker (frame→`<div>`, text→`<div>`, image→`<img>`, SVG shapes→inline SVG or wrapper).
-- [ ] Create `code_gen/style_react.cljs`: emit `style={{…}}` CSSProperties or a `styles.ts` Record keyed by selector.
-- [ ] Extend `code_gen.cljs` dispatch: add `"react"` markup and `"react-style"` style cases.
-- [ ] Add a "React" radio to `penpot-source/frontend/src/app/main/ui/inspect/code.cljs`.
-- [ ] Create `ui/exports/code.cljs` export modal and `app.main.data.exports.code` event namespace, modeled on `ui/exports/assets.cljs`.
-- [ ] Add Tauri command `write_code_zip` in a new `src-tauri/src/code_export.rs` (uses `zip` crate) and register via F1.
-- [ ] Rasterize non-HTML shapes (paths, booleans, SVG raw, masks) to PNG via the existing asset exporter (`app.main.data.exports.assets` → `:export-shapes :png`) and reference them in emitted code.
+- [x] (as-built) Create `code_gen/markup_react.cljs`: JSX walker (frame→`<div>`, text→`<div>`, image→`<img>`, SVG shapes→inline SVG or wrapper). — Landed as `code_gen/frameworks/react.cljs` (`generate-react` :208; `render-shape` emits `div`/`img`/inline-SVG via `markup-svg/generate-svg` :120). File name differs from doc.
+- [x] (as-built) Create `code_gen/style_react.cljs`: emit `style={{…}}` CSSProperties or a `styles.ts` Record keyed by selector. — Landed inline in `react.cljs` via `style->js` (:28-43); no `styles.ts` Record option, no separate `style_react.cljs`.
+- [x] (as-built) Extend `code_gen.cljs` dispatch: add `"react"` markup and `"react-style"` style cases. — `code_gen.cljs:92` dispatches `"react"` to `react/generate` inside `generate-framework-code`. No separate `"react-style"` case (inline styles only).
+- [x] Add a "React" radio to `penpot-source/frontend/src/app/main/ui/inspect/code.cljs`. — `code.cljs:47` `{:value "react" :label "React"}`.
+- [x] (as-built) Create `app.main.data.exports.code` event namespace, modeled on `ui/exports/assets.cljs`. — Done as `app/main/data/exports/code.cljs` `request-code-project-export` (ptk/WatchEvent). **No `ui/exports/code.cljs` modal** — the Inspect panel's Download button (`code.cljs:244-265`) is the entry point instead; considered sufficient (always reachable, fontfaces already in scope).
+- [x] Add Tauri command `write_code_zip` in a new `src-tauri/src/code_export.rs` (uses `zip` crate) and register via F1. — Done (`code_export.rs`; `mod code_export;` + `write_code_zip` in `lib.rs:18/758`).
+- [x] (as-built) Rasterize non-HTML shapes (paths, booleans, SVG raw, masks) to PNG via the existing asset exporter (`app.main.data.exports.assets` → `:export-shapes :png`) and reference them in emitted code. — **Done (Phase C/D):** RN/Flutter render svg-shapes natively (`react-native-svg`/`flutter_svg`); Android simple svg-shapes → `res/drawable/<name>.xml` VectorDrawable, complex svg-shapes → `:raster-request`; `data/exports/code.cljs` `resolve-rasters!` resolves requests via `rp/cmd! :export :png` + `http/fetch-data-uri` and bundles the PNG at `:binary-path`.
 
 ### Phase 3 — Next.js
-- [ ] Create `code_gen/nextjs.cljs` that wraps Phase 2 output in app-router scaffolding (`app/page.tsx`, `app/layout.tsx`, `globals.css`, `next.config.js`, `package.json`).
-- [ ] Add "Next.js" target to the export modal.
+- [x] (as-built) Create `code_gen/nextjs.cljs` that wraps Phase 2 output in **App Router** scaffolding (`app/page.jsx`, `app/layout.jsx`, `app/globals.css`, `next.config.mjs`, `package.json`, `tailwind.config.js`, `postcss.config.js`, `.gitignore`, `README.md`). — Done via `generate-nextjs-project` in `code_gen/frameworks/tailwind.cljs` (kept there, not its own `nextjs.cljs`); the multi-file project path emits the full app-router scaffold (the single-string preview path still emits a `'use client'` Page styled with Tailwind classes from commit `f6e8e90`).
+- [x] Add "Next.js" target to the export modal. — `code.cljs:48` `{:value "nextjs" :label "Next.js"}`; the multi-file project is dispatched via `generate-framework-project` in `code_gen.cljs`.
 
 ### Phase 4 — React Native
-- [ ] Create `code_gen/markup_react_native.cljs`: `<View>`/`<Text>`/`<Image>` tree.
-- [ ] Create `code_gen/style_rn.cljs`: `StyleSheet.create({…})` with RN flexbox defaults (column direction, flex fill).
-- [ ] Grid layouts fallback to absolute positioning using existing `get-shape-position`/`get-shape-size`.
-- [ ] Add dependency notes in generated `package.json` (`react-native-svg` for scalable SVG shapes).
-- [ ] Add "React Native" target.
+- [x] (as-built) Create `code_gen/markup_react_native.cljs`: `<View>`/`<Text>`/`<Image>` tree. — Landed as `code_gen/frameworks/react_native.cljs` (dispatched at `code_gen.cljs:94`). File name differs.
+- [ ] Create `code_gen/style_rn.cljs`: `StyleSheet.create({…})` with RN flexbox defaults (column direction, flex fill). — **Deferred.** Styling stays inlined in `frameworks/react_native.cljs` (RN supports `style={{}}`); a separate `StyleSheet.create` module is a documented stretch, not a launch blocker.
+- [x] (as-built) Grid layouts fallback to absolute positioning using existing `get-shape-position`/`get-shape-size`. — Everything is absolute positioning via `frameworks/common.cljs` (`rel-position`/`selection-origin`); no flex/grid mapping exists, so "fallback" is moot (satisfies the spirit via a simpler model).
+- [x] Add dependency notes in generated `package.json` (`react-native-svg` for scalable SVG shapes). — Done: `generate-project` in `react_native.cljs` emits a `package.json` that conditionally includes `react-native-svg` (when `:uses-rn-svg?`) and `@react-native-masked-view/masked-view` (when `:uses-masked-view?`).
+- [x] Add "React Native" target. — `code.cljs:49`; multi-file project via `generate-framework-project`.
 
 ### Phase 5 — Android XML
-- [ ] Create `code_gen/markup_android.cljs`: `LinearLayout`/`ConstraintLayout` mapping from flex + absolute positioning.
-- [ ] Create `code_gen/style_android.cljs`: generate `res/values/colors.xml`, `strings.xml`, `dimens.xml`, `res/drawable/<name>.xml` for rounded backgrounds.
-- [ ] Add "Android XML" target; ZIP output uses `res/layout/*.xml` structure.
+- [x] (as-built) Create `code_gen/markup_android.cljs`: `LinearLayout`/`ConstraintLayout` mapping from flex + absolute positioning. — Landed as `code_gen/frameworks/android_xml.cljs` (dispatched at `code_gen.cljs:95`); uses absolute-positioned layout, **no** `LinearLayout`/`ConstraintLayout` mapping.
+- [x] (as-built) Create `code_gen/style_android.cljs`: generate `res/values/colors.xml`, `strings.xml`, `dimens.xml`, `res/values/styles.xml`, plus `AndroidManifest.xml` + `build.gradle`. — Done as part of `generate-project` in `android_xml.cljs`: emits `res/layout/<name>.xml` + `res/values/{colors,strings,dimens,styles}.xml` + `AndroidManifest.xml` + `build.gradle` + `README.md`. `styles.xml` defines `Theme.PenpotExport`. **`res/drawable/<name>.xml` VectorDrawable** for simple svg-shapes now emitted (Phase C); complex svg-shapes record `:raster-requests` (Phase D). Rounded/gradient *container backgrounds* still note a drawable need inline (separate concern from svg-shape VectorDrawables).
+- [x] (as-built) Add "Android XML" target; ZIP output uses `res/layout/*.xml` structure. — Done: radio target (`code.cljs:50`); the multi-file project emits the full `res/` tree and is zipped via `write_code_zip`/blob fallback.
+
+### Phase 5b — WinUI 3 XAML  ✅ EXTRA (shipped beyond the original doc)
+- [x] (as-built, undocumented in original spec) `code_gen/frameworks/winui3_xml.cljs`; radio `code.cljs:51` `{:value "winui3-xml" :label "WinUI 3 XAML"}`; dispatched at `code_gen.cljs:96`.
+
+### Phase 5c — Flutter  ✅ EXTRA (shipped beyond the original doc)
+- [x] (as-built, undocumented in original spec) `code_gen/frameworks/flutter.cljs`; radio `code.cljs:52` `{:value "flutter" :label "Flutter"}`; dispatched at `code_gen.cljs:97`.
+
+### Phase 5d — Tailwind CSS  ✅ EXTRA (shipped beyond the original doc)
+- [x] (as-built, undocumented in original spec) `code_gen/frameworks/tailwind.cljs`; radio `code.cljs:53` `{:value "tailwind" :label "Tailwind CSS"}`; dispatched at `code_gen.cljs:98`. Subsumes the Next.js target (see Phase 3).
 
 ### Phase 6 — Polish
-- [ ] Detect Penpot component instances and hoist them into reusable React components.
-- [ ] Add golden-string tests under `test/frontend_tests/` modeled on `code_gen_style_test.cljs`.
-- [ ] Handle font face emission for web (`@font-face`) and RN/Android (font assets).
+- [x] (as-built) Detect Penpot component instances and hoist them into reusable components. — **Done (Phase E):** `frameworks/components.cljs` `collect-hoistable` hoists ≥2 untouched local instances of the same component (objects-only; cross-file/variants/touched/main flatten inline). RN (`components/<Comp>.jsx`) and Flutter (`lib/widgets/<name>.dart`) `generate-project` emit one file per hoisted component + a reference; Android/WinUI flatten inline (no component primitive). React/Tailwind (web) keep the pre-hoisting flat emission — hoisting is scoped to the mobile frameworks per the polish-round plan.
+- [x] Add golden-string tests under `test/frontend_tests/` modeled on `code_gen_style_test.cljs`. — Done: `test/frontend_tests/code_gen_framework_test.cljs` covers the single-string preview + the multi-file project tree, `@font-face` opt-in, and empty/unknown-selection fallbacks.
+- [x] Handle font face emission for web (`@font-face`) and RN/Android (font assets). — Done for web: `bundle-fonts!` in `data/exports/code.cljs` decodes font data-URIs → `public/fonts/<name>.<ext>` and rewrites `@font-face src`; the web frameworks' entry CSS appends the block. RN/Android/Flutter/WinUI use platform font loading and intentionally ignore `:fontfaces-css` (verified by `non-web-frameworks-ignore-fontface-css`).
 
 ### Open decisions
-- [ ] Inline styles vs `styles.ts` vs CSS Modules?
-- [ ] App router or pages router for Next.js output?
-- [ ] Rasterize complex shapes to PNG or generate `VectorDrawable` / `react-native-svg`?
+- [x] Inline styles vs `styles.ts` vs CSS Modules? — **Decided (as-built):** inline styles for React; Tailwind utility classes for Next.js/Tailwind.
+- [x] App router or pages router for Next.js output? — **Decided:** **App Router** — `generate-nextjs-project` emits the full app-router scaffold (`app/page.jsx` + `app/layout.jsx` + `app/globals.css` + configs). (The single-string preview path is a `'use client'` Page with Tailwind classes.)
+- [x] Rasterize complex shapes to PNG or generate `VectorDrawable` / `react-native-svg`? — **Decided (as-built):** RN/Flutter render svg-shapes natively via `react-native-svg`/`flutter_svg` (no raster); Android simple svg-shapes → VectorDrawable, complex → PNG raster (`:raster-request` resolved by `resolve-rasters!`). Web frameworks keep inline SVG.
+- [x] **(C/D/E done):** (C) native SVG for mobile — RN `react-native-svg`, Flutter `flutter_svg`, Android `VectorDrawable` + `:raster-requests` for complex svg-shapes; (E) component-instance hoisting (new `frameworks/components.cljs`, RN/Flutter); (D) the PNG raster pipeline (resolve `:raster-requests` via backend `rp/cmd! :export :png` + `http/fetch-data-uri`, bundle at `:binary-path`). These were fidelity extras; they are now landed (not the launch gate, but done).
 
 ---
 
@@ -204,9 +229,11 @@ The headline feature. From a **single input bar** the user generates **proper de
 
 Reuses Foundation F3 (DesignSpec + `apply-design-spec`) and F4 (LLM provider, Kimi K2.6).
 
+> **Status (audited):** The **backend half is landed** (F3 schema + `spec->shape-tree` in `design_spec.cljc`; F4 `llm.rs` with providers, config, URL-ref fetch, `llm_generate` registered). The **entire frontend half is NOT STARTED** — no `ai_bar.cljs`, no `ai_gen.cljs`, no `design_gen.cljs` `apply-design-spec`, no preview. The closed loop (bar → `llm_generate` → apply to canvas) is **broken at the renderer**. **This is the next build round.**
+
 ### Phase 1 — Reuse Foundation F3 + F4
-- [ ] Ensure the DesignSpec schema (F3) covers **prototypes**, not just static shapes: `:frames`, `:shapes`, plus `:interactions` (per-shape event→destination/animation) and `:flows` (named prototype flows with start-frame).
-- [ ] Ensure F4's `llm_generate` command accepts `{prompt, files, options}` and returns a DesignSpec (with prototype fields).
+- [x] Ensure the DesignSpec schema (F3) covers **prototypes**, not just static shapes: `:frames`, `:shapes`, plus `:interactions` (per-shape event→destination/animation) and `:flows` (named prototype flows with start-frame). — DONE in `design_spec.cljc` (`schema:interaction` :79, `schema:flow` :91, wired into `schema:design-spec` :101-102); `spec->shape-tree` :367 validates interactions via `ctsi/check-interaction`.
+- [x] Ensure F4's `llm_generate` command accepts `{prompt, files, options}` and returns a DesignSpec (with prototype fields). — DONE: `llm_generate` (`llm.rs:571`) accepts prompt + `FileInputs` (images as base64 vision inputs :610-624) + options, returns `serde_json::Value`. The returned JSON is the model's raw DesignSpec (prototype fields included if the model emits them); it is **not yet** validated against the CLJS `check-design-spec` on the Rust side.
 
 ### Phase 2 — The input bar UI (bottom-floating, side panels)
 The AI input lives at the **bottom of the workspace (project-opened page)**, floating above the canvas with a gap (not flush to the edge), with **panels on both sides**.
@@ -220,18 +247,18 @@ The AI input lives at the **bottom of the workspace (project-opened page)**, flo
 - [ ] Show a spinner/progress on the generate button while the shell works; surface non-blocking errors inline under the bar.
 
 ### Phase 3 — URL reference fetching (shell-side, before the model runs)
-- [ ] In the Rust orchestrator (`src-tauri/src/llm.rs` or a new `src-tauri/src/url_ref.rs`), scan the prompt for URLs (regex) **before** calling the model.
-- [ ] For each URL, fetch the page (via `reqwest`) and extract: visible text, inline `<style>`/linked CSS, `<img src>`/asset URLs, and a flattened DOM outline. Convert to a compact text context.
-- [ ] Download referenced image assets to a temp dir and pass them as **vision inputs** to the model (Kimi K2.6 multimodal) alongside the prompt.
-- [ ] Cap fetched context size (truncate HTML/CSS, limit asset count/bytes) to stay within the model context window.
-- [ ] If a URL is unreachable or blocks the fetcher, surface a non-blocking warning in the bar ("could not fetch <url>; generating from prompt only") and continue.
+- [x] In the Rust orchestrator (`src-tauri/src/llm.rs` or a new `src-tauri/src/url_ref.rs`), scan the prompt for URLs (regex) **before** calling the model. — DONE in `llm.rs` (no separate `url_ref.rs`): `extract_urls` (:155) regex-scans; invoked in `llm_generate` at :585-593 before the provider call.
+- [x] For each URL, fetch the page (via `reqwest`) and extract: visible text, inline `<style>`/linked CSS, `<img src>`/asset URLs, and a flattened DOM outline. Convert to a compact text context. — DONE: `fetch_url_context` (`llm.rs:191`) with `extract_blocks` (:248) / `extract_attrs` (:263); text + inline `<style>` + `<img>`/`<link>` URLs extracted and capped.
+- [ ] Download referenced image assets to a temp dir and pass them as **vision inputs** to the model (Kimi K2.6 multimodal) alongside the prompt. — **Not done.** `fetch_url_context` extracts image URLs but does **not** download them as vision inputs. (User-supplied `request.files` images ARE passed as base64 vision inputs at `llm.rs:610-624`; URL-referenced ones are not.)
+- [x] Cap fetched context size (truncate HTML/CSS, limit asset count/bytes) to stay within the model context window. — DONE (capped in `fetch_url_context`).
+- [x] If a URL is unreachable or blocks the fetcher, surface a non-blocking warning in the bar ("could not fetch <url>; generating from prompt only") and continue. — DONE on the shell side: `llm_generate` emits a `[could not fetch …]` note (:591). **Frontend surfacing in the bar is NOT done** (no bar exists yet).
 
 ### Phase 4 — Prompt engineering → DesignSpec (designs + prototypes)
-- [ ] System prompt embeds the DesignSpec schema + a one-shot example + the instruction to return **only** valid JSON.
-- [ ] The system prompt teaches the model to emit **prototype** fields when the user asks for a prototype or interactive design: `:interactions` (event→destination with animation type) and `:flows` (start frame + flow name), mirroring `penpot-source/common/src/app/common/types/shape/interactions.cljc` and the viewer's flow model.
-- [ ] For URL references, append the fetched context (Phase 3) with a reference-handling section: inspect layout, match colors, preserve hierarchy, prefer flex layouts (`addFlexLayout`-style).
-- [ ] Implement DeepInfra provider (production, `model: kimi-k2.6` / DeepInfra slug `moonshotai/Kimi-K2.6` — confirm exact slug) and Ollama provider (`http://127.0.0.1:11434/api/chat`, `model: kimi-k2.6`, `format: "json"`).
-- [ ] Parse the response into the Rust-side `DesignSpec` struct; validate with `serde`; reject non-JSON with a retry.
+- [ ] System prompt embeds the DesignSpec schema + a one-shot example + the instruction to return **only** valid JSON. — **Needs verification** against the system prompt built in `llm.rs` (the `build_*_messages` fns). Confirm the schema + one-shot + "only JSON" instruction are present; tighten if not.
+- [ ] The system prompt teaches the model to emit **prototype** fields when the user asks for a prototype or interactive design: `:interactions` (event→destination with animation type) and `:flows` (start frame + flow name), mirroring `penpot-source/common/src/app/common/types/shape/interactions.cljc` and the viewer's flow model. — **Needs verification** (same as above — confirm the prototype-emission instruction is in the system prompt).
+- [x] For URL references, append the fetched context (Phase 3) with a reference-handling section: inspect layout, match colors, preserve hierarchy, prefer flex layouts (`addFlexLayout`-style). — DONE: `llm_generate` appends the fetched context with a reference-handling header before the provider call (:585-593).
+- [x] Implement DeepInfra provider (production, `model: kimi-k2.6` / DeepInfra slug `moonshotai/Kimi-K2.6` — confirm exact slug) and Ollama provider (`http://127.0.0.1:11434/api/chat`, `model: kimi-k2.6`, `format: "json"`). — DONE: `call_deepinfra` (`llm.rs:426`) + `call_ollama` (:470); DeepInfra slug confirmed `moonshotai/Kimi-K2.6` in `default_deepinfra_model`.
+- [x] Parse the response into the Rust-side `DesignSpec` struct; validate with `serde`; reject non-JSON with a retry. — DONE: `extract_json` (`llm.rs:506`) parses/validates JSON from the model output. **Note:** validation is "is it JSON", not "conforms to the Malli DesignSpec schema" (that check lives in CLJS `check-design-spec` and is applied in the not-yet-built Phase 5). No retry on non-JSON yet.
 
 ### Phase 5 — Apply to canvas + prototype wiring
 - [ ] Frontend `apply-design-spec` (F3) commits shapes via `pcb/empty-changes` → `pcb/add-object` → `dch/commit-changes` in one undo transaction, grouped on a single board per generation (easy undo).
@@ -241,15 +268,15 @@ The AI input lives at the **bottom of the workspace (project-opened page)**, flo
 - [ ] Add a preview (F3 preview renderer) before commit; "Apply" / "Cancel" from the bar.
 
 ### Phase 6 — Robustness
-- [ ] Cancel + timeout handling in `llm_generate` (reqwest timeout + abort signal from the bar).
-- [ ] Stream progress (fetching URL → generating → applying) to the bar so the closed layer still feels responsive.
-- [ ] Persist a small history of generations (prompt + thumbnail) in app-data for re-apply, without exposing internals.
+- [x] (partial) Cancel + timeout handling in `llm_generate` (reqwest timeout + abort signal from the bar). — **Timeout DONE:** reqwest client uses `timeout_secs` from `LlmConfig` (default 180; fetch client 30s at `llm.rs:578`). **Cancel/abort signal from the bar NOT done** (no bar exists yet).
+- [ ] Stream progress (fetching URL → generating → applying) to the bar so the closed layer still feels responsive. — **Not done.** `llm_generate` returns synchronously; no streamed progress tokens.
+- [ ] Persist a small history of generations (prompt + thumbnail) in app-data for re-apply, without exposing internals. — **Not done.**
 
 ### Open decisions
 - [ ] Generate onto the current page, a new page, or a new file? (Recommendation: a new board on the current page, grouped, for easy undo.)
 - [ ] Default generation mode: "Design + Prototype" when the prompt implies interaction, else "Design"? (Recommendation: auto-detect from prompt; let the right panel override.)
 - [ ] Support flex/grid auto-layout in the spec, or absolute positioning only for v1? (Recommendation: flex for v1, grid later.)
-- [ ] DeepInfra exact Kimi K2.6 slug + whether Ollama and DeepInfra use identical model naming.
+- [ ] DeepInfra exact Kimi K2.6 slug + whether Ollama and DeepInfra use identical model naming. — **Decided:** DeepInfra slug `moonshotai/Kimi-K2.6` (`llm.rs` `default_deepinfra_model`); Ollama `kimi-k2.6` (`default_ollama_model`). Naming differs across providers (expected).
 
 ---
 
@@ -272,8 +299,8 @@ A prioritized gap-closing checklist, mapping Figma capabilities onto Penpot's ex
 
 ### Phase 3 — Dev Mode (code-gen panel)
 - [ ] Add Dev/Design mode toggle in `penpot-source/frontend/src/app/main/ui/workspace/left_header.cljs`.
-- [ ] Add React/TSX + Tailwind generators in `penpot-source/frontend/src/app/util/code_gen/` (reuse Feature 2 Phase 2; do NOT revive dead Rust modules).
-- [ ] Surface them in `penpot-source/frontend/src/app/main/ui/inspect/code.cljs`.
+- [x] (as-built) Add React/TSX + Tailwind generators in `penpot-source/frontend/src/app/util/code_gen/` (reuse Feature 2 Phase 2; do NOT revive dead Rust modules). — Already landed by Feature 2 (`frameworks/react.cljs`, `frameworks/tailwind.cljs`); the Dev Mode task that remains is the **toggle + surfacing**, not the generators.
+- [ ] Surface them in `penpot-source/frontend/src/app/main/ui/inspect/code.cljs`. — **Partial:** the React/Next.js/RN/Android/WinUI3/Flutter/Tailwind radios are already wired in `code.cljs:47-53`; Dev Mode as a distinct mode/badge is not.
 - [ ] Add `:dev-ready` badge + per-frame dev notes (small schema add in `shape.cljc`).
 
 ### Phase 4 — Sections, shape annotations, sticky polish
@@ -441,11 +468,12 @@ Multiple desktop peers edit the same file live through a small relay server. Des
 | Cargo crate additions | reqwest, zip (now); tokio-tungstenite (later); dirs | all shell features | Decided: land reqwest+zip+dirs now, defer tungstenite |
 | Node runtime for MCP | bundled `node.exe` vs. single compiled binary | MCP server, code-to-design | TBD (Feature 6, later) |
 | LLM provider default | DeepInfra (prod) vs. Ollama (test) — both Kimi K2.6 | AI generation, code-to-design | Decided: DeepInfra default, Ollama for testing (F4) |
-| API key storage | app-data JSON (plaintext) vs. OS keyring | all LLM features | TBD (never expose to frontend regardless) |
+| API key storage | app-data JSON (plaintext) vs. OS keyring | all LLM features | Decided (as-built): `<appdata>/llm.json` plaintext, **masked from frontend** (`llm_get_config` returns only `deepinfra_api_key_set: bool`). OS keyring is a future hardening option. |
 | DesignSpec owner | one feature team owns the schema + converter | AI gen, code-to-design, Figma AI | Decided: F3 owns it; prototype fields added for Feature 3 |
-| Dead Rust codegen modules | delete to `_archived/` vs. repurpose name helpers | code export, Figma Dev Mode | TBD |
+| Dead Rust codegen modules | delete to `_archived/` vs. repurpose name helpers | code export, Figma Dev Mode | Decided: **deleted** in the Feature 2 polish round (`codegen.rs`, `codegen_react.rs`, `codegen_winui.rs`, `db.rs` removed; `rusqlite` dropped from `Cargo.toml`). |
 | Google Fonts scope | online catalog + on-demand offline download + font preview | Feature 1 | Decided (see Feature 1) |
-| DeepInfra Kimi K2.6 slug | confirm exact model slug + naming parity with Ollama | Feature 3 | TBD (confirm at impl) |
+| DeepInfra Kimi K2.6 slug | confirm exact model slug + naming parity with Ollama | Feature 3 | Decided: `moonshotai/Kimi-K2.6` (DeepInfra), `kimi-k2.6` (Ollama) |
+| Code-export architecture | per-framework `markup_*`+`style_*` + multimethod vs. single-emitter-per-framework; browser blob vs. Rust ZIP | Feature 2 | Decided (as-built): single-emitter-per-framework in `code_gen/frameworks/`; **two-tier emission** (single-string preview + multi-file `generate-project`); **native Save-As + Rust `write_code_zip`** primary path with in-browser blob fallback; multi-file Next.js App-Router scaffold; inline SVG for v1 (PNG raster stubbed). |
 | Relay revn authority | relay-authoritative vs. localhost backend | Feature 7 | TBD (later) |
 | Offline egress policy | default-off + opt-in per feature vs. always-online | all network features | Decided: fonts online by default; AI egress opt-in via provider config |
 | Installer-size budget | e.g. +50MB review gate | all resource-bundling features | Decided: font binaries live in app-data cache, not the installer |
@@ -454,11 +482,30 @@ Multiple desktop peers edit the same file live through a small relay server. Des
 
 ## Suggested execution order
 
-1. **Land required Foundation F1–F4 first.** Without Tauri commands (F1), the AI provider (F4), and DesignSpec (F3), the AI and code-export features cannot progress. Defer F5/F6.
-2. **Feature 1 (Google Fonts + preview).** Smallest, no AI dependency, surfaces the disabled-flag blocker early. Online by default + opt-in offline + font preview.
-3. **Feature 2 (Code export) React MVP.** Reuses existing CLJS codegen heavily; only needs F1 + `zip` crate.
-4. **Feature 3 (AI, complete end-to-end).** The headline feature. Needs F3 + F4; ships designs **and** prototypes from the bottom input bar (files + prompt + URL), closed Kimi K2.6 layer.
-5. **Feature 4 (Figma parity).** Broad, pulls from every foundation; **this is the launch gate** — reaching Figma parity is the first goal.
-6. *(After launch, optional, incremental)* **Feature 5 (Code-to-Design).** Superset of Feature 3 + reference ingestion. Needs F5/F6.
-7. *(After launch, optional)* **Feature 6 (MCP server).** Last feature before Relay; needs F5 (Node bundling decision).
-8. *(After launch, optional, very last)* **Feature 7 (Relay collaboration).** Self-contained after F1 + `tokio-tungstenite`; needs the revn-authority decision.
+> **Status snapshot (audited 2026-08-02):**
+> - ✅ **F1** (Tauri commands + `ping`) — done. ✅ **F2** (reqwest/zip/dirs; tungstenite deferred) — done. ✅ **F4** (`llm.rs`: providers, config, URL-ref fetch, `llm_generate`/`get_config`/`set_config`) — done. 🟡 **F3** — CLJS-common half done (`design_spec.cljc` schema + `spec->shape-tree`), **frontend `apply-design-spec` + preview NOT done**.
+> - ✅ **Feature 1** (Google Fonts + in-face preview + opt-in offline download) — done (variable-font Phase 4 + license/offline-badge polish deferred; fresh catalog snapshot deferred on API key).
+> - ✅ **Feature 2** (Code export) — done (maximal polish round landed): **7 frameworks** (React, Next.js, RN, Android XML + WinUI3, Flutter, Tailwind) each ship a **multi-file runnable project scaffold** via per-framework `generate-project` (Next.js = **App Router**); **bundled @font-face** fonts; **native Save-As + Rust `write_code_zip`** primary path (`code_export.rs`) with in-browser blob fallback; entry via the Inspect panel Download button; **golden tests** (`code_gen_framework_test.cljs`); dead Rust modules deleted + `rusqlite` dropped. Remaining optional fidelity (native SVG for mobile, component-instance hoisting, PNG raster completion) is **deferred** — not the launch gate.
+> - 🔴 **Feature 3** (AI end-to-end) — **backend half landed, frontend half not started.** No `ai_bar.cljs` / `ai_gen.cljs` / `design_gen.cljs` / preview. **← NEXT BUILD ROUND.**
+> - 🔴 **Feature 4** (Figma parity) — entirely not started. This is the **launch gate**.
+> - ⏸ Features 5–7 — deferred (after launch), as planned.
+
+1. ✅ **Land required Foundation F1–F4 first.** Without Tauri commands (F1), the AI provider (F4), and DesignSpec (F3), the AI and code-export features cannot progress. Defer F5/F6. — **F1/F2/F4 done; F3 frontend half (`apply-design-spec` + preview) still open — fold into Feature 3 below.**
+2. ✅ **Feature 1 (Google Fonts + preview).** Smallest, no AI dependency, surfaces the disabled-flag blocker early. Online by default + opt-in offline + font preview. — **Done** (Phase 4 variable fonts + license/offline-badge polish deferred).
+3. ✅ **Feature 2 (Code export).** Reuses existing CLJS codegen heavily; only needs F1 + `zip` crate. — **Done (polished, 2026-08-02)**: 7 frameworks, multi-file project scaffolds (Next.js App Router), @font-face bundling, native Save-As + `write_code_zip` + blob fallback, Inspect-panel Download button, golden tests, dead Rust deleted, **and the three deferred fidelity phases landed**: Phase C native SVG for mobile (RN `react-native-svg` `SvgXml`, Flutter `flutter_svg` `SvgPicture.string`, Android `VectorDrawable` for simple paths + `:raster-requests` for complex), Phase D PNG raster pipeline (`data/exports/code.cljs` resolves `:raster-requests` via backend `rp/cmd! :export :png` and folds the bytes into `:binary-assets`), Phase E component-instance hoisting (web/RN/Flutter emit `components/<Comp>.jsx` / `lib/widgets/<name>.dart` and `<Comp/>` refs for ≥2 untouched local same-component instances).
+4. ▶️ **Feature 3 (AI, complete end-to-end) — NEXT.** The headline feature. Backend (F4 + F3 schema) is landed; **build the frontend half now**: `ai_bar.cljs` (bottom-floating input bar + side panels) → `ai_gen.cljs` (wires to `llm_generate`) → `design_gen.cljs` `apply-design-spec` (commits shapes via `pcb/empty-changes`/`pcb/add-object`/`dch/commit-changes`, wires `:interactions`/`:flows` for the prototype viewer) → F3 preview renderer ("Apply/Cancel"). Then close Phase 3 gap (download URL-referenced images as vision inputs), Phase 6 gaps (streamed progress, cancel signal, persisted history), and verify the Phase 4 system prompt emits prototype fields.
+5. ⬜ **Feature 4 (Figma parity).** Broad, pulls from every foundation; **this is the launch gate** — reaching Figma parity is the first goal. Start from zero after Feature 3 closes. (Dev Mode Phase 3 partly de-risked: the React/TSX/Tailwind generators already exist from Feature 2.)
+6. ⬜ *(After launch, optional, incremental)* **Feature 5 (Code-to-Design).** Superset of Feature 3 + reference ingestion. Needs F5/F6.
+7. ⬜ *(After launch, optional)* **Feature 6 (MCP server).** Last feature before Relay; needs F5 (Node bundling decision).
+8. ⬜ *(After launch, optional, very last)* **Feature 7 (Relay collaboration).** Self-contained after F1 + `tokio-tungstenite`; needs the revn-authority decision.
+
+### Next build round (concrete)
+**Feature 2 = complete (2026-08-02).** The three deferred fidelity phases all landed this round: native SVG for mobile (Phase C — RN `react-native-svg` `SvgXml` / Flutter `flutter_svg` `SvgPicture.string` / Android `VectorDrawable` + `:raster-requests` for complex shapes), component-instance hoisting (Phase E — `frameworks/components.cljs` `collect-hoistable`, web/RN/Flutter), and the PNG raster pipeline (Phase D — `data/exports/code.cljs` `resolve-rasters!` resolves `:raster-requests` via backend `rp/cmd! :export :png`, folds the bytes into `:binary-assets`). Feature 2 is done; nothing left on it.
+
+**Round 3 — Feature 3 frontend: close the AI loop.** In order:
+1. **F3 frontend finish:** `penpot-source/frontend/src/app/main/data/workspace/design_gen.cljs` with `apply-design-spec` (mirror `app.plugins.api/create-shape`: `pcb/empty-changes` → `pcb/add-object` → `dch/commit-changes`, one undo transaction, grouped on a single board per generation). Wire `:interactions`/`:flows` so the result runs in `app.main.data.viewer.cljs`. Validate with `sm/check` + `cts/check-shape`; clamp invalid shapes. Add the F3 preview renderer (modal preview before commit).
+2. **Feature 3 Phase 2 — the input bar:** `ui/workspace/ai_bar.cljs` (bottom-floating, gap from edge, side panels for attachments + options, center prompt textarea) + `data/workspace/ai_gen.cljs` (invokes `llm_generate` via `@tauri-apps/api/core`). Spinner + inline error surface.
+3. **Close the backend gaps:** download URL-referenced images as vision inputs (Phase 3); streamed progress + cancel signal from the bar (Phase 6); verify/tighten the Phase 4 system prompt so the model emits `:interactions`/`:flows` on prototype asks.
+4. **Smoke-test end-to-end** with Ollama locally (`kimi-k2.6`), then DeepInfra. Confirm a prompt produces a runnable prototype on the canvas.
+
+Only after that loop is closed does Feature 4 (the actual launch gate) begin.

@@ -14,6 +14,7 @@
    [app.common.types.shape-tree :as ctst]
    [app.config :as cfg]
    [app.main.data.event :as ev]
+   [app.main.data.exports.code :as code]
    [app.main.fonts :as fonts]
    [app.main.refs :as refs]
    [app.main.store :as st]
@@ -242,16 +243,26 @@
 
         handle-download-code
         (mf/use-fn
-         (mf/deps markup-type framework-code shapes)
+         (mf/deps markup-type framework-code shapes fontfaces-css fonts-data objects)
          (fn []
            (when (and framework? (some? framework-code))
              (let [base-name (:name (first shapes))
                    origin (if (= :workspace from) "workspace" "viewer")]
-               (cg/download-framework-code! base-name markup-type framework-code)
+               ;; Feature 2: download a full multi-file project ZIP (component +
+               ;; scaffold + bundled @font-face fonts) via the Tauri Save-As
+               ;; dialog + `write_code_zip`, with an in-browser blob fallback.
+               ;; `fontfaces-css` / `fonts-data` are already resolved above.
                (st/emit! (ev/event
                           {::ev/name "download-inspect-code"
                            ::ev/origin origin
-                           :type markup-type}))))))
+                           :type markup-type})
+                         (code/request-code-project-export
+                          {:objects objects
+                           :type markup-type
+                           :shapes shapes
+                           :fontfaces-css fontfaces-css
+                           :fonts-data fonts-data
+                           :base-name base-name}))))))
 
         ;;handle-open-review
         ;;(mf/use-fn

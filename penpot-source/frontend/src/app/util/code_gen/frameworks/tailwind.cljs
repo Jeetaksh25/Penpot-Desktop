@@ -269,3 +269,112 @@
   CSS utility classes (JIT arbitrary values)."
   [objects shapes]
   (generate objects shapes true))
+
+;; ---------------------------------------------------------------------------
+;; Multi-file project scaffolds (Feature 2 code export)
+;; ---------------------------------------------------------------------------
+
+(defn- comp-name-from [roots]
+  (or (some-> (seq roots) first fc/component-name) "Component"))
+
+(defn- tailwind-css
+  "Tailwind entry CSS: the three @tailwind directives plus, when present,
+  the bundled @font-face block from Penpot."
+  [fontface-css]
+  (dm/str
+   "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n"
+   (when (not (str/blank? fontface-css))
+     (dm/str "\n/* Custom fonts (bundled from Penpot) */\n" fontface-css "\n"))))
+
+(defn- tailwind-config []
+  "/** @type {import('tailwindcss').Config} */\nexport default {\n  content: [\"./index.html\", \"./src/**/*.{js,jsx}\", \"./app/**/*.{js,jsx}\"],\n  theme: { extend: {} },\n  plugins: [],\n};\n")
+
+(defn- postcss-config []
+  "export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n};\n")
+
+(defn- vite-index-html [comp-name]
+  (dm/fmt
+   "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>%</title>\n  </head>\n  <body>\n    <div id=\"root\"></div>\n    <script type=\"module\" src=\"/src/main.jsx\"></script>\n  </body>\n</html>\n"
+   comp-name))
+
+(defn- vite-main-jsx [comp-name]
+  (dm/str
+   "import React from \"react\";\nimport ReactDOM from \"react-dom/client\";\n"
+   "import " comp-name " from \"./" comp-name ".jsx\";\nimport \"./index.css\";\n\n"
+   "ReactDOM.createRoot(document.getElementById(\"root\")).render(\n  <React.StrictMode>\n    <" comp-name " />\n  </React.StrictMode>\n);\n"))
+
+(defn- vite-config []
+  "import { defineConfig } from \"vite\";\nimport react from \"@vitejs/plugin-react\";\n\nexport default defineConfig({\n  plugins: [react()],\n});\n")
+
+(defn- tailwind-package-json [comp-name]
+  (dm/fmt
+   "{\n  \"name\": \"%\",\n  \"private\": true,\n  \"version\": \"0.0.0\",\n  \"type\": \"module\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"vite build\",\n    \"preview\": \"vite preview\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.3.1\",\n    \"react-dom\": \"^18.3.1\"\n  },\n  \"devDependencies\": {\n    \"@vitejs/plugin-react\": \"^4.3.1\",\n    \"vite\": \"^5.4.0\",\n    \"tailwindcss\": \"^3.4.0\",\n    \"postcss\": \"^8.4.0\",\n    \"autoprefixer\": \"^10.4.0\"\n  }\n}\n"
+   (fc/kebab-name comp-name)))
+
+(defn- tailwind-readme [comp-name]
+  (dm/fmt
+   "# %\n\nGenerated with Penpot Desktop (React + Vite + Tailwind CSS).\n\n## Run\n\n```bash\nnpm install\nnpm run dev\n```\n\nThe component lives in `src/%.jsx`, styled with Tailwind v3+ JIT arbitrary\nvalues (no `tailwind.config` entries required). Positions are absolute.\n"
+   comp-name comp-name))
+
+(defn generate-project
+  "Multi-file Vite + React + Tailwind project. The `:primary` file\n(`src/<Comp>.jsx`) is the single-string `generate` output. `src/index.css`\ncarries the @tailwind directives and (when present) the bundled @font-face."
+  [objects shapes opts]
+  (let [roots (fc/root-originals objects shapes)
+        comp-name (comp-name-from roots)
+        fontface-css (or (:fontfaces-css opts) "")
+        primary-path (dm/str "src/" comp-name ".jsx")
+        primary (generate objects shapes)]
+    {:files {primary-path primary
+             "src/main.jsx" (vite-main-jsx comp-name)
+             "src/index.css" (tailwind-css fontface-css)
+             "index.html" (vite-index-html comp-name)
+             "vite.config.js" (vite-config)
+             "tailwind.config.js" (tailwind-config)
+             "postcss.config.js" (postcss-config)
+             "package.json" (tailwind-package-json comp-name)
+             "README.md" (tailwind-readme comp-name)}
+     :binary-assets []
+     :raster-requests []
+     :primary primary-path
+     :label "Tailwind CSS"
+     :uses-rn-svg? false
+     :uses-masked-view? false}))
+
+(defn- next-layout-jsx []
+  "import \"./globals.css\";\n\nexport const metadata = {\n  title: \"Penpot Export\",\n  description: \"Generated with Penpot Desktop\",\n};\n\nexport default function RootLayout({ children }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}\n")
+
+(defn- next-config []
+  "/** @type {import('next').NextConfig} */\nexport default {};\n")
+
+(defn- next-gitignore []
+  "node_modules\n.next\nout\n.env*\n")
+
+(defn- next-package-json [comp-name]
+  (dm/fmt
+   "{\n  \"name\": \"%\",\n  \"private\": true,\n  \"version\": \"0.0.0\",\n  \"scripts\": {\n    \"dev\": \"next dev\",\n    \"build\": \"next build\",\n    \"start\": \"next start\"\n  },\n  \"dependencies\": {\n    \"next\": \"^14.2.0\",\n    \"react\": \"^18.3.1\",\n    \"react-dom\": \"^18.3.1\"\n  },\n  \"devDependencies\": {\n    \"tailwindcss\": \"^3.4.0\",\n    \"postcss\": \"^8.4.0\",\n    \"autoprefixer\": \"^10.4.0\"\n  }\n}\n"
+   (fc/kebab-name comp-name)))
+
+(defn- next-readme []
+  "# Penpot Export (Next.js + Tailwind)\n\nGenerated with Penpot Desktop.\n\n## Run\n\n```bash\nnpm install\nnpm run dev\n```\n\nThe page lives in `app/page.jsx` (App Router, `'use client'`), styled with\nTailwind v3+ JIT arbitrary values. `app/globals.css` holds the @tailwind\ndirectives and (when present) the bundled @font-face.\n")
+
+(defn generate-nextjs-project
+  "Multi-file Next.js (App Router) + Tailwind project. The `:primary` file\n(`app/page.jsx`) is the single-string `generate-nextjs` output. The\nscaffold adds the root layout, globals.css (with @tailwind + @font-face),\npackage.json, configs, .gitignore and README."
+  [objects shapes opts]
+  (let [fontface-css (or (:fontfaces-css opts) "")
+        primary-path "app/page.jsx"
+        primary (generate-nextjs objects shapes)]
+    {:files {primary-path primary
+             "app/layout.jsx" (next-layout-jsx)
+             "app/globals.css" (tailwind-css fontface-css)
+             "package.json" (next-package-json "penpot-next-export")
+             "tailwind.config.js" (tailwind-config)
+             "postcss.config.js" (postcss-config)
+             "next.config.mjs" (next-config)
+             ".gitignore" (next-gitignore)
+             "README.md" (next-readme)}
+     :binary-assets []
+     :raster-requests []
+     :primary primary-path
+     :label "Next.js"
+     :uses-rn-svg? false
+     :uses-masked-view? false}))
