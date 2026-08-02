@@ -43,7 +43,70 @@
          (identical? (get old-values :r3)
                      (get new-values :r3))
          (identical? (get old-values :r4)
-                     (get new-values :r4)))))
+                     (get new-values :r4))
+         (identical? (get old-values :corner-smoothing)
+                     (get new-values :corner-smoothing)))))
+
+(defn- smoothing-row*
+  "Figma-style corner smoothing (superellipse) control. Renders a 0–100%
+  slider with the current value and an 'iOS' preset button (60%, the
+  canonical iOS squircle). Smoothing only has a visual effect when the
+  shape has a border radius > 0; the slider is always shown so the value
+  is discoverable, but the renderer ignores it when there is no radius."
+  {::mf/wrap-props false}
+  [props]
+  (let [ids      (unchecked-get props "ids")
+        values   (unchecked-get props "values")
+        smoothing (or (:corner-smoothing values) 0)
+        percent   (js/Math.round (* smoothing 100))
+
+        on-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [e]
+           (let [raw (.. e -target -value)
+                 p   (js/parseFloat raw)
+                 p   (if (js/isNaN p) 0 (min 100 (max 0 p)))
+                 s   (/ p 100.0)]
+             (st/emit!
+              (dwsh/update-shapes
+               ids
+               (fn [shape]
+                 (if (ctsr/has-radius? shape)
+                   (assoc shape :corner-smoothing s)
+                   shape))
+               {:reg-objects? true :attrs [:corner-smoothing]})))))
+
+        set-ios
+        (mf/use-fn
+         (mf/deps ids)
+         (fn []
+           (st/emit!
+            (dwsh/update-shapes
+             ids
+             (fn [shape]
+               (if (ctsr/has-radius? shape)
+                 (assoc shape :corner-smoothing 0.6)
+                 shape))
+             {:reg-objects? true :attrs [:corner-smoothing]}))))]
+    [:div {:style #js {:display "flex" :alignItems "center" :gap "8px"
+                       :padding "8px 0 2px" :width "100%"}}
+     [:span {:style #js {:fontSize "11px" :fontWeight "600" :color "#475569"
+                         :minWidth "72px"}}
+      (tr "workspace.options.radius.smoothing")]
+     [:input {:type "range" :min 0 :max 100 :step 1 :value percent
+              :on-change on-change :aria-label (tr "workspace.options.radius.smoothing")
+              :style #js {:flex "1" :accentColor "#6366f1" :cursor "pointer"}}]
+     [:span {:style #js {:fontSize "11px" :color "#0f172a"
+                         :minWidth "36px" :textAlign "right"}}
+      (dm/str percent "%")]
+     [:button {:type "button" :on-click set-ios
+               :title (tr "workspace.options.radius.smoothing-ios")
+               :style #js {:border "1px solid rgba(15,23,42,0.12)"
+                           :background "transparent" :borderRadius "8px"
+                           :padding "3px 8px" :fontSize "10px"
+                           :fontWeight "600" :color "#64748b" :cursor "pointer"}}
+      "iOS"]]))
 
 (mf/defc border-radius-menu*
   {::mf/wrap [#(mf/memo' % check-border-radius-menu-props)]}
@@ -282,7 +345,8 @@
             :class (stl/css :radius-wrapper)
             :tooltip-placement "top-left"
             :inner-class (stl/css :no-icon-input)
-            :value (:r3 values)}]])]
+            :value (:r3 values)}]])
+            [:& smoothing-row* {:ids ids :values values}]]
       [:section {:class (dm/str class " " (stl/css :radius))
                  :aria-label (tr "workspace.options.radius.radius-section")}
        (if (not radius-expanded)
@@ -345,4 +409,5 @@
                          :aria-label (if radius-expanded
                                        (tr "workspace.options.radius.hide-all-corners")
                                        (tr "workspace.options.radius.show-single-corners"))
-                         :icon i/corner-radius}]])))
+                         :icon i/corner-radius}]
+       [:& smoothing-row* {:ids ids :values values}]])))

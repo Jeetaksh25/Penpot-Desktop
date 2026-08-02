@@ -15,7 +15,7 @@
   {:frame #{:proportion-lock
             :width :height
             :x :y
-            :r1 :r2 :r3 :r4
+            :r1 :r2 :r3 :r4 :corner-smoothing
             :rotation
             :selrect
             :points
@@ -129,7 +129,7 @@
            :width :height
            :x :y
            :rotation
-           :r1 :r2 :r3 :r4
+           :r1 :r2 :r3 :r4 :corner-smoothing
            :selrect
            :points
 
@@ -386,7 +386,7 @@
             :width :height
             :x :y
             :rotation
-            :r1 :r2 :r3 :r4
+            :r1 :r2 :r3 :r4 :corner-smoothing
             :selrect
             :points
 
@@ -424,7 +424,7 @@
               :width :height
               :x :y
               :rotation
-              :r1 :r2 :r3 :r4
+              :r1 :r2 :r3 :r4 :corner-smoothing
               :selrect
               :points
 
@@ -483,7 +483,7 @@
            :width :height
            :x :y
            :rotation
-           :r1 :r2 :r3 :r4
+           :r1 :r2 :r3 :r4 :corner-smoothing
            :selrect
            :points
 

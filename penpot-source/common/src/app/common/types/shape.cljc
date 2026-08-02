@@ -209,6 +209,10 @@
    [:r2 {:optional true} ::sm/safe-number]
    [:r3 {:optional true} ::sm/safe-number]
    [:r4 {:optional true} ::sm/safe-number]
+   ;; Figma-style corner smoothing (superellipse), 0..1. 0 reproduces a
+   ;; circular arc; higher values flatten the corner toward the
+   ;; rectangle. Whole-shape property (no per-corner smoothing).
+   [:corner-smoothing {:optional true} [::sm/safe-number {:min 0 :max 1}]]
    [:opacity {:optional true} ::sm/safe-number]
    [:grids {:optional true}
     [:vector {:gen/max 2} ctg/schema:grid]]
@@ -416,7 +420,7 @@
   #{:page-id :component-id :component-file :component-root :main-instance
     :remote-synced :shape-ref :touched :blocked :collapsed :locked
     :hidden :masked-group :fills :proportion :proportion-lock :constraints-h
-    :constraints-v :fixed-scroll :r1 :r2 :r3 :r4 :rotation :opacity :grids :exports
+    :constraints-v :fixed-scroll :r1 :r2 :r3 :r4 :corner-smoothing :rotation :opacity :grids :exports
     :strokes :blend-mode :interactions :shadow :blur :background-blur :grow-type :applied-tokens
     :plugin-data})
 
@@ -690,7 +694,8 @@
     :r1
     :r2
     :r3
-    :r4})
+    :r4
+    :corner-smoothing})
 
 (defn extract-props
   "Retrieves an object with the 'pasteable' properties for a shape."

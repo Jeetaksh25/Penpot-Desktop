@@ -16,6 +16,7 @@
    [app.common.types.shape :refer [stroke-caps-line stroke-caps-marker]]
    [app.common.types.shape.radius :as ctsr]
    [app.util.object :as obj]
+   [clojure.string :as cstr]
    [cuerdas.core :as str]))
 
 (defn- calculate-dasharray
@@ -29,34 +30,105 @@
       :dashed (str/concat "" (or dash w+10) "," (or gap w+10))
       "")))
 
+(def ^:private corner-smoothing-steps 16)
+
+(defn- smooth-rect-path
+  "SVG path 'd' for a rounded rectangle whose corners are superellipse
+  curves (Figma-style 'corner smoothing').
+
+  `n` is the superellipse exponent: n=2 reproduces a circular arc, so
+  smoothing=0 is pixel-identical to the un-smoothed renderer; larger n
+  flattens the corner toward the rectangle (stronger smoothing).
+
+  Each corner is sampled at P(t) = C + a^(2/n)·(from-C) + b^(2/n)·(to-C)
+  with t in [0,1] (a=cos(t·π/2), b=sin(t·π/2)) — the exact superellipse
+  quarter between the two edge tangent points, bulging toward the
+  rectangle corner. The radii passed in are already overlap-adjusted by
+  `gsh/shape-corners-4`, so corners never overshoot the box. This is a
+  piecewise-linear approximation of the true superellipse; 16 samples per
+  corner is visually smooth at typical canvas zoom and converges to the
+  exact curve as the step count grows."
+  [x y w h r1 r2 r3 r4 n]
+  (let [inv (/ 2.0 n)
+        pi2 (/ js/Math.PI 2)
+        corner
+        (fn [cx cy fx fy tx ty]
+          (map (fn [i]
+                 (let [t   (/ i corner-smoothing-steps)
+                       ang (* t pi2)
+                       a   (js/Math.pow (js/Math.cos ang) inv)
+                       b   (js/Math.pow (js/Math.sin ang) inv)
+                       px  (+ cx (* a (- fx cx)) (* b (- tx cx)))
+                       py  (+ cy (* a (- fy cy)) (* b (- ty cy)))]
+                   (cstr/join " " ["L" px py])))
+               (range 1 (inc corner-smoothing-steps))))]
+    (cstr/join
+     " "
+     (concat
+      [(cstr/join " " ["M" (+ x r1) y])
+       (cstr/join " " ["L" (- (+ x w) r2) y])]
+      ;; TR: center (x+w-r2, y+r2), from top (x+w-r2, y) -> to right (x+w, y+r2)
+      (corner (- (+ x w) r2) (+ y r2)
+              (- (+ x w) r2) y
+              (+ x w) (+ y r2))
+      [(cstr/join " " ["L" (+ x w) (- (+ y h) r3)])]
+      ;; BR: center (x+w-r3, y+h-r3), from right (x+w, y+h-r3) -> to bottom (x+w-r3, y+h)
+      (corner (- (+ x w) r3) (- (+ y h) r3)
+              (+ x w) (- (+ y h) r3)
+              (- (+ x w) r3) (+ y h))
+      [(cstr/join " " ["L" (+ x r4) (+ y h)])]
+      ;; BL: center (x+r4, y+h-r4), from bottom (x+r4, y+h) -> to left (x, y+h-r4)
+      (corner (+ x r4) (- (+ y h) r4)
+              (+ x r4) (+ y h)
+              x (- (+ y h) r4))
+      [(cstr/join " " ["L" x (+ y r1)])]
+      ;; TL: center (x+r1, y+r1), from left (x, y+r1) -> to top (x+r1, y)
+      (corner (+ x r1) (+ y r1)
+              x (+ y r1)
+              (+ x r1) y)
+      ["Z"]))))
+
 (defn get-border-props
   [shape]
-  (case (ctsr/radius-mode shape)
-    :radius-1
-    (let [radius (gsh/shape-corners-1 shape)]
-      #js {:rx radius :ry radius})
+  (let [smoothing (dm/get-prop shape :corner-smoothing)]
+    (if (and (pos? smoothing) (ctsr/has-radius? shape))
+      ;; Corner smoothing (superellipse). Figma exposes smoothing as a
+      ;; whole-shape property (no per-corner smoothing), but the
+      ;; superellipse naturally accepts per-corner radii, so we honor
+      ;; r1..r4. n=2 reproduces the circular arc; n grows with smoothing.
+      (let [[r1 r2 r3 r4] (gsh/shape-corners-4 shape)
+            n    (+ 2.0 (* 8.0 (min 1.0 (max 0.0 smoothing))))
+            x    (dm/get-prop shape :x)
+            y    (dm/get-prop shape :y)
+            w    (dm/get-prop shape :width)
+            h    (dm/get-prop shape :height)]
+        #js {:d (smooth-rect-path x y w h r1 r2 r3 r4 n)})
+      (case (ctsr/radius-mode shape)
+        :radius-1
+        (let [radius (gsh/shape-corners-1 shape)]
+          #js {:rx radius :ry radius})
 
-    :radius-4
-    (let [[r1 r2 r3 r4] (gsh/shape-corners-4 shape)
-          x      (dm/get-prop shape :x)
-          y      (dm/get-prop shape :y)
-          width  (dm/get-prop shape :width)
-          height (dm/get-prop shape :height)
-          top    (- width r1 r2)
-          right  (- height r2 r3)
-          bottom (- width r3 r4)
-          left   (- height r4 r1)]
-      #js {:d (dm/str
-               "M" (+ x r1) "," y " "
-               "h" top " "
-               "a" r2 "," r2 " 0 0 1 " r2 "," r2 " "
-               "v" right " "
-               "a" r3 "," r3 " 0 0 1 " (- r3) "," r3 " "
-               "h" (- bottom) " "
-               "a" r4 "," r4 " 0 0 1 " (- r4) "," (- r4) " "
-               "v" (- left) " "
-               "a" r1 "," r1 " 0 0 1 " r1 "," (- r1) " "
-               "z")})))
+        :radius-4
+        (let [[r1 r2 r3 r4] (gsh/shape-corners-4 shape)
+              x      (dm/get-prop shape :x)
+              y      (dm/get-prop shape :y)
+              width  (dm/get-prop shape :width)
+              height (dm/get-prop shape :height)
+              top    (- width r1 r2)
+              right  (- height r2 r3)
+              bottom (- width r3 r4)
+              left   (- height r4 r1)]
+          #js {:d (dm/str
+                   "M" (+ x r1) "," y " "
+                   "h" top " "
+                   "a" r2 "," r2 " 0 0 1 " r2 "," r2 " "
+                   "v" right " "
+                   "a" r3 "," r3 " 0 0 1 " (- r3) "," r3 " "
+                   "h" (- bottom) " "
+                   "a" r4 "," r4 " 0 0 1 " (- r4) "," (- r4) " "
+                   "v" (- left) " "
+                   "a" r1 "," r1 " 0 0 1 " r1 "," (- r1) " "
+                   "z")}))))
 
 (defn add-border-props!
   [props shape]

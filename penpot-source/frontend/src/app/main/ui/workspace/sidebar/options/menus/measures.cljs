@@ -45,6 +45,7 @@
    :ox :oy
    :rotation
    :r1 :r2 :r3 :r4
+   :corner-smoothing
    :selrect
    :points
    :show-content
@@ -173,6 +174,8 @@
                      (get n-values :r3))
          (identical? (get o-values :r4)
                      (get n-values :r4))
+         (identical? (get o-values :corner-smoothing)
+                     (get n-values :corner-smoothing))
          (identical? (get o-values :proportion-lock)
                      (get n-values :proportion-lock)))))
 

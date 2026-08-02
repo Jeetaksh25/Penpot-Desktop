@@ -8185,6 +8185,12 @@ msgstr "Border radius section"
 msgid "workspace.options.radius.show-single-corners"
 msgstr "Show independent radius"
 
+msgid "workspace.options.radius.smoothing"
+msgstr "Corner smoothing"
+
+msgid "workspace.options.radius.smoothing-ios"
+msgstr "iOS preset (60%)"
+
 #: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs:199
 msgid "workspace.options.recent-fonts"
 msgstr "Recent"
