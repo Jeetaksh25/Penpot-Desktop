@@ -24,7 +24,7 @@ msgstr "E-postanıza bakın"
 #, unused
 msgid "auth.check-your-email"
 msgstr ""
-"Penpot hesabını onaylamak ve kullanmaya başlamak için e-postanı kontrol et "
+"Oriole hesabını onaylamak ve kullanmaya başlamak için e-postanı kontrol et "
 "ve gönderilen bağlantıya tıkla."
 
 #: src/app/main/ui/auth/recovery.cljs:67
@@ -70,7 +70,7 @@ msgstr "Oturum aç"
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
 msgstr ""
-"Penpot, tasarım ve kod iş birliği için özgür ve açık kaynaklı tasarım "
+"Oriole, tasarım ve kod iş birliği için özgür ve açık kaynaklı tasarım "
 "aracıdır"
 
 #: src/app/main/ui/auth/login.cljs:230
@@ -165,7 +165,7 @@ msgstr "Bir hesap oluştur"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"Ücretsiz bir Penpot hesabı ile sınırsız sayıda takım oluşturabilir ve diğer "
+"Ücretsiz bir Oriole hesabı ile sınırsız sayıda takım oluşturabilir ve diğer "
 "tasarımcı ve geliştiricilerle istediğiniz kadar projede işbirliği "
 "yapabilirsiniz. "
 
@@ -223,7 +223,7 @@ msgstr "Yayınla"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Tüm Penpot kullanıcıları"
+msgstr "Tüm Oriole kullanıcıları"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -304,7 +304,7 @@ msgstr "Takım yönetimi"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Penpot takımlar içindir. Üyeleri projeler ve dosyalar üzerinde birlikte "
+"Oriole takımlar içindir. Üyeleri projeler ve dosyalar üzerinde birlikte "
 "çalışmaya davet edin"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -315,7 +315,7 @@ msgstr "Takım olun!"
 #, unused
 msgid "dasboard.tutorial-hero.info"
 msgstr ""
-"Bu uygulamalı öğretici ile biraz eğlenirken Penpot'taki temel bilgileri "
+"Bu uygulamalı öğretici ile biraz eğlenirken Oriole'taki temel bilgileri "
 "öğrenin."
 
 #: src/app/main/ui/dashboard/projects.cljs
@@ -331,7 +331,7 @@ msgstr "Uygulamalı Öğretici"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Penpot'ta bir gezintiye çıkın ve temel özelliklerini öğrenin."
+msgstr "Oriole'ta bir gezintiye çıkın ve temel özelliklerini öğrenin."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -407,7 +407,7 @@ msgstr "Bu sürümü sabitle"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Penpot'un"
+msgstr "Oriole'un"
 
 #: src/app/main/ui/dashboard/deleted.cljs:265
 msgid "dashboard.delete-all-forever-confirmation.description"
@@ -458,7 +458,7 @@ msgstr "%s'de silinecek"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Penpot dosyasını indir (.penpot)"
+msgstr "Oriole dosyasını indir (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -567,7 +567,7 @@ msgstr "%s projesini ve dosyalarını geri yüklerken bir hata oluştu."
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "%s Penpot dosyasını indir (.penpot)"
+msgstr "%s Oriole dosyasını indir (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -579,7 +579,7 @@ msgstr "PDF olarak dışa aktar"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Penpot %s dosyalarını dışa aktar"
+msgstr "Oriole %s dosyalarını dışa aktar"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -597,7 +597,7 @@ msgstr ""
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Penpot'ta dışa aktarmaların nasıl ayarlandırılacağı hakkında bilgi."
+msgstr "Oriole'ta dışa aktarmaların nasıl ayarlandırılacağı hakkında bilgi."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -672,8 +672,8 @@ msgstr ""
 #, markdown
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
-"Sadece kendinize ait veya Penpot'ta kullanılabilecek bir lisansa sahip olan "
-"yazi tiplerini yükleyebilirsiniz. [Penpot'un Kullanım Şartları](%s) "
+"Sadece kendinize ait veya Oriole'ta kullanılabilecek bir lisansa sahip olan "
+"yazi tiplerini yükleyebilirsiniz. [Oriole'un Kullanım Şartları](%s) "
 "içindeki İçerik hakları bölümünden ayrıntılı bilgi alabilirsiniz. Ayrıca "
 "[yazı tipi lisanslama](https://www.typography.com/faq) hakkında daha fazla "
 "bilgi almak isteyebilirsiniz."
@@ -699,7 +699,7 @@ msgstr "Yönetici Arayüzüne Git"
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "Penpot dosyalarını içe aktar"
+msgstr "Oriole dosyalarını içe aktar"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
@@ -1133,11 +1133,11 @@ msgstr "Tema seç"
 
 #: src/app/main/ui/settings/options.cljs:76
 msgid "dashboard.select-ui-theme.dark"
-msgstr "Penpot Koyu (öntanımlı)"
+msgstr "Oriole Koyu (öntanımlı)"
 
 #: src/app/main/ui/settings/options.cljs:77
 msgid "dashboard.select-ui-theme.light"
-msgstr "Penpot Açık"
+msgstr "Oriole Açık"
 
 #: src/app/main/ui/settings/options.cljs:78
 msgid "dashboard.select-ui-theme.system"
@@ -1339,7 +1339,7 @@ msgstr "Yaratıcılıkta sınır yok"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1326
 msgid "dashboard.upgrade-plan.penpot-free"
-msgstr "Penpot Ücretsiz"
+msgstr "Oriole Ücretsiz"
 
 #, unused
 msgid "dashboard.user-no-longer-belong-org"
@@ -1406,7 +1406,7 @@ msgstr "Web kancası başarıyla oluşturuldu."
 #: src/app/main/ui/dashboard/team.cljs:1358
 msgid "dashboard.webhooks.description"
 msgstr ""
-"Web kancaları, Penpot'ta belirli olaylar gerçekleştiğinde diğer web "
+"Web kancaları, Oriole'ta belirli olaylar gerçekleştiğinde diğer web "
 "sitelerinin ve uygulamaların bilgilendirilmesine izin vermenin basit bir "
 "yoludur. Belirttiğiniz URL'lerin her birine bir POST isteği göndereceğiz."
 
@@ -1436,7 +1436,7 @@ msgstr "Adın"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "Penpot'un"
+msgstr "Oriole'un"
 
 #: src/app/main/ui/alert.cljs:36
 msgid "ds.alert-ok"
@@ -1510,7 +1510,7 @@ msgstr "Karakter sınırı aşıldı"
 msgid "errors.clipboard-api-unavailable"
 msgstr ""
 "Pano API'si kullanılabilir değil. Pano erişimini etkinleştirmek için "
-"Penpot'u HTTPS üzerinden sunun"
+"Oriole'u HTTPS üzerinden sunun"
 
 #: src/app/main/data/workspace/clipboard.cljs:541
 msgid "errors.clipboard-not-implemented"
@@ -1529,7 +1529,7 @@ msgstr "Yorumla ilgili bir hata oluştu"
 #: src/app/main/errors.cljs:414
 msgid "errors.deprecated"
 msgstr ""
-"Üzgünüz! Bu, artık kullanılmayan bir Penpot varlık türü kullanan eski bir "
+"Üzgünüz! Bu, artık kullanılmayan bir Oriole varlık türü kullanan eski bir "
 "dosyadır ve açamazsınız."
 
 #: src/app/main/errors.cljs:417
@@ -1538,7 +1538,7 @@ msgstr "böylece size yardımcı olabiliriz."
 
 #: src/app/main/errors.cljs:415
 msgid "errors.deprecated.contact.before"
-msgstr "Penpot artık bu tür varlıkları desteklemese de, bizimle"
+msgstr "Oriole artık bu tür varlıkları desteklemese de, bizimle"
 
 #: src/app/main/errors.cljs:416
 msgid "errors.deprecated.contact.text"
@@ -2022,7 +2022,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "Penpot topluluğu"
+msgstr "Oriole topluluğu"
 
 #: src/app/main/ui/settings/feedback.cljs:143
 msgid "feedback.other-ways-contact"
@@ -2332,7 +2332,7 @@ msgstr "Renk alanı seç"
 #: src/app/main/ui/inspect/right_sidebar.cljs:235
 msgid "inspect.empty.help"
 msgstr ""
-"Tasarım incelemesi hakkında daha fazla bilgi edinmek istiyorsanız Penpot "
+"Tasarım incelemesi hakkında daha fazla bilgi edinmek istiyorsanız Oriole "
 "yardım merkezini ziyaret edin"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:239
@@ -2463,7 +2463,7 @@ msgstr "Kişisel erişim tokenleri"
 msgid "integrations.access-tokens.personal.description"
 msgstr ""
 "Kişisel erişim tokenleri, kullanıcı adı/parola kimlik doğrulama sistemimize "
-"benzer şekilde çalışır ve bir uygulamanın Penpot API’sine erişmesine izin "
+"benzer şekilde çalışır ve bir uygulamanın Oriole API’sine erişmesine izin "
 "vermek için kullanılabilir"
 
 #: src/app/main/ui/settings/integrations.cljs:68
@@ -2537,7 +2537,7 @@ msgstr "Bu yapılandırmayı MCP istemcinize ekleyin (örn. ~/.mcp.json)."
 #: src/app/main/ui/settings/integrations.cljs:206
 msgid "integrations.info.mcp-server"
 msgstr ""
-"Penpot MCP Sunucusu, MCP istemcilerinin Penpot tasarım dosyalarıyla "
+"Oriole MCP Sunucusu, MCP istemcilerinin Oriole tasarım dosyalarıyla "
 "doğrudan etkileşime girmesini sağlar."
 
 #: src/app/main/ui/settings/integrations.cljs:113
@@ -2551,7 +2551,7 @@ msgstr "MCP anahtarının geçerlilik süresinin sonu yok"
 #: src/app/main/ui/settings/integrations.cljs:511
 msgid "integrations.mcp-server.description"
 msgstr ""
-"Penpot MCP Sunucusu, MCP istemcilerinin Penpot tasarım dosyalarıyla "
+"Oriole MCP Sunucusu, MCP istemcilerinin Oriole tasarım dosyalarıyla "
 "doğrudan etkileşime girmesini sağlar."
 
 #: src/app/main/ui/settings/integrations.cljs:415
@@ -2566,7 +2566,7 @@ msgstr "MCP istemcileri nasıl yapılandırılır"
 #: src/app/main/ui/settings/integrations.cljs:581
 msgid "integrations.mcp-server.mcp-keys.info"
 msgstr ""
-"Bu, MCP istemcinizi Penpot MCP sunucusuna bağlamak için yapılandırmanız "
+"Bu, MCP istemcinizi Oriole MCP sunucusuna bağlamak için yapılandırmanız "
 "gereken sunucu adresidir."
 
 #: src/app/main/ui/settings/integrations.cljs:561
@@ -2691,7 +2691,7 @@ msgstr "Kısayollar"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1395
 msgid "labels.about-penpot"
-msgstr "Penpot hakkında"
+msgstr "Oriole hakkında"
 
 #: src/app/main/data/common.cljs:90, src/app/main/data/team.cljs:163, src/app/main/data/team.cljs:584, src/app/main/ui/dashboard/import.cljs:556
 msgid "labels.accept"
@@ -2823,7 +2823,7 @@ msgstr "İle devam et"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "Penpot hesabıyla devam edebilirsiniz"
+msgstr "Oriole hesabıyla devam edebilirsiniz"
 
 #: src/app/main/ui/components/copy_button.cljs:41
 msgid "labels.copy"
@@ -3159,7 +3159,7 @@ msgstr "Sonraki"
 #: src/app/main/ui/static.cljs:337
 msgid "labels.nitrate-unavailable.main-message"
 msgstr ""
-"Penpot, bir sistem sorunu nedeniyle geçici olarak kullanılamıyor. Lütfen "
+"Oriole, bir sistem sorunu nedeniyle geçici olarak kullanılamıyor. Lütfen "
 "biraz sonra tekrar deneyin."
 
 #: src/app/main/ui/dashboard/comments.cljs:120, src/app/main/ui/workspace/comments.cljs:162
@@ -3256,11 +3256,11 @@ msgstr "Bekliyor"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1215
 msgid "labels.penpot-changelog"
-msgstr "Penpot Değişiklik Günlüğü"
+msgstr "Oriole Değişiklik Günlüğü"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1143
 msgid "labels.penpot-hub"
-msgstr "Penpot merkezi"
+msgstr "Oriole merkezi"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1091
 msgid "labels.pinned-projects"
@@ -3643,7 +3643,7 @@ msgstr "Etkileşimli Prototipler"
 
 #: src/app/main/ui/ds/product/loader.cljs:33
 msgid "loader.tips.07.message"
-msgstr "Penpot, sorunsuz geliştirme için SVG ve CSS kullanır."
+msgstr "Oriole, sorunsuz geliştirme için SVG ve CSS kullanır."
 
 #: src/app/main/ui/ds/product/loader.cljs:32
 msgid "loader.tips.07.title"
@@ -3670,7 +3670,7 @@ msgstr "Koyu ve Açık Mod"
 #: src/app/main/ui/ds/product/loader.cljs:39
 msgid "loader.tips.10.message"
 msgstr ""
-"Ek işlevsellik için topluluk tarafından geliştirilen eklentilerle Penpot'u "
+"Ek işlevsellik için topluluk tarafından geliştirilen eklentilerle Oriole'u "
 "genişletin."
 
 #: src/app/main/ui/ds/product/loader.cljs:38
@@ -4489,7 +4489,7 @@ msgstr "404 hatası"
 #: src/app/main/ui/static.cljs:160
 msgid "not-found.login.free"
 msgstr ""
-"Penpot, Tasarım ve Kod arasında iş birliği için özgür ve açık kaynaklı bir "
+"Oriole, Tasarım ve Kod arasında iş birliği için özgür ve açık kaynaklı bir "
 "tasarım aracıdır"
 
 #: src/app/main/ui/auth/recovery_request.cljs:114
@@ -4508,7 +4508,7 @@ msgstr "Ücretsiz kaydolun"
 
 #: src/app/main/ui/static.cljs:175
 msgid "not-found.login.start-using"
-msgstr "Ve saniyeler içinde Penpot kullanmaya başlayın!"
+msgstr "Ve saniyeler içinde Oriole kullanmaya başlayın!"
 
 #: src/app/main/ui/static.cljs:75
 msgid "not-found.made-with-love"
@@ -4552,7 +4552,7 @@ msgstr "Bu dosyaya erişiminiz yok."
 
 #: src/app/main/ui/static.cljs:62, src/app/main/ui/static.cljs:265, src/app/main/ui/static.cljs:271, src/app/main/ui/static.cljs:277, src/app/main/ui/static.cljs:283, src/app/main/ui/static.cljs:292, src/app/main/ui/static.cljs:301
 msgid "not-found.no-permission.go-dashboard"
-msgstr "Penpot'unuza gidin"
+msgstr "Oriole'unuza gidin"
 
 #: src/app/main/ui/static.cljs:289, src/app/main/ui/static.cljs:298
 msgid "not-found.no-permission.if-approves"
@@ -4560,7 +4560,7 @@ msgstr "Sahibi izin verirse takıma davet edileceksiniz."
 
 #: src/app/main/ui/static.cljs:527, src/app/main/ui/static.cljs:540
 msgid "not-found.no-permission.penpot-file"
-msgstr "Penpot dosyası"
+msgstr "Oriole dosyası"
 
 #: src/app/main/ui/static.cljs:264, src/app/main/ui/static.cljs:296
 msgid "not-found.no-permission.project"
@@ -4622,13 +4622,13 @@ msgstr "%s adresine doğrulama e-postası gönderildi. E-posta kutunuza bakın!"
 #, unused
 msgid "onboarding-v2.before-start.desc1"
 msgstr ""
-"Kullanıcı Kılavuzu ve Youtube kanalımız gibi Penpot'u kullanmaya "
+"Kullanıcı Kılavuzu ve Youtube kanalımız gibi Oriole'u kullanmaya "
 "başlamanıza yardımcı olacak birçok kaynak olduğunu bilmelisiniz."
 
 #, unused
 msgid "onboarding-v2.before-start.desc2"
 msgstr ""
-"Penpot'un nasıl kullanılacağı hakkında ayrıntılı bilgi. Prototiplemeden "
+"Oriole'un nasıl kullanılacağı hakkında ayrıntılı bilgi. Prototiplemeden "
 "tasarımları düzenlemeye veya paylaşmaya kadar."
 
 #, unused
@@ -4651,14 +4651,14 @@ msgstr "Başlamadan önce"
 #, unused
 msgid "onboarding-v2.newsletter.desc"
 msgstr ""
-"Ürün geliştirme sürecinden ve haberlerden haberdar olmak için Penpot "
+"Ürün geliştirme sürecinden ve haberlerden haberdar olmak için Oriole "
 "bültenine abone olun."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:88
 #, unused
 msgid "onboarding-v2.newsletter.news"
 msgstr ""
-"Bana Penpot hakkında haberler gönder (blog gönderileri, video öğreticiler, "
+"Bana Oriole hakkında haberler gönder (blog gönderileri, video öğreticiler, "
 "yayınlar...)."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:96
@@ -4681,14 +4681,14 @@ msgstr "Bana ürün güncellemeleri gönder (yeni özellikler, sürümler, düze
 #, unused
 msgid "onboarding-v2.welcome.desc1"
 msgstr ""
-"Penpot açık kaynaklıdır ve Kaleidos'un yanı sıra birçok insanın birbirine "
+"Oriole açık kaynaklıdır ve Kaleidos'un yanı sıra birçok insanın birbirine "
 "yardım ettiği topluluk tarafından yapılmıştır. Herkes işbirliğine "
 "katılabilir:"
 
 #, unused
 msgid "onboarding-v2.welcome.desc2"
 msgstr ""
-"Tüm topluluk ve Penpot çekirdek takımı ile Penpot, bugünü ve geleceği "
+"Tüm topluluk ve Oriole çekirdek takımı ile Oriole, bugünü ve geleceği "
 "hakkında bilgi edinmek, paylaşmak ve tartışmak için herkese açık bir alan."
 
 #, unused
@@ -4707,7 +4707,7 @@ msgstr "Katkıda bulunma kılavuzu"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:248
 msgid "onboarding-v2.welcome.title"
-msgstr "Penpot'a hoş geldiniz!"
+msgstr "Oriole'a hoş geldiniz!"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:254
 #, unused
@@ -4787,7 +4787,7 @@ msgstr "Gizlilik Politikası."
 #: src/app/main/ui/onboarding/newsletter.cljs:65
 #, unused
 msgid "onboarding.newsletter.title"
-msgstr "Penpot haberlerini almak ister misiniz?"
+msgstr "Oriole haberlerini almak ister misiniz?"
 
 #: src/app/main/ui/onboarding/questions.cljs:104
 msgid "onboarding.questions.lets-get-started"
@@ -4806,7 +4806,7 @@ msgstr "Yalnızca keşfediyorum"
 #: src/app/main/ui/onboarding/questions.cljs:245
 #, unused
 msgid "onboarding.questions.reasons.fit"
-msgstr "Penpot'un takımım için uygun olup olmadığına bakıyorum"
+msgstr "Oriole'un takımım için uygun olup olmadığına bakıyorum"
 
 #: src/app/main/ui/onboarding/questions.cljs:251
 #, unused
@@ -4850,17 +4850,17 @@ msgstr "Çerçeve oluşturma"
 
 #: src/app/main/ui/onboarding/questions.cljs:114
 msgid "onboarding.questions.step1.question1"
-msgstr "Penpot'u ne için kullanacaksınız?"
+msgstr "Oriole'u ne için kullanacaksınız?"
 
 #: src/app/main/ui/onboarding/questions.cljs:272
 #, unused
 msgid "onboarding.questions.step1.question2"
-msgstr "Bugün sizi Penpot'a getiren nedir?"
+msgstr "Bugün sizi Oriole'a getiren nedir?"
 
 #: src/app/main/ui/onboarding/questions.cljs:110
 msgid "onboarding.questions.step1.subtitle"
 msgstr ""
-"Penpot'un sizin için çalışmasını sağlamamıza yardımcı olmak için hakkınızda "
+"Oriole'un sizin için çalışmasını sağlamamıza yardımcı olmak için hakkınızda "
 "biraz bilgi verin. Yanıtlarınız, yeni özelliklere öncelik vermemize ve "
 "başlamak için sizi doğru yöne yönlendirmemize yardımcı olacaktır."
 
@@ -4897,7 +4897,7 @@ msgstr "Nereden başlamak istersiniz?"
 #: src/app/main/ui/onboarding/questions.cljs:428
 #, unused
 msgid "onboarding.questions.step5.title"
-msgstr "Penpot'tan nasıl haberiniz oldu?"
+msgstr "Oriole'tan nasıl haberiniz oldu?"
 
 #: src/app/main/ui/onboarding/questions.cljs:233
 #, unused
@@ -4948,7 +4948,7 @@ msgstr "Bir takım oluştur"
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
 msgstr ""
-"Takım, aynı dosya ve projelerde çalışan diğer Penpot kullanıcılarıyla "
+"Takım, aynı dosya ve projelerde çalışan diğer Oriole kullanıcılarıyla "
 "işbirliği yapmanıza olanak tanır."
 
 #: src/app/main/ui/onboarding/team_choice.cljs:57
@@ -4985,7 +4985,7 @@ msgstr "Tasarlamaya başla"
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Penpot"
+msgstr "Oriole"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/token_typography_row.cljs:42, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:101, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:108
 msgid "options.deleted-token"
@@ -5975,7 +5975,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/subscription.cljs:662
 msgid "subscription.settings.member-since"
-msgstr "Penpot üyelik tarihi: %s"
+msgstr "Oriole üyelik tarihi: %s"
 
 #: src/app/main/ui/settings/subscription.cljs:685, src/app/main/ui/settings/subscription.cljs:699, src/app/main/ui/settings/subscription.cljs:715, src/app/main/ui/settings/subscription.cljs:731
 msgid "subscription.settings.more-information"
@@ -6053,7 +6053,7 @@ msgstr "Planınızın tadını çıkarın!"
 
 #: src/app/main/ui/settings/subscription.cljs:373
 msgid "subscription.settings.success.dialog.thanks"
-msgstr "Penpot %s planını seçtiğiniz için teşekkür ederiz!"
+msgstr "Oriole %s planını seçtiğiniz için teşekkür ederiz!"
 
 #: src/app/main/ui/settings/subscription.cljs:370
 msgid "subscription.settings.success.dialog.title"
@@ -6117,79 +6117,79 @@ msgstr[1] "%s davet seçildi"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "Yazı Tipi Sağlayıcıları - %s - Penpot"
+msgstr "Yazı Tipi Sağlayıcıları - %s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "Yazı Tipleri - %s - Penpot"
+msgstr "Yazı Tipleri - %s - Oriole"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "Projeler - %s - Penpot"
+msgstr "Projeler - %s - Oriole"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "Ara - %s - Penpot"
+msgstr "Ara - %s - Oriole"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
-msgstr "Paylaşılmış Kütüphaneler - %s - Penpot"
+msgstr "Paylaşılmış Kütüphaneler - %s - Oriole"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Penpot - Takımlar için Özgür Tasarım"
+msgstr "Oriole - Takımlar için Özgür Tasarım"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "Geri bildirimde bulun - Penpot"
+msgstr "Geri bildirimde bulun - Oriole"
 
 #: src/app/main/ui/settings/integrations.cljs:659
 msgid "title.settings.integrations"
-msgstr "Bütünleşmeler - Penpot"
+msgstr "Bütünleşmeler - Oriole"
 
 #: src/app/main/ui/settings/notifications.cljs:45
 msgid "title.settings.notifications"
-msgstr "Bildirimler - Penpot"
+msgstr "Bildirimler - Oriole"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "Ayarlar - Penpot"
+msgstr "Ayarlar - Oriole"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "Parola - Penpot"
+msgstr "Parola - Oriole"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "Profil - Penpot"
+msgstr "Profil - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "Davetler - %s - Penpot"
+msgstr "Davetler - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "Üyeler - %s - Penpot"
+msgstr "Üyeler - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "Ayarlar - %s - Penpot"
+msgstr "Ayarlar - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "Web kancaları - %s - Penpot"
+msgstr "Web kancaları - %s - Oriole"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s - Görünüm modu - Penpot"
+msgstr "%s - Görünüm modu - Oriole"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui/ds/controls/utilities/token_field.cljs:106, src/app/main/ui/workspace/sidebar/options/menus/token_typography_row.cljs:67, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:141
 msgid "token-actions.detach-token"
@@ -6271,7 +6271,7 @@ msgstr "Sorun giderme kılavuzu"
 #: src/app/main/ui/workspace/webgl_unavailable_modal.cljs:62
 msgid "webgl.modals.webgl-unavailable.message"
 msgstr ""
-"Tarayıcınızda, Penpot'un çalışması için gerekli olan WebGL kullanılabilir "
+"Tarayıcınızda, Oriole'un çalışması için gerekli olan WebGL kullanılabilir "
 "değil. Lütfen tarayıcı ayarlarınızı gözden geçirin ve/veya görsel ağırlıklı "
 "sekmeleri kapatın."
 
@@ -7296,7 +7296,7 @@ msgstr "Şu yapıyı kullanmayı deneyin:"
 #: src/app/main/ui/workspace/sidebar/options/menus/variants_help_modal.cljs:54
 msgid "workspace.options.component.variants-help-modal.intro"
 msgstr ""
-"Çeşitler arasında geçiş yaparken değişiklikleri korumak için Penpot şu "
+"Çeşitler arasında geçiş yaparken değişiklikleri korumak için Oriole şu "
 "katmanları birbirine bağlar:"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/variants_help_modal.cljs:91

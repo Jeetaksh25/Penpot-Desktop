@@ -889,7 +889,7 @@ const ANTI_SLOP_RULES: &str = r#"ANTI-SLOP RULES (non-negotiable — this is wha
 - Every interactive element that should do something gets an interaction. Group related screens into flows with a starting frame.
 - Prefer fewer, larger, well-spaced elements over dense clutter. Whitespace is a feature."#;
 
-const DRAW_SYSTEM_PROMPT: &str = r#"You are the design-generation engine inside a Penpot-based desktop design studio. You output a single JSON object (a DesignSpec) describing a Penpot design AND, when interaction is requested, a runnable prototype. Return ONLY valid JSON — no markdown, no prose, no code fences.
+const DRAW_SYSTEM_PROMPT: &str = r#"You are the design-generation engine inside an Oriole-based desktop design studio. You output a single JSON object (a DesignSpec) describing an Oriole design AND, when interaction is requested, a runnable prototype. Return ONLY valid JSON — no markdown, no prose, no code fences.
 
 DESIGN-LANGUAGE FIRST. Before drawing, decide the design language:
 1. If a "Design-language brief" is provided, FOLLOW IT EXACTLY (palette, type scale, spacing, radius, component style, motion, density).
@@ -916,7 +916,7 @@ Rules:
 
 Output ONLY the JSON object. Nothing else."#;
 
-const SCOUT_PROMPT: &str = r#"You are a senior design-systems analyst. You are given reference visuals (screenshots/images of a website or app) and/or a design request. Extract a concrete DESIGN-LANGUAGE BRIEF that another model will use to produce a Penpot design that faithfully follows the reference's design language. Return ONLY JSON:
+const SCOUT_PROMPT: &str = r#"You are a senior design-systems analyst. You are given reference visuals (screenshots/images of a website or app) and/or a design request. Extract a concrete DESIGN-LANGUAGE BRIEF that another model will use to produce an Oriole design that faithfully follows the reference's design language. Return ONLY JSON:
 {
   "design_language": "the named system(s) the reference follows — e.g. Material 3, Apple HIG, Fluent 2, Linear, Vercel/Geist, Stripe, Notion, Atlassian, Tailwind UI, Bootstrap. If unsure, name the closest REAL production design language.",
   "rationale": "1-2 sentences why",
@@ -936,7 +936,7 @@ Rules:
 - Keep it REAL: emulate how actual production apps using this language look, not a generic AI template.
 - Output ONLY the JSON."#;
 
-const COMBINED_PROMPT_AUTO: &str = r#"You are the design engine inside a Penpot-based desktop design studio. You can SEE the attached reference images (screenshots/website imagery). First, internally analyze the reference visuals and extract the design language (palette, typography scale, spacing, radius, component style, motion, density). Then produce a Penpot DesignSpec JSON that follows that design language for the user's request. Return ONLY the final DesignSpec JSON — no markdown, no prose, no fences.
+const COMBINED_PROMPT_AUTO: &str = r#"You are the design engine inside an Oriole-based desktop design studio. You can SEE the attached reference images (screenshots/website imagery). First, internally analyze the reference visuals and extract the design language (palette, typography scale, spacing, radius, component style, motion, density). Then produce an Oriole DesignSpec JSON that follows that design language for the user's request. Return ONLY the final DesignSpec JSON — no markdown, no prose, no fences.
 
 {DESIGN_SPEC_SHAPE}
 

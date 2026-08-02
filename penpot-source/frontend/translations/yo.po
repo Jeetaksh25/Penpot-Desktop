@@ -2248,7 +2248,7 @@ msgstr "Ṣẹ̀dá ẹgbẹ́ kan"
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
 msgstr ""
-"A team allows you to collaborate with other Penpot users working in the "
+"A team allows you to collaborate with other Oriole users working in the "
 "Ẹgbẹ́ kan yí ó gbà ọ́ láyè láti lè siṣẹ́pọ̀ pẹ̀lú àwọn onílò pẹ́ńpọti tí ó "
 "siṣẹ́ nínú  àwọn fáìlì àti àwọn iṣẹ́ àgbéṣe kan náà ."
 
@@ -2836,67 +2836,67 @@ msgstr "Yiyan pelu sun-un"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "Pipese oniru fọnti - %s - Penpot"
+msgstr "Pipese oniru fọnti - %s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "Fọnti - %s - Penpot"
+msgstr "Fọnti - %s - Oriole"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "Awọn ísè agbèsè - %s - Penpot"
+msgstr "Awọn ísè agbèsè - %s - Oriole"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "Wà - %s - Penpot"
+msgstr "Wà - %s - Oriole"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Penpot – Se onìrú òmínìra fun awọ̀n ẹ̀gbẹ̀"
+msgstr "Oriole – Se onìrú òmínìra fun awọ̀n ẹ̀gbẹ̀"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "Fi esi- Penpot"
+msgstr "Fi esi- Oriole"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "Awon eto - Penpot"
+msgstr "Awon eto - Oriole"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "Ọrọigbaníwólé - Penpot"
+msgstr "Ọrọigbaníwólé - Oriole"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "Profaili - Penpot"
+msgstr "Profaili - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "Ifíwẹ́pe - %s - Penpot"
+msgstr "Ifíwẹ́pe - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "Ọ́́mọ̀ ẹgbẹ - %s - Penpot"
+msgstr "Ọ́́mọ̀ ẹgbẹ - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "Awọn eto - %s - Penpot"
+msgstr "Awọn eto - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "Webhooks - %s - Penpot"
+msgstr "Webhooks - %s - Oriole"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s –Ipo wíwò - Penpot"
+msgstr "%s –Ipo wíwò - Oriole"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui/viewer.cljs:572
 msgid "viewer.empty-state"

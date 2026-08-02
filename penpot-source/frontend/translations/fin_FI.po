@@ -20,7 +20,7 @@ msgstr "Onko sinulla jo käyttäjä?"
 msgid "auth.check-your-email"
 msgstr ""
 "Tarkista sähköpostisi ja paina vahvistuslinkkiä käyttääksesi "
-"Penpot-ohjelmaa."
+"Oriole-ohjelmaa."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -158,7 +158,7 @@ msgstr "Julkaise"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Kaikki Penpotin käyttäjät"
+msgstr "Kaikki Oriolein käyttäjät"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -235,7 +235,7 @@ msgstr "Ryhmän hallinta"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Penpot on tarkoitettu ryhmille. Kutsu jäseniä työstääksenne projekteja "
+"Oriole on tarkoitettu ryhmille. Kutsu jäseniä työstääksenne projekteja "
 "yhdessä"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -246,7 +246,7 @@ msgstr "Ryhmäydy!"
 #, unused
 msgid "dasboard.tutorial-hero.info"
 msgstr ""
-"Opettele Penpotin perusteet pitämällä hauskaa tämän opastuskierroksen "
+"Opettele Oriolein perusteet pitämällä hauskaa tämän opastuskierroksen "
 "kanssa."
 
 #: src/app/main/ui/dashboard/projects.cljs
@@ -262,7 +262,7 @@ msgstr "Käytännön opastus"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Ota opastuskierros Penpotin erilaisista toiminnoista"
+msgstr "Ota opastuskierros Oriolein erilaisista toiminnoista"
 
 #: src/app/main/ui/auth/recovery.cljs:32
 msgid "errors.invalid-recovery-token"

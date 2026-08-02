@@ -24,7 +24,7 @@ msgstr "Provjerite e-poštu"
 #: src/app/main/ui/auth/register.cljs:277
 #, unused
 msgid "auth.check-your-email"
-msgstr "Provjeri svoj e-mail i klikni na vezu da potvrdiš i počneš koristiti Penpot."
+msgstr "Provjeri svoj e-mail i klikni na vezu da potvrdiš i počneš koristiti Oriole."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -68,7 +68,7 @@ msgstr "Prijava"
 
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
-msgstr "Penpot je besplatan alat otvorenog koda za dizajn i suradnju na kodu"
+msgstr "Oriole je besplatan alat otvorenog koda za dizajn i suradnju na kodu"
 
 #: src/app/main/ui/auth/login.cljs:230
 msgid "auth.login-with-github-submit"
@@ -158,7 +158,7 @@ msgstr "Stvori račun"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"S besplatnim Penpot računom možete stvoriti neograničen broj timova i "
+"S besplatnim Oriole računom možete stvoriti neograničen broj timova i "
 "surađivati s drugim dizajnerima i programerima na koliko god želite "
 "projekata. "
 
@@ -210,7 +210,7 @@ msgstr "Objavi"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Svi Penpot korisnici"
+msgstr "Svi Oriole korisnici"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -288,7 +288,7 @@ msgstr "Upravljanje timom"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Penpot je namijenjen timovima. Pozovi članove da zajedno rade na projektima "
+"Oriole je namijenjen timovima. Pozovi članove da zajedno rade na projektima "
 "i datotekama"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -298,7 +298,7 @@ msgstr "Udruži se!"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "Nauči osnove na Penpotu dok se zabavljaš uz ovaj praktični vodič."
+msgstr "Nauči osnove na Orioleu dok se zabavljaš uz ovaj praktični vodič."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -313,7 +313,7 @@ msgstr "Praktični vodič"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Prošeći Penpotom i upoznaj glavne karakteristike."
+msgstr "Prošeći Orioleom i upoznaj glavne karakteristike."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -351,7 +351,7 @@ msgstr "Prikvači ovu verziju"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Tvoj Penpot"
+msgstr "Tvoj Oriole"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -359,7 +359,7 @@ msgstr "Obriši tim"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Preuzmi Penpot datoteku (.penpot)"
+msgstr "Preuzmi Oriole datoteku (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -416,7 +416,7 @@ msgstr "Još nema biblioteka."
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "Preuzmi %s Penpot datoteke (.penpot)"
+msgstr "Preuzmi %s Oriole datoteke (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -428,7 +428,7 @@ msgstr "Izvezi u PDF"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Izvezi Penpot %s datoteka"
+msgstr "Izvezi Oriole %s datoteka"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -446,7 +446,7 @@ msgstr ""
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Informacije kako postaviti izvoz na Penpot."
+msgstr "Informacije kako postaviti izvoz na Oriole."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -508,7 +508,7 @@ msgstr ""
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
 "Možeš učitavati samo fontove koje posjeduješ ili imaš licencu za korištenje "
-"u Penpotu. Saznaj više u odjeljku Prava na sadržaj [Penpotovih uvjeta "
+"u Orioleu. Saznaj više u odjeljku Prava na sadržaj [Orioleovih uvjeta "
 "pružanja usluge](%s). Također možeš pročitati o [licenciranju "
 "fontova](https://www.typography.com/faq)."
 
@@ -529,7 +529,7 @@ msgstr ""
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "Uvezi Penpot datoteke"
+msgstr "Uvezi Oriole datoteke"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
@@ -913,7 +913,7 @@ msgstr "Kreativnost nema ograničenja"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1326
 msgid "dashboard.upgrade-plan.penpot-free"
-msgstr "Penpot Free"
+msgstr "Oriole Free"
 
 #: src/app/main/ui/dashboard/team.cljs:1338
 msgid "dashboard.webhooks.active"
@@ -943,7 +943,7 @@ msgstr "Webhook je uspješno stvoren."
 msgid "dashboard.webhooks.description"
 msgstr ""
 "Webhookovi su jednostavan način da se drugim web stranicama i aplikacijama "
-"omogući da budu obaviješteni kada se određeni događaji dogode na Penpotu. "
+"omogući da budu obaviješteni kada se određeni događaji dogode na Orioleu. "
 "Poslat ćemo POST zahtjev na svaki URL koji navedete."
 
 #: src/app/main/ui/dashboard/team.cljs:1485
@@ -972,7 +972,7 @@ msgstr "Ime"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "Tvoj Penpot"
+msgstr "Tvoj Oriole"
 
 #: src/app/main/ui/alert.cljs:36
 msgid "ds.alert-ok"
@@ -1249,7 +1249,7 @@ msgstr "Sretni smo što si ovdje. Ako trebaš pomoć, pretraži prije objavljiva
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "Penpot zajednica"
+msgstr "Oriole zajednica"
 
 #: src/app/main/ui/settings/feedback.cljs:105
 msgid "feedback.subject"
@@ -1497,7 +1497,7 @@ msgstr "Velika slova"
 #: src/app/main/ui/inspect/right_sidebar.cljs:235
 msgid "inspect.empty.help"
 msgstr ""
-"Ako želite saznati više o pregledu dizajna, posjetite Penpotov centar za "
+"Ako želite saznati više o pregledu dizajna, posjetite Orioleov centar za "
 "pomoć"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:233
@@ -1662,7 +1662,7 @@ msgstr "Nastavi sa"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "Možeš nastaviti s Penpot računom"
+msgstr "Možeš nastaviti s Oriole računom"
 
 #: src/app/main/ui/dashboard/team.cljs:734
 msgid "labels.copy-invitation-link"
@@ -2716,7 +2716,7 @@ msgstr "404 greška"
 #: src/app/main/ui/static.cljs:160
 msgid "not-found.login.free"
 msgstr ""
-"Penpot je besplatni dizajnerski alat otvorenog koda za suradnju između "
+"Oriole je besplatni dizajnerski alat otvorenog koda za suradnju između "
 "dizajna i koda"
 
 #: src/app/main/ui/auth/recovery_request.cljs:114
@@ -2733,7 +2733,7 @@ msgstr "Prijavite se besplatno"
 
 #: src/app/main/ui/static.cljs:175
 msgid "not-found.login.start-using"
-msgstr "I počnite koristiti Penpot za nekoliko sekundi!"
+msgstr "I počnite koristiti Oriole za nekoliko sekundi!"
 
 #: src/app/main/ui/static.cljs:75
 msgid "not-found.made-with-love"
@@ -2777,7 +2777,7 @@ msgstr "Nemate pristup ovoj datoteci."
 
 #: src/app/main/ui/static.cljs:62, src/app/main/ui/static.cljs:265, src/app/main/ui/static.cljs:271, src/app/main/ui/static.cljs:277, src/app/main/ui/static.cljs:283, src/app/main/ui/static.cljs:292, src/app/main/ui/static.cljs:301
 msgid "not-found.no-permission.go-dashboard"
-msgstr "Idite na svoj Penpot"
+msgstr "Idite na svoj Oriole"
 
 #: src/app/main/ui/static.cljs:289, src/app/main/ui/static.cljs:298
 msgid "not-found.no-permission.if-approves"
@@ -2785,7 +2785,7 @@ msgstr "Ako vlasnik to dopusti, bit ćete pozvani u tim."
 
 #: src/app/main/ui/static.cljs:527, src/app/main/ui/static.cljs:540
 msgid "not-found.no-permission.penpot-file"
-msgstr "Penpot datoteka"
+msgstr "Oriole datoteka"
 
 #: src/app/main/ui/static.cljs:264, src/app/main/ui/static.cljs:296
 msgid "not-found.no-permission.project"
@@ -2839,12 +2839,12 @@ msgstr "E-mail za potvrdu poslana je na %s. Provjeri e-email!"
 msgid "onboarding-v2.before-start.desc1"
 msgstr ""
 "Postoji mnogo dostupnih resursa koji će ti pomoći da počneš koristiti "
-"Penpot, poput korisničkog vodiča i našeg Youtube kanala."
+"Oriole, poput korisničkog vodiča i našeg Youtube kanala."
 
 #, unused
 msgid "onboarding-v2.before-start.desc2"
 msgstr ""
-"Detaljne informacije o tome kako koristiti Penpot. Od izrade prototipova do "
+"Detaljne informacije o tome kako koristiti Oriole. Od izrade prototipova do "
 "organiziranja ili dijeljenja dizajna."
 
 #, unused
@@ -2867,13 +2867,13 @@ msgstr "Prije nego počneš"
 #, unused
 msgid "onboarding-v2.newsletter.desc"
 msgstr ""
-"Pretplatite se na Penpot newsletter kako biste bili u tijeku s napretkom "
+"Pretplatite se na Oriole newsletter kako biste bili u tijeku s napretkom "
 "razvoja proizvoda i novostima."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:88
 #, unused
 msgid "onboarding-v2.newsletter.news"
-msgstr "Šaljite mi vijesti o Penpotu (objave na blogu, video upute, prijenose...)."
+msgstr "Šaljite mi vijesti o Orioleu (objave na blogu, video upute, prijenose...)."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:96
 #, unused
@@ -2894,14 +2894,14 @@ msgstr "Šalji mi ažuriranja proizvoda (nove značajke, izdanja, popravke...)."
 #, unused
 msgid "onboarding-v2.welcome.desc1"
 msgstr ""
-"Penpot je Open Source i izradio ga je Kaleidos kao i zajednica, gdje mnogi "
+"Oriole je Open Source i izradio ga je Kaleidos kao i zajednica, gdje mnogi "
 "ljudi već pomažu jedni drugima. Svi mogu surađivati na:"
 
 #, unused
 msgid "onboarding-v2.welcome.desc2"
 msgstr ""
-"Javni prostor za učenje, dijeljenje i raspravu o Penpotu, njegovoj "
-"sadašnjosti i budućnosti s cijelom zajednicom i glavnim timom Penpota."
+"Javni prostor za učenje, dijeljenje i raspravu o Orioleu, njegovoj "
+"sadašnjosti i budućnosti s cijelom zajednicom i glavnim timom Oriolea."
 
 #, unused
 msgid "onboarding-v2.welcome.desc2.title"
@@ -2919,7 +2919,7 @@ msgstr "Vodič za doprinos"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:248
 msgid "onboarding-v2.welcome.title"
-msgstr "Dobrodošli u Penpot!"
+msgstr "Dobrodošli u Oriole!"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:254
 #, unused
@@ -2999,7 +2999,7 @@ msgstr "Politika privatnosti."
 #: src/app/main/ui/onboarding/newsletter.cljs:65
 #, unused
 msgid "onboarding.newsletter.title"
-msgstr "Želiš primati Penpot novostii?"
+msgstr "Želiš primati Oriole novostii?"
 
 #: src/app/main/ui/onboarding/questions.cljs:104
 msgid "onboarding.questions.lets-get-started"
@@ -3018,7 +3018,7 @@ msgstr "Samo istražujem"
 #: src/app/main/ui/onboarding/questions.cljs:245
 #, unused
 msgid "onboarding.questions.reasons.fit"
-msgstr "Pregledavam je li Penpot dobar za moj tim"
+msgstr "Pregledavam je li Oriole dobar za moj tim"
 
 #: src/app/main/ui/onboarding/questions.cljs:251
 #, unused
@@ -3062,17 +3062,17 @@ msgstr "Wireframing"
 
 #: src/app/main/ui/onboarding/questions.cljs:114
 msgid "onboarding.questions.step1.question1"
-msgstr "Za što ćete koristiti Penpot?"
+msgstr "Za što ćete koristiti Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:272
 #, unused
 msgid "onboarding.questions.step1.question2"
-msgstr "Što Vas danas dovodi u Penpot?"
+msgstr "Što Vas danas dovodi u Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:110
 msgid "onboarding.questions.step1.subtitle"
 msgstr ""
-"Recite nam nešto o sebi kako biste nam pomogli da Penpot radi za Vas. Vaši "
+"Recite nam nešto o sebi kako biste nam pomogli da Oriole radi za Vas. Vaši "
 "odgovori pomoći će nam da odredimo prioritet novih značajki i uputit će Vas "
 "u pravom smjeru za početak."
 
@@ -3109,7 +3109,7 @@ msgstr "Gdje biste željeli započeti?"
 #: src/app/main/ui/onboarding/questions.cljs:428
 #, unused
 msgid "onboarding.questions.step5.title"
-msgstr "Kako ste čuli za Penpot?"
+msgstr "Kako ste čuli za Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:233
 #, unused
@@ -3160,7 +3160,7 @@ msgstr "Kreiraj tim"
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
 msgstr ""
-"Tim ti omogućuje suradnju s drugim Penpot korisnicima koji rade na istim "
+"Tim ti omogućuje suradnju s drugim Oriole korisnicima koji rade na istim "
 "datotekama i projektima."
 
 #: src/app/main/ui/onboarding/team_choice.cljs:57
@@ -3197,7 +3197,7 @@ msgstr "Počni dizajnirati"
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Penpot"
+msgstr "Oriole"
 
 #: src/app/main/ui/auth/recovery.cljs:88
 msgid "profile.recovery.go-to-login"
@@ -3851,75 +3851,75 @@ msgstr "Zoomiraj na selektirano"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "Dobavljači fontova - %s - Penpot"
+msgstr "Dobavljači fontova - %s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "Fontovi - %s - Penpot"
+msgstr "Fontovi - %s - Oriole"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "Projekti - %s - Penpot"
+msgstr "Projekti - %s - Oriole"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "Traži - %s - Penpot"
+msgstr "Traži - %s - Oriole"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
-msgstr "Zajedničke biblioteke - %s - Penpot"
+msgstr "Zajedničke biblioteke - %s - Oriole"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Penpot - Sloboda dizajna za timove"
+msgstr "Oriole - Sloboda dizajna za timove"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "Pošalji povratnu informaciju - Penpot"
+msgstr "Pošalji povratnu informaciju - Oriole"
 
 #: src/app/main/ui/settings/notifications.cljs:45
 msgid "title.settings.notifications"
-msgstr "Obavijesti - Penpot"
+msgstr "Obavijesti - Oriole"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "Postavke - Penpot"
+msgstr "Postavke - Oriole"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "Lozinka - Penpot"
+msgstr "Lozinka - Oriole"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "Profil - Penpot"
+msgstr "Profil - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "Pozivnice - %s - Penpot"
+msgstr "Pozivnice - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "Članovi - %s - Penpot"
+msgstr "Članovi - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "Postavke - %s - Penpot"
+msgstr "Postavke - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "Webhookovi - %s - Penpot"
+msgstr "Webhookovi - %s - Oriole"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s - Način prikaza - Penpot"
+msgstr "%s - Način prikaza - Oriole"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui.cljs:138
 #, unused

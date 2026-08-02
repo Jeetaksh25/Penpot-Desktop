@@ -20,7 +20,7 @@
   ; ── Desktop shortcut ───────────────────────────────────────────────────
   ; Uses the exe's embedded icon (the real Penpot icon set via bundle.icon),
   ; so no separate icon file is needed.
-  CreateShortcut "$DESKTOP\Penpot Desktop.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+  CreateShortcut "$DESKTOP\Oriole Desktop.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
   DetailPrint "Created desktop shortcut."
 
   ; ── Install-time PostgreSQL initdb ─────────────────────────────────────

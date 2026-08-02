@@ -25,7 +25,7 @@ msgstr "Verifique seu e-mail"
 msgid "auth.check-your-email"
 msgstr ""
 "Verifique seu e-mail e clique no link para verificar e começar a usar o "
-"Penpot."
+"Oriole."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -70,7 +70,7 @@ msgstr "Login"
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
 msgstr ""
-"Penpot é a ferramenta de design de código aberto e gratuita para "
+"Oriole é a ferramenta de design de código aberto e gratuita para "
 "colaboração em design e código"
 
 #: src/app/main/ui/auth/login.cljs:230
@@ -163,7 +163,7 @@ msgstr "Criar uma conta"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"Com uma conta gratuita do Penpot, você pode criar equipes ilimitadas e "
+"Com uma conta gratuita do Oriole, você pode criar equipes ilimitadas e "
 "colaborar com outros designers e desenvolvedores em quantos projetos "
 "quiser. "
 
@@ -215,7 +215,7 @@ msgstr "Publicar"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Todos os usuários do Penpot"
+msgstr "Todos os usuários do Oriole"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -292,7 +292,7 @@ msgstr "Gestão da equipe"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"O Penpot foi feito para equipes. Convide membros para trabalharem juntos em "
+"O Oriole foi feito para equipes. Convide membros para trabalharem juntos em "
 "projetos e arquivos"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -302,7 +302,7 @@ msgstr "Monte sua equipe!"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "Aprenda o básico no Penpot enquanto se diverte com este tutorial prático."
+msgstr "Aprenda o básico no Oriole enquanto se diverte com este tutorial prático."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -317,7 +317,7 @@ msgstr "Tutorial prático"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Explore o Penpot e conheça suas principais funcionalidades."
+msgstr "Explore o Oriole e conheça suas principais funcionalidades."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused

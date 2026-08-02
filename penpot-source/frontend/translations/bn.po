@@ -19,7 +19,7 @@ msgstr "অ্যাকাউন্ট আছে?"
 #, unused
 msgid "auth.check-your-email"
 msgstr ""
-"আপনার ইমেইল চেক করুন এবং লিংকে ক্লিক করে ভেরিফাই করে Penpot ব্যবহার শুরু "
+"আপনার ইমেইল চেক করুন এবং লিংকে ক্লিক করে ভেরিফাই করে Oriole ব্যবহার শুরু "
 "করুন।"
 
 #: src/app/main/ui/auth/recovery.cljs:67

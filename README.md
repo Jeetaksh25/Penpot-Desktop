@@ -1,8 +1,8 @@
-# Penpot Desktop 🎨
+# Oriole Desktop 🎨
 
-> A fully offline, native desktop design tool powered by the real [Penpot](https://penpot.app/) ClojureScript frontend and Clojure/JVM backend — packaged as a Windows installer via [Tauri v2](https://v2.tauri.app/).
+> A fully offline, native desktop design tool — powered by a real ClojureScript frontend and Clojure/JVM backend, packaged as a Windows installer via [Tauri v2](https://v2.tauri.app/).
 
-**Penpot Desktop** brings the full power of the open-source Penpot design platform to your Windows PC, with no internet required. All data stays local — PostgreSQL, Redis, and the entire JVM backend run on your machine.
+**Oriole Desktop** brings the full power of an open-source design platform to your Windows PC, with no internet required. All data stays local — PostgreSQL, Redis, and the entire JVM backend run on your machine.
 
 ![Build Status](https://github.com/Jeetaksh25/Penpot-Desktop/actions/workflows/build.yml/badge.svg)
 
@@ -10,7 +10,7 @@
 
 ## ✨ Features
 
-- **Native Penpot UI** — The real Penpot frontend (not a web wrapper) inside a Tauri window
+- **Native design UI** — A real design frontend (not a web wrapper) inside a Tauri window
 - **Fully offline** — No cloud, no accounts, no telemetry. All data stored locally
 - **Embedded backend** — PostgreSQL 16.4 + Redis 8.8.0 + ImageMagick 7.1.1 + JVM backend, all bundled
 - **Auto-login** — No login screen; you're instantly in the workspace
@@ -99,7 +99,7 @@ Every tag push (`v*`) triggers [GitHub Actions](.github/workflows/build.yml) to:
 ## 📁 Project structure
 
 ```
-Penpot-Desktop/
+Oriole-Desktop/
 ├── src/                          # React/TypeScript UI shell (placeholder)
 ├── src-tauri/                    # Tauri v2 Rust backend
 │   ├── src/lib.rs                # Service lifecycle (Postgres, Redis, JVM)
@@ -108,7 +108,7 @@ Penpot-Desktop/
 │   ├── generate-icons.mjs        # Icon generator (no dependencies)
 │   ├── inject-desktop-config.js  # Injects desktop runtime config into index.html
 │   └── serve-penpot-proxy.js     # Same-origin proxy + auto-login
-├── penpot-source/                # Upstream Penpot source (subtree)
+├── penpot-source/                # Upstream design-platform source (subtree)
 │   ├── backend/                  # Clojure/JVM backend
 │   ├── frontend/                 # ClojureScript SPA
 │   ├── common/                   # Shared Clojure libs
@@ -125,13 +125,13 @@ Penpot-Desktop/
 - **WASM WebGL renderer** — Build with Emscripten for accelerated canvas rendering
 - **ReactJS / NextJS code export** — Generate production-ready component code
 - **XML export** — Design system tokens and component specs
-- **Plugin support** — Penpot plugin runtime integration
+- **Plugin support** — Plugin runtime integration
 - **Auto-updater** — Tauri's built-in updater for seamless releases
 
 ---
 
 ## 📄 License
 
-This project is based on [Penpot](https://github.com/penpot/penpot) (MPL-2.0) with desktop-specific additions.
+This project builds on an MPL-2.0 open-source design platform, with desktop-specific additions.
 
-Penpot Desktop — © 2026
+Oriole Desktop — © 2026

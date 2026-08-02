@@ -23,7 +23,7 @@ msgstr "檢查郵件"
 #: src/app/main/ui/auth/register.cljs:277
 #, unused
 msgid "auth.check-your-email"
-msgstr "檢查你的信箱，點擊信中連結來驗證並開始使用 Penpot。"
+msgstr "檢查你的信箱，點擊信中連結來驗證並開始使用 Oriole。"
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -65,7 +65,7 @@ msgstr "登入"
 
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
-msgstr "Penpot 是用於設計與開發協作，免費且開源的設計工具"
+msgstr "Oriole 是用於設計與開發協作，免費且開源的設計工具"
 
 #: src/app/main/ui/auth/login.cljs:230
 msgid "auth.login-with-github-submit"
@@ -154,7 +154,7 @@ msgstr "建立帳號"
 #: src/app/main/ui/auth/register.cljs:124
 #, unused
 msgid "auth.register-tagline"
-msgstr "使用免費的 Penpot 帳戶，您可以建立無限制團隊，並與其他設計師和開發人員合作完成喜歡的專案 "
+msgstr "使用免費的 Oriole 帳戶，您可以建立無限制團隊，並與其他設計師和開發人員合作完成喜歡的專案 "
 
 #: src/app/main/ui/auth/register.cljs:205
 msgid "auth.register-title"
@@ -202,7 +202,7 @@ msgstr "發怖"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "所有 Penpot 用戶"
+msgstr "所有 Oriole 用戶"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -275,7 +275,7 @@ msgstr "團隊管理"
 
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
-msgstr "Penpot旨在團隊協作。邀請隊員加入共同協作"
+msgstr "Oriole旨在團隊協作。邀請隊員加入共同協作"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
 msgid "dasboard.team-hero.title"
@@ -284,7 +284,7 @@ msgstr "組隊！"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "通過富趣味的教程實作學習 Penpot 的基礎知識。"
+msgstr "通過富趣味的教程實作學習 Oriole 的基礎知識。"
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -299,7 +299,7 @@ msgstr "實踐教程"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "逐步遊覽Penpot以了解主要功能。"
+msgstr "逐步遊覽Oriole以了解主要功能。"
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -337,7 +337,7 @@ msgstr "固定此版本"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "你的 Penpot"
+msgstr "你的 Oriole"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -345,7 +345,7 @@ msgstr "刪除團隊"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "下載 Penpot 檔案 (.penpot)"
+msgstr "下載 Oriole 檔案 (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -400,7 +400,7 @@ msgstr "還沒有圖庫。"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "下載 %s 個Penpot 檔案 （.penpot）"
+msgstr "下載 %s 個Oriole 檔案 （.penpot）"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -428,7 +428,7 @@ msgstr "你可以從設計屬性（位於右側邊欄底部）為元素添加匯
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Penpot匯出功能的簡介。"
+msgstr "Oriole匯出功能的簡介。"
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -484,8 +484,8 @@ msgstr ""
 #, markdown
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
-"你只能上傳你擁有的或獲許可在Penpot "
-"中使用的字型。如需瞭解更多，請參閱[Penpot的服務條款]（https://penpot.app/terms."
+"你只能上傳你擁有的或獲許可在Oriole "
+"中使用的字型。如需瞭解更多，請參閱[Oriole的服務條款]（https://penpot.app/terms."
 "html）的內容權利部分。您可能還想閱讀有關 [字體許可]（https://www.typography.com/faq） 的資訊。"
 
 #: src/app/main/ui/dashboard/fonts.cljs:231
@@ -879,7 +879,7 @@ msgstr "無建立限制"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1326
 msgid "dashboard.upgrade-plan.penpot-free"
-msgstr "Penpot 免費"
+msgstr "Oriole 免費"
 
 #: src/app/main/ui/dashboard/team.cljs:1338
 msgid "dashboard.webhooks.active"
@@ -907,7 +907,7 @@ msgstr "成功添加Webhook。"
 
 #: src/app/main/ui/dashboard/team.cljs:1358
 msgid "dashboard.webhooks.description"
-msgstr "當Penpot 發生特定事件時，Webhook 是一種使其他網站和應用程式收到通知的簡單方法。我們會向你指定的每個網址發送 POST 請求。"
+msgstr "當Oriole 發生特定事件時，Webhook 是一種使其他網站和應用程式收到通知的簡單方法。我們會向你指定的每個網址發送 POST 請求。"
 
 #: src/app/main/ui/dashboard/team.cljs:1485
 msgid "dashboard.webhooks.empty.add-one"
@@ -935,7 +935,7 @@ msgstr "你的名字"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "你的 Penpot"
+msgstr "你的 Oriole"
 
 #: src/app/main/ui/alert.cljs:36
 msgid "ds.alert-ok"
@@ -1019,7 +1019,7 @@ msgstr "電子郵件 «%s» 已被報告為垃圾郵件或永久退件。"
 
 #: src/app/main/errors.cljs:391
 msgid "errors.feature-mismatch"
-msgstr "你正開啟的檔案包含Penpot尚未支援或停用'%s' 功能。"
+msgstr "你正開啟的檔案包含Oriole尚未支援或停用'%s' 功能。"
 
 #: src/app/main/errors.cljs:395, src/app/main/errors.cljs:409
 msgid "errors.feature-not-supported"
@@ -1203,7 +1203,7 @@ msgstr "歡迎光臨。如需協助，在發文求助前請先查閱相類內容
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "Penpot 社群"
+msgstr "Oriole 社群"
 
 #: src/app/main/ui/settings/feedback.cljs:105
 msgid "feedback.subject"
@@ -1442,7 +1442,7 @@ msgstr "全大寫"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:235
 msgid "inspect.empty.help"
-msgstr "如果您想瞭解更多關於設計檢查的資訊，請訪問Penpot的幫助中心"
+msgstr "如果您想瞭解更多關於設計檢查的資訊，請訪問Oriole的幫助中心"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:233
 msgid "inspect.empty.select"
@@ -1604,7 +1604,7 @@ msgstr "繼續"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "以Penpot帳戶繼續"
+msgstr "以Oriole帳戶繼續"
 
 #: src/app/main/ui/dashboard/team.cljs:734
 msgid "labels.copy-invitation-link"
@@ -2585,7 +2585,7 @@ msgstr "404 錯誤"
 
 #: src/app/main/ui/static.cljs:160
 msgid "not-found.login.free"
-msgstr "Penpot 是一款免費的開源設計工具，用於設計和程式碼之間的協作"
+msgstr "Oriole 是一款免費的開源設計工具，用於設計和程式碼之間的協作"
 
 #: src/app/main/ui/auth/recovery_request.cljs:114
 msgid "not-found.login.sent-recovery"
@@ -2601,7 +2601,7 @@ msgstr "免費註冊"
 
 #: src/app/main/ui/static.cljs:175
 msgid "not-found.login.start-using"
-msgstr "立即開始使用 Penpot！"
+msgstr "立即開始使用 Oriole！"
 
 #: src/app/main/ui/static.cljs:75
 msgid "not-found.made-with-love"
@@ -2641,7 +2641,7 @@ msgstr "您無權存取此文件。"
 
 #: src/app/main/ui/static.cljs:62, src/app/main/ui/static.cljs:265, src/app/main/ui/static.cljs:271, src/app/main/ui/static.cljs:277, src/app/main/ui/static.cljs:283, src/app/main/ui/static.cljs:292, src/app/main/ui/static.cljs:301
 msgid "not-found.no-permission.go-dashboard"
-msgstr "前往您的 Penpot"
+msgstr "前往您的 Oriole"
 
 #: src/app/main/ui/static.cljs:289, src/app/main/ui/static.cljs:298
 msgid "not-found.no-permission.if-approves"
@@ -2649,7 +2649,7 @@ msgstr "如果團隊老大允許，你會被邀請加入團隊。"
 
 #: src/app/main/ui/static.cljs:527, src/app/main/ui/static.cljs:540
 msgid "not-found.no-permission.penpot-file"
-msgstr "Penpot 文件"
+msgstr "Oriole 文件"
 
 #: src/app/main/ui/static.cljs:264, src/app/main/ui/static.cljs:296
 msgid "not-found.no-permission.project"
@@ -2693,11 +2693,11 @@ msgstr "已將驗證信傳送至 %s。請查看您的電子郵件信箱！"
 
 #, unused
 msgid "onboarding-v2.before-start.desc1"
-msgstr "我們有許多協助你開始使用Penpot的資源，例如使用者指南及我們的 Youtube 頻道。"
+msgstr "我們有許多協助你開始使用Oriole的資源，例如使用者指南及我們的 Youtube 頻道。"
 
 #, unused
 msgid "onboarding-v2.before-start.desc2"
-msgstr "有關如何使用 Penpot 的詳細資訊。從原型設計到組織或共享設計。"
+msgstr "有關如何使用 Oriole 的詳細資訊。從原型設計到組織或共享設計。"
 
 #, unused
 msgid "onboarding-v2.before-start.desc2.title"
@@ -2718,12 +2718,12 @@ msgstr "開始之前"
 #: src/app/main/ui/onboarding/newsletter.cljs:68
 #, unused
 msgid "onboarding-v2.newsletter.desc"
-msgstr "訂閱 Penpot 簡報以了解最新的產品開發進度和新聞。"
+msgstr "訂閱 Oriole 簡報以了解最新的產品開發進度和新聞。"
 
 #: src/app/main/ui/onboarding/newsletter.cljs:88
 #, unused
 msgid "onboarding-v2.newsletter.news"
-msgstr "向我發送有關 Penpot 的新聞（部落格文章、影片教學、串流媒體…）。"
+msgstr "向我發送有關 Oriole 的新聞（部落格文章、影片教學、串流媒體…）。"
 
 #: src/app/main/ui/onboarding/newsletter.cljs:96
 #, unused
@@ -2741,11 +2741,11 @@ msgstr "向我發送產品更新（新功能、發布、修復…）。"
 
 #, unused
 msgid "onboarding-v2.welcome.desc1"
-msgstr "Penpot係由Kaleidos及與社群成員共同協作的開放原始碼軟件。所有人皆可以下方法協作："
+msgstr "Oriole係由Kaleidos及與社群成員共同協作的開放原始碼軟件。所有人皆可以下方法協作："
 
 #, unused
 msgid "onboarding-v2.welcome.desc2"
-msgstr "這是與整個社群和 Penpot 核心團隊一起學習、分享和討論 Penpot、它的現在和未來的公共空間。"
+msgstr "這是與整個社群和 Oriole 核心團隊一起學習、分享和討論 Oriole、它的現在和未來的公共空間。"
 
 #, unused
 msgid "onboarding-v2.welcome.desc2.title"
@@ -2761,7 +2761,7 @@ msgstr "貢獻指南"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:248
 msgid "onboarding-v2.welcome.title"
-msgstr "歡迎來到 Penpot！"
+msgstr "歡迎來到 Oriole！"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:254
 #, unused
@@ -2839,7 +2839,7 @@ msgstr "隱私權政策。"
 #: src/app/main/ui/onboarding/newsletter.cljs:65
 #, unused
 msgid "onboarding.newsletter.title"
-msgstr "想要收到 Penpot 新聞嗎？"
+msgstr "想要收到 Oriole 新聞嗎？"
 
 #: src/app/main/ui/onboarding/questions.cljs:104
 msgid "onboarding.questions.lets-get-started"
@@ -2858,7 +2858,7 @@ msgstr "正在探索"
 #: src/app/main/ui/onboarding/questions.cljs:245
 #, unused
 msgid "onboarding.questions.reasons.fit"
-msgstr "評估 Penpot 是否適合我的團隊"
+msgstr "評估 Oriole 是否適合我的團隊"
 
 #: src/app/main/ui/onboarding/questions.cljs:251
 #, unused
@@ -2902,16 +2902,16 @@ msgstr "線框圖"
 
 #: src/app/main/ui/onboarding/questions.cljs:114
 msgid "onboarding.questions.step1.question1"
-msgstr "您將使用 Penpot 來做什麼？"
+msgstr "您將使用 Oriole 來做什麼？"
 
 #: src/app/main/ui/onboarding/questions.cljs:272
 #, unused
 msgid "onboarding.questions.step1.question2"
-msgstr "今天什麼風把你吹來Penpot?"
+msgstr "今天什麼風把你吹來Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:110
 msgid "onboarding.questions.step1.subtitle"
-msgstr "請告訴我們一些關於您的訊息，以幫助我們讓 Penpot 為您服務。您的回答將幫助我們確定新功能的優先順序，並為您指明正確的入門方向。"
+msgstr "請告訴我們一些關於您的訊息，以幫助我們讓 Oriole 為您服務。您的回答將幫助我們確定新功能的優先順序，並為您指明正確的入門方向。"
 
 #: src/app/main/ui/onboarding/questions.cljs:107
 msgid "onboarding.questions.step1.title"
@@ -2946,7 +2946,7 @@ msgstr "您想從哪裡開始？"
 #: src/app/main/ui/onboarding/questions.cljs:428
 #, unused
 msgid "onboarding.questions.step5.title"
-msgstr "您是如何了解 Penpot 的？"
+msgstr "您是如何了解 Oriole 的？"
 
 #: src/app/main/ui/onboarding/questions.cljs:233
 #, unused
@@ -2996,7 +2996,7 @@ msgstr "建立團隊"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
-msgstr "團隊讓你可以與其他Penpot使用者在相同的檔案和專案中進行協作。"
+msgstr "團隊讓你可以與其他Oriole使用者在相同的檔案和專案中進行協作。"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:57
 msgid "onboarding.team-modal.create-team-feature-1"
@@ -3032,7 +3032,7 @@ msgstr "開始設計"
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Penpot"
+msgstr "Oriole"
 
 #: src/app/main/ui/auth/recovery.cljs:88
 msgid "profile.recovery.go-to-login"
@@ -3686,75 +3686,75 @@ msgstr "縮放至選取範圍"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s – Penpot"
+msgstr "%s – Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "字體提供者 - %s - Penpot"
+msgstr "字體提供者 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "字型 - %s - Penpot"
+msgstr "字型 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "專案 - %s - Penpot"
+msgstr "專案 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "搜尋 - %s - Penpot"
+msgstr "搜尋 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
-msgstr "共享圖庫 - %s - Penpot"
+msgstr "共享圖庫 - %s - Oriole"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Penpot - 給團隊設計的自由"
+msgstr "Oriole - 給團隊設計的自由"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "提供回饋 - Penpot"
+msgstr "提供回饋 - Oriole"
 
 #: src/app/main/ui/settings/notifications.cljs:45
 msgid "title.settings.notifications"
-msgstr "通知 - Penpot"
+msgstr "通知 - Oriole"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "設定 - Penpot"
+msgstr "設定 - Oriole"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "密碼 - Penpot"
+msgstr "密碼 - Oriole"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "個人資料 - Penpot"
+msgstr "個人資料 - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "邀請 - %s - Penpot"
+msgstr "邀請 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "成員 - %s - Penpot"
+msgstr "成員 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "設定 - %s - Penpot"
+msgstr "設定 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "Webhooks - %s - Penpot"
+msgstr "Webhooks - %s - Oriole"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s - 檢視模式 - Penpot"
+msgstr "%s - 檢視模式 - Oriole"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui.cljs:138
 #, unused

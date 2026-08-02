@@ -19,7 +19,7 @@ msgstr "Reeds 'n rekening?"
 #, unused
 msgid "auth.check-your-email"
 msgstr ""
-"Gaan jou e-pos na en klik op die skakel om te verifieer en Penpot te begin "
+"Gaan jou e-pos na en klik op die skakel om te verifieer en Oriole te begin "
 "gebruik."
 
 #: src/app/main/ui/auth/recovery.cljs:67
@@ -171,7 +171,7 @@ msgstr "Publiseer"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Alle Penpot-gebruikers"
+msgstr "Alle Oriole-gebruikers"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -247,7 +247,7 @@ msgstr "Spanbestuur"
 
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
-msgstr "Penpot is bedoel vir spanne. Nooi lede om saam te werk aan projekte en lêers"
+msgstr "Oriole is bedoel vir spanne. Nooi lede om saam te werk aan projekte en lêers"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
 msgid "dasboard.team-hero.title"
@@ -257,7 +257,7 @@ msgstr "Span saam!"
 #, unused
 msgid "dasboard.tutorial-hero.info"
 msgstr ""
-"Leer die basiese beginsels by Penpot terwyl jy pret het met hierdie "
+"Leer die basiese beginsels by Oriole terwyl jy pret het met hierdie "
 "praktiese tutoriaal."
 
 #: src/app/main/ui/dashboard/projects.cljs
@@ -268,7 +268,7 @@ msgstr "Begin die tutoriaal"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Gaan stap deur Penpot en leer sy hoofkenmerke ken."
+msgstr "Gaan stap deur Oriole en leer sy hoofkenmerke ken."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -298,7 +298,7 @@ msgstr "Skep 'n nuwe span"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Jou Penpot"
+msgstr "Jou Oriole"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -306,7 +306,7 @@ msgstr "Verwyder span"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Laai Penpot-lêer (.penpot) af"
+msgstr "Laai Oriole-lêer (.penpot) af"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -323,7 +323,7 @@ msgstr "Dupliseer %s lêers"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "Laai %s Penpot lêers (.penpot) af"
+msgstr "Laai %s Oriole lêers (.penpot) af"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -335,7 +335,7 @@ msgstr "Voer as PDF uit"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Voer %s Penpot lêers uit"
+msgstr "Voer %s Oriole lêers uit"
 
 #: src/app/main/ui/auth/recovery.cljs:32
 msgid "errors.invalid-recovery-token"

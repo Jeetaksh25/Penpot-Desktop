@@ -26,7 +26,7 @@ msgstr "Перевірте свою електронну скриньку"
 msgid "auth.check-your-email"
 msgstr ""
 "Підтвердьте обліковий запис за посиланням в листі та почніть користуватись "
-"Penpot."
+"Oriole."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -71,7 +71,7 @@ msgstr "Вхід"
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
 msgstr ""
-"Penpot це вільний інструмент з відкритим сирцевим кодом для спільної роботи "
+"Oriole це вільний інструмент з відкритим сирцевим кодом для спільної роботи "
 "над дизайном та кодом"
 
 #: src/app/main/ui/auth/login.cljs:230
@@ -164,7 +164,7 @@ msgstr "Створити обліковий запис"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"З безкоштовним обліковим записом Penpot Ви зможете створювати необмежену "
+"З безкоштовним обліковим записом Oriole Ви зможете створювати необмежену "
 "кількість команд і співпрацювати з іншими дизайнерами та розробниками над "
 "безліччю проєктів. "
 
@@ -224,7 +224,7 @@ msgstr "Опублікувати"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Усі користувачі Penpot"
+msgstr "Усі користувачі Oriole"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -302,7 +302,7 @@ msgstr "Керування командою"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Penpot призначений для командної роботи. Запрошуйте учасників до спільної "
+"Oriole призначений для командної роботи. Запрошуйте учасників до спільної "
 "роботи над проєктами та файлами"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -312,7 +312,7 @@ msgstr "Об'єднуйтесь!"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "Вивчайте основи Penpot, отримуючи задоволення від цих посібників."
+msgstr "Вивчайте основи Oriole, отримуючи задоволення від цих посібників."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -327,7 +327,7 @@ msgstr "Навчальний посібник"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Ознайомтесь з Penpot та дізнайтесь про його основні можливості."
+msgstr "Ознайомтесь з Oriole та дізнайтесь про його основні можливості."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -381,7 +381,7 @@ msgstr "Пришпилити цю версію"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Ваш Penpot"
+msgstr "Ваш Oriole"
 
 #: src/app/main/ui/dashboard/deleted.cljs:265
 msgid "dashboard.delete-all-forever-confirmation.description"
@@ -429,7 +429,7 @@ msgstr "Буде вилучено %s"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Завантажити файл Penpot (.penpot)"
+msgstr "Завантажити файл Oriole (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -538,7 +538,7 @@ msgstr "Сталася помилка під час відновлення пр�
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "Завантажити %s файлів Penpot (.penpot)"
+msgstr "Завантажити %s файлів Oriole (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -550,7 +550,7 @@ msgstr "Експортувати у PDF"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Експорт (%s) файлів Penpot"
+msgstr "Експорт (%s) файлів Oriole"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -568,7 +568,7 @@ msgstr ""
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Інформація про те, як налаштувати експорти в Penpot."
+msgstr "Інформація про те, як налаштувати експорти в Oriole."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -647,8 +647,8 @@ msgstr ""
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
 "Ви повинні завантажувати лише ті шрифти, якими володієте або маєте ліцензію "
-"на використання в Penpot. Дізнайтеся більше в розділі \"Content Rights\" в "
-"[Умовах користування Penpot](https://penpot.app/terms.html). Ви також "
+"на використання в Oriole. Дізнайтеся більше в розділі \"Content Rights\" в "
+"[Умовах користування Oriole](https://penpot.app/terms.html). Ви також "
 "можете прочитати про [ліцензування шрифтів](https://www.typography.com/faq)."
 
 #: src/app/main/ui/dashboard/fonts.cljs:231
@@ -668,7 +668,7 @@ msgstr ""
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "Імпортувати файли Penpot"
+msgstr "Імпортувати файли Oriole"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
@@ -1008,11 +1008,11 @@ msgstr "Оберіть тему"
 
 #: src/app/main/ui/settings/options.cljs:76
 msgid "dashboard.select-ui-theme.dark"
-msgstr "Penpot Темний (завмовчки)"
+msgstr "Oriole Темний (завмовчки)"
 
 #: src/app/main/ui/settings/options.cljs:77
 msgid "dashboard.select-ui-theme.light"
-msgstr "Penpot Світлий"
+msgstr "Oriole Світлий"
 
 #: src/app/main/ui/settings/options.cljs:78
 msgid "dashboard.select-ui-theme.system"
@@ -1180,7 +1180,7 @@ msgstr "Без обмежень на креативність"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1326
 msgid "dashboard.upgrade-plan.penpot-free"
-msgstr "Penpot Безкоштовний"
+msgstr "Oriole Безкоштовний"
 
 #: src/app/main/ui/dashboard/team.cljs:1338
 msgid "dashboard.webhooks.active"
@@ -1210,7 +1210,7 @@ msgstr "Вебхук успішно створено."
 msgid "dashboard.webhooks.description"
 msgstr ""
 "Веб-хуки - це простий спосіб дозволити іншим веб-сайтам і застосункам "
-"отримувати сповіщення про певні події в Penpot. Ми надішлемо POST-запит на "
+"отримувати сповіщення про певні події в Oriole. Ми надішлемо POST-запит на "
 "кожну з вказаних вами URL-адрес."
 
 #: src/app/main/ui/dashboard/team.cljs:1485
@@ -1239,7 +1239,7 @@ msgstr "Ваше ім'я"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "Ваш Penpot"
+msgstr "Ваш Oriole"
 
 #: src/app/main/ui/alert.cljs:36
 msgid "ds.alert-ok"
@@ -1320,7 +1320,7 @@ msgstr "З коментарем сталась помилка"
 #: src/app/main/errors.cljs:414
 msgid "errors.deprecated"
 msgstr ""
-"Вибачте! Це старий файл, що використовує застарілий тип ресурсів Penpot, і "
+"Вибачте! Це старий файл, що використовує застарілий тип ресурсів Oriole, і "
 "їх не можна відкрити."
 
 #: src/app/main/errors.cljs:417
@@ -1329,7 +1329,7 @@ msgstr "щоб ми Вам допомогли."
 
 #: src/app/main/errors.cljs:415
 msgid "errors.deprecated.contact.before"
-msgstr "Оскільки Penpot не підтримує цей тип Ресурсів, Ви можете"
+msgstr "Оскільки Oriole не підтримує цей тип Ресурсів, Ви можете"
 
 #: src/app/main/errors.cljs:416
 msgid "errors.deprecated.contact.text"
@@ -1375,7 +1375,7 @@ msgstr ""
 msgid "errors.feature-mismatch"
 msgstr ""
 "Схоже, Ви намагаєтесь відкрити файл, який має активовану функцію \"%s\", "
-"але поточна версія Penpot наразі не підтримує її або вона вимкнена."
+"але поточна версія Oriole наразі не підтримує її або вона вимкнена."
 
 #: src/app/main/errors.cljs:395, src/app/main/errors.cljs:409
 msgid "errors.feature-not-supported"
@@ -1716,7 +1716,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "Спільнота Penpot"
+msgstr "Спільнота Oriole"
 
 #: src/app/main/ui/settings/feedback.cljs:143
 msgid "feedback.other-ways-contact"
@@ -2023,7 +2023,7 @@ msgstr "Обрати простір кольорів"
 msgid "inspect.empty.help"
 msgstr ""
 "Якщо ви хочете дізнатися більше про інспекцію дизайну, відвідайте "
-"довідковий центр Penpot"
+"довідковий центр Oriole"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:239
 msgid "inspect.empty.more"
@@ -2141,7 +2141,7 @@ msgstr "Скорочення"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1395
 msgid "labels.about-penpot"
-msgstr "Про Penpot"
+msgstr "Про Oriole"
 
 #: src/app/main/data/common.cljs:90, src/app/main/data/team.cljs:163, src/app/main/data/team.cljs:584, src/app/main/ui/dashboard/import.cljs:556
 msgid "labels.accept"
@@ -2273,7 +2273,7 @@ msgstr "Продовжити з"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "Ви можете продовжувати з обліковим записом Penpot"
+msgstr "Ви можете продовжувати з обліковим записом Oriole"
 
 #: src/app/main/ui/components/copy_button.cljs:41
 msgid "labels.copy"
@@ -2658,11 +2658,11 @@ msgstr "Очікування"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1215
 msgid "labels.penpot-changelog"
-msgstr "Список Змін Penpot"
+msgstr "Список Змін Oriole"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1143
 msgid "labels.penpot-hub"
-msgstr "Хаб Penpot"
+msgstr "Хаб Oriole"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1091
 msgid "labels.pinned-projects"
@@ -3033,7 +3033,7 @@ msgstr "Прототипи із взаємодіями"
 #: src/app/main/ui/ds/product/loader.cljs:33
 msgid "loader.tips.07.message"
 msgstr ""
-"Penpot використовує SVG та CSS щоб забезпечити безперебійну роботу над "
+"Oriole використовує SVG та CSS щоб забезпечити безперебійну роботу над "
 "дизайном."
 
 #: src/app/main/ui/ds/product/loader.cljs:32
@@ -3061,7 +3061,7 @@ msgstr "Темний і світлий режими"
 #: src/app/main/ui/ds/product/loader.cljs:39
 msgid "loader.tips.10.message"
 msgstr ""
-"Розширюйте Penpot за допомогою плагінами від спільноти для додаткового "
+"Розширюйте Oriole за допомогою плагінами від спільноти для додаткового "
 "функціоналу."
 
 #: src/app/main/ui/ds/product/loader.cljs:38
@@ -3574,7 +3574,7 @@ msgstr "Сторінка 404"
 #: src/app/main/ui/static.cljs:160
 msgid "not-found.login.free"
 msgstr ""
-"Penpot - відкритий та вільний інструмент для спільної роботи над Дизайном "
+"Oriole - відкритий та вільний інструмент для спільної роботи над Дизайном "
 "та Кодом"
 
 #: src/app/main/ui/auth/recovery_request.cljs:114
@@ -3593,7 +3593,7 @@ msgstr "Зареєструватись безкоштовно"
 
 #: src/app/main/ui/static.cljs:175
 msgid "not-found.login.start-using"
-msgstr "І почати використовувати Penpot у ту ж мить!"
+msgstr "І почати використовувати Oriole у ту ж мить!"
 
 #: src/app/main/ui/static.cljs:75
 msgid "not-found.made-with-love"
@@ -3637,7 +3637,7 @@ msgstr "Ви не маєте доступу до цього файлу."
 
 #: src/app/main/ui/static.cljs:62, src/app/main/ui/static.cljs:265, src/app/main/ui/static.cljs:271, src/app/main/ui/static.cljs:277, src/app/main/ui/static.cljs:283, src/app/main/ui/static.cljs:292, src/app/main/ui/static.cljs:301
 msgid "not-found.no-permission.go-dashboard"
-msgstr "Відвідати ваш Penpot"
+msgstr "Відвідати ваш Oriole"
 
 #: src/app/main/ui/static.cljs:289, src/app/main/ui/static.cljs:298
 msgid "not-found.no-permission.if-approves"
@@ -3645,7 +3645,7 @@ msgstr "Якщо власник погодить, Ви будете запрош
 
 #: src/app/main/ui/static.cljs:527, src/app/main/ui/static.cljs:540
 msgid "not-found.no-permission.penpot-file"
-msgstr "Файл Penpot"
+msgstr "Файл Oriole"
 
 #: src/app/main/ui/static.cljs:264, src/app/main/ui/static.cljs:296
 msgid "not-found.no-permission.project"
@@ -3699,12 +3699,12 @@ msgstr "Лист для підтвердження надіслано на %s. �
 msgid "onboarding-v2.before-start.desc1"
 msgstr ""
 "Ви маєте знати, що тут є багато ресурсів, які допоможуть вам почати "
-"працювати з Penpot, до прикладу, Посібник Користувача та наш YouTube канал."
+"працювати з Oriole, до прикладу, Посібник Користувача та наш YouTube канал."
 
 #, unused
 msgid "onboarding-v2.before-start.desc2"
 msgstr ""
-"Детальна інформація про те, як користуватися Penpot. Від створення "
+"Детальна інформація про те, як користуватися Oriole. Від створення "
 "прототипів до організації та обміну дизайнами."
 
 #, unused
@@ -3727,13 +3727,13 @@ msgstr "Перш ніж почати"
 #, unused
 msgid "onboarding-v2.newsletter.desc"
 msgstr ""
-"Підпішиться на розсилку Penpot щоб бути у курсі подій розробки та останніх "
+"Підпішиться на розсилку Oriole щоб бути у курсі подій розробки та останніх "
 "новин."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:88
 #, unused
 msgid "onboarding-v2.newsletter.news"
-msgstr "Надсилати мені новини про Penpot (пости з блоґу, відео посібники, етери...)."
+msgstr "Надсилати мені новини про Oriole (пости з блоґу, відео посібники, етери...)."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:96
 #, unused
@@ -3756,15 +3756,15 @@ msgstr ""
 #, unused
 msgid "onboarding-v2.welcome.desc1"
 msgstr ""
-"Penpot має відкритий вихідний код і розробляється Kaleidos, а також "
+"Oriole має відкритий вихідний код і розробляється Kaleidos, а також "
 "спільнотою, де багато людей вже допомагають один одному. Кожен може "
 "долучитися до співпраці:"
 
 #, unused
 msgid "onboarding-v2.welcome.desc2"
 msgstr ""
-"Публічний простір, де можна дізнатися, поділитися та обговорити про Penpot, "
-"його сьогодення та майбутнє з усією спільнотою та основною командою Penpot."
+"Публічний простір, де можна дізнатися, поділитися та обговорити про Oriole, "
+"його сьогодення та майбутнє з усією спільнотою та основною командою Oriole."
 
 #, unused
 msgid "onboarding-v2.welcome.desc2.title"
@@ -3782,7 +3782,7 @@ msgstr "Посібник з внесення змін"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:248
 msgid "onboarding-v2.welcome.title"
-msgstr "Вітаємо в Penpot!"
+msgstr "Вітаємо в Oriole!"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:254
 #, unused
@@ -3866,7 +3866,7 @@ msgstr "Потіика Конфіденційності."
 #: src/app/main/ui/onboarding/newsletter.cljs:65
 #, unused
 msgid "onboarding.newsletter.title"
-msgstr "Бажаєте отримувати новини від Penpot?"
+msgstr "Бажаєте отримувати новини від Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:104
 msgid "onboarding.questions.lets-get-started"
@@ -3885,7 +3885,7 @@ msgstr "Просто досліджую"
 #: src/app/main/ui/onboarding/questions.cljs:245
 #, unused
 msgid "onboarding.questions.reasons.fit"
-msgstr "Розглядою чи підійде Penpot для потреб моєї команди"
+msgstr "Розглядою чи підійде Oriole для потреб моєї команди"
 
 #: src/app/main/ui/onboarding/questions.cljs:251
 #, unused
@@ -3929,17 +3929,17 @@ msgstr "Фреймворкінг"
 
 #: src/app/main/ui/onboarding/questions.cljs:114
 msgid "onboarding.questions.step1.question1"
-msgstr "Для чого плануєте використовувати Penpot?"
+msgstr "Для чого плануєте використовувати Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:272
 #, unused
 msgid "onboarding.questions.step1.question2"
-msgstr "Що саме вас привело до Penpot?"
+msgstr "Що саме вас привело до Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:110
 msgid "onboarding.questions.step1.subtitle"
 msgstr ""
-"Розкажіть нам трохи про себе, щоб допомогти нам зробити Penpot зручним для "
+"Розкажіть нам трохи про себе, щоб допомогти нам зробити Oriole зручним для "
 "вас. Ваші відповіді допоможуть нам визначити пріоритетність нових функцій і "
 "вказати Вам потрібний напрямок для початку роботи."
 
@@ -3976,7 +3976,7 @@ msgstr "Звідки хотіли б почати?"
 #: src/app/main/ui/onboarding/questions.cljs:428
 #, unused
 msgid "onboarding.questions.step5.title"
-msgstr "Як дізнались про Penpot?"
+msgstr "Як дізнались про Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:233
 #, unused
@@ -4027,7 +4027,7 @@ msgstr "Створіть команду"
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
 msgstr ""
-"Команда дозволяє вам співпрацювати з іншими користувачами Penpot, які "
+"Команда дозволяє вам співпрацювати з іншими користувачами Oriole, які "
 "працюють з тими ж файлами і проєктами."
 
 #: src/app/main/ui/onboarding/team_choice.cljs:57
@@ -4064,7 +4064,7 @@ msgstr "Почніть проєктувати"
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Penpot"
+msgstr "Oriole"
 
 #: src/app/main/ui/auth/recovery.cljs:88
 msgid "profile.recovery.go-to-login"
@@ -4954,7 +4954,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/subscription.cljs:662
 msgid "subscription.settings.member-since"
-msgstr "Учасник Penpot з %s"
+msgstr "Учасник Oriole з %s"
 
 #: src/app/main/ui/settings/subscription.cljs:685, src/app/main/ui/settings/subscription.cljs:699, src/app/main/ui/settings/subscription.cljs:715, src/app/main/ui/settings/subscription.cljs:731
 msgid "subscription.settings.more-information"
@@ -4962,7 +4962,7 @@ msgstr "Більше інформації"
 
 #: src/app/main/ui/settings/subscription.cljs:665
 msgid "subscription.settings.other-plans"
-msgstr "Інші плани Penpot"
+msgstr "Інші плани Oriole"
 
 #: src/app/main/ui/settings/subscription.cljs:669, src/app/main/ui/settings/subscription.cljs:692
 msgid "subscription.settings.price-editor-month"
@@ -5016,7 +5016,7 @@ msgstr "Насолоджуйтесь планом!"
 
 #: src/app/main/ui/settings/subscription.cljs:373
 msgid "subscription.settings.success.dialog.thanks"
-msgstr "Дякуємо за вибір плану %s Penpot!"
+msgstr "Дякуємо за вибір плану %s Oriole!"
 
 #: src/app/main/ui/settings/subscription.cljs:370
 msgid "subscription.settings.success.dialog.title"
@@ -5081,75 +5081,75 @@ msgstr[2] "%s запрошень обрано"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "Постачальники шрифтів - %s - Penpot"
+msgstr "Постачальники шрифтів - %s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "Шрифти - %s - Penpot"
+msgstr "Шрифти - %s - Oriole"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "Проєкти - %s - Penpot"
+msgstr "Проєкти - %s - Oriole"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "Пошук - %s - Penpot"
+msgstr "Пошук - %s - Oriole"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
-msgstr "Спільні бібліотеки - %s - Penpot"
+msgstr "Спільні бібліотеки - %s - Oriole"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Penpot - свобода дизайну для команд"
+msgstr "Oriole - свобода дизайну для команд"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "Надіслати відгук - Penpot"
+msgstr "Надіслати відгук - Oriole"
 
 #: src/app/main/ui/settings/notifications.cljs:45
 msgid "title.settings.notifications"
-msgstr "Сповіщення - Penpot"
+msgstr "Сповіщення - Oriole"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "Налаштування - Penpot"
+msgstr "Налаштування - Oriole"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "Пароль - Penpot"
+msgstr "Пароль - Oriole"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "Профіль - Penpot"
+msgstr "Профіль - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "Запрошення - %s - Penpot"
+msgstr "Запрошення - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "Учасники - %s - Penpot"
+msgstr "Учасники - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "Налаштування - %s - Penpot"
+msgstr "Налаштування - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "Вебхуки - %s - Penpot"
+msgstr "Вебхуки - %s - Oriole"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s - Режим перегляду - Penpot"
+msgstr "%s - Режим перегляду - Oriole"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui.cljs:138
 #, unused
@@ -6089,7 +6089,7 @@ msgstr "Спробуйте використати таку структуру:"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/variants_help_modal.cljs:54
 msgid "workspace.options.component.variants-help-modal.intro"
-msgstr "Щоб зберегти зміни при перемиканні між варіянтами, Penpot зʼєднує шари, що:"
+msgstr "Щоб зберегти зміни при перемиканні між варіянтами, Oriole зʼєднує шари, що:"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/variants_help_modal.cljs:91
 msgid "workspace.options.component.variants-help-modal.outro"

@@ -23,7 +23,7 @@ msgstr "ตรวจสอบอีเมลของคุณ"
 #: src/app/main/ui/auth/register.cljs:277
 #, unused
 msgid "auth.check-your-email"
-msgstr "ตรวจสอบอีเมลของคุณและคลิกลิงก์เพื่อยืนยันและเริ่มใช้งาน Penpot"
+msgstr "ตรวจสอบอีเมลของคุณและคลิกลิงก์เพื่อยืนยันและเริ่มใช้งาน Oriole"
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -62,7 +62,7 @@ msgstr "ลงชื่อเข้าใช้"
 
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
-msgstr "Penpot เป็นเครื่องมือออกแบบที่ฟรีและโอเพนซอร์สสำหรับการดีไซน์และโค้ดร่วมกัน"
+msgstr "Oriole เป็นเครื่องมือออกแบบที่ฟรีและโอเพนซอร์สสำหรับการดีไซน์และโค้ดร่วมกัน"
 
 #: src/app/main/ui/auth/login.cljs:230
 msgid "auth.login-with-github-submit"
@@ -148,7 +148,7 @@ msgstr "สร้างบัญชี"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"ด้วยบัญชี Penpot ฟรี "
+"ด้วยบัญชี Oriole ฟรี "
 "คุณสามารถสร้างทีมได้อย่างไม่จำกัดและทำงานร่วมกับดีไซเนอร์และนักพัฒนาคนอื่น "
 "ๆ กี่โปรเจกต์ก็ได้ "
 
@@ -185,7 +185,7 @@ msgstr "อีเมลทำงาน"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "ผู้ใช้ Penpot ทั้งหมด"
+msgstr "ผู้ใช้ Oriole ทั้งหมด"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -255,7 +255,7 @@ msgstr "การจัดการทีม"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Penpot เป็นเครื่องมือสำหรับการทำงานเป็นทีม "
+"Oriole เป็นเครื่องมือสำหรับการทำงานเป็นทีม "
 "เชิญชวนสมาชิกมาทำงานด้วยกันผ่านโปรเจกต์และไฟล์ต่าง ๆ เลย"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -265,7 +265,7 @@ msgstr "รวบรวมทีมเลย!"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "เรียนรู้การใช้งาน Penpot เบื้องต้นด้วยการลงมือทำจริง"
+msgstr "เรียนรู้การใช้งาน Oriole เบื้องต้นด้วยการลงมือทำจริง"
 
 #: src/app/main/ui/settings/profile.cljs:75
 msgid "dashboard.change-email"
@@ -281,7 +281,7 @@ msgstr "สร้างทีมใหม่"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Penpot ของคุณ"
+msgstr "Oriole ของคุณ"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -289,7 +289,7 @@ msgstr "ลบทีม"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "ดาวน์โหลดไฟล์ Penpot (.penpot)"
+msgstr "ดาวน์โหลดไฟล์ Oriole (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -338,7 +338,7 @@ msgstr "ยังไม่มีไลบรารี"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "ดาวน์โหลด %s ไฟล์ Penpot (.penpot)"
+msgstr "ดาวน์โหลด %s ไฟล์ Oriole (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -350,7 +350,7 @@ msgstr "ส่งออกเป็น PDF"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "ส่งออก %s ไฟล์ Penpot"
+msgstr "ส่งออก %s ไฟล์ Oriole"
 
 #: src/app/main/ui/workspace/main_menu.cljs:723
 msgid "dashboard.export-shapes"
@@ -390,8 +390,8 @@ msgstr[0] "เพิ่มแล้ว %s ฟอนต์"
 #, markdown
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
-"คุณควรอัปโหลดเฉพาะฟอนต์ที่คุณเป็นเจ้าของหรือมีสิทธิ์ในการใช้งานใน Penpot "
-"ดูรายละอียดเพิ่มเติมในส่วนเนื้อหาของ[ข้อกำหนดการให้บริการของ Penpot](%s) "
+"คุณควรอัปโหลดเฉพาะฟอนต์ที่คุณเป็นเจ้าของหรือมีสิทธิ์ในการใช้งานใน Oriole "
+"ดูรายละอียดเพิ่มเติมในส่วนเนื้อหาของ[ข้อกำหนดการให้บริการของ Oriole](%s) "
 "นอกจากนี้คุณอาจต้องการอ่านเพิ่มเติมเกี่ยวกับ[ลิขสิทธิ์ฟอนต์](https://www."
 "typography.com/faq)"
 
@@ -401,7 +401,7 @@ msgstr "อัปโหลดทั้งหมด"
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "นำเข้าไฟล์ Penpot"
+msgstr "นำเข้าไฟล์ Oriole"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
@@ -603,7 +603,7 @@ msgstr "ชื่อของคุณ"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "Penpot ของคุณ"
+msgstr "Oriole ของคุณ"
 
 #: src/app/main/ui/workspace/plugins.cljs:379, src/app/main/ui/workspace/plugins.cljs:442
 msgid "ds.confirm-allow"
@@ -649,7 +649,7 @@ msgstr "รหัสผ่านเดิมไม่ถูกต้อง"
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "ชุมชน Penpot"
+msgstr "ชุมชน Oriole"
 
 #: src/app/main/ui/inspect/attributes/layout.cljs
 #, unused

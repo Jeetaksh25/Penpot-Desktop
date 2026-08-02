@@ -21,7 +21,7 @@ msgstr "Jau turite paskyrą?"
 msgid "auth.check-your-email"
 msgstr ""
 "Pasitikrinkite savo el. paštą, ten rasite pranešimą su nuorodą, kurią "
-"paspaudę galėsite pradėti naudotis Penpot."
+"paspaudę galėsite pradėti naudotis Oriole."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -159,7 +159,7 @@ msgstr "Paskelbti"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Visi Penpot vartotojai"
+msgstr "Visi Oriole vartotojai"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -237,7 +237,7 @@ msgstr "Komandos valdymas"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Penpot yra skirtas komandoms. Pakvieskite narius bendram darbui su "
+"Oriole yra skirtas komandoms. Pakvieskite narius bendram darbui su "
 "projektais ir failais"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -247,7 +247,7 @@ msgstr "Suburkite komandą!"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "Išmokite Penpot pagrindus ir mėgaukitės šia pamoka."
+msgstr "Išmokite Oriole pagrindus ir mėgaukitės šia pamoka."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -257,7 +257,7 @@ msgstr "Pradėti pamoką"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Panagrinėkite Penpot ir susipažinkite su pagrindinėmis jo savybėmis."
+msgstr "Panagrinėkite Oriole ir susipažinkite su pagrindinėmis jo savybėmis."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -282,7 +282,7 @@ msgstr "Sukurti naują komandą"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Jūsų Penpot"
+msgstr "Jūsų Oriole"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -306,7 +306,7 @@ msgstr "Eksportuoti į PDF"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Eksportuoti Penpot %s failus"
+msgstr "Eksportuoti Oriole %s failus"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -324,7 +324,7 @@ msgstr ""
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Informacija, kaip nustatyti eksportą \"Penpot\"."
+msgstr "Informacija, kaip nustatyti eksportą \"Oriole\"."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -374,8 +374,8 @@ msgstr ""
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
 "Turėtumėte įkelti tik tuos šriftus, kurie jums priklauso arba kuriuos "
-"turite licenciją naudoti \"Penpot\". Daugiau informacijos rasite "
-"[Penpot'paslaugų teikimo sąlygų](%s) skyriuje \"Turinio teisės\". Taip pat "
+"turite licenciją naudoti \"Oriole\". Daugiau informacijos rasite "
+"[Oriole'paslaugų teikimo sąlygų](%s) skyriuje \"Turinio teisės\". Taip pat "
 "galite paskaityti apie [šriftų "
 "licencijavimą](https://www.typography.com/faq)."
 
@@ -385,7 +385,7 @@ msgstr "Įkelti viską"
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "Importuokite Penpot failus"
+msgstr "Importuokite Oriole failus"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"

@@ -1,8 +1,8 @@
 [package]
-name = "penpot-desktop"
+name = "oriole-desktop"
 version = "1.0.30"
 description = "A powerful design and code generation tool"
-authors = ["Penpot Desktop"]
+authors = ["Oriole Desktop"]
 edition = "2021"
 
 [lib]

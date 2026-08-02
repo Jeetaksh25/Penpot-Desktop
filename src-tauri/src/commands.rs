@@ -15,9 +15,9 @@ use tauri::AppHandle;
 
 /// The per-user config/data directory shared by all shell features.
 ///
-/// Lives under the OS app-data dir (e.g. `%APPDATA%\Penpot Desktop` on
-/// Windows, `~/.config/Penpot Desktop` on Linux, `~/Library/Application
-/// Support/Penpot Desktop` on macOS) — NOT under the install dir — so it
+/// Lives under the OS app-data dir (e.g. `%APPDATA%\Oriole Desktop` on
+/// Windows, `~/.config/Oriole Desktop` on Linux, `~/Library/Application
+/// Support/Oriole Desktop` on macOS) — NOT under the install dir — so it
 /// survives upgrades and never bloats the installer. The LLM provider config
 /// (F4) and the on-demand offline font cache (Feature 1) both live here.
 ///
@@ -27,7 +27,7 @@ pub fn user_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let _ = app; // reserved for future per-app scoping; today purely OS-based.
     let base = dirs::data_dir()
         .ok_or_else(|| "could not resolve the OS app-data directory".to_string())?;
-    Ok(base.join("Penpot Desktop"))
+    Ok(base.join("Oriole Desktop"))
 }
 
 /// The on-demand offline font cache directory (Feature 1).

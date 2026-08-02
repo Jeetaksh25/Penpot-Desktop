@@ -681,7 +681,7 @@ msgstr "an gina Webhook."
 msgid "dashboard.webhooks.description"
 msgstr ""
 "Webhooks hanyar sanar da manhajoji da addireshi intanet idan wani ya faru a "
-"Penpot. za a tura maka da saqon talla  URLs ka samar da."
+"Oriole. za a tura maka da saqon talla  URLs ka samar da."
 
 #: src/app/main/ui/dashboard/team.cljs:1485
 msgid "dashboard.webhooks.empty.add-one"
@@ -2033,7 +2033,7 @@ msgstr "ka tabbata ka na son fita daga  %s tawaga?"
 msgid "modals.leave-and-reassign.forbidden"
 msgstr ""
 "Webhooks hanyar sanar da manhajoji da addireshi intanet idan wani ya faru a "
-"Penpot. za a tura maka da saqon talla  URLs ka samar da."
+"Oriole. za a tura maka da saqon talla  URLs ka samar da."
 
 #: src/app/main/ui/dashboard/change_owner.cljs:53
 msgid "modals.leave-and-reassign.hint1"

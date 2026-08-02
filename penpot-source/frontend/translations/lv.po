@@ -26,7 +26,7 @@ msgstr "Jāpārbauda savs e-pasts"
 msgid "auth.check-your-email"
 msgstr ""
 "Jāpārbauda savs e-pasts un jānoklikšķina uz saites, lai apstiprinātu un "
-"sāktu izmantot Penpot."
+"sāktu izmantot Oriole."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -70,7 +70,7 @@ msgstr "Pieteikties"
 
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
-msgstr "Penpot ir bezmaksas atvērtā pirmkoda dizaina rīks dizaina un koda sadarbībai"
+msgstr "Oriole ir bezmaksas atvērtā pirmkoda dizaina rīks dizaina un koda sadarbībai"
 
 #: src/app/main/ui/auth/login.cljs:230
 msgid "auth.login-with-github-submit"
@@ -164,7 +164,7 @@ msgstr "Izveidot kontu"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"Ar bezmaksas Penpot kontu var izveidot neierobežotu skaitu komandu un "
+"Ar bezmaksas Oriole kontu var izveidot neierobežotu skaitu komandu un "
 "sadarboties ar citiem dizaineriem un izstrādātājiem cik vien daudzos "
 "projektos vēlies. "
 
@@ -222,7 +222,7 @@ msgstr "Publicēt"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Visi Penpot lietotāji"
+msgstr "Visi Oriole lietotāji"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -298,7 +298,7 @@ msgstr "Komandas pārvaldība"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Penpot ir paredzēta komandām. Jāuzaicina dalībnieki, lai kopā strādātu ar "
+"Oriole ir paredzēta komandām. Jāuzaicina dalībnieki, lai kopā strādātu ar "
 "projektiem un datnēm"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -308,7 +308,7 @@ msgstr "Apvienojieties!"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "Penpot pamatu apgūšana, kamēr tiek gūts prieks, ar šo praktisko apmācību."
+msgstr "Oriole pamatu apgūšana, kamēr tiek gūts prieks, ar šo praktisko apmācību."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -323,7 +323,7 @@ msgstr "Praktiskā apmācība"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Caurskati Penpot un iepazīsties ar tās galvenajām iespējām."
+msgstr "Caurskati Oriole un iepazīsties ar tās galvenajām iespējām."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -361,7 +361,7 @@ msgstr "Piespraust šo versiju"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Mans Penpot"
+msgstr "Mans Oriole"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -377,7 +377,7 @@ msgstr "Tiks izdzēsts %s"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Lejupielādēt Penpot datni (.penpot)"
+msgstr "Lejupielādēt Oriole datni (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -462,7 +462,7 @@ msgstr "Sākt veidot apbrīnojamas lietas"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "Lejupielādēt %s Penpot datnes (.penpot)"
+msgstr "Lejupielādēt %s Oriole datnes (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -474,7 +474,7 @@ msgstr "Izgūt kā PDF"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Izgūt Penpot %s datnes"
+msgstr "Izgūt Oriole %s datnes"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -492,7 +492,7 @@ msgstr ""
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Informācija par to, kā iestatīt izgūšanu Penpot."
+msgstr "Informācija par to, kā iestatīt izgūšanu Oriole."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -570,7 +570,7 @@ msgstr ""
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
 "Vajadzētu augšupielādēt tikai sev piederošus fontus vai tos, kuriem ir "
-"licence to izmantošanai Penpot. Vairāk var uzzināt [Penpot pakalpojuma "
+"licence to izmantošanai Oriole. Vairāk var uzzināt [Oriole pakalpojuma "
 "sniegšanas noteikumos](%s). Varētu būt noderīgi izlasīt arī par [fontu "
 "licencēšanu](https://www.typography.com/faq)."
 
@@ -591,7 +591,7 @@ msgstr ""
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "Ievietot Penpot datnes"
+msgstr "Ievietot Oriole datnes"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
@@ -881,11 +881,11 @@ msgstr "Atlasīt dizainu"
 
 #: src/app/main/ui/settings/options.cljs:76
 msgid "dashboard.select-ui-theme.dark"
-msgstr "Penpot tumšs (noklusējuma)"
+msgstr "Oriole tumšs (noklusējuma)"
 
 #: src/app/main/ui/settings/options.cljs:77
 msgid "dashboard.select-ui-theme.light"
-msgstr "Penpot gaišs"
+msgstr "Oriole gaišs"
 
 #: src/app/main/ui/settings/options.cljs:78
 msgid "dashboard.select-ui-theme.system"
@@ -1035,7 +1035,7 @@ msgstr "Nav ierobežojumu radošumam"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1326
 msgid "dashboard.upgrade-plan.penpot-free"
-msgstr "Bezmaksas Penpot"
+msgstr "Bezmaksas Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1338
 msgid "dashboard.webhooks.active"
@@ -1065,7 +1065,7 @@ msgstr "Tīmekļa aizķere ir veiksmīgi izveidota."
 msgid "dashboard.webhooks.description"
 msgstr ""
 "Tīmekļa aizķeres ir vienkāršs veids, kā ļaut citām tīmekļa vietnēm un "
-"lietotnēm saņemt paziņojumus, kad Penpot notiek noteikti notikumi. Mēs "
+"lietotnēm saņemt paziņojumus, kad Oriole notiek noteikti notikumi. Mēs "
 "nosūtīsim POST pieprasījumu katram norādītajam URL."
 
 #: src/app/main/ui/dashboard/team.cljs:1485
@@ -1094,7 +1094,7 @@ msgstr "Vārds"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "Mans Penpot"
+msgstr "Mans Oriole"
 
 #: src/app/main/ui/alert.cljs:36
 msgid "ds.alert-ok"
@@ -1175,7 +1175,7 @@ msgstr "Bija kļūda saistībā ar piebildi"
 #: src/app/main/errors.cljs:414
 msgid "errors.deprecated"
 msgstr ""
-"Atvainojamies! Šī ir veca datne, kas izmanto novecojušu Penpot līdzekļu "
+"Atvainojamies! Šī ir veca datne, kas izmanto novecojušu Oriole līdzekļu "
 "veidu, un to nevar atvērt."
 
 #: src/app/main/errors.cljs:417
@@ -1184,7 +1184,7 @@ msgstr "lai mēs varētu palīdzēt."
 
 #: src/app/main/errors.cljs:415
 msgid "errors.deprecated.contact.before"
-msgstr "Lai arī Penpot vairs neatbalsta šo līdzekļu veidu, Tu vari"
+msgstr "Lai arī Oriole vairs neatbalsta šo līdzekļu veidu, Tu vari"
 
 #: src/app/main/errors.cljs:416
 msgid "errors.deprecated.contact.text"
@@ -1226,7 +1226,7 @@ msgstr "E-pasta adrese “%s” ir atzīmēta surogātpasts vai pastāvīgi saņ
 msgid "errors.feature-mismatch"
 msgstr ""
 "Šķiet, ka tiek atvērta datne, kurā ir iespējota iespēja '%s', bet "
-"pašreizējā Penpot versija to neatbalsta vai tā ir atspējota."
+"pašreizējā Oriole versija to neatbalsta vai tā ir atspējota."
 
 #: src/app/main/errors.cljs:395, src/app/main/errors.cljs:409
 msgid "errors.feature-not-supported"
@@ -1550,7 +1550,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "Penpot kopiena"
+msgstr "Oriole kopiena"
 
 #: src/app/main/ui/settings/feedback.cljs:143
 msgid "feedback.other-ways-contact"
@@ -1560,7 +1560,7 @@ msgstr "Citi veidi, kā ar mums sazināties"
 msgid "feedback.penpot.link"
 msgstr ""
 "Ja atgriezeniskā saite ir kaut kas, kas saistīts ar datni vai projektu, "
-"šeit ir pievienojama Penpot saite:"
+"šeit ir pievienojama Oriole saite:"
 
 #: src/app/main/ui/settings/feedback.cljs:105
 msgid "feedback.subject"
@@ -1845,7 +1845,7 @@ msgstr "Paveida īpašības"
 #: src/app/main/ui/inspect/right_sidebar.cljs:235
 msgid "inspect.empty.help"
 msgstr ""
-"Ja ir vēlme uzzināt vairāk par dizaina apskati, jāapmeklē Penpot palīdzības "
+"Ja ir vēlme uzzināt vairāk par dizaina apskati, jāapmeklē Oriole palīdzības "
 "centrs"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:239
@@ -2047,7 +2047,7 @@ msgstr "Turpināt ar"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "Varat turpināt ar Penpot kontu"
+msgstr "Varat turpināt ar Oriole kontu"
 
 #: src/app/main/ui/components/copy_button.cljs:41
 msgid "labels.copy"
@@ -2706,7 +2706,7 @@ msgstr "Mijiedarbīgi prototipi"
 
 #: src/app/main/ui/ds/product/loader.cljs:33
 msgid "loader.tips.07.message"
-msgstr "Penpot izmanto SVG un CSS plūdenai izstrādei."
+msgstr "Oriole izmanto SVG un CSS plūdenai izstrādei."
 
 #: src/app/main/ui/ds/product/loader.cljs:32
 msgid "loader.tips.07.title"
@@ -2733,7 +2733,7 @@ msgstr "Tumšais un gaišais izskats"
 #: src/app/main/ui/ds/product/loader.cljs:39
 msgid "loader.tips.10.message"
 msgstr ""
-"Penpot paplašināšana ar kopienas veidotu spraudņu nodrošinātām papildu "
+"Oriole paplašināšana ar kopienas veidotu spraudņu nodrošinātām papildu "
 "iespējām."
 
 #: src/app/main/ui/ds/product/loader.cljs:38
@@ -3242,7 +3242,7 @@ msgstr "404 kļūda"
 #: src/app/main/ui/static.cljs:160
 msgid "not-found.login.free"
 msgstr ""
-"Penpot ir bezmaksas un atvērta pirmkoda dizainēšanas rīks sadarbībai starp "
+"Oriole ir bezmaksas un atvērta pirmkoda dizainēšanas rīks sadarbībai starp "
 "dizainu un kodu"
 
 #: src/app/main/ui/auth/recovery_request.cljs:114
@@ -3261,7 +3261,7 @@ msgstr "Reģistrēties bez maksas"
 
 #: src/app/main/ui/static.cljs:175
 msgid "not-found.login.start-using"
-msgstr "un sāc izmantot Penpot dažu sekunžu laikā!"
+msgstr "un sāc izmantot Oriole dažu sekunžu laikā!"
 
 #: src/app/main/ui/static.cljs:75
 msgid "not-found.made-with-love"
@@ -3305,7 +3305,7 @@ msgstr "Nav piekļuves šai datnei."
 
 #: src/app/main/ui/static.cljs:62, src/app/main/ui/static.cljs:265, src/app/main/ui/static.cljs:271, src/app/main/ui/static.cljs:277, src/app/main/ui/static.cljs:283, src/app/main/ui/static.cljs:292, src/app/main/ui/static.cljs:301
 msgid "not-found.no-permission.go-dashboard"
-msgstr "Doties uz savu Penpot"
+msgstr "Doties uz savu Oriole"
 
 #: src/app/main/ui/static.cljs:289, src/app/main/ui/static.cljs:298
 msgid "not-found.no-permission.if-approves"
@@ -3313,7 +3313,7 @@ msgstr "Ja īpašnieks to ļauj, tiksi uzaicināts pievienoties komandai."
 
 #: src/app/main/ui/static.cljs:527, src/app/main/ui/static.cljs:540
 msgid "not-found.no-permission.penpot-file"
-msgstr "Penpot datne"
+msgstr "Oriole datne"
 
 #: src/app/main/ui/static.cljs:264, src/app/main/ui/static.cljs:296
 msgid "not-found.no-permission.project"
@@ -3367,12 +3367,12 @@ msgstr ""
 msgid "onboarding-v2.before-start.desc1"
 msgstr ""
 "Jāņem vērā, ka ir pieejami daudz avotu, kas var palīdzēt uzsākt darbu ar "
-"Penpot, piemēram, lietotāja rokasgrāmata un mūsu Youtube kanāls."
+"Oriole, piemēram, lietotāja rokasgrāmata un mūsu Youtube kanāls."
 
 #, unused
 msgid "onboarding-v2.before-start.desc2"
 msgstr ""
-"Izvērsta informācija par Penpot izmantošanu. No prototipa izveides līdz "
+"Izvērsta informācija par Oriole izmantošanu. No prototipa izveides līdz "
 "dizainu kārtošanai vai kopīgošanai."
 
 #, unused
@@ -3395,14 +3395,14 @@ msgstr "Pirms sākt"
 #, unused
 msgid "onboarding-v2.newsletter.desc"
 msgstr ""
-"Abonēt Penpot biļetenu, lai uzzinātu par produkta izstrādes gaitu un "
+"Abonēt Oriole biļetenu, lai uzzinātu par produkta izstrādes gaitu un "
 "jaunumiem."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:88
 #, unused
 msgid "onboarding-v2.newsletter.news"
 msgstr ""
-"Sūtīt man jaunumus par Penpot (emuāra ieraksti, video pamācības, "
+"Sūtīt man jaunumus par Oriole (emuāra ieraksti, video pamācības, "
 "straumēšanas...)."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:96
@@ -3426,14 +3426,14 @@ msgstr ""
 #, unused
 msgid "onboarding-v2.welcome.desc1"
 msgstr ""
-"Penpot ir Atvērtā pirmkoda lietotne, un to izstrādā Kaleidos, kā arī "
+"Oriole ir Atvērtā pirmkoda lietotne, un to izstrādā Kaleidos, kā arī "
 "kopiena, kurā daudz cilvēku jau palīdz cits citam. Visi var sadarboties:"
 
 #, unused
 msgid "onboarding-v2.welcome.desc2"
 msgstr ""
-"Publiska telpa, lai mācītos, dalītos un apspriestu Penpot, tās tagadni un "
-"nākotni ar visu kopienu un Penpot kodola komandu."
+"Publiska telpa, lai mācītos, dalītos un apspriestu Oriole, tās tagadni un "
+"nākotni ar visu kopienu un Oriole kodola komandu."
 
 #, unused
 msgid "onboarding-v2.welcome.desc2.title"
@@ -3451,7 +3451,7 @@ msgstr "Līdzdalības rokasgrāmata"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:248
 msgid "onboarding-v2.welcome.title"
-msgstr "Laipni lūdzam Penpot!"
+msgstr "Laipni lūdzam Oriole!"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:254
 #, unused
@@ -3535,7 +3535,7 @@ msgstr "Konfidencialitātes politika."
 #: src/app/main/ui/onboarding/newsletter.cljs:65
 #, unused
 msgid "onboarding.newsletter.title"
-msgstr "Vai saņemt Penpot jaunumus?"
+msgstr "Vai saņemt Oriole jaunumus?"
 
 #: src/app/main/ui/onboarding/questions.cljs:104
 msgid "onboarding.questions.lets-get-started"
@@ -3554,7 +3554,7 @@ msgstr "Tikai izpētes nolūkos"
 #: src/app/main/ui/onboarding/questions.cljs:245
 #, unused
 msgid "onboarding.questions.reasons.fit"
-msgstr "Lai novērtētu, vai Penpot būs piemērota manai komandai"
+msgstr "Lai novērtētu, vai Oriole būs piemērota manai komandai"
 
 #: src/app/main/ui/onboarding/questions.cljs:251
 #, unused
@@ -3598,17 +3598,17 @@ msgstr "Karkasattēlošana"
 
 #: src/app/main/ui/onboarding/questions.cljs:114
 msgid "onboarding.questions.step1.question1"
-msgstr "Kādam nolūkam Penpot tiks izmantota?"
+msgstr "Kādam nolūkam Oriole tiks izmantota?"
 
 #: src/app/main/ui/onboarding/questions.cljs:272
 #, unused
 msgid "onboarding.questions.step1.question2"
-msgstr "Kas šodien novedis Tevi pie Penpot?"
+msgstr "Kas šodien novedis Tevi pie Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:110
 msgid "onboarding.questions.step1.subtitle"
 msgstr ""
-"Ļauj mums mazliet uzzināt par Tevi, lai palīdzētu mums panākt, lai Penpot "
+"Ļauj mums mazliet uzzināt par Tevi, lai palīdzētu mums panākt, lai Oriole "
 "Tev darbojas. Tavas atbildes palīdzēs mums noteikt svarīgas iespējas un "
 "norādīt Tev īsto uzsākšanas virzienu."
 
@@ -3645,7 +3645,7 @@ msgstr "Kur Tu vēlētos sākt?"
 #: src/app/main/ui/onboarding/questions.cljs:428
 #, unused
 msgid "onboarding.questions.step5.title"
-msgstr "Kā uzzināji par Penpot?"
+msgstr "Kā uzzināji par Oriole?"
 
 #: src/app/main/ui/onboarding/questions.cljs:233
 #, unused
@@ -3696,7 +3696,7 @@ msgstr "Izveidot komandu"
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
 msgstr ""
-"Komanda ļauj sadarboties ar citiem Penpot lietotājiem, kas darbojas ar tām "
+"Komanda ļauj sadarboties ar citiem Oriole lietotājiem, kas darbojas ar tām "
 "pašām datnēm un projektiem."
 
 #: src/app/main/ui/onboarding/team_choice.cljs:57
@@ -3733,7 +3733,7 @@ msgstr "Sākt projektēšanu"
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Penpot"
+msgstr "Oriole"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/token_typography_row.cljs:42, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:101, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:108
 msgid "options.deleted-token"
@@ -4556,7 +4556,7 @@ msgstr "Pielietot %s savām komandām"
 
 #: src/app/main/ui/settings/subscription.cljs:662
 msgid "subscription.settings.member-since"
-msgstr "Penpot dalībnieks kopš: %s"
+msgstr "Oriole dalībnieks kopš: %s"
 
 #: src/app/main/ui/settings/subscription.cljs:685, src/app/main/ui/settings/subscription.cljs:699, src/app/main/ui/settings/subscription.cljs:715, src/app/main/ui/settings/subscription.cljs:731
 msgid "subscription.settings.more-information"
@@ -4564,7 +4564,7 @@ msgstr "Vairāk informācijas"
 
 #: src/app/main/ui/settings/subscription.cljs:665
 msgid "subscription.settings.other-plans"
-msgstr "Citi Penpot plāni"
+msgstr "Citi Oriole plāni"
 
 #: src/app/main/ui/settings/subscription.cljs:669, src/app/main/ui/settings/subscription.cljs:692
 msgid "subscription.settings.price-editor-month"
@@ -4638,75 +4638,75 @@ msgstr[2] "Atlasīti %s uzaicinājumi"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "Fontu nodrošinātāji - %s - Penpot"
+msgstr "Fontu nodrošinātāji - %s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "Fonti - %s - Penpot"
+msgstr "Fonti - %s - Oriole"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "Projekti - %s - Penpot"
+msgstr "Projekti - %s - Oriole"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "Meklēšana - %s - Penpot"
+msgstr "Meklēšana - %s - Oriole"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
-msgstr "Koplietojamās bibliotēkas - %s - Penpot"
+msgstr "Koplietojamās bibliotēkas - %s - Oriole"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Penpot - Modelēšanas brīvība komandām"
+msgstr "Oriole - Modelēšanas brīvība komandām"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "Sniegt atsauksmes - Penpot"
+msgstr "Sniegt atsauksmes - Oriole"
 
 #: src/app/main/ui/settings/notifications.cljs:45
 msgid "title.settings.notifications"
-msgstr "Paziņojumi - Penpot"
+msgstr "Paziņojumi - Oriole"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "Iestatījumi - Penpot"
+msgstr "Iestatījumi - Oriole"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "Parole - Penpot"
+msgstr "Parole - Oriole"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "Profils - Penpot"
+msgstr "Profils - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "Uzaicinājumi - %s - Penpot"
+msgstr "Uzaicinājumi - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "Dalībnieki - %s - Penpot"
+msgstr "Dalībnieki - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "Iestatījumi - %s - Penpot"
+msgstr "Iestatījumi - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "Tīmekļa aizķeres - %s - Penpot"
+msgstr "Tīmekļa aizķeres - %s - Oriole"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s - skatīšana - Penpot"
+msgstr "%s - skatīšana - Oriole"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui/ds/controls/utilities/token_field.cljs:106, src/app/main/ui/workspace/sidebar/options/menus/token_typography_row.cljs:67, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:141
 msgid "token-actions.detach-token"
@@ -5620,7 +5620,7 @@ msgstr "Jāmēģina izmantot šāda uzbūve:"
 #: src/app/main/ui/workspace/sidebar/options/menus/variants_help_modal.cljs:54
 msgid "workspace.options.component.variants-help-modal.intro"
 msgstr ""
-"Lai paturētu izmaiņas, kad pārslēdzas starp variantiem, Penpot savieno "
+"Lai paturētu izmaiņas, kad pārslēdzas starp variantiem, Oriole savieno "
 "slāņus, kuriem:"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/variants_help_modal.cljs:67

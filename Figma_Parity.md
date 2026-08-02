@@ -1,6 +1,6 @@
 # Figma Parity — Gap Analysis & Implementation Plan
 
-> **Purpose.** Complete context for every feature the latest Figma (2025–2026) has that this product (a Penpot v2 desktop fork, wrapped in Tauri, with added Feature 1 fonts / Feature 2 code export / Feature 3+4 AI) does **not** have, or has only partially / weaker. This doc drives a full end-to-end implementation pass, then a 2-round checkup (bugs/diffs → fix → verify, then polish).
+> **Purpose.** Complete context for every feature the latest Figma (2025–2026) has that this product (Oriole, a desktop app built on the v2 design-platform codebase, wrapped in Tauri, with added Feature 1 fonts / Feature 2 code export / Feature 3+4 AI) does **not** have, or has only partially / weaker. This doc drives a full end-to-end implementation pass, then a 2-round checkup (bugs/diffs → fix → verify, then polish).
 >
 > **Derived from.** A 13-agent research workflow: 6 agents researched Figma's full feature surface (web, text-only — no images), 6 agents audited this codebase category-by-category (Glob/Grep/Read), then a synthesis agent cross-referenced the two into 78 ranked gaps. Each gap below carries the concrete files/symbols to touch.
 >

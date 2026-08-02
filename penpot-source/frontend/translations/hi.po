@@ -24,7 +24,7 @@ msgstr "अपना ईमेल देखें"
 #, unused
 msgid "auth.check-your-email"
 msgstr ""
-"अपने ईमेल की जाँच करें और सत्यापन के लिए लिंक पर क्लिक करके Penpot का उपयोग "
+"अपने ईमेल की जाँच करें और सत्यापन के लिए लिंक पर क्लिक करके Oriole का उपयोग "
 "शुरू करें।"
 
 #: src/app/main/ui/auth/recovery.cljs:67
@@ -159,7 +159,7 @@ msgstr "खाता बनाएं"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"मुफ्त Penpot खाते के साथ, आप unlimited टीम्स बना सकते हैं और जितने चाहें "
+"मुफ्त Oriole खाते के साथ, आप unlimited टीम्स बना सकते हैं और जितने चाहें "
 "उतने प्रोजेक्ट्स पर अन्य डिज़ाइनरों और डेवलपर्स के साथ मिलकर काम कर सकते "
 "हैं। "
 
@@ -292,7 +292,7 @@ msgstr "टीम प्रबंधन"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Penpot टीमों के लिए है। परियोजनाओं और फ़ाइलों पर साथ काम करने के लिए "
+"Oriole टीमों के लिए है। परियोजनाओं और फ़ाइलों पर साथ काम करने के लिए "
 "सदस्यों को आमंत्रित करें"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -303,7 +303,7 @@ msgstr "टीम बनाओ!"
 #, unused
 msgid "dasboard.tutorial-hero.info"
 msgstr ""
-"Penpot पर बुनियादी बातें सीखें और इस इंटरैक्टिव ट्यूटोरियल के साथ मज़ा भी "
+"Oriole पर बुनियादी बातें सीखें और इस इंटरैक्टिव ट्यूटोरियल के साथ मज़ा भी "
 "करें।"
 
 #: src/app/main/ui/dashboard/projects.cljs
@@ -319,7 +319,7 @@ msgstr "प्रायोगिक ट्यूटोरियल"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Penpot की सैर करें और इसके मुख्य फीचर्स को जानें।"
+msgstr "Oriole की सैर करें और इसके मुख्य फीचर्स को जानें।"
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -513,7 +513,7 @@ msgstr "प्रोजेक्ट %s को डिलीट करते स�
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "%s Penpot फ़ाइलें (.penpot) डाउनलोड करें"
+msgstr "%s Oriole फ़ाइलें (.penpot) डाउनलोड करें"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -612,8 +612,8 @@ msgstr ""
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
 "आपको केवल वही फ़ॉन्ट्स अपलोड करने चाहिए जो आपके पास हों या जिन्हें आप "
-"Penpot में उपयोग करने के लिए लाइसेंस प्राप्त हैं। अधिक जानकारी के लिए "
-"[Penpot की सेवा की शर्तें](%s) के कंटेंट राइट्स सेक्शन को पढ़ें। आप [फ़ॉन्ट "
+"Oriole में उपयोग करने के लिए लाइसेंस प्राप्त हैं। अधिक जानकारी के लिए "
+"[Oriole की सेवा की शर्तें](%s) के कंटेंट राइट्स सेक्शन को पढ़ें। आप [फ़ॉन्ट "
 "लाइसेंसिंग](https://www.typography.com/faq) के बारे में भी पढ़ना चाह सकते "
 "हैं।"
 
@@ -1106,7 +1106,7 @@ msgstr "वेबहुक सफलतापूर्वक बनाया ग
 #: src/app/main/ui/dashboard/team.cljs:1358
 msgid "dashboard.webhooks.description"
 msgstr ""
-"वेबहुक्स एक सरल तरीका हैं जिससे अन्य वेबसाइटें और ऐप्स Penpot में कुछ "
+"वेबहुक्स एक सरल तरीका हैं जिससे अन्य वेबसाइटें और ऐप्स Oriole में कुछ "
 "घटनाएँ होने पर सूचित हो सकें। हम आपके द्वारा दिए गए प्रत्येक URL पर POST "
 "अनुरोध भेजेंगे।"
 
@@ -1270,7 +1270,7 @@ msgstr ""
 msgid "errors.feature-mismatch"
 msgstr ""
 "ऐसा लगता है कि आप एक ऐसी फ़ाइल खोल रहे हैं जिसमें '%s' सुविधा सक्षम है, "
-"लेकिन वर्तमान Penpot संस्करण इसे समर्थन नहीं करता या इसे अक्षम कर दिया गया "
+"लेकिन वर्तमान Oriole संस्करण इसे समर्थन नहीं करता या इसे अक्षम कर दिया गया "
 "है।"
 
 #: src/app/main/errors.cljs:395, src/app/main/errors.cljs:409
@@ -4874,7 +4874,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/subscription.cljs:662
 msgid "subscription.settings.member-since"
-msgstr "%s से Penpot सदस्य"
+msgstr "%s से Oriole सदस्य"
 
 #: src/app/main/ui/settings/subscription.cljs:685, src/app/main/ui/settings/subscription.cljs:699, src/app/main/ui/settings/subscription.cljs:715, src/app/main/ui/settings/subscription.cljs:731
 msgid "subscription.settings.more-information"

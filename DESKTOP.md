@@ -1,11 +1,11 @@
-# Penpot Desktop (Offline, Tauri + Native Penpot)
+# Oriole Desktop (Offline, Tauri + Native design platform)
 
-This is a Tauri v2 desktop shell around the real Penpot ClojureScript frontend and Clojure/JVM backend. All data is stored locally on your PC using PostgreSQL and Redis.
+This is a Tauri v2 desktop shell around a real ClojureScript frontend and Clojure/JVM backend. All data is stored locally on your PC using PostgreSQL and Redis.
 
 ## What works now
 
-- Native Penpot UI served inside a Tauri window.
-- Real Penpot JVM backend (104 MB uberjar) started automatically by Tauri.
+- Native design UI served inside a Tauri window.
+- Real JVM backend (104 MB uberjar) started automatically by Tauri.
 - Local PostgreSQL and Redis for data and messaging.
 - Offline profile/login/dashboard/workspace flow via the native backend.
 - CORS configured so the Tauri dev server can talk to the backend.
@@ -30,7 +30,7 @@ This is a Tauri v2 desktop shell around the real Penpot ClojureScript frontend a
    - Redis for Windows from [redis-windows](https://github.com/redis-windows/redis-windows/releases)
      - Extract so `redis-server.exe` is at `tools/redis/Redis-8.8.0-Windows-x64-msys2/redis-server.exe`
 
-3. Build the native Penpot frontend:
+3. Build the native frontend:
    ```bat
    cd penpot-source\frontend
    pnpm install
@@ -38,7 +38,7 @@ This is a Tauri v2 desktop shell around the real Penpot ClojureScript frontend a
    cd ..\..
    ```
 
-4. Build the native Penpot backend uberjar:
+4. Build the native backend uberjar:
    ```bat
    cd penpot-source\backend
    clojure -T:build clean
@@ -46,7 +46,7 @@ This is a Tauri v2 desktop shell around the real Penpot ClojureScript frontend a
    cd ..\..
    ```
 
-5. Build the native Penpot WASM render engine (optional, for full canvas performance):
+5. Build the native WASM render engine (optional, for full canvas performance):
    ```bat
    build_render_wasm.bat
    ```
@@ -75,7 +75,7 @@ This is a Tauri v2 desktop shell around the real Penpot ClojureScript frontend a
    stop_services.bat
    ```
 
-3. The Penpot Desktop window should open to the native Penpot auth screen. Create a demo profile or register to start using it offline.
+3. The Oriole Desktop window should open to the native auth screen. Create a demo profile or register to start using it offline.
 
 ## Helper scripts
 
@@ -109,6 +109,6 @@ This produces:
 - `penpot-source/frontend/resources/public/js/worker/render.js`
 - `penpot-source/frontend/src/app/render_wasm/api/shared.js`
 
-The script uses the exact versions Penpot expects:
+The script uses the exact versions the project expects:
 - Rust **1.91.0** (`rustup override set 1.91.0-x86_64-pc-windows-msvc` in `penpot-source\render-wasm`).
 - Emscripten **4.0.6** installed in `tools\emsdk`.

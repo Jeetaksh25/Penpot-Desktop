@@ -20,7 +20,7 @@ msgstr "ஏற்கனவே ஒரு கணக்கு உள்ளதா?"
 msgid "auth.check-your-email"
 msgstr ""
 "உங்கள் மின்னஞ்சலைச் சரிபார்த்து, இணைப்பைக் கிளிக் செய்து சரிபார்த்து, "
-"Penpot ஐப் பயன்படுத்தத் தொடங்குங்கள்."
+"Oriole ஐப் பயன்படுத்தத் தொடங்குங்கள்."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -160,7 +160,7 @@ msgstr "வெளியிடுங்கள்"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "அனைத்து Penpot பயனர்களும்"
+msgstr "அனைத்து Oriole பயனர்களும்"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"

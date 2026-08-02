@@ -1,6 +1,8 @@
-// Icon generator for Penpot Desktop.
-// Uses the actual Penpot SVG logo from data/assets/ to generate all
-// Tauri app icon sizes at native resolution with proper antialiasing.
+// Icon generator for Oriole Desktop.
+// Renders every Tauri app icon size from the brand PNG logo
+// (data/assets/penpot-light.png — the master Oriole logo placed there by the
+// rebrand). The logo is fitted with `contain` on a transparent background so
+// the brand mark is preserved as-is at every size.
 //
 // Requires: sharp  (install via `npm install`)
 //
@@ -16,15 +18,13 @@ const ROOT = path.resolve(__dirname, "..");
 // Generate icons there so `bundle.icon` in tauri.conf.json finds them.
 const OUT_DIR = path.join(ROOT, "src-tauri", "icons");
 
-// ── Source logos ----------------------------------------------------------
-// The user placed these in data/assets/. We prefer the SVG for crisp vector
-// scaling; fall back to the PNG if sharp is unavailable.
-
-const SVG_SOURCE = path.join(ROOT, "data/assets/penpot-light.svg");
+// ── Source logo ───────────────────────────────────────────────────────────
+// The master brand logo (Oriole) as a PNG. fit:"contain" preserves its aspect
+// and content; a transparent background keeps the logo as designed. To put the
+// logo on a filled rounded-square tile instead, set FIT background to a solid
+// colour (e.g. { r:29, g:31, b:38, alpha:1 }) — left transparent by default so
+// the brand mark is shown verbatim.
 const PNG_SOURCE = path.join(ROOT, "data/assets/penpot-light.png");
-
-// Penpot brand indigo used as the icon background colour.
-const BRAND_BG = "#1d1f26";
 
 // Target sizes for Tauri (tauri.conf.json references these).
 const SIZES = [
@@ -36,9 +36,13 @@ const SIZES = [
 
 // Sizes embedded in icon.ico (PNG-compressed entries, supported since Vista).
 // Tauri uses icon.ico for the Windows .exe icon AND the NSIS installer icon,
-// so it must be regenerated from the branding — the scaffolced default
+// so it must be regenerated from the branding — the scaffolded default
 // icon.ico (blue/white Tauri logo) must not survive a build.
 const ICO_SIZES = [16, 32, 48, 64, 128, 256];
+
+// Transparent background — the logo is rendered verbatim, letterboxed inside
+// the square target so its aspect ratio is never distorted.
+const BG = { r: 0, g: 0, b: 0, alpha: 0 };
 
 /// Pack an array of {size, png: Buffer} into a Windows .ico file (PNG entries).
 function buildIco(entries) {
@@ -71,55 +75,12 @@ function buildIco(entries) {
   return Buffer.concat(parts);
 }
 
-// ── Pre-read source logo ─────────────────────────────────────────────────
-// The raw Penpot logo SVG has viewBox="62.2 0 387.7 512" — the logo content
-// occupies a 387.7×512 area starting at offset (62.2, 0).
-// We cache the path content so the wrapped SVG builder doesn't re-read it
-// for every icon size.
-
-const VIEWBOX_MIN_X = 62.2;
-const LOGO_W = 387.7;  // viewBox width — the logo content is 387.7 units wide
-const LOGO_H = 512;    // viewBox height
-
-let _svgContent = null;
-function getSvgContent() {
-  if (!_svgContent) {
-    _svgContent = fs
-      .readFileSync(SVG_SOURCE, "utf-8")
-      .replace(/<svg[^>]*>/i, "")   // strip outer <svg …>
-      .replace(/<\/svg>/i, "");     // strip </svg>
-  }
-  return _svgContent;
-}
-
-// ── SVG wrapper ───────────────────────────────────────────────────────────
-// Wraps the raw logo paths in a new square <svg> so that sharp renders the
-// logo centred on a brand-colour background at exactly the requested size.
-//
-// The original SVG has viewBox="62.2 0 387.7 512" so paths use coordinates
-// offset by +62.2 in X. We compensate with a three-part transform:
-//   translate(cx, cy)  scale(s)  translate(-62.2, 0)
-//   1. shift logo so its left edge lands at x=0
-//   2. scale to fit our padding-inscribed square
-//   3. centre the result in the icon square
-
-function wrappedSvg(width) {
-  const padding = Math.round(width * 0.12); // 12 % padding inside the square
-  const inner   = width - padding * 2;
-  const scale   = Math.min(inner / LOGO_W, inner / LOGO_H);
-  const drawW   = Math.round(LOGO_W * scale);
-  const drawH   = Math.round(LOGO_H * scale);
-  const dx      = Math.round((width - drawW) / 2);
-  const dy      = Math.round((width - drawH) / 2);
-
-  return `<svg xmlns="http://www.w3.org/2000/svg"
-             width="${width}" height="${width}"
-             viewBox="0 0 ${width} ${width}">
-    <rect width="${width}" height="${width}" fill="${BRAND_BG}" rx="${Math.round(width * 0.22)}"/>
-    <g transform="translate(${dx}, ${dy}) scale(${scale.toFixed(6)}) translate(-${VIEWBOX_MIN_X}, 0)">
-      ${getSvgContent()}
-    </g>
-  </svg>`;
+// Render the brand logo into a square PNG buffer of the given pixel size.
+async function renderPng(sharp, size) {
+  return sharp(PNG_SOURCE)
+    .resize(size, size, { fit: "contain", background: BG })
+    .png()
+    .toBuffer();
 }
 
 // ── Generate ──────────────────────────────────────────────────────────────
@@ -136,51 +97,24 @@ async function main() {
     process.exit(1);
   }
 
-  const svgExists = fs.existsSync(SVG_SOURCE);
-  const pngExists = fs.existsSync(PNG_SOURCE);
-
-  if (!svgExists && !pngExists) {
-    console.error("No logo source found. Place penpot-light.svg (or .png) in data/assets/");
+  if (!fs.existsSync(PNG_SOURCE)) {
+    console.error("No logo source found. Place penpot-light.png in data/assets/");
     process.exit(1);
   }
 
   for (const { name, size } of SIZES) {
     const outPath = path.join(OUT_DIR, name);
-
-    if (svgExists) {
-      // SVG path — render directly at the target size via sharp (librsvg).
-      const svg = wrappedSvg(size);
-      await sharp(Buffer.from(svg))
-        .png()
-        .toFile(outPath);
-    } else {
-      // PNG fallback — resize from source.
-      await sharp(PNG_SOURCE)
-        .resize(size, size, { fit: "contain", background: BRAND_BG })
-        .png()
-        .toFile(outPath);
-    }
-
-    const stat = fs.statSync(outPath);
-    const kb = (stat.size / 1024).toFixed(1);
+    const png = await renderPng(sharp, size);
+    fs.writeFileSync(outPath, png);
+    const kb = (fs.statSync(outPath).size / 1024).toFixed(1);
     console.log(`Generated ${name}  (${size}x${size}, ${kb} KB)`);
   }
 
   // Build icon.ico from the branding so the Windows .exe and the NSIS
-  // installer both show the real Penpot icon instead of the default Tauri one.
+  // installer both show the real Oriole icon instead of the default Tauri one.
   const icoEntries = [];
   for (const size of ICO_SIZES) {
-    let png;
-    if (svgExists) {
-      const svg = wrappedSvg(size);
-      png = await sharp(Buffer.from(svg)).png().toBuffer();
-    } else {
-      png = await sharp(PNG_SOURCE)
-        .resize(size, size, { fit: "contain", background: BRAND_BG })
-        .png()
-        .toBuffer();
-    }
-    icoEntries.push({ size, png });
+    icoEntries.push({ size, png: await renderPng(sharp, size) });
   }
   const icoPath = path.join(OUT_DIR, "icon.ico");
   fs.writeFileSync(icoPath, buildIco(icoEntries));

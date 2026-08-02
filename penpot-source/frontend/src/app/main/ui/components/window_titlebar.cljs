@@ -56,7 +56,7 @@
      ;; attribute, so clicking them never starts a drag.
      [:div {:class (stl/css :titlebar-drag)
             :data-tauri-drag-region "true"}
-      [:span {:class (stl/css :titlebar-title)} "Penpot Desktop"]]
+      [:span {:class (stl/css :titlebar-title)} "Oriole Desktop"]]
 
      ;; Right: theme toggle, then a gap, then the window controls.
      [:div {:class (stl/css :titlebar-controls)}

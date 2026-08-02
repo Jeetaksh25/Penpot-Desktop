@@ -1,6 +1,6 @@
-# Penpot Desktop — Product Roadmap & Feature Checklist
+# Oriole Desktop — Product Roadmap & Feature Checklist
 
-A working checklist for the features requested for Penpot Desktop. Every item is grounded in the actual codebase (`penpot-source/`, `src-tauri/`) and includes the real files you will touch, the prerequisites you must land first, and the open product decisions that block implementation.
+A working checklist for the features requested for Oriole Desktop. Every item is grounded in the actual codebase (`penpot-source/`, `src-tauri/`) and includes the real files you will touch, the prerequisites you must land first, and the open product decisions that block implementation.
 
 ## Product direction (read this first)
 

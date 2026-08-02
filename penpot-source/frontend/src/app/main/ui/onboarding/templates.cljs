@@ -81,7 +81,7 @@
         [:> template-item*
          {:path "/github/penpot-files/Penpot-Design-system.penpot"
           :image "https://penpot.app/images/libraries/cover-ds-penpot.jpg"
-          :name "Penpot Design System"
+          :name "Oriole Design System"
           :project-id project-id}]
         [:> template-item*
          {:path "/github/penpot-files/Material-Design-Kit.penpot"

@@ -30,7 +30,7 @@ const PUBLIC_DIR = path.join(root, "penpot-source/frontend/resources/public");
 // Fixed local account for the offline single-user app.
 const LOCAL_EMAIL = "penpot@localdesktop.com";
 const LOCAL_PASSWORD = "penpot-local";
-const LOCAL_FULLNAME = "Penpot Desktop";
+const LOCAL_FULLNAME = "Oriole Desktop";
 const SESSION_COOKIE_NAME = "auth-token";
 
 // Also proxy /assets/ so that file thumbnails and asset images hosted by the
@@ -367,7 +367,7 @@ server.timeout = 0;
 server.keepAliveTimeout = 0;
 
 server.listen(PORT, () => {
-  console.log(`Penpot frontend (same-origin proxy) on http://localhost:${PORT}`);
+  console.log(`Oriole frontend (same-origin proxy) on http://localhost:${PORT}`);
   console.log(`  static:  ${PUBLIC_DIR}`);
   console.log(`  proxy -> ${BACKEND_HOST}:${BACKEND_PORT}  (/api, /internal, /ws)`);
   console.log(`  auto-login -> ${LOCAL_EMAIL} (offline single-user)`);

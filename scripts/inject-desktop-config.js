@@ -143,7 +143,7 @@ var initializeExternalConfigInfo = null;
 `;
 
 async function main() {
-  await killStaleApp("penpot-desktop.exe");
+  await killStaleApp("oriole-desktop.exe");
   await killListenersOnPort(1420);
   await killListenersOnPort(3449);
   // Clear any leftover Postgres / Redis from a previous run that was killed
@@ -231,7 +231,7 @@ async function main() {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Penpot Desktop</title>
+<title>Oriole Desktop</title>
 <style>
   /* Warm peach design-studio boot screen — matches ds/colors.scss dark theme
      (mocha-950 surface, cream text, peach-coral accent). The window is
@@ -254,9 +254,9 @@ async function main() {
 <body>
   <div id="wrap" data-tauri-drag-region="true">
     <div id="logo">${logoSvg}</div>
-    <div id="title">Penpot Desktop</div>
+    <div id="title">Oriole Desktop</div>
     <div class="spinner"></div>
-    <div id="boot-status">Starting Penpot Desktop…</div>
+    <div id="boot-status">Starting Oriole Desktop…</div>
     <div id="boot-note">First launch takes a little longer while the local database and backend start up — please wait.</div>
   </div>
 </body>

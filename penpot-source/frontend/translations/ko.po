@@ -23,7 +23,7 @@ msgstr "이메일을 확인하세요"
 #: src/app/main/ui/auth/register.cljs:277
 #, unused
 msgid "auth.check-your-email"
-msgstr "이메일에 포함된 링크를 클릭하여 계정을 인증하고 Penpot의 사용을 시작하세요."
+msgstr "이메일에 포함된 링크를 클릭하여 계정을 인증하고 Oriole의 사용을 시작하세요."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -65,7 +65,7 @@ msgstr "로그인"
 
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
-msgstr "Penpot은 디자인과 코드 협업을 위한 무료 오픈소스 디자인 도구입니다"
+msgstr "Oriole은 디자인과 코드 협업을 위한 무료 오픈소스 디자인 도구입니다"
 
 #: src/app/main/ui/auth/login.cljs:230
 msgid "auth.login-with-github-submit"
@@ -154,7 +154,7 @@ msgstr "계정 생성"
 #: src/app/main/ui/auth/register.cljs:124
 #, unused
 msgid "auth.register-tagline"
-msgstr "무료 Penpot 계정으로 팀을 무제한 생성하고, 원하는 만큼 많은 프로젝트에서 다른 디자이너 및 개발자와 협업할 수 있습니다. "
+msgstr "무료 Oriole 계정으로 팀을 무제한 생성하고, 원하는 만큼 많은 프로젝트에서 다른 디자이너 및 개발자와 협업할 수 있습니다. "
 
 #: src/app/main/ui/auth/register.cljs:205
 msgid "auth.register-title"
@@ -206,7 +206,7 @@ msgstr "게시하기"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "모든 Penpot 사용자"
+msgstr "모든 Oriole 사용자"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -279,7 +279,7 @@ msgstr "팀 관리"
 
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
-msgstr "Penpot은 팀을 위한 도구입니다. 프로젝트와 파일에서 함께 작업할 수 있도록 구성원을 초대하세요"
+msgstr "Oriole은 팀을 위한 도구입니다. 프로젝트와 파일에서 함께 작업할 수 있도록 구성원을 초대하세요"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
 msgid "dasboard.team-hero.title"
@@ -288,7 +288,7 @@ msgstr "팀을 구성하세요!"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "Penpot의 기본 기능을 실습 튜토리얼로 재미있게 배워보세요."
+msgstr "Oriole의 기본 기능을 실습 튜토리얼로 재미있게 배워보세요."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -303,7 +303,7 @@ msgstr "실습 튜토리얼"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Penpot을 둘러보고 주요 기능을 살펴보세요."
+msgstr "Oriole을 둘러보고 주요 기능을 살펴보세요."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -357,7 +357,7 @@ msgstr "이 버전 고정"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "내 Penpot"
+msgstr "내 Oriole"
 
 #: src/app/main/ui/dashboard/deleted.cljs:265
 msgid "dashboard.delete-all-forever-confirmation.description"
@@ -403,7 +403,7 @@ msgstr "%s에 삭제될 예정"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Penpot 파일(.penpot) 다운로드"
+msgstr "Oriole 파일(.penpot) 다운로드"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -511,7 +511,7 @@ msgstr "%s 프로젝트와 해당 파일을 복원하는 중 오류가 발생했
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "%s Penpot 파일 (.penpot) 다운로드"
+msgstr "%s Oriole 파일 (.penpot) 다운로드"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -523,7 +523,7 @@ msgstr "PDF로 내보내기"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Penpot 파일 %s개 내보내기"
+msgstr "Oriole 파일 %s개 내보내기"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -539,7 +539,7 @@ msgstr "디자인 속성(오른쪽 사이드바 하단)에서 요소에 내보�
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Penpot에서 내보내기 설정 방법 안내."
+msgstr "Oriole에서 내보내기 설정 방법 안내."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -606,8 +606,8 @@ msgstr ""
 #, markdown
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
-"Penpot에서 사용하기 위해서는 본인이 소유하거나 적법한 사용 라이선스를 보유한 글꼴만 업로드해야 합니다. 관련 내용은 "
-"[Penpot의 서비스 이용약관](%s)의 콘텐츠 권리 섹션에서 확인할 수 있습니다. 추가로 [글꼴 라이선스 "
+"Oriole에서 사용하기 위해서는 본인이 소유하거나 적법한 사용 라이선스를 보유한 글꼴만 업로드해야 합니다. 관련 내용은 "
+"[Oriole의 서비스 이용약관](%s)의 콘텐츠 권리 섹션에서 확인할 수 있습니다. 추가로 [글꼴 라이선스 "
 "안내](https://www.typography.com/faq)를 참고하시기 바랍니다."
 
 #: src/app/main/ui/dashboard/fonts.cljs:231
@@ -624,7 +624,7 @@ msgstr ""
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "Penpot 파일 가져오기"
+msgstr "Oriole 파일 가져오기"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
@@ -960,11 +960,11 @@ msgstr "테마 선택"
 
 #: src/app/main/ui/settings/options.cljs:76
 msgid "dashboard.select-ui-theme.dark"
-msgstr "Penpot 다크 (기본)"
+msgstr "Oriole 다크 (기본)"
 
 #: src/app/main/ui/settings/options.cljs:77
 msgid "dashboard.select-ui-theme.light"
-msgstr "Penpot 라이트"
+msgstr "Oriole 라이트"
 
 #: src/app/main/ui/settings/options.cljs:78
 msgid "dashboard.select-ui-theme.system"
@@ -1126,7 +1126,7 @@ msgstr "창의력에 한계를 두지 마세요"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1326
 msgid "dashboard.upgrade-plan.penpot-free"
-msgstr "Penpot 무료 버전"
+msgstr "Oriole 무료 버전"
 
 #: src/app/main/ui/dashboard/team.cljs:1338
 msgid "dashboard.webhooks.active"
@@ -1155,7 +1155,7 @@ msgstr "웹훅이 성공적으로 생성되었습니다."
 #: src/app/main/ui/dashboard/team.cljs:1358
 msgid "dashboard.webhooks.description"
 msgstr ""
-"웹훅은 Penpot에서 특정 이벤트가 발생했을 때 다른 웹사이트나 앱이 알림을 받을 수 있는 간단한 방법입니다. 제공하신 각 URL로 "
+"웹훅은 Oriole에서 특정 이벤트가 발생했을 때 다른 웹사이트나 앱이 알림을 받을 수 있는 간단한 방법입니다. 제공하신 각 URL로 "
 "POST 요청을 보냅니다."
 
 #: src/app/main/ui/dashboard/team.cljs:1485
@@ -1184,7 +1184,7 @@ msgstr "이름"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "내 Penpot"
+msgstr "내 Oriole"
 
 #: src/app/main/ui/alert.cljs:36
 msgid "ds.alert-ok"
@@ -1264,7 +1264,7 @@ msgstr "댓글 처리 중 오류가 발생했습니다"
 
 #: src/app/main/errors.cljs:414
 msgid "errors.deprecated"
-msgstr "죄송합니다! 이 파일은 더 이상 지원되지 않는 이전 버전의 Penpot 에셋을 사용하고 있어 열 수 없습니다."
+msgstr "죄송합니다! 이 파일은 더 이상 지원되지 않는 이전 버전의 Oriole 에셋을 사용하고 있어 열 수 없습니다."
 
 #: src/app/main/errors.cljs:417
 msgid "errors.deprecated.contact.after"
@@ -1272,7 +1272,7 @@ msgstr "문의해 주시면 도와드리겠습니다."
 
 #: src/app/main/errors.cljs:415
 msgid "errors.deprecated.contact.before"
-msgstr "Penpot은 더 이상 이 유형의 에셋을 지원하지 않지만,"
+msgstr "Oriole은 더 이상 이 유형의 에셋을 지원하지 않지만,"
 
 #: src/app/main/errors.cljs:416
 msgid "errors.deprecated.contact.text"
@@ -1312,7 +1312,7 @@ msgstr "«%s» 이메일은 스팸으로 신고되었거나 지속적으로 반�
 
 #: src/app/main/errors.cljs:391
 msgid "errors.feature-mismatch"
-msgstr "'%s' 기능이 활성화된 파일을 열려고 하지만, 현재 Penpot 버전에서 지원하지 않거나 비활성화되어 있습니다."
+msgstr "'%s' 기능이 활성화된 파일을 열려고 하지만, 현재 Oriole 버전에서 지원하지 않거나 비활성화되어 있습니다."
 
 #: src/app/main/errors.cljs:395, src/app/main/errors.cljs:409
 msgid "errors.feature-not-supported"
@@ -1577,7 +1577,7 @@ msgstr "함께해주셔서 기쁩니다. 도움이 필요하시면 게시하기 
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "Penpot 커뮤니티"
+msgstr "Oriole 커뮤니티"
 
 #: src/app/main/ui/settings/feedback.cljs:143
 msgid "feedback.other-ways-contact"
@@ -1585,7 +1585,7 @@ msgstr "기타 문의 방법"
 
 #: src/app/main/ui/settings/feedback.cljs:126
 msgid "feedback.penpot.link"
-msgstr "파일이나 프로젝트와 관련된 의견인 경우 여기에 Penpot 링크를 추가해주세요:"
+msgstr "파일이나 프로젝트와 관련된 의견인 경우 여기에 Oriole 링크를 추가해주세요:"
 
 #: src/app/main/ui/settings/feedback.cljs:105
 msgid "feedback.subject"
@@ -1872,7 +1872,7 @@ msgstr "색상 공간 선택"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:235
 msgid "inspect.empty.help"
-msgstr "디자인 검사(Inspect)에 대해 더 알고 싶으시면 Penpot 도움말 센터를 방문하세요"
+msgstr "디자인 검사(Inspect)에 대해 더 알고 싶으시면 Oriole 도움말 센터를 방문하세요"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:239
 msgid "inspect.empty.more"
@@ -1990,7 +1990,7 @@ msgstr "단축키"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1395
 msgid "labels.about-penpot"
-msgstr "Penpot 정보"
+msgstr "Oriole 정보"
 
 #: src/app/main/data/common.cljs:90, src/app/main/data/team.cljs:163, src/app/main/data/team.cljs:584, src/app/main/ui/dashboard/import.cljs:556
 msgid "labels.accept"
@@ -2120,7 +2120,7 @@ msgstr "다음으로 계속하기:"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "Penpot 계정으로 계속할 수 있습니다"
+msgstr "Oriole 계정으로 계속할 수 있습니다"
 
 #: src/app/main/ui/components/copy_button.cljs:41
 msgid "labels.copy"
@@ -2497,11 +2497,11 @@ msgstr "대기 중"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1215
 msgid "labels.penpot-changelog"
-msgstr "Penpot 변경 사항"
+msgstr "Oriole 변경 사항"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1143
 msgid "labels.penpot-hub"
-msgstr "Penpot 허브"
+msgstr "Oriole 허브"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1091
 msgid "labels.pinned-projects"
@@ -2873,7 +2873,7 @@ msgstr "인터랙티브 프로토타입"
 
 #: src/app/main/ui/ds/product/loader.cljs:33
 msgid "loader.tips.07.message"
-msgstr "Penpot은 원활한 개발을 위해 SVG와 CSS 표준을 사용합니다."
+msgstr "Oriole은 원활한 개발을 위해 SVG와 CSS 표준을 사용합니다."
 
 #: src/app/main/ui/ds/product/loader.cljs:32
 msgid "loader.tips.07.title"
@@ -2897,7 +2897,7 @@ msgstr "다크 및 라이트 모드"
 
 #: src/app/main/ui/ds/product/loader.cljs:39
 msgid "loader.tips.10.message"
-msgstr "커뮤니티에서 제작한 플러그인으로 Penpot의 기능을 확장해보세요."
+msgstr "커뮤니티에서 제작한 플러그인으로 Oriole의 기능을 확장해보세요."
 
 #: src/app/main/ui/ds/product/loader.cljs:38
 msgid "loader.tips.10.title"
@@ -3347,7 +3347,7 @@ msgstr "404 오류"
 
 #: src/app/main/ui/static.cljs:160
 msgid "not-found.login.free"
-msgstr "Penpot은 디자인과 코드 사이의 협업을 위한 무료 오픈소스 디자인 툴입니다"
+msgstr "Oriole은 디자인과 코드 사이의 협업을 위한 무료 오픈소스 디자인 툴입니다"
 
 #: src/app/main/ui/auth/recovery_request.cljs:114
 msgid "not-found.login.sent-recovery"
@@ -3363,7 +3363,7 @@ msgstr "무료 회원가입"
 
 #: src/app/main/ui/static.cljs:175
 msgid "not-found.login.start-using"
-msgstr "몇 초 안에 Penpot 사용을 시작해보세요!"
+msgstr "몇 초 안에 Oriole 사용을 시작해보세요!"
 
 #: src/app/main/ui/static.cljs:75
 msgid "not-found.made-with-love"
@@ -3403,7 +3403,7 @@ msgstr "이 파일에 대한 접근 권한이 없습니다."
 
 #: src/app/main/ui/static.cljs:62, src/app/main/ui/static.cljs:265, src/app/main/ui/static.cljs:271, src/app/main/ui/static.cljs:277, src/app/main/ui/static.cljs:283, src/app/main/ui/static.cljs:292, src/app/main/ui/static.cljs:301
 msgid "not-found.no-permission.go-dashboard"
-msgstr "내 Penpot으로 이동"
+msgstr "내 Oriole으로 이동"
 
 #: src/app/main/ui/static.cljs:289, src/app/main/ui/static.cljs:298
 msgid "not-found.no-permission.if-approves"
@@ -3411,7 +3411,7 @@ msgstr "소유자가 승인하면 팀에 초대됩니다."
 
 #: src/app/main/ui/static.cljs:527, src/app/main/ui/static.cljs:540
 msgid "not-found.no-permission.penpot-file"
-msgstr "Penpot 파일"
+msgstr "Oriole 파일"
 
 #: src/app/main/ui/static.cljs:264, src/app/main/ui/static.cljs:296
 msgid "not-found.no-permission.project"
@@ -3463,11 +3463,11 @@ msgstr "인증 이메일을 %s로 보냈습니다. 이메일을 확인해주세�
 
 #, unused
 msgid "onboarding-v2.before-start.desc1"
-msgstr "사용자 가이드와 YouTube 채널 등 Penpot 시작을 돕는 다양한 리소스가 준비되어 있습니다."
+msgstr "사용자 가이드와 YouTube 채널 등 Oriole 시작을 돕는 다양한 리소스가 준비되어 있습니다."
 
 #, unused
 msgid "onboarding-v2.before-start.desc2"
-msgstr "프로토타이핑부터 디자인 정리 및 공유까지, Penpot 사용법에 대한 자세한 정보입니다."
+msgstr "프로토타이핑부터 디자인 정리 및 공유까지, Oriole 사용법에 대한 자세한 정보입니다."
 
 #, unused
 msgid "onboarding-v2.before-start.desc2.title"
@@ -3488,12 +3488,12 @@ msgstr "시작하기 전에"
 #: src/app/main/ui/onboarding/newsletter.cljs:68
 #, unused
 msgid "onboarding-v2.newsletter.desc"
-msgstr "Penpot 뉴스레터를 구독하고 제품 개발 현황 및 소식을 받아보세요."
+msgstr "Oriole 뉴스레터를 구독하고 제품 개발 현황 및 소식을 받아보세요."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:88
 #, unused
 msgid "onboarding-v2.newsletter.news"
-msgstr "Penpot 관련 소식 받기 (블로그 포스트, 비디오 튜토리얼, 스트리밍 등)."
+msgstr "Oriole 관련 소식 받기 (블로그 포스트, 비디오 튜토리얼, 스트리밍 등)."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:96
 #, unused
@@ -3512,12 +3512,12 @@ msgstr ".제품 업데이트 소식 받기 (새 기능, 릴리즈, 수정 사항
 #, unused
 msgid "onboarding-v2.welcome.desc1"
 msgstr ""
-"Penpot은 오픈소스이며 Kaleidos와 커뮤니티가 함께 만들어갑니다. 이미 많은 분들이 서로 돕고 있으며, 누구나 다음과 같이 "
+"Oriole은 오픈소스이며 Kaleidos와 커뮤니티가 함께 만들어갑니다. 이미 많은 분들이 서로 돕고 있으며, 누구나 다음과 같이 "
 "참여할 수 있습니다:"
 
 #, unused
 msgid "onboarding-v2.welcome.desc2"
-msgstr "전체 커뮤니티 및 Penpot 핵심 팀과 함께 Penpot의 현재와 미래에 대해 배우고, 공유하고, 토론하는 공개 공간입니다."
+msgstr "전체 커뮤니티 및 Oriole 핵심 팀과 함께 Oriole의 현재와 미래에 대해 배우고, 공유하고, 토론하는 공개 공간입니다."
 
 #, unused
 msgid "onboarding-v2.welcome.desc2.title"
@@ -3533,7 +3533,7 @@ msgstr "기여 가이드"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:248
 msgid "onboarding-v2.welcome.title"
-msgstr "Penpot에 오신 것을 환영합니다!"
+msgstr "Oriole에 오신 것을 환영합니다!"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:254
 #, unused
@@ -3611,7 +3611,7 @@ msgstr "개인정보 처리방침."
 #: src/app/main/ui/onboarding/newsletter.cljs:65
 #, unused
 msgid "onboarding.newsletter.title"
-msgstr "Penpot 소식을 받아보시겠어요?"
+msgstr "Oriole 소식을 받아보시겠어요?"
 
 #: src/app/main/ui/onboarding/questions.cljs:104
 msgid "onboarding.questions.lets-get-started"
@@ -3630,7 +3630,7 @@ msgstr "그냥 둘러보는 중"
 #: src/app/main/ui/onboarding/questions.cljs:245
 #, unused
 msgid "onboarding.questions.reasons.fit"
-msgstr "Penpot이 우리 팀에 적합한지 검토 중"
+msgstr "Oriole이 우리 팀에 적합한지 검토 중"
 
 #: src/app/main/ui/onboarding/questions.cljs:251
 #, unused
@@ -3674,17 +3674,17 @@ msgstr "와이어프레임 제작"
 
 #: src/app/main/ui/onboarding/questions.cljs:114
 msgid "onboarding.questions.step1.question1"
-msgstr "어떤 용도로 Penpot을 사용하실 예정인가요?"
+msgstr "어떤 용도로 Oriole을 사용하실 예정인가요?"
 
 #: src/app/main/ui/onboarding/questions.cljs:272
 #, unused
 msgid "onboarding.questions.step1.question2"
-msgstr "오늘 Penpot을 방문하신 이유는 무엇인가요?"
+msgstr "오늘 Oriole을 방문하신 이유는 무엇인가요?"
 
 #: src/app/main/ui/onboarding/questions.cljs:110
 msgid "onboarding.questions.step1.subtitle"
 msgstr ""
-"Penpot이 사용자분께 더 잘 맞도록 도와드리기 위해 정보를 조금만 알려주세요. 답변해주신 내용은 새 기능의 우선순위를 정하고 시작 "
+"Oriole이 사용자분께 더 잘 맞도록 도와드리기 위해 정보를 조금만 알려주세요. 답변해주신 내용은 새 기능의 우선순위를 정하고 시작 "
 "가이드를 제공하는 데 도움이 됩니다."
 
 #: src/app/main/ui/onboarding/questions.cljs:107
@@ -3720,7 +3720,7 @@ msgstr "어디서부터 시작하고 싶으신가요?"
 #: src/app/main/ui/onboarding/questions.cljs:428
 #, unused
 msgid "onboarding.questions.step5.title"
-msgstr "어떻게 Penpot을 알게 되셨나요?"
+msgstr "어떻게 Oriole을 알게 되셨나요?"
 
 #: src/app/main/ui/onboarding/questions.cljs:233
 #, unused
@@ -3770,7 +3770,7 @@ msgstr "팀 생성"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
-msgstr "팀을 구성하면 동일한 파일과 프로젝트에서 다른 Penpot 사용자와 협업할 수 있습니다."
+msgstr "팀을 구성하면 동일한 파일과 프로젝트에서 다른 Oriole 사용자와 협업할 수 있습니다."
 
 #: src/app/main/ui/onboarding/team_choice.cljs:57
 msgid "onboarding.team-modal.create-team-feature-1"
@@ -3806,7 +3806,7 @@ msgstr "디자인 시작하기"
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Penpot"
+msgstr "Oriole"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/token_typography_row.cljs:42, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:101, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:108
 msgid "options.deleted-token"
@@ -4682,7 +4682,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/subscription.cljs:662
 msgid "subscription.settings.member-since"
-msgstr "Penpot 가입일: %s"
+msgstr "Oriole 가입일: %s"
 
 #: src/app/main/ui/settings/subscription.cljs:685, src/app/main/ui/settings/subscription.cljs:699, src/app/main/ui/settings/subscription.cljs:715, src/app/main/ui/settings/subscription.cljs:731
 msgid "subscription.settings.more-information"
@@ -4690,7 +4690,7 @@ msgstr "자세한 정보"
 
 #: src/app/main/ui/settings/subscription.cljs:665
 msgid "subscription.settings.other-plans"
-msgstr "다른 Penpot 플랜"
+msgstr "다른 Oriole 플랜"
 
 #: src/app/main/ui/settings/subscription.cljs:669, src/app/main/ui/settings/subscription.cljs:692
 msgid "subscription.settings.price-editor-month"
@@ -4738,7 +4738,7 @@ msgstr "계정 상세 정보의 '구독' 페이지에서 언제든지 구독 내
 
 #: src/app/main/ui/settings/subscription.cljs:373
 msgid "subscription.settings.success.dialog.thanks"
-msgstr "Penpot %s 플랜을 선택해주셔서 감사합니다!"
+msgstr "Oriole %s 플랜을 선택해주셔서 감사합니다!"
 
 #: src/app/main/ui/settings/subscription.cljs:655
 #, fuzzy
@@ -4795,75 +4795,75 @@ msgstr[0] "초대 %s개 선택됨"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "글꼴 제공자 - %s - Penpot"
+msgstr "글꼴 제공자 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "글꼴 - %s - Penpot"
+msgstr "글꼴 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "프로젝트 - %s - Penpot"
+msgstr "프로젝트 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "검색 - %s - Penpot"
+msgstr "검색 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
-msgstr "공유 라이브러리 - %s - Penpot"
+msgstr "공유 라이브러리 - %s - Oriole"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Penpot - 팀을 위한 자유로운 디자인"
+msgstr "Oriole - 팀을 위한 자유로운 디자인"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "의견 보내기 - Penpot"
+msgstr "의견 보내기 - Oriole"
 
 #: src/app/main/ui/settings/notifications.cljs:45
 msgid "title.settings.notifications"
-msgstr "알림 - Penpot"
+msgstr "알림 - Oriole"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "설정 - Penpot"
+msgstr "설정 - Oriole"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "비밀번호 - Penpot"
+msgstr "비밀번호 - Oriole"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "프로필 - Penpot"
+msgstr "프로필 - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "초대 - %s - Penpot"
+msgstr "초대 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "구성원 - %s - Penpot"
+msgstr "구성원 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "설정 - %s - Penpot"
+msgstr "설정 - %s - Oriole"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "웹훅 - %s - Penpot"
+msgstr "웹훅 - %s - Oriole"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s - 보기 모드 - Penpot"
+msgstr "%s - 보기 모드 - Oriole"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Penpot"
+msgstr "%s - Oriole"
 
 #: src/app/main/ui.cljs:138
 #, unused
@@ -5785,7 +5785,7 @@ msgstr "다음 구조를 사용해 보세요:"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/variants_help_modal.cljs:54
 msgid "workspace.options.component.variants-help-modal.intro"
-msgstr "베리언트 간 전환 시 변경 사항을 유지하려면, Penpot은 다음 조건을 만족하는 레이어를 연결합니다:"
+msgstr "베리언트 간 전환 시 변경 사항을 유지하려면, Oriole은 다음 조건을 만족하는 레이어를 연결합니다:"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/variants_help_modal.cljs:91
 msgid "workspace.options.component.variants-help-modal.outro"

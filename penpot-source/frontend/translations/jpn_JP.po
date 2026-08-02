@@ -23,7 +23,7 @@ msgstr "メールを確認してください"
 #: src/app/main/ui/auth/register.cljs:277
 #, unused
 msgid "auth.check-your-email"
-msgstr "Penpotを使う前にメールのリンクをクリックして、メールアドレスを認証してください。"
+msgstr "Orioleを使う前にメールのリンクをクリックして、メールアドレスを認証してください。"
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -168,7 +168,7 @@ msgstr "公開"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "すべてのPenpotユーザー"
+msgstr "すべてのOrioleユーザー"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -262,7 +262,7 @@ msgstr "チームを新規作成"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "あなたのPenpot"
+msgstr "あなたのOriole"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -270,7 +270,7 @@ msgstr "チームを削除"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Penpotファイル(.penpot)をダウンロード"
+msgstr "Orioleファイル(.penpot)をダウンロード"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -308,11 +308,11 @@ msgstr "すべてアップロード"
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "Penpotをインポート"
+msgstr "Orioleをインポート"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
-msgstr "Penpotファイルをインポート"
+msgstr "Orioleファイルをインポート"
 
 #: src/app/main/ui/dashboard/import.cljs:125
 msgid "dashboard.import.progress.process-colors"
@@ -517,7 +517,7 @@ msgstr "名前"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "あなたのPenpot"
+msgstr "あなたのOriole"
 
 #: src/app/main/ui/comments.cljs:693, src/app/main/ui/confirm.cljs:42, src/app/main/ui/settings/subscription.cljs:303, src/app/main/ui/settings/subscription.cljs:336, src/app/main/ui/settings/subscription.cljs:776, src/app/main/ui/settings/subscription.cljs:823, src/app/main/ui/workspace/plugins.cljs:373, src/app/main/ui/workspace/plugins.cljs:436
 msgid "ds.confirm-cancel"
@@ -638,7 +638,7 @@ msgstr "記述"
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "Penpot コミュニティ"
+msgstr "Oriole コミュニティ"
 
 #: src/app/main/ui/settings/feedback.cljs:105
 msgid "feedback.subject"
