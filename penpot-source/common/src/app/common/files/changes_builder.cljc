@@ -906,7 +906,11 @@
                                        (seq (:variant-properties new-component))
                                        (assoc :variant-properties (:variant-properties new-component))
                                        (not (seq (:variant-properties new-component)))
-                                       (dissoc :variant-properties)))
+                                       (dissoc :variant-properties)
+                                       (seq (:component-properties new-component))
+                                       (assoc :component-properties (:component-properties new-component))
+                                       (not (seq (:component-properties new-component)))
+                                       (dissoc :component-properties)))
           (update :undo-changes conj (cond-> {:type :mod-component
                                               :id id
                                               :name (:name prev-component)
@@ -922,7 +926,11 @@
                                        (seq (:variant-properties prev-component))
                                        (assoc :variant-properties (:variant-properties prev-component))
                                        (not (seq (:variant-properties prev-component)))
-                                       (dissoc :variant-properties)))
+                                       (dissoc :variant-properties)
+                                       (seq (:component-properties prev-component))
+                                       (assoc :component-properties (:component-properties prev-component))
+                                       (not (seq (:component-properties prev-component)))
+                                       (dissoc :component-properties)))
           (cond-> apply-changes-local-library?
             (apply-changes-local {:apply-to-library? true})))
       changes)))

@@ -41,7 +41,7 @@
       variant-properties (update-in [:components id] assoc :variant-properties variant-properties))))
 
 (defn mod-component
-  [file-data {:keys [id name path main-instance-id main-instance-page objects annotation variant-id variant-properties modified-at]}]
+  [file-data {:keys [id name path main-instance-id main-instance-page objects annotation variant-id variant-properties component-properties modified-at]}]
   (d/update-in-when file-data [:components id]
                     (fn [component]
                       (let [new-comp (cond-> component
@@ -82,12 +82,18 @@
                                        (assoc :variant-properties variant-properties)
 
                                        (nil? variant-properties)
-                                       (dissoc :variant-properties))
+                                       (dissoc :variant-properties)
+
+                                       (some? component-properties)
+                                       (assoc :component-properties component-properties)
+
+                                       (nil? component-properties)
+                                       (dissoc :component-properties))
 
                             ;; The set of properties that doesn't mark a component as touched
                             diff     (set/difference
                                       (ctk/diff-components component new-comp)
-                                      #{:annotation :modified-at :variant-id :variant-properties})]
+                                      #{:annotation :modified-at :variant-id :variant-properties :component-properties})]
 
                         (if (empty? diff)
                           new-comp

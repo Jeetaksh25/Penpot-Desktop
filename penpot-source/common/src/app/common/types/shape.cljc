@@ -21,6 +21,7 @@
    [app.common.types.color :as clr]
    [app.common.types.fills :refer [schema:fills fill->color]]
    [app.common.types.grid :as ctg]
+   [app.common.types.component-property :as ctcp]
    [app.common.types.path :as path]
    [app.common.types.plugins :as ctpg]
    [app.common.types.shape.attrs :refer [default-color]]
@@ -212,6 +213,11 @@
    [:remote-synced {:optional true} :boolean]
    [:shape-ref {:optional true} ::sm/uuid]
    [:touched {:optional true} [:maybe [:set :keyword]]]
+   ;; Figma-parity typed component properties (gap #1). Instance root
+   ;; shapes carry a map of property-name -> value that overrides the
+   ;; rendered sub-tree. Optional: a plain shape carries no key, so this
+   ;; is fully backward compatible.
+   [:component-property-values {:optional true} ctcp/schema:component-property-values]
    [:blocked {:optional true} :boolean]
    [:collapsed {:optional true} :boolean]
    [:locked {:optional true} :boolean]

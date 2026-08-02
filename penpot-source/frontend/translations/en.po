@@ -7311,6 +7311,58 @@ msgstr "Edit an annotation"
 msgid "workspace.options.component.main"
 msgstr "Main"
 
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.properties"
+msgstr "Component properties"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.type"
+msgstr "Type"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.type.boolean"
+msgstr "Boolean"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.type.text"
+msgstr "Text"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.type.instance-swap"
+msgstr "Instance swap"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.type.variant"
+msgstr "Variant"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.type.slot"
+msgstr "Slot"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.true"
+msgstr "True"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.false"
+msgstr "False"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.add"
+msgstr "Add property"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.remove"
+msgstr "Remove property"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.default.placeholder"
+msgstr "Set on instances"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.property.value.placeholder"
+msgstr "Set on main component"
+
 #: src/app/main/ui/workspace/sidebar/options/menus/component.cljs:781
 msgid "workspace.options.component.swap"
 msgstr "Swap component"

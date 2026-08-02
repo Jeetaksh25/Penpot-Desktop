@@ -10,6 +10,7 @@
    [app.common.exceptions :as ex]
    [app.common.schema :as sm]
    [app.common.time :as-alias ct]
+   [app.common.types.component-property :as ctcp]
    [app.common.types.page :as ctp]
    [app.common.types.plugins :as ctpg]
    [app.common.types.variant :as ctv]
@@ -29,6 +30,10 @@
     [:objects {:gen/max 10 :optional true} ctp/schema:objects]
     [:main-instance-id ::sm/uuid]
     [:main-instance-page ::sm/uuid]
+    ;; Figma-parity typed component properties (gap #1). Optional: a
+    ;; component with no typed properties (the common case today) carries
+    ;; no key, so this is fully backward compatible.
+    [:component-properties {:optional true} ctcp/schema:component-properties]
     [:plugin-data {:optional true} ctpg/schema:plugin-data]]
    ctv/schema:variant-component])
 

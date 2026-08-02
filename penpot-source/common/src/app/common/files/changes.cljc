@@ -17,6 +17,7 @@
    [app.common.schema.generators :as sg]
    [app.common.types.color :as ctc]
    [app.common.types.component :as ctk]
+   [app.common.types.component-property :as ctcp]
    [app.common.types.components-list :as ctkl]
    [app.common.types.container :as ctn]
    [app.common.types.file :as ctf]
@@ -336,7 +337,9 @@
      [:name {:optional true} :string]
      [:path {:optional true} :string]
      [:variant-id {:optional true} ::sm/uuid]
-     [:variant-properties {:optional true} [:vector ctv/schema:variant-property]]]]
+     [:variant-properties {:optional true} [:vector ctv/schema:variant-property]]
+     ;; Figma-parity typed component properties (gap #1). Optional.
+     [:component-properties {:optional true} [:vector ctcp/schema:component-property]]]]
 
    [:del-component
     [:map {:title "DelComponentChange"}

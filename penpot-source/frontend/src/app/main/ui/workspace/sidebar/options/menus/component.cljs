@@ -13,6 +13,7 @@
    [app.common.files.variant :as cfv]
    [app.common.path-names :as cpn]
    [app.common.types.component :as ctk]
+   [app.common.types.component-property :as ctcp]
    [app.common.types.components-list :as ctkl]
    [app.common.types.file :as ctf]
    [app.common.types.variant :as ctv]
@@ -22,6 +23,7 @@
    [app.main.data.modal :as modal]
    [app.main.data.notifications :as ntf]
    [app.main.data.workspace :as dw]
+   [app.main.data.workspace.component-properties :as dwcp]
    [app.main.data.workspace.libraries :as dwl]
    [app.main.data.workspace.specialized-panel :as dwsp]
    [app.main.data.workspace.variants :as dwv]
@@ -913,6 +915,170 @@
                     :on-click (partial do-action action)}
                [:span title]]))]]])]))
 
+;; Figma-parity typed component properties (gap #1). v1: the authoring
+;; surface is fully wired — declare typed properties on a main component,
+;; edit per-instance override values. Runtime override APPLICATION is a
+;; pure helper (`ctcp/apply-property-overrides`) not yet wired into the
+;; render/sync path (deferred to polish #9). See component_property.cljc.
+
+(mf/defc component-typed-property-main-row*
+  "A single typed property DEFINITION row on a main component (declare)."
+  {::mf/private true}
+  [{:keys [component-id property]}]
+  (let [type-options [{:value "boolean"      :label (tr "workspace.options.component.property.type.boolean")}
+                      {:value "text"         :label (tr "workspace.options.component.property.type.text")}
+                      {:value "instance-swap" :label (tr "workspace.options.component.property.type.instance-swap")}
+                      {:value "variant"      :label (tr "workspace.options.component.property.type.variant")}
+                      {:value "slot"         :label (tr "workspace.options.component.property.type.slot")}]
+        type-kw  (:type property)
+        prop-id  (:id property)
+
+        on-update-name
+        (mf/use-fn
+         (mf/deps component-id prop-id)
+         (fn [event]
+           (let [value (dom/get-target-val event)]
+             (when (seq value)
+               (st/emit! (dwcp/update-property component-id prop-id {:name value}))))))
+
+        on-update-type
+        (mf/use-fn
+         (mf/deps component-id prop-id)
+         (fn [type]
+           (st/emit! (dwcp/update-property component-id prop-id {:type (keyword type)}))))
+
+        on-update-default-bool
+        (mf/use-fn
+         (mf/deps component-id prop-id)
+         (fn [v]
+           (st/emit! (dwcp/update-property component-id prop-id {:default-value (= v "true")}))))
+
+        on-update-default-text
+        (mf/use-fn
+         (mf/deps component-id prop-id)
+         (fn [event]
+           (st/emit! (dwcp/update-property component-id prop-id {:default-value (dom/get-target-val event)}))))
+
+        on-remove
+        (mf/use-fn
+         (mf/deps component-id prop-id)
+         #(st/emit! (dwcp/remove-property component-id prop-id)))]
+
+    [:div {:class (stl/css :component-typed-property-row)}
+     [:> input-with-meta* {:value (:name property)
+                           :max-length 60
+                           :on-blur on-update-name}]
+     [:> select* {:default-selected (d/name type-kw)
+                  :options type-options
+                  :on-change on-update-type}]
+     (case type-kw
+       :boolean [:> select* {:default-selected (if (true? (:default-value property)) "true" "false")
+                             :options [{:value "true"  :label (tr "workspace.options.component.property.true")}
+                                       {:value "false" :label (tr "workspace.options.component.property.false")}]
+                             :on-change on-update-default-bool}]
+       :text [:> input-with-meta* {:value (str (or (:default-value property) ""))
+                                   :max-length 200
+                                   :on-blur on-update-default-text}]
+       ;; instance-swap / variant / slot: default editor deferred (needs a
+       ;; component picker / variant axis UI — v1 limitation).
+       [:div {:class (stl/css :component-typed-property-placeholder)}
+        (tr "workspace.options.component.property.default.placeholder")])
+     [:> icon-button* {:variant "ghost"
+                       :icon i/remove
+                       :aria-label (tr "workspace.options.component.property.remove")
+                       :on-click on-remove}]]))
+
+(mf/defc component-typed-property-instance-row*
+  "A single typed property VALUE row on an instance (override)."
+  {::mf/private true}
+  [{:keys [shape-id property value on-set-value]}]
+  (let [type-kw   (:type property)
+        prop-name (:name property)
+
+        on-change-bool
+        (mf/use-fn
+         (mf/deps on-set-value prop-name)
+         (fn [v] (on-set-value prop-name (= v "true"))))
+
+        on-change-text
+        (mf/use-fn
+         (mf/deps on-set-value prop-name)
+         (fn [event]
+           (on-set-value prop-name (dom/get-target-val event))))]
+
+    [:div {:class (stl/css :component-typed-property-row)}
+     [:span {:class (stl/css :component-typed-property-label)} prop-name]
+     (case type-kw
+       :boolean [:> select* {:default-selected (if (true? value) "true" "false")
+                             :options [{:value "true"  :label (tr "workspace.options.component.property.true")}
+                                       {:value "false" :label (tr "workspace.options.component.property.false")}]
+                             :on-change on-change-bool}]
+       :text [:> input-with-meta* {:value (str (or value ""))
+                                   :max-length 200
+                                   :on-blur on-change-text}]
+       ;; instance-swap / variant / slot value editor deferred (v1).
+       [:div {:class (stl/css :component-typed-property-placeholder)}
+        (tr "workspace.options.component.property.value.placeholder")])]))
+
+(mf/defc component-typed-properties*
+  "Typed component properties panel. Declares properties on a main
+  component; edits per-instance override values on a copy."
+  {::mf/private true}
+  [{:keys [shape component main-instance?]}]
+  (let [component-id (:component-id shape)
+        properties   (or (:component-properties component) [])
+        values       (or (:component-property-values shape) {})
+
+        open*          (mf/use-state true)
+        open?          (deref open*)
+        toggle-content (mf/use-fn #(swap! open* not))
+
+        add-property
+        (mf/use-fn
+         (mf/deps component-id)
+         #(st/emit! (dwcp/add-property component-id {:type :boolean})))
+
+        on-set-value
+        (mf/use-fn
+         (mf/deps shape)
+         (fn [prop-name value]
+           (st/emit! (dwcp/set-property-value (:id shape) prop-name value))))]
+
+    (when (seq properties)
+      [:div {:class (stl/css :component-typed-properties-section)}
+       [:> title-bar* {:collapsable  true
+                       :collapsed    (not open?)
+                       :on-collapsed toggle-content
+                       :title        (tr "workspace.options.component.properties")
+                       :class        (stl/css :component-title-bar)
+                       :title-class  (stl/css :component-title-bar-title)}
+        [:span {:class (stl/css :component-title-bar-type)}
+         (tr "workspace.options.component.property.type")]]
+
+       (when open?
+         [:div {:class (stl/css :component-content)}
+          (if main-instance?
+            [:*
+             [:div {:class (stl/css :component-typed-property-list)}
+              (for [property properties]
+                [:> component-typed-property-main-row*
+                 {:key (str (:id property))
+                  :component-id component-id
+                  :property property}])]
+             [:> icon-button* {:variant "ghost"
+                               :aria-label (tr "workspace.options.component.property.add")
+                               :on-click add-property
+                               :icon i/add}]]
+
+            [:div {:class (stl/css :component-typed-property-list)}
+             (for [property properties]
+               [:> component-typed-property-instance-row*
+                {:key (str (:id property))
+                 :shape-id (:id shape)
+                 :property property
+                 :value (get values (:name property))
+                 :on-set-value on-set-value}])])])])))
+
 (mf/defc component-menu*
   [{:keys [shapes is-swap-opened]}]
   (let [current-file-id (mf/use-ctx ctx/current-file-id)
@@ -1087,6 +1253,11 @@
             [:> component-variant* {:components components
                                     :shapes shapes
                                     :data data}])
+
+          (when (and (not is-swap-opened) (not multi))
+            [:> component-typed-properties* {:shape shape
+                                             :component component
+                                             :main-instance? main-instance?}])
 
           (when (and (not is-swap-opened) (not multi))
             [:> component-annotation* {:id id
