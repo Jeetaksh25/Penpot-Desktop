@@ -122,11 +122,33 @@
                (if (:fill-image value)
                  (let [uri (cf/resolve-file-media (:fill-image value))
                        keep-ar? (-> value :fill-image :keep-aspect-ratio)
+                       img      (:fill-image value)
+                       ;; Figma-parity non-destructive crop. crop-x/y/w/h are
+                       ;; normalized to the image's own pixel dims; we scale the
+                       ;; <image> so the crop region maps exactly onto
+                       ;; [0,0,width,height] (the shape bounds / pattern tile).
+                       ;; Overflow outside the crop rect lands outside the tile
+                       ;; and is clipped by the shape geometry — hidden, not
+                       ;; deleted (reversible).
+                       W        (:width img)
+                       H        (:height img)
+                       crop?    (and (number? (:crop-w img))
+                                     (number? (:crop-h img))
+                                     (pos? (:crop-w img))
+                                     (pos? (:crop-h img)))
+                       sx       (if crop? (/ width (* (:crop-w img) W)) 1)
+                       sy       (if crop? (/ height (* (:crop-h img) H)) 1)
+                       ix       (if crop? (- (* (:crop-x img) W sx)) 0)
+                       iy       (if crop? (- (* (:crop-y img) H sy)) 0)
+                       iw       (if crop? (* W sx) width)
+                       ih       (if crop? (* H sy) height)
                        image-props #js {:id (dm/str "fill-image-" render-id "-" fill-index)
                                         :href (get embed uri uri)
-                                        :preserveAspectRatio (if keep-ar? "xMidYMid slice" "none")
-                                        :width width
-                                        :height height
+                                        :preserveAspectRatio (if crop? "none" (if keep-ar? "xMidYMid slice" "none"))
+                                        :x ix
+                                        :y iy
+                                        :width iw
+                                        :height ih
                                         :key (dm/str fill-index)
                                         :opacity (:fill-opacity value)}]
                    [:> :image image-props])
@@ -141,12 +163,25 @@
                       :width (* width no-repeat-padding)
                       :height (* height no-repeat-padding)
                       :fill "none"}]
-              [:image {:href uri
-                       :preserveAspectRatio "none"
-                       :x 0
-                       :y 0
-                       :width width
-                       :height height}]])]])])))
+              (let [img    image
+                    W      (:width img)
+                    H      (:height img)
+                    crop?  (and (number? (:crop-w img))
+                                (number? (:crop-h img))
+                                (pos? (:crop-w img))
+                                (pos? (:crop-h img)))
+                    sx     (if crop? (/ width (* (:crop-w img) W)) 1)
+                    sy     (if crop? (/ height (* (:crop-h img) H)) 1)
+                    ix     (if crop? (- (* (:crop-x img) W sx)) 0)
+                    iy     (if crop? (- (* (:crop-y img) H sy)) 0)
+                    iw     (if crop? (* W sx) width)
+                    ih     (if crop? (* H sy) height)]
+                [:image {:href uri
+                         :preserveAspectRatio "none"
+                         :x ix
+                         :y iy
+                         :width iw
+                         :height ih}])])]])])))
 
 (mf/defc fills
   {::mf/wrap-props false}

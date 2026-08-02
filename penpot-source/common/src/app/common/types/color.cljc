@@ -79,7 +79,16 @@
    [:mtype {:gen/gen (sg/elements cm/image-types)} ::sm/text]
    [:id ::sm/uuid]
    [:name {:optional true} ::sm/text]
-   [:keep-aspect-ratio {:optional true} :boolean]])
+   [:keep-aspect-ratio {:optional true} :boolean]
+   ;; Figma-parity non-destructive image crop. All four are normalized to
+   ;; the image's own pixel dimensions (0..1): crop-x/y is the top-left of
+   ;; the visible region, crop-w/h its size. Absent = show the whole image.
+   ;; The renderer maps these to the pattern's viewBox so the uncropped
+   ;; borders are simply hidden, not deleted (reversible).
+   [:crop-x {:optional true} ::sm/safe-number]
+   [:crop-y {:optional true} ::sm/safe-number]
+   [:crop-w {:optional true} ::sm/safe-number]
+   [:crop-h {:optional true} ::sm/safe-number]])
 
 (def image-attrs
   "A set of attrs that corresponds to image data type"

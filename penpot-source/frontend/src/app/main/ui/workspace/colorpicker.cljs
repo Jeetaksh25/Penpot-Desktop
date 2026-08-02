@@ -26,8 +26,10 @@
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.file-uploader :refer [file-uploader]]
+   [app.main.ui.components.numeric-input :as deprecated-input]
    [app.main.ui.components.radio-buttons :refer [radio-buttons radio-button]]
    [app.main.ui.components.select :refer [select]]
+   [app.main.ui.ds.buttons.icon-button :refer [icon-button*]]
    [app.main.ui.ds.foundations.assets.icon :as i]
    [app.main.ui.ds.layout.tab-switcher :refer [tab-switcher*]]
    [app.main.ui.hooks :as hooks]
@@ -195,6 +197,30 @@
               (ev/event {::ev/name "toggle-image-aspect-ratio"
                          ::ev/origin "workspace:colorpicker"
                          :checked keep-aspect-ratio?})))))
+
+        ;; Figma-parity non-destructive image crop. crop-x/y/w/h are
+        ;; normalized 0..1 to the image's own pixel dimensions. We expose
+        ;; them as percentage numeric inputs in the image tab; the renderer
+        ;; (fills.cljs) maps the crop region onto the shape bounds so the
+        ;; uncropped borders are hidden, not deleted. Reuses the existing
+        ;; update-colorpicker-color event (the :image map flows straight to
+        ;; :fill-image, so crop fields are persisted on the fill).
+        handle-change-image-crop
+        (mf/use-fn
+         (mf/deps current-color)
+         (fn [field value]
+           (let [v   (/ (max 0 (min (or value 0) 100)) 100)
+                 img (-> (:image current-color)
+                         (assoc field v))]
+             (st/emit! (dc/update-colorpicker-color {:image img} true)))))
+
+        handle-reset-image-crop
+        (mf/use-fn
+         (mf/deps current-color)
+         (fn []
+           (let [img (-> (:image current-color)
+                         (dissoc :crop-x :crop-y :crop-w :crop-h))]
+             (st/emit! (dc/update-colorpicker-color {:image img} true)))))
 
         on-change-tab
         (mf/use-fn #(reset! active-color-tab* %))
@@ -484,6 +510,39 @@
                            :id "keep-aspect-ratio"
                            :checked keep-aspect-ratio?
                            :on-change handle-change-keep-aspect-ratio}]]])
+             ;; Figma-parity non-destructive image crop (v1: percentage inputs).
+             ;; On-canvas drag handles are deferred to the polish round.
+             (when (some? (:image current-color))
+               (let [img (:image current-color)
+                     cx  (* (or (:crop-x img) 0) 100)
+                     cy  (* (or (:crop-y img) 0) 100)
+                     cw  (* (or (:crop-w img) 1) 100)
+                     ch  (* (or (:crop-h img) 1) 100)]
+                 [:div {:class (stl/css :image-crop-options)}
+                  [:div {:class (stl/css :image-crop-title)}
+                   (tr "media.image-crop")
+                   [:> icon-button* {:variant "ghost"
+                                     :aria-label (tr "media.image-crop-reset")
+                                     :on-click handle-reset-image-crop
+                                     :icon i/reload}]]
+                  [:div {:class (stl/css :image-crop-row)}
+                   [:span {:class (stl/css :image-crop-label)} "X"]
+                   [:> deprecated-input/numeric-input*
+                    {:value cx :on-change #(handle-change-image-crop :crop-x %)
+                     :min 0 :max 100 :default 0}]
+                   [:span {:class (stl/css :image-crop-label)} "Y"]
+                   [:> deprecated-input/numeric-input*
+                    {:value cy :on-change #(handle-change-image-crop :crop-y %)
+                     :min 0 :max 100 :default 0}]]
+                  [:div {:class (stl/css :image-crop-row)}
+                   [:span {:class (stl/css :image-crop-label)} "W"]
+                   [:> deprecated-input/numeric-input*
+                    {:value cw :on-change #(handle-change-image-crop :crop-w %)
+                     :min 0 :max 100 :default 100}]
+                   [:span {:class (stl/css :image-crop-label)} "H"]
+                   [:> deprecated-input/numeric-input*
+                    {:value ch :on-change #(handle-change-image-crop :crop-h %)
+                     :min 0 :max 100 :default 100}]]]))
               [:button
                {:class (stl/css :choose-image)
                 :title (tr "media.choose-image")

@@ -227,3 +227,34 @@
   align-items: center;
   height: var(--sp-xxxl);
 }
+
+.image-crop-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-s);
+  margin-top: var(--sp-m);
+}
+
+.image-crop-title {
+  @include t.use-typography("headline-small");
+
+  color: var(--color-foreground-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--sp-xxxl);
+}
+
+.image-crop-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-s);
+}
+
+.image-crop-label {
+  @include t.use-typography("caption");
+
+  color: var(--color-foreground-secondary);
+  min-width: var(--sp-l);
+  text-align: center;
+}

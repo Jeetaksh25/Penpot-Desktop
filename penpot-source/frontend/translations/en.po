@@ -3700,6 +3700,14 @@ msgstr "img"
 msgid "media.keep-aspect-ratio"
 msgstr "Keep aspect ratio"
 
+#: src/app/main/ui/workspace/colorpicker.cljs
+msgid "media.image-crop"
+msgstr "Crop"
+
+#: src/app/main/ui/workspace/colorpicker.cljs
+msgid "media.image-crop-reset"
+msgstr "Reset crop"
+
 #: src/app/main/ui/workspace/colorpicker.cljs:228
 #, unused
 msgid "media.linear"
