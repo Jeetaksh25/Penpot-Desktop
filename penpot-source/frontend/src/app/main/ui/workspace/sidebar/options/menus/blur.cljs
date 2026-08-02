@@ -25,6 +25,26 @@
 
 (def blur-attrs [:blur :background-blur])
 
+;; Figma-parity per-blur blend modes (gap #9). Reuses the existing
+;; layer-level blend-mode labels so no new i18n keys are needed.
+(def ^:private blend-mode-options
+  [{:value "normal" :label (tr "workspace.options.layer-options.blend-mode.normal")}
+   {:value "darken" :label (tr "workspace.options.layer-options.blend-mode.darken")}
+   {:value "multiply" :label (tr "workspace.options.layer-options.blend-mode.multiply")}
+   {:value "color-burn" :label (tr "workspace.options.layer-options.blend-mode.color-burn")}
+   {:value "lighten" :label (tr "workspace.options.layer-options.blend-mode.lighten")}
+   {:value "screen" :label (tr "workspace.options.layer-options.blend-mode.screen")}
+   {:value "color-dodge" :label (tr "workspace.options.layer-options.blend-mode.color-dodge")}
+   {:value "overlay" :label (tr "workspace.options.layer-options.blend-mode.overlay")}
+   {:value "soft-light" :label (tr "workspace.options.layer-options.blend-mode.soft-light")}
+   {:value "hard-light" :label (tr "workspace.options.layer-options.blend-mode.hard-light")}
+   {:value "difference" :label (tr "workspace.options.layer-options.blend-mode.difference")}
+   {:value "exclusion" :label (tr "workspace.options.layer-options.blend-mode.exclusion")}
+   {:value "hue" :label (tr "workspace.options.layer-options.blend-mode.hue")}
+   {:value "saturation" :label (tr "workspace.options.layer-options.blend-mode.saturation")}
+   {:value "color" :label (tr "workspace.options.layer-options.blend-mode.color")}
+   {:value "luminosity" :label (tr "workspace.options.layer-options.blend-mode.luminosity")}])
+
 (defn create-blur [type]
   (let [id (uuid/next)]
     {:id id
@@ -59,6 +79,16 @@
          (mf/deps change-fn blur-key)
          (fn [value]
            (change-fn #(assoc-in % [blur-key :value] value))))
+
+        ;; Figma-parity per-blur blend mode (gap #9). Default :normal =
+        ;; today's compositing. change! routes through dwsh/update-shapes
+        ;; (save-undo defaults true). Renderer application deferred.
+        blur-blend-mode (or (:blend-mode value) :normal)
+        handle-blend-mode-change
+        (mf/use-fn
+         (mf/deps change-fn blur-key)
+         (fn [value]
+           (change-fn #(assoc-in % [blur-key :blend-mode] (keyword value)))))
 
         handle-type-change
         (mf/use-fn
@@ -180,7 +210,14 @@
           :text-icon "value"
           :on-change handle-change
           :name "blur-value"
-          :value (:value value)}]])]))
+          :value (:value value)}]
+        ;; Figma-parity per-blur blend mode (gap #9).
+        [:> select*
+         {:class (stl/css :blur-blend-mode-select)
+          :default-selected (d/name blur-blend-mode)
+          :options blend-mode-options
+          :disabled is-hidden
+          :on-change handle-blend-mode-change}]])]))
 
 (defn get-blurs [values]
   (cond-> []

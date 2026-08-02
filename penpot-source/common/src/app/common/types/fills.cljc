@@ -31,7 +31,17 @@
    [:fill-opacity {:optional true} [::sm/number {:min 0 :max 1}]]
    [:fill-color {:optional true} types.color/schema:hex-color]
    [:fill-color-gradient {:optional true} types.color/schema:gradient]
-   [:fill-image {:optional true} types.color/schema:image]])
+   [:fill-image {:optional true} types.color/schema:image]
+   ;; Figma-parity per-item blend modes (gap #9). Optional blend mode for
+   ;; this single fill; absent = :normal = today's compositing. The
+   ;; renderer composites each fill with its own SVG mix-blend-mode —
+   ;; that wiring is deferred (high blast-radius compositing change, no
+   ;; build to verify); the field round-trips on the fill.
+   [:blend-mode {:optional true}
+    [::sm/one-of #{:normal :darken :multiply :color-burn
+                   :lighten :screen :color-dodge :overlay
+                   :soft-light :hard-light :difference :exclusion
+                   :hue :saturation :color :luminosity}]]])
 
 (def fill-attrs
   "A set of attrs that corresponds to fill data type"

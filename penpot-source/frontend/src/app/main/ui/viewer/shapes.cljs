@@ -55,15 +55,19 @@
 
 (defn- activate-interaction
   [interaction shape base-frame frame-offset objects overlays]
-  (case (:action-type interaction)
-    :navigate
-    (when-let [frame-id (:destination interaction)]
-      (let [viewer-section (dom/get-element "viewer-section")
-            scroll (if (:preserve-scroll interaction)
-                     (dom/get-scroll-pos viewer-section)
-                     0)]
-        (st/emit! (dv/set-nav-scroll scroll)
-                  (dv/go-to-frame frame-id (:animation interaction)))))
+  ;; Figma #73: a disabled interaction does nothing at runtime. Absent
+  ;; :disabled = enabled, so existing behaviour is byte-identical when the
+  ;; feature is inactive.
+  (when-not (:disabled interaction)
+    (case (:action-type interaction)
+      :navigate
+      (when-let [frame-id (:destination interaction)]
+        (let [viewer-section (dom/get-element "viewer-section")
+              scroll (if (:preserve-scroll interaction)
+                       (dom/get-scroll-pos viewer-section)
+                       0)]
+          (st/emit! (dv/set-nav-scroll scroll)
+                    (dv/go-to-frame frame-id (:animation interaction)))))
 
     :open-overlay
     (let [manual?                    (= :manual (:overlay-pos-type interaction))
@@ -144,18 +148,54 @@
     :open-url
     (st/emit! (dom/open-new-window (:url interaction)))
 
-    nil))
+    ;; Figma #10: change-to variant action (interactive components).
+    ;; v1 DEFERRED at runtime: swapping an instance's variant on trigger
+    ;; requires resolving the target component-instance by id, finding the
+    ;; matching variant in its component set by property values, and emitting
+    ;; an instance swap through the existing change pipeline. That path is
+    ;; high blast-radius (touches core component render/sync) and cannot be
+    ;; verified without a build, so it is intentionally a no-op here. The
+    ;; schema + UI authoring surface is fully wired; see Figma_Parity.md #10.
+    :change-to
+    nil
+
+    ;; Figma #73: swap-overlay replaces the currently-open overlay with
+    ;; another overlay frame, reusing the overlay positioning settings.
+    ;; v1 DEFERRED at runtime: it needs to look up which overlay is currently
+    ;; open for this interaction's source and close it before opening the new
+    ;; one (reuse dv/close-overlay + dv/open-overlay). The "which overlay is
+    ;; open" resolution depends on the viewer overlay state shape and is not
+    ;; safely additive without a build, so it is a no-op here. Schema + UI
+    ;; authoring is wired; see Figma_Parity.md #73.
+    :swap-overlay
+    nil
+
+    ;; Figma #73: scroll-to scrolls the viewport to an object within a
+    ;; top-level frame.
+    ;; v1 DEFERRED at runtime: scrolling requires resolving the target shape's
+    ;; absolute bounds within the current frame and adjusting the viewer
+    ;; section scroll position (dom/set-scroll-pos). The bounds/scroll math
+    ;; touches viewport state and is not safely additive without a build, so
+    ;; it is a no-op here. Schema + UI authoring is wired; see Figma_Parity.md
+    ;; #73.
+    :scroll-to
+    nil
+
+    nil)))
 
 ;; Perform the opposite action of an interaction, if possible
 (defn- deactivate-interaction
   [interaction shape base-frame frame-offset objects overlays]
-  (case (:action-type interaction)
-    :open-overlay
-    (let [frame-id (or (:destination interaction)
-                       (if (= (:type shape) :frame)
-                         (:id shape)
-                         (:frame-id shape)))]
-      (st/emit! (dv/close-overlay frame-id)))
+  ;; Figma #73: a disabled interaction does nothing at runtime (mirrors
+  ;; activate-interaction). Absent :disabled = enabled.
+  (when-not (:disabled interaction)
+    (case (:action-type interaction)
+      :open-overlay
+      (let [frame-id (or (:destination interaction)
+                         (if (= (:type shape) :frame)
+                           (:id shape)
+                           (:frame-id shape)))]
+        (st/emit! (dv/close-overlay frame-id)))
 
     :toggle-overlay
     (let [manual?                    (= :manual (:overlay-pos-type interaction))
@@ -222,7 +262,7 @@
                                    background-overlay
                                    (:animation interaction)
                                    fixed-base?))))
-    nil))
+    nil)))
 
 (defn- on-pointer-down
   [event shape base-frame frame-offset objects overlays]

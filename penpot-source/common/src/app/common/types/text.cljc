@@ -44,16 +44,46 @@
 
 (def text-spacing-attrs
   [:line-height
-   :letter-spacing])
+   :line-height-mode
+   :letter-spacing
+   :paragraph-spacing
+   :paragraph-indent])
 
 (def text-valign-attrs
   [:vertical-align])
 
 (def text-decoration-attrs
-  [:text-decoration])
+  [:text-decoration
+   :text-decoration-style
+   :text-decoration-thickness
+   :text-decoration-offset
+   :text-decoration-skip-ink
+   :text-decoration-color])
 
 (def text-transform-attrs
   [:text-transform])
+
+;; Inline baseline shift (superscript / subscript). Span-level, applied to a
+;; character range. Mirrors `:vertical-align` (root, text-box valign) but lives
+;; on spans; the editor maps it to the CSS `vertical-align` property (see
+;; `app.util.text.content.styles`). Faux font-size fallback is deferred.
+(def text-baseline-attrs
+  [:baseline-shift])
+
+;; Inline hyperlink on a character range. The value is a map `{:url "..."}`;
+;; it round-trips through the editor DOM as a transit-encoded `--hyperlink`
+;; CSS custom property (see `styles/mapping`). Live editor visual + prototype
+;; click interception are deferred (v1: schema + persistence + export only).
+(def text-link-attrs
+  [:hyperlink])
+
+;; Layer/paragraph-level truncation. `:text-overflow` is `:visible` or
+;; `:truncate`; `:max-lines` is an int. These are paragraph-level in the DOM
+;; editor (stripped from spans below) and read by the renderer/export path.
+;; Exact whole-text-box clamping (vs per-paragraph) is a v1 limitation.
+(def text-overflow-attrs
+  [:text-overflow
+   :max-lines])
 
 (def text-fills
   [:fills])
@@ -75,13 +105,31 @@
    text-font-attrs
    text-spacing-attrs
    text-decoration-attrs
+   text-baseline-attrs
+   text-link-attrs
+   text-overflow-attrs
    text-transform-attrs
    text-fills))
 
+;; Attrs that are paragraph/layer-level in the DOM editor (not stored on
+;; individual text spans). Line-height is paragraph-level; the new
+;; line-height-mode / paragraph-spacing / paragraph-indent pair with it, and
+;; text-overflow / max-lines are layer-level. They are kept on paragraph nodes
+;; (and read by the renderer from paragraph data) but stripped from spans so
+;; they don't pollute per-range rich-text diffs.
+(def ^:private paragraph-level-attrs
+  #{:line-height
+    :line-height-mode
+    :paragraph-spacing
+    :paragraph-indent
+    :text-overflow
+    :max-lines})
+
 (def text-span-attrs
-  "Inline text span attrs. Line-height is paragraph-level in the DOM editor;
-   it may still be stored redundantly on span nodes."
-  (vec (remove #{:line-height} text-node-attrs)))
+  "Inline text span attrs. Paragraph-level attrs (line-height, line-height-mode,
+   paragraph-spacing, paragraph-indent, text-overflow, max-lines) are excluded;
+   they may still be stored redundantly on span nodes after token apply."
+  (vec (remove paragraph-level-attrs text-node-attrs)))
 
 (defn text-node-attr?
   [attr]
@@ -324,13 +372,16 @@
    This is independent of the text structure, so if the structure changes
    but the attributes are the same, it will return an empty set.
 
-   Line-height on text nodes is ignored: it is a paragraph-level attribute
-   and may be stored redundantly on spans (e.g. after token apply)."
+   Paragraph-level attrs on text nodes are ignored: they are paragraph-level
+   and may be stored redundantly on spans (e.g. after token apply / bulk
+   update-all-attrs). This covers line-height and the new line-height-mode /
+   paragraph-spacing / paragraph-indent / text-overflow / max-lines attrs."
   [a b]
-  (let [strip-span-line-height
-        #(transform-nodes is-text-node? (fn [node] (dissoc node :line-height)) %)
-        a (strip-span-line-height a)
-        b (strip-span-line-height b)
+  (let [strip-span-paragraph-attrs
+        #(transform-nodes is-text-node?
+                          (fn [node] (apply dissoc node paragraph-level-attrs)) %)
+        a (strip-span-paragraph-attrs a)
+        b (strip-span-paragraph-attrs b)
         diff-attrs (compare-text-content a b
                                          {:text-cb      identity
                                           :attribute-cb (fn [acc attr] (conj acc attr))})]

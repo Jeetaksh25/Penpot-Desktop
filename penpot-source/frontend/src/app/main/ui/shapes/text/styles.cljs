@@ -55,15 +55,60 @@
           line-height
           (:line-height txt/default-typography))
 
+        ;; Feature 14 — line-height modes. Absent / "auto" = legacy unitless
+        ;; multiplier (existing behavior); "percent" = value/100 multiplier;
+        ;; "px" = absolute pixels. Additive: only reinterprets when a mode is
+        ;; explicitly set.
+        line-height-mode (:line-height-mode data)
+        line-height-css
+        (cond
+          (= line-height-mode "percent")
+          (let [v (js/parseFloat line-height)]
+            (if (js/isFinite v) (str (/ v 100)) line-height))
+
+          (= line-height-mode "px")
+          (str line-height "px")
+
+          :else line-height)
+
         text-align  (:text-align data "start")
+
+        ;; Feature 15 — paragraph spacing (margin between paragraphs) and
+        ;; paragraph indentation (first-line indent). Additive.
+        paragraph-spacing (:paragraph-spacing data)
+        paragraph-indent  (:paragraph-indent data)
+
+        ;; Feature 17 — max-lines + truncation. Per-paragraph -webkit-line-clamp
+        ;; approximates Figma whole-box clamping (exact whole-box behavior is a
+        ;; v1 limitation; single-paragraph text boxes — the common case — are
+        ;; exact). Only applied when truncate? and a positive max-lines are set.
+        text-overflow (:text-overflow data)
+        truncate?     (= text-overflow "truncate")
+        max-lines     (:max-lines data)
+        max-lines-num (js/parseFloat max-lines)
+
         base        #js {;; Fix a problem when exporting HTML
                          :fontSize 0
-                         :lineHeight line-height
+                         :lineHeight line-height-css
                          :margin 0}]
 
     (cond-> base
-      (some? line-height)       (obj/set! "lineHeight" line-height)
-      (some? text-align)        (obj/set! "textAlign" text-align))))
+      (some? line-height-css)  (obj/set! "lineHeight" line-height-css)
+      (some? text-align)       (obj/set! "textAlign" text-align)
+
+      ;; Feature 15
+      (and (some? paragraph-spacing) (not= "" paragraph-spacing))
+      (obj/set! "marginBottom" (str paragraph-spacing "px"))
+
+      (and (some? paragraph-indent) (not= "" paragraph-indent))
+      (obj/set! "textIndent" (str paragraph-indent "px"))
+
+      ;; Feature 17
+      (and truncate? (some? max-lines) (not= "" max-lines) (pos? max-lines-num))
+      (-> (obj/set! "display" "-webkit-box")
+          (obj/set! "WebkitBoxOrient" "vertical")
+          (obj/set! "WebkitLineClamp" max-lines-num)
+          (obj/set! "overflow" "hidden")))))
 
 (defn generate-text-styles
   ([shape data]
@@ -154,4 +199,40 @@
            (obj/set! "fontWeight" font-weight))
 
        (= grow-type :auto-width)
-       (obj/set! "whiteSpace" "pre")))))
+       (obj/set! "whiteSpace" "pre")
+
+       ;; Feature 20 — advanced underline controls (per-range). Additive: only
+       ;; applied when the attr is present. Absent = existing behavior.
+       (some? (:text-decoration-style data))
+       (obj/set! "textDecorationStyle" (:text-decoration-style data))
+
+       (and (some? (:text-decoration-thickness data))
+            (not= "" (:text-decoration-thickness data)))
+       (obj/set! "textDecorationThickness" (str (:text-decoration-thickness data) "px"))
+
+       (some? (:text-decoration-offset data))
+       (obj/set! "textUnderlineOffset" (str (:text-decoration-offset data) "px"))
+
+       (some? (:text-decoration-skip-ink data))
+       (obj/set! "textDecorationSkipInk" (:text-decoration-skip-ink data))
+
+       (some? (:text-decoration-color data))
+       (obj/set! "textDecorationColor" (:text-decoration-color data))
+
+       ;; Feature 78 — superscript / subscript. `:baseline-shift` maps to the
+       ;; CSS `vertical-align` property (super/sub). Additive.
+       (some? (:baseline-shift data))
+       (obj/set! "verticalAlign" (:baseline-shift data))
+
+       ;; Feature 18 — hyperlink. v1 export/preview affordance: a linked range
+       ;; gets a pointer cursor and (if no explicit underline/line-through) an
+       ;; underline, mirroring Figma's default link styling. Prototype click
+       ;; interception is deferred.
+       (some? (:hyperlink data))
+       (-> (obj/set! "cursor" "pointer")
+           (obj/set! "textDecoration"
+                     (if (or (= text-decoration "underline")
+                             (= text-decoration "line-through")
+                             (= text-decoration "overline"))
+                       text-decoration
+                       "underline")))))))

@@ -23,6 +23,7 @@
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
+   [app.main.ui.components.select :refer [select]]
    [app.main.ui.context :as ctx]
    [app.main.ui.ds.buttons.icon-button :refer [icon-button*]]
    [app.main.ui.ds.controls.radio-buttons :refer [radio-buttons*]]
@@ -209,7 +210,14 @@
             :id       "line-through-text-decoration"
             :disabled (and token-typography-row-enabled? (some? token-applied))
             :label    (tr "workspace.options.text-options.strikethrough" (sc/get-tooltip :line-through))
-            :icon     i/text-stroked}])
+            :icon     i/text-stroked}
+           ;; Feature 20 — overline decoration. A new value of the existing
+           ;; :text-decoration attr (CSS `text-decoration: overline`); rendered
+           ;; as a label button (no dedicated icon). Additive.
+           {:value    "overline"
+            :id       "overline-text-decoration"
+            :disabled (and token-typography-row-enabled? (some? token-applied))
+            :label    (tr "workspace.options.text-options.overline")}])
 
         handle-change
         (mf/use-fn
@@ -228,6 +236,207 @@
                          :disabled     (and token-typography-row-enabled? (some? token-applied))
                          :allow-empty  true
                          :options      options}]]))
+
+;; Feature 20 — advanced underline controls (style / thickness / offset /
+;; skip-ink / color). Per-range rich text attrs (`:text-decoration-style` etc.)
+;; added to `txt/text-span-attrs`. Rendered only inside the "more options"
+;; section. Additive: absent value = no change to existing rendering.
+(mf/defc advanced-underline-options*
+  [{:keys [values on-change on-blur]}]
+  (let [td-style       (some-> (:text-decoration-style values) d/name)
+        thickness      (:text-decoration-thickness values)
+        offset         (:text-decoration-offset values)
+        skip-ink       (some-> (:text-decoration-skip-ink values) d/name)
+        color          (:text-decoration-color values)
+
+        style-options
+        (mf/with-memo []
+          [{:value "solid"  :key "tds-solid"  :label (tr "workspace.options.text-options.text-decoration-style.solid")}
+           {:value "dotted" :key "tds-dotted" :label (tr "workspace.options.text-options.text-decoration-style.dotted")}
+           {:value "wavy"   :key "tds-wavy"   :label (tr "workspace.options.text-options.text-decoration-style.wavy")}])
+
+        skip-ink-options
+        (mf/with-memo []
+          [{:value "auto"        :key "tdsi-auto" :label (tr "workspace.options.text-options.text-decoration-skip-ink.auto")}
+           {:value "skip-ink"    :key "tdsi-skip" :label (tr "workspace.options.text-options.text-decoration-skip-ink.skip-ink")}
+           {:value "no-skip-ink" :key "tdsi-none" :label (tr "workspace.options.text-options.text-decoration-skip-ink.none")}])
+
+        on-style-change
+        (mf/use-fn
+         (mf/deps on-change on-blur)
+         (fn [value]
+           (on-change {:text-decoration-style value})
+           (when (some? on-blur) (on-blur))))
+
+        on-skip-ink-change
+        (mf/use-fn
+         (mf/deps on-change on-blur)
+         (fn [value]
+           (on-change {:text-decoration-skip-ink value})
+           (when (some? on-blur) (on-blur))))
+
+        on-thickness-change
+        (mf/use-fn
+         (mf/deps on-change)
+         (fn [event]
+           (let [value (dom/get-target-val event)]
+             (when (and (some? value) (not= "" value))
+               (on-change {:text-decoration-thickness value})))))
+
+        on-offset-change
+        (mf/use-fn
+         (mf/deps on-change)
+         (fn [event]
+           (let [value (dom/get-target-val event)]
+             (when (and (some? value) (not= "" value))
+               (on-change {:text-decoration-offset value})))))
+
+        on-color-change
+        (mf/use-fn
+         (mf/deps on-change on-blur)
+         (fn [event]
+           (on-change {:text-decoration-color (dom/get-target-val event)})
+           (when (some? on-blur) (on-blur))))]
+
+    [:div {:class (stl/css :text-decoration-options)}
+     [:& select
+      {:class "text-decoration-style-select"
+       :default-value (or td-style "solid")
+       :options style-options
+       :on-change on-style-change
+       :on-blur on-blur}]
+     [:input {:type "number"
+              :min 0
+              :max 100
+              :step 0.5
+              :aria-label (tr "workspace.options.text-options.text-decoration-thickness")
+              :title (tr "workspace.options.text-options.text-decoration-thickness")
+              :value (if (= thickness :multiple) "" (or thickness ""))
+              :placeholder (if (= thickness :multiple) (tr "settings.multiple") "--")
+              :on-change on-thickness-change}]
+     [:input {:type "number"
+              :min -100
+              :max 100
+              :step 0.5
+              :aria-label (tr "workspace.options.text-options.text-decoration-offset")
+              :title (tr "workspace.options.text-options.text-decoration-offset")
+              :value (if (= offset :multiple) "" (or offset ""))
+              :placeholder (if (= offset :multiple) (tr "settings.multiple") "--")
+              :on-change on-offset-change}]
+     [:& select
+      {:class "text-decoration-skip-ink-select"
+       :default-value (or skip-ink "auto")
+       :options skip-ink-options
+       :on-change on-skip-ink-change
+       :on-blur on-blur}]
+     [:input {:type "color"
+              :aria-label (tr "workspace.options.text-options.text-decoration-color")
+              :title (tr "workspace.options.text-options.text-decoration-color")
+              :value (if (or (nil? color) (= color :multiple)) "#000000" color)
+              :on-change on-color-change}]]))
+
+;; Feature 78 — superscript / subscript. Toggle buttons that set
+;; `:baseline-shift` ("super"/"sub"/nil). Rendered only in "more options".
+(mf/defc super-sub-options*
+  [{:keys [values on-change on-blur]}]
+  (let [baseline-shift (some-> (:baseline-shift values) d/name)
+        options
+        (mf/with-memo []
+          [{:value "super" :id "baseline-shift-super"
+            :label (tr "workspace.options.text-options.superscript")}
+           {:value "sub"   :id "baseline-shift-sub"
+            :label (tr "workspace.options.text-options.subscript")}])
+
+        handle-change
+        (mf/use-fn
+         (mf/deps on-change on-blur baseline-shift)
+         (fn [value]
+           (on-change {:baseline-shift (if (= value baseline-shift) nil value)})
+           (when (some? on-blur) (on-blur))))]
+
+    [:div {:class (stl/css :vertical-align-options)}
+     [:> radio-buttons* {:selected     (when (#{"super" "sub"} baseline-shift) baseline-shift)
+                         :on-change    handle-change
+                         :name         "baseline-shift-options"
+                         :allow-empty  true
+                         :options      options}]]))
+
+;; Feature 18 — hyperlink. v1 sets a layer-level URL on the selection via the
+;; existing `on-change` path (persists `:hyperlink {:url "..."}` in the model).
+;; Per-range rich-text link application + prototype click interception are
+;; deferred. Rendered only in "more options".
+(mf/defc hyperlink-options*
+  [{:keys [values on-change on-blur]}]
+  (let [hyperlink (:hyperlink values)
+        url (cond
+              (map? hyperlink) (:url hyperlink)
+              (= hyperlink :multiple) ""
+              :else nil)
+        multiple? (= hyperlink :multiple)
+        on-url-change
+        (mf/use-fn
+         (mf/deps on-change on-blur)
+         (fn [event]
+           (let [value (dom/get-target-val event)]
+             (on-change {:hyperlink (when (and (some? value) (not= "" value))
+                                      {:url value})})
+             (when (some? on-blur) (on-blur)))))]
+    [:div {:class (stl/css :text-decoration-options)}
+     [:input {:type "url"
+              :aria-label (tr "workspace.options.text-options.hyperlink")
+              :title (tr "workspace.options.text-options.hyperlink")
+              :value (or url "")
+              :placeholder (if multiple? (tr "settings.multiple") (tr "workspace.options.text-options.hyperlink-placeholder"))
+              :on-change on-url-change}]]))
+
+;; Feature 17 — text truncation / max-lines. `:text-overflow` is `:visible` or
+;; `:truncate`; `:max-lines` is a positive int (only meaningful with truncate).
+;; Rendered only in "more options". Additive.
+(mf/defc truncation-options*
+  [{:keys [values on-change on-blur]}]
+  (let [text-overflow (some-> (:text-overflow values) d/name)
+        max-lines (:max-lines values)
+        truncate? (= text-overflow "truncate")
+        multiple? (or (= text-overflow :multiple) (= max-lines :multiple))
+
+        options
+        (mf/with-memo []
+          [{:value "visible"  :id "text-overflow-visible"
+            :label (tr "workspace.options.text-options.text-overflow.visible")}
+           {:value "truncate" :id "text-overflow-truncate"
+            :label (tr "workspace.options.text-options.text-overflow.truncate")}])
+
+        on-overflow-change
+        (mf/use-fn
+         (mf/deps on-change on-blur)
+         (fn [value]
+           (on-change {:text-overflow (if (= value "visible") nil value)})
+           (when (some? on-blur) (on-blur))))
+
+        on-max-lines-change
+        (mf/use-fn
+         (mf/deps on-change)
+         (fn [event]
+           (let [value (dom/get-target-val event)]
+             (when (and (some? value) (not= "" value))
+               (on-change {:max-lines value})))))]
+
+    [:div {:class (stl/css :text-decoration-options)}
+     [:> radio-buttons* {:selected     (when (#{"visible" "truncate"} text-overflow) text-overflow)
+                         :on-change    on-overflow-change
+                         :name         "text-overflow-options"
+                         :allow-empty  false
+                         :options      options}]
+     (when truncate?
+       [:input {:type "number"
+                :min 1
+                :max 100
+                :step 1
+                :aria-label (tr "workspace.options.text-options.max-lines")
+                :title (tr "workspace.options.text-options.max-lines")
+                :value (if multiple? "" (or max-lines ""))
+                :placeholder (if multiple? (tr "settings.multiple") "--")
+                :on-change on-max-lines-change}])]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
@@ -290,7 +499,33 @@
          (identical? (get o-values :typography-ref-id)
                      (get n-values :typography-ref-id))
          (identical? (get o-values :vertical-align)
-                     (get n-values :vertical-align)))))
+                     (get n-values :vertical-align))
+         ;; Feature 14/15/17/18/20/78 — new additive text attrs. Added here so
+         ;; the memoized text-menu* re-renders when any of them changes.
+         (identical? (get o-values :line-height-mode)
+                     (get n-values :line-height-mode))
+         (identical? (get o-values :paragraph-spacing)
+                     (get n-values :paragraph-spacing))
+         (identical? (get o-values :paragraph-indent)
+                     (get n-values :paragraph-indent))
+         (identical? (get o-values :text-decoration-style)
+                     (get n-values :text-decoration-style))
+         (identical? (get o-values :text-decoration-thickness)
+                     (get n-values :text-decoration-thickness))
+         (identical? (get o-values :text-decoration-offset)
+                     (get n-values :text-decoration-offset))
+         (identical? (get o-values :text-decoration-skip-ink)
+                     (get n-values :text-decoration-skip-ink))
+         (identical? (get o-values :text-decoration-color)
+                     (get n-values :text-decoration-color))
+         (identical? (get o-values :baseline-shift)
+                     (get n-values :baseline-shift))
+         (identical? (get o-values :hyperlink)
+                     (get n-values :hyperlink))
+         (identical? (get o-values :text-overflow)
+                     (get n-values :text-overflow))
+         (identical? (get o-values :max-lines)
+                     (get n-values :max-lines)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Main component
@@ -479,6 +714,10 @@
                        :values      values
                        :on-change   on-change
                        :show-recent true
+                       ;; Feature 14/15 — enable the advanced spacing controls
+                       ;; (line-height mode, paragraph spacing/indent) only in
+                       ;; the text-shape sidebar, not the typography asset editor.
+                       :advanced-spacing? true
                        :on-blur     on-text-blur})]
 
     (hooks/use-stream
@@ -585,4 +824,11 @@
           [:div {:class (stl/css :text-decoration-options)}
            [:> vertical-align* common-props]
            [:> text-decoration-options* (mf/spread-props common-props {:token-applied current-token-name})]
-           [:> text-direction-options* common-props]])])]))
+           [:> text-direction-options* common-props]
+           ;; Feature 20 / 78 / 18 / 17 — new additive controls, only rendered
+           ;; when the "more options" panel is open. Each sets optional attrs
+           ;; via the existing `on-change` -> `emit-update!` path.
+           [:> advanced-underline-options* common-props]
+           [:> super-sub-options* common-props]
+           [:> hyperlink-options* common-props]
+           [:> truncation-options* common-props]])])]))

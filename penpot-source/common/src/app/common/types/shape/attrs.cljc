@@ -22,6 +22,9 @@
             :show-content
             :hide-in-viewer
 
+            ;; Figma-parity device frames (gap #35).
+            :device-frame
+
             :applied-tokens
 
             :opacity

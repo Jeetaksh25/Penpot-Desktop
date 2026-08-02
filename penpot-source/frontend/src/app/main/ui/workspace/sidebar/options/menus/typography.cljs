@@ -582,14 +582,41 @@
            :on-blur on-blur}])]]]))
 
 (mf/defc spacing-options*
-  [{:keys [values on-change on-blur]}]
+  [{:keys [values on-change on-blur advanced-spacing?]}]
   (let [{:keys [line-height
-                letter-spacing]} values
+                line-height-mode
+                letter-spacing
+                paragraph-spacing
+                paragraph-indent]} values
         line-height (or line-height "1.2")
         letter-spacing (or letter-spacing "0")
+        ;; Feature 14 — line-height mode. Absent / "auto" = legacy unitless
+        ;; multiplier (existing behavior); "percent" = value/100; "px" = px.
+        line-height-mode (if (= line-height-mode :multiple)
+                           ""
+                           (or (d/name line-height-mode) "auto"))
         handle-change
         (fn [value attr]
-          (on-change {attr (ust/format-precision value 2)}))]
+          (on-change {attr (ust/format-precision value 2)}))
+
+        on-mode-change
+        (mf/use-fn
+         (mf/deps on-change on-blur)
+         (fn [value]
+           (on-change {:line-height-mode (if (= value "auto") nil value)})
+           (when (some? on-blur) (on-blur))))
+
+        mode-options
+        (mf/with-memo []
+          [{:value "auto"
+            :key "lh-mode-auto"
+            :label (tr "workspace.options.text-options.line-height-mode.auto")}
+           {:value "percent"
+            :key "lh-mode-percent"
+            :label (tr "workspace.options.text-options.line-height-mode.percent")}
+           {:value "px"
+            :key "lh-mode-px"
+            :label (tr "workspace.options.text-options.line-height-mode.px")}])]
 
     [:div {:class (stl/css :spacing-options)}
      [:div {:class (stl/css :line-height)
@@ -608,7 +635,19 @@
         :placeholder (if (= :multiple line-height) (tr "settings.multiple") "--")
         :is-nillable (= :multiple line-height)
         :on-change #(handle-change % :line-height)
-        :on-blur on-blur}]]
+        :on-blur on-blur}]
+      ;; Feature 14 — line-height mode selector (Auto / Percent / Pixels).
+      ;; Reuses the font-variant select styling; additive control, default
+      ;; "auto" preserves the legacy unitless-multiplier behavior. Only shown
+      ;; for text shapes (advanced-spacing?), not the typography asset editor,
+      ;; since these attrs are not part of the typography schema.
+      (when advanced-spacing?
+        [:& select
+         {:class (stl/css :font-variant-select)
+          :default-value line-height-mode
+          :options mode-options
+          :on-change on-mode-change
+          :on-blur on-blur}])]
 
      [:div {:class (stl/css :letter-spacing)
             :title (tr "inspect.attributes.typography.letter-spacing")}
@@ -627,7 +666,50 @@
         :placeholder (if (= :multiple letter-spacing) (tr "settings.multiple") "--")
         :on-change #(handle-change % :letter-spacing)
         :is-nillable (= :multiple letter-spacing)
-        :on-blur on-blur}]]]))
+        :on-blur on-blur}]]
+
+     ;; Feature 15 — paragraph spacing (px between paragraphs) and paragraph
+     ;; indentation (first-line indent). Both reuse the existing line-height /
+     ;; letter-spacing row layout classes (no new CSS). Additive: absent value
+     ;; = no change to existing rendering. Only shown for text shapes
+     ;; (advanced-spacing?), not the typography asset editor.
+     (when advanced-spacing?
+       [:div {:class (stl/css :line-height)
+              :title (tr "workspace.options.text-options.paragraph-spacing")}
+        [:span {:class (stl/css :icon)
+                :alt (tr "workspace.options.text-options.paragraph-spacing")}
+         deprecated-icon/text-lineheight]
+        [:> deprecated-input/numeric-input*
+         {:min 0
+          :max 1000
+          :step 1
+          :default-value "0"
+          :class (stl/css :line-height-input)
+          :aria-label (tr "workspace.options.text-options.paragraph-spacing")
+          :value (attr->string paragraph-spacing)
+          :placeholder (if (= :multiple paragraph-spacing) (tr "settings.multiple") "--")
+          :on-change #(handle-change % :paragraph-spacing)
+          :is-nillable (= :multiple paragraph-spacing)
+          :on-blur on-blur}]])
+
+     (when advanced-spacing?
+       [:div {:class (stl/css :letter-spacing)
+              :title (tr "workspace.options.text-options.paragraph-indent")}
+        [:span {:class (stl/css :icon)
+                :alt (tr "workspace.options.text-options.paragraph-indent")}
+         deprecated-icon/text-letterspacing]
+        [:> deprecated-input/numeric-input*
+         {:min 0
+          :max 1000
+          :step 1
+          :default-value "0"
+          :class (stl/css :letter-spacing-input)
+          :aria-label (tr "workspace.options.text-options.paragraph-indent")
+          :value (attr->string paragraph-indent)
+          :placeholder (if (= :multiple paragraph-indent) (tr "settings.multiple") "--")
+          :on-change #(handle-change % :paragraph-indent)
+          :is-nillable (= :multiple paragraph-indent)
+          :on-blur on-blur}]])]))
 
 (mf/defc text-transform-options*
   [{:keys [values on-change on-blur]}]
@@ -661,7 +743,7 @@
                         :id "text-transform-lowercase"}]]]))
 
 (mf/defc text-options*
-  [{:keys [ids editor values on-change on-blur show-recent]}]
+  [{:keys [ids editor values on-change on-blur show-recent advanced-spacing?]}]
   (let [full-size-selector? (and show-recent (= (mf/use-ctx ctx/sidebar) :right))
         opts (mf/props
               {:editor editor
@@ -670,6 +752,7 @@
                :on-change on-change
                :on-blur on-blur
                :show-recent show-recent
+               :advanced-spacing? advanced-spacing?
                :full-size-selector full-size-selector?})]
     [:div {:class (stl/css-case :text-options true
                                 :text-options-full-size full-size-selector?)}

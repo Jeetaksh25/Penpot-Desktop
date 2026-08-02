@@ -334,6 +334,14 @@
                           :subsections [:tools]
                           :fn #(emit-when-no-readonly (dwd/select-for-drawing :curve))}
 
+   ;; Figma-parity scale tool (gap #37). Selects the :scale tool; the
+   ;; canvas drag-to-scale interaction is deferred, the actionable
+   ;; scaling lives in the measures sidebar scale-factor input.
+   :scale                {:tooltip "K"
+                          :command "k"
+                          :subsections [:tools]
+                          :fn #(emit-when-no-readonly (dwd/select-for-drawing :scale))}
+
    :add-comment          {:tooltip "C"
                           :command "c"
                           :subsections [:tools]

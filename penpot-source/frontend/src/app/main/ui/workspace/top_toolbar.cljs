@@ -68,6 +68,7 @@
     :path    (tr "workspace.toolbar.path"    (sc/get-tooltip :draw-path))
     :image   (tr "workspace.toolbar.image"   (sc/get-tooltip :insert-image))
     :curve   (tr "workspace.toolbar.curve"   (sc/get-tooltip :draw-curve))
+    :scale   (tr "workspace.toolbar.scale"   (sc/get-tooltip :scale))
     :slice   (tr "workspace.toolbar.slice"   (sc/get-tooltip :draw-slice))
     :plugins (tr "workspace.toolbar.plugins" (sc/get-tooltip :plugins))
     :debug   "Debugging tool"
@@ -352,6 +353,19 @@
                            :aria-label (tr "workspace.toolbar.move"  (sc/get-tooltip :move))
                            :icon i/move
                            :on-click on-interrupt}]]
+
+        ;; Figma-parity scale tool (gap #37). Selects the :scale drawing
+        ;; tool; the canvas drag-to-scale interaction is DEFERRED (no
+        ;; :scale draw handler = safe no-op), the actionable scaling is
+        ;; the scale-factor input in the measures sidebar.
+        [:li {:class (stl/css :toolbar-option)}
+         [:> icon-button* {:variant "ghost"
+                           :tooltip-placement "bottom"
+                           :aria-pressed (= selected-drawing-tool :scale)
+                           :aria-label (tool-label :scale)
+                           :icon i/expand
+                           :on-click on-select-tool
+                           :data-tool "scale"}]]
 
         [:li {:class (stl/css :toolbar-option)}
          [:> icon-button* {:variant "ghost"

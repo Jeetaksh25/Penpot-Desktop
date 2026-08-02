@@ -35,12 +35,15 @@
 (defn- event-type-names
   []
   {:click       (tr "workspace.options.interaction-on-click")
-   ;; TODO: need more UX research
-   ;; :mouse-over (tr "workspace.options.interaction-while-hovering")
-   ;; :mouse-press (tr "workspace.options.interaction-while-pressing")
+   ;; Figma #33: re-enabled per parity hint (were commented out pending UX research).
+   :mouse-over  (tr "workspace.options.interaction-while-hovering")
+   :mouse-press (tr "workspace.options.interaction-while-pressing")
    :mouse-enter (tr "workspace.options.interaction-mouse-enter")
    :mouse-leave (tr "workspace.options.interaction-mouse-leave")
-   :after-delay (tr "workspace.options.interaction-after-delay")})
+   :after-delay (tr "workspace.options.interaction-after-delay")
+   ;; Figma #33: keyboard + input-change triggers.
+   :key-down    (tr "workspace.options.interaction-on-key-down")
+   :on-change   (tr "workspace.options.interaction-on-change")})
 
 (defn- event-type-name
   [interaction]
@@ -59,6 +62,12 @@
                         (get destination :name (tr "workspace.options.interaction-self")))
     :prev-screen    (tr "workspace.options.interaction-prev-screen")
     :open-url       (tr "workspace.options.interaction-open-url")
+    ;; Figma #10/#73: new action summaries.
+    :change-to      (tr "workspace.options.interaction-change-to")
+    :swap-overlay   (tr "workspace.options.interaction-swap-overlay-dest"
+                        (get destination :name (tr "workspace.options.interaction-none")))
+    :scroll-to      (tr "workspace.options.interaction-scroll-to-dest"
+                        (get destination :name (tr "workspace.options.interaction-none")))
     "--"))
 
 (defn- get-frames-options
@@ -333,13 +342,56 @@
            (let [value (-> event dom/get-target dom/checked?)]
              (update-interaction index #(ctsi/set-offset-effect % value)))))
 
+        ;; Figma #73: per-interaction enable/disable.
+        change-disabled
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (-> event dom/get-target dom/checked?)]
+             (update-interaction index #(ctsi/set-disabled % value)))))
+
+        ;; Figma #33: key-down trigger filter (a key name like "Enter" or "a").
+        change-key-code
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (-> event dom/get-target dom/get-value str/trim)]
+             (update-interaction index #(ctsi/set-key-code % (when-not (str/empty? value) value))))))
+
+        ;; Figma #34: custom-bezier control points. Each coordinate lives in
+        ;; the animation map at [:animation :bezier-ctrl]; updating one
+        ;; coordinate leaves the others intact (and creates the map lazily).
+        change-bezier-ctrl
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [axis]
+           (fn [value]
+             (update-interaction
+              index
+              #(update-in % [:animation :bezier-ctrl] assoc axis value)))))
+
+        ;; Figma #10: change-to target variant id (a UUID string). Props
+        ;; authoring (the property-name -> value map) is deferred — the schema
+        ;; carries :change-to-props but the per-entry editor is non-trivial UI
+        ;; and the runtime swap is also deferred, so v1 only authors the target.
+        change-change-to-variant
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (-> event dom/get-target dom/get-value str/trim)
+                 value (when-not (str/empty? value) (uuid/parse* value))]
+             (update-interaction index #(ctsi/set-change-to-variant % value)))))
+
 
         event-type-options   (-> [{:value :click       :label (tr "workspace.options.interaction-on-click")}
-                                  ;; TODO: need more UX research
-                                  ;; :mouse-over (tr "workspace.options.interaction-while-hovering")
-                                  ;; :mouse-press (tr "workspace.options.interaction-while-pressing")
+                                  ;; Figma #33: re-enabled per parity hint (were commented out).
+                                  {:value :mouse-over  :label (tr "workspace.options.interaction-while-hovering")}
+                                  {:value :mouse-press :label (tr "workspace.options.interaction-while-pressing")}
                                   {:value :mouse-enter :label (tr "workspace.options.interaction-mouse-enter")}
-                                  {:value :mouse-leave :label (tr "workspace.options.interaction-mouse-leave")}]
+                                  {:value :mouse-leave :label (tr "workspace.options.interaction-mouse-leave")}
+                                  ;; Figma #33: keyboard + input-change triggers.
+                                  {:value :key-down    :label (tr "workspace.options.interaction-on-key-down")}
+                                  {:value :on-change   :label (tr "workspace.options.interaction-on-change")}]
                                  (cond-> (cfh/frame-shape? shape)
                                    (conj {:value :after-delay :label (tr "workspace.options.interaction-after-delay")})))
 
@@ -348,7 +400,11 @@
                              {:value :toggle-overlay :label (tr "workspace.options.interaction-toggle-overlay")}
                              {:value :close-overlay  :label (tr "workspace.options.interaction-close-overlay")}
                              {:value :prev-screen    :label (tr "workspace.options.interaction-prev-screen")}
-                             {:value :open-url       :label (tr "workspace.options.interaction-open-url")}]
+                             {:value :open-url       :label (tr "workspace.options.interaction-open-url")}
+                             ;; Figma #10/#73: change-to variant, swap overlay, scroll to.
+                             {:value :change-to      :label (tr "workspace.options.interaction-change-to")}
+                             {:value :swap-overlay  :label (tr "workspace.options.interaction-swap-overlay")}
+                             {:value :scroll-to     :label (tr "workspace.options.interaction-scroll-to")}]
 
         frames-opts         (get-frames-options frames shape)
 
@@ -385,15 +441,27 @@
 
         animation-opts
         (mf/with-memo [basic-animation-opts]
-          (if (ctsi/allow-push? (:action-type interaction))
-            (d/concat-vec basic-animation-opts [{:value :push :label (tr "workspace.options.interaction-animation-push")}])
-            basic-animation-opts))
+          (cond-> basic-animation-opts
+            ;; Figma: push is only available for navigate actions.
+            (ctsi/allow-push? (:action-type interaction))
+            (d/concat-vec [{:value :push :label (tr "workspace.options.interaction-animation-push")}])
+
+            ;; Figma #11: smart animate is only available for navigate, change-to
+            ;; and swap-overlay actions. Runtime v1 falls back to the dissolve
+            ;; crossfade in the viewer; matched-layer tweening is deferred.
+            (ctsi/allow-smart-animate? (:action-type interaction))
+            (d/concat-vec [{:value :smart-animate :label (tr "workspace.options.interaction-animation-smart-animate")}])
+
+            :always
+            vec))
 
         easing-options [{:icon :easing-linear      :value :linear      :label (tr "workspace.options.interaction-easing-linear")}
                         {:icon :easing-ease        :value :ease        :label (tr "workspace.options.interaction-easing-ease")}
                         {:icon :easing-ease-in     :value :ease-in     :label (tr "workspace.options.interaction-easing-ease-in")}
                         {:icon :easing-ease-out    :value :ease-out    :label (tr "workspace.options.interaction-easing-ease-out")}
-                        {:icon :easing-ease-in-out :value :ease-in-out :label (tr "workspace.options.interaction-easing-ease-in-out")}]]
+                        {:icon :easing-ease-in-out :value :ease-in-out :label (tr "workspace.options.interaction-easing-ease-in-out")}
+                        ;; Figma #34: custom cubic-bezier easing (4 control points).
+                        {:icon :easing-ease-in-out :value :custom-bezier :label (tr "workspace.options.interaction-easing-custom-bezier")}]]
 
     [:div {:class (stl/css :interaction-item)}
      [:> prototype-pill* {:title (event-type-name interaction)
@@ -408,6 +476,15 @@
 
      (when open-extended?
        [:*
+        ;; Figma #73: enable/disable toggle (kept at the top of the panel so a
+        ;; disabled interaction is still fully authored and re-enabled later).
+        [:div {:class (stl/css :interaction-row)}
+         [:div {:class (stl/css :interaction-row-checkbox)}
+          [:> checkbox* {:id (str "disabled-" index)
+                         :label (tr "workspace.options.interaction-disabled")
+                         :checked (true? (:disabled interaction))
+                         :on-change change-disabled}]]]
+
         ;; Trigger select
         [:div {:class (stl/css :interaction-row)}
          [:label {:class (stl/css :interaction-row-label)}
@@ -430,6 +507,18 @@
                                 :property (tr "workspace.options.interaction-ms")
                                 :on-change change-delay
                                 :value (:delay interaction)}]]])
+
+        ;; Figma #33: key-down trigger filter (a key name like "Enter" or "a").
+        (when (ctsi/has-key-code? interaction)
+          [:div {:class (stl/css :interaction-row)}
+           [:div {:class (stl/css :interaction-row-label)}
+            [:div {:class (stl/css :interaction-row-name)}
+             (tr "workspace.options.interaction-key-code")]]
+           [:div {:class (stl/css :interaction-row-input)}
+            [:> input* {:type "text"
+                        :placeholder (tr "workspace.options.interaction-key-code-placeholder")
+                        :default-value (or (:key-code interaction) "")
+                        :on-blur change-key-code}]]])
 
         ;; Action select
         [:div {:class (stl/css :interaction-row)}
@@ -474,6 +563,21 @@
                         :placeholder "http://example.com"
                         :default-value (:url interaction)
                         :on-blur change-url}]]])
+
+        ;; Figma #10: change-to variant action. v1 authors the target variant
+        ;; id only — the property-name -> value override map (:change-to-props)
+        ;; is carried by the schema but its per-entry editor is deferred (and
+        ;; the runtime swap is also deferred; see viewer/shapes.cljs).
+        (when (ctsi/has-change-to? interaction)
+          [:div {:class (stl/css :interaction-row)}
+           [:div {:class (stl/css :interaction-row-label)}
+            [:div {:class (stl/css :interaction-row-name)}
+             (tr "workspace.options.interaction-change-to-variant")]]
+           [:div {:class (stl/css :interaction-row-input)}
+            [:> input* {:type "text"
+                        :placeholder (tr "workspace.options.interaction-change-to-variant-placeholder")
+                        :default-value (some-> (:change-to-variant-id interaction) str)
+                        :on-blur change-change-to-variant}]]])
 
         (when (ctsi/has-overlay-opts interaction)
           [:*
@@ -645,6 +749,27 @@
                            :default-value (-> interaction :animation :easing)
                            :options easing-options
                            :on-change change-easing}]]])
+
+           ;; Figma #34: custom cubic-bezier control points (x1 y1 x2 y2).
+           (when (ctsi/has-bezier-ctrl? interaction)
+             (let [ctrl (-> interaction :animation :bezier-ctrl)]
+               [:div {:class (stl/css :interaction-row)}
+                [:div {:class (stl/css :interaction-row-label)}
+                 [:div {:class (stl/css :interaction-row-name)}
+                  (tr "workspace.options.interaction-bezier-ctrl")]]
+                [:div {:class (stl/css :interaction-row-input)}
+                 [:> numeric-input* {:placeholder "x1"
+                                     :on-change (change-bezier-ctrl :x1)
+                                     :value (:x1 ctrl)}]
+                 [:> numeric-input* {:placeholder "y1"
+                                     :on-change (change-bezier-ctrl :y1)
+                                     :value (:y1 ctrl)}]
+                 [:> numeric-input* {:placeholder "x2"
+                                     :on-change (change-bezier-ctrl :x2)
+                                     :value (:x2 ctrl)}]
+                 [:> numeric-input* {:placeholder "y2"
+                                     :on-change (change-bezier-ctrl :y2)
+                                     :value (:y2 ctrl)}]]]))
 
            ;; Offset effect
            (when (ctsi/has-offset-effect? interaction)

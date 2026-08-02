@@ -48,6 +48,27 @@
    [:frame-id ::sm/uuid]
    [:position ::gpt/point]])
 
+;; Figma-parity canvas sections (gap #39). A section is a titled,
+;; non-rendering organizational region that groups frames for navigation.
+;; It is purely a canvas overlay (no shape in :objects); the viewer
+;; renders only the title + bounds. :bounds is a plain rect in page
+;; coordinates. Optional :collapsed hides the section's frames in the
+;; layers panel (deferred — UI not wired in v1).
+(def schema:section
+  [:map {:title "Section"}
+   [:id ::sm/uuid]
+   [:name :string]
+   [:bounds
+    [:map
+     [:x ::sm/safe-number]
+     [:y ::sm/safe-number]
+     [:width ::sm/safe-number]
+     [:height ::sm/safe-number]]]
+   [:collapsed {:optional true} :boolean]])
+
+(def schema:sections
+  [:map-of {:gen/max 2} ::sm/uuid schema:section])
+
 (def schema:page
   [:map {:title "FilePage"}
    [:id ::sm/uuid]
@@ -57,6 +78,11 @@
    [:default-grids {:optional true} ctg/schema:default-grids]
    [:flows {:optional true} schema:flows]
    [:guides {:optional true} schema:guides]
+   ;; Figma-parity canvas sections (gap #39). Optional map of section-id
+   ;; -> section. Absent = no sections = existing behavior. The viewer
+   ;; overlay (viewport.cljs) renders section titles only when this is
+   ;; present and non-empty.
+   [:sections {:optional true} schema:sections]
    [:plugin-data {:optional true} ctpg/schema:plugin-data]
    [:background {:optional true} ctc/schema:hex-color]
    ;; Per-page pixel grid color. Falls back to a hardcoded default when

@@ -171,6 +171,13 @@
    [:stroke-color {:optional true} clr/schema:hex-color]
    [:stroke-color-gradient {:optional true} clr/schema:gradient]
    [:stroke-image {:optional true} clr/schema:image]
+   ;; Figma-parity per-item blend modes (gap #9). Optional blend mode for
+   ;; this single stroke; absent = :normal = today's compositing. The
+   ;; renderer must composite the stroke paint with its own
+   ;; mix-blend-mode (SVG) — that wiring is deferred (high blast-radius
+   ;; compositing change, no build to verify); the field round-trips.
+   [:blend-mode {:optional true}
+    [::sm/one-of blend-modes]]
    [:hidden {:optional true} :boolean]])
 
 (def stroke-attrs
@@ -268,7 +275,13 @@
    [:shapes [:vector {:gen/max 10 :gen/min 1} ::sm/uuid]]
    [:hide-fill-on-export {:optional true} :boolean]
    [:show-content {:optional true} :boolean]
-   [:hide-in-viewer {:optional true} :boolean]])
+   [:hide-in-viewer {:optional true} :boolean]
+   ;; Figma-parity device frames (gap #35). Optional preset name (e.g.
+   ;; :iphone-14, :pixel-7, :desktop-1080p). Absent = no device chrome,
+   ;; which is the existing behavior. The viewer chrome render is deferred
+   ;; (needs SVG bezel assets + a viewer pass); the field round-trips here
+   ;; and a picker is exposed in measures.cljs.
+   [:device-frame {:optional true} :keyword]])
 
 (def ^:private schema:bool-attrs
   [:map {:title "BoolAttrs"}
@@ -468,6 +481,7 @@
 (def ^:private allowed-bool-attrs #{:shapes :bool-type :content})
 (def ^:private allowed-group-attrs #{:shapes})
 (def ^:private allowed-frame-attrs #{:shapes :hide-fill-on-export :show-content :hide-in-viewer
+                                     :device-frame
                                      :layout :layout-flex-dir :layout-gap-type :layout-gap
                                      :layout-align-items :layout-justify-content :layout-align-content
                                      :layout-wrap-type :layout-padding-type :layout-padding

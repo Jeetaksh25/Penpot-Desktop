@@ -26,7 +26,20 @@
    :typography-ref-file [encode decode]
    :font-id [identity identity]
    :font-variant-id [identity identity]
-   :vertical-align [identity identity]})
+   :vertical-align [identity identity]
+   ;; Feature 14/15/17/18 — new text attrs that don't map 1:1 to a CSS
+   ;; property of the same name are round-tripped as transit/identity CSS
+   ;; custom properties (mirroring :fills / :vertical-align). This keeps them
+   ;; on the editor DOM so `dom->cljs` preserves them across edits (no data
+   ;; loss); the live editor visual + workspace render are applied by the
+   ;; export/preview renderer (`app.main.ui.shapes.text.styles`) and are
+   ;; otherwise additive (absent key = existing behavior).
+   :line-height-mode [identity identity]
+   :paragraph-spacing [identity identity]
+   :paragraph-indent [identity identity]
+   :max-lines [identity identity]
+   :text-overflow [identity identity]
+   :hyperlink [encode decode]})
 
 (defn normalize-style-value
   "This function adds units to style values"
@@ -34,7 +47,9 @@
   (cond
     (and (keyword? k)
          (or (= k :font-size)
-             (= k :letter-spacing))
+             (= k :letter-spacing)
+             (= k :text-decoration-thickness)
+             (= k :text-decoration-offset))
          (not= (str/slice v -2) "px"))
     (str v "px")
 
@@ -53,7 +68,9 @@
     :multiple
 
     (and (or (= k :font-size)
-             (= k :letter-spacing))
+             (= k :letter-spacing)
+             (= k :text-decoration-thickness)
+             (= k :text-decoration-offset))
          (= (str/slice v -2) "px"))
     (str/slice v 0 -2)
 
@@ -72,6 +89,13 @@
   (cond
     (= key :text-direction)
     "direction"
+
+    ;; Feature 78 — superscript/subscript. The model attr is :baseline-shift
+    ;; (distinct from root :vertical-align, which is text-box valign), but it
+    ;; maps to the CSS `vertical-align` property so the editor renders it live
+    ;; (super/sub) without a Style.js interpretation step.
+    (= key :baseline-shift)
+    "vertical-align"
 
     :else
     (name key)))
@@ -106,6 +130,9 @@
     (cond
       (= key :text-direction)
       (keyword "direction")
+
+      (= key :baseline-shift)
+      (keyword "vertical-align")
 
       :else
       key)))

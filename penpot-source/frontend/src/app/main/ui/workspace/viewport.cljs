@@ -118,6 +118,9 @@
         page-id           (get page :id)
         objects           (get page :objects)
         background        (get page :background clr/canvas)
+        ;; Figma-parity canvas sections (gap #39). Optional map of
+        ;; section-id -> section. Absent or empty = no overlay.
+        sections          (get page :sections)
 
         base-objects      (ui-hooks/with-focus-objects objects focus)
 
@@ -407,6 +410,27 @@
               :x (:x vbox 0)
               :y (:y vbox 0)
               :fill background}]
+
+      ;; Figma-parity canvas sections (gap #39). Rendered in page
+      ;; coordinates (the render SVG uses the page viewBox), so each
+      ;; title sits at the top-left of its section bounds. Guarded:
+      ;; nothing is rendered when :sections is absent or empty, so
+      ;; existing files are unaffected. Purely additive overlay.
+      (when (and (some? sections) (seq sections))
+        (for [section (vals sections)
+              :let [bounds (:bounds section)
+                    bx     (:x bounds 0)
+                    by     (:y bounds 0)
+                    bw     (:width bounds 0)
+                    bh     (:height bounds 0)]]
+          [:g {:key (:id section)
+               :pointer-events "none"}
+           [:rect {:x bx :y by :width bw :height bh
+                   :fill "none" :stroke "currentColor" :stroke-opacity 0.2
+                   :stroke-dasharray "8 8" :rx 8}]
+           [:text {:x (+ bx 16) :y (- (+ by bh) 16)
+                   :font-size 20 :fill "currentColor" :fill-opacity 0.6}
+            (:name section)]]))
 
       [:& (mf/provider ctx/current-vbox) {:value vbox'}
        [:& (mf/provider use/include-metadata-ctx) {:value (dbg/enabled? :show-export-metadata)}

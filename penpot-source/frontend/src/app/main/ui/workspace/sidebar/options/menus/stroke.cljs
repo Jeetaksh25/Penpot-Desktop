@@ -176,6 +176,14 @@
             (st/emit! (udw/trigger-bounding-box-cloaking ids))
             (st/emit! (dc/change-stroke-attrs ids {:stroke-miter-limit value} index))))
 
+        ;; Figma-parity per-stroke blend mode (gap #9). Stores the selected
+        ;; blend mode on the individual stroke via the existing
+        ;; change-stroke-attrs event (undo on). Renderer application deferred.
+        on-stroke-blend-mode-change
+        (fn [index value]
+          (st/emit! (udw/trigger-bounding-box-cloaking ids))
+          (st/emit! (dc/change-stroke-attrs ids {:blend-mode value} index)))
+
         ;; Figma-parity per-side stroke widths. Toggling to :per-side seeds
         ;; the four side widths from the current uniform stroke-width so the
         ;; shape does not jump; toggling back to :uniform just flips the mode
@@ -286,6 +294,7 @@
                               :on-stroke-cap-switch on-stroke-cap-switch
                               :on-stroke-join-change on-stroke-join-change
                               :on-stroke-miter-limit-change on-stroke-miter-limit-change
+                              :on-blend-mode-change on-stroke-blend-mode-change
                               :on-stroke-width-mode-change on-stroke-width-mode-change
                               :on-stroke-side-change on-stroke-side-change
                               :on-toggle-visibility on-toggle-visibility

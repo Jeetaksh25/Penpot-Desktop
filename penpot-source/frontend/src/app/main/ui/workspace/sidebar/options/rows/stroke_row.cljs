@@ -25,6 +25,26 @@
    [app.util.i18n :as i18n :refer [tr]]
    [rumext.v2 :as mf]))
 
+;; Figma-parity per-stroke blend modes (gap #9). Reuses the existing
+;; layer-level blend-mode labels so no new i18n keys are needed.
+(def ^:private blend-mode-options
+  [{:value :normal :label (tr "workspace.options.layer-options.blend-mode.normal")}
+   {:value :darken :label (tr "workspace.options.layer-options.blend-mode.darken")}
+   {:value :multiply :label (tr "workspace.options.layer-options.blend-mode.multiply")}
+   {:value :color-burn :label (tr "workspace.options.layer-options.blend-mode.color-burn")}
+   {:value :lighten :label (tr "workspace.options.layer-options.blend-mode.lighten")}
+   {:value :screen :label (tr "workspace.options.layer-options.blend-mode.screen")}
+   {:value :color-dodge :label (tr "workspace.options.layer-options.blend-mode.color-dodge")}
+   {:value :overlay :label (tr "workspace.options.layer-options.blend-mode.overlay")}
+   {:value :soft-light :label (tr "workspace.options.layer-options.blend-mode.soft-light")}
+   {:value :hard-light :label (tr "workspace.options.layer-options.blend-mode.hard-light")}
+   {:value :difference :label (tr "workspace.options.layer-options.blend-mode.difference")}
+   {:value :exclusion :label (tr "workspace.options.layer-options.blend-mode.exclusion")}
+   {:value :hue :label (tr "workspace.options.layer-options.blend-mode.hue")}
+   {:value :saturation :label (tr "workspace.options.layer-options.blend-mode.saturation")}
+   {:value :color :label (tr "workspace.options.layer-options.blend-mode.color")}
+   {:value :luminosity :label (tr "workspace.options.layer-options.blend-mode.luminosity")}])
+
 (mf/defc stroke-row*
   [{:keys [index
            stroke
@@ -46,6 +66,8 @@
            on-stroke-miter-limit-change
            on-stroke-width-mode-change
            on-stroke-side-change
+           ;; Figma-parity per-stroke blend mode (gap #9).
+           on-blend-mode-change
            on-toggle-visibility
            disable-drag
            on-focus
@@ -243,6 +265,18 @@
         (mf/use-fn
          (mf/deps index on-stroke-miter-limit-change)
          #(on-stroke-miter-limit-change index %))
+
+        ;; Figma-parity per-stroke blend mode (gap #9). Default :normal =
+        ;; today's compositing. Renderer application deferred; the value
+        ;; round-trips on the stroke.
+        stroke-blend-mode (or (:blend-mode stroke) :normal)
+
+        on-blend-mode-change*
+        (mf/use-fn
+         (mf/deps index on-blend-mode-change)
+         (fn [value]
+           (when (some? on-blend-mode-change)
+             (on-blend-mode-change index (keyword value)))))
 
         ;; Figma-parity per-side stroke widths (rect/frame).
         stroke-width-mode  (or (:stroke-width-mode stroke) :uniform)
@@ -476,4 +510,14 @@
                                     :attr :stroke-miter-limit
                                     :class (stl/css :numeric-input-wrapper)
                                     :property (tr "workspace.options.stroke.miter-limit")
-                                    :value stroke-miter-limit}])]]))
+                                    :value stroke-miter-limit}])]
+
+     ;; Figma-parity per-stroke blend mode (gap #9). Rendered only when the
+     ;; menu wires on-blend-mode-change (stroke.cljs); absent = no control.
+     (when (some? on-blend-mode-change)
+       [:div {:class (stl/css :stroke-caps-options)
+              :data-testid "stroke.blend-mode-options"}
+        [:& select {:default-value stroke-blend-mode
+                    :options blend-mode-options
+                    :disabled hidden?
+                    :on-change on-blend-mode-change*}]]])))

@@ -219,3 +219,30 @@
 
            (rx/of (dch/commit-changes changes)
                   (dws/select-shapes (into (d/ordered-set) new-shape-ids)))))))))
+
+;; Figma-parity "Outline Stroke" (gap #27). Converts each selected
+;; shape's stroke into an editable filled path. The real stroke-offset
+;; geometry is provided by the render-wasm path (wasm.api/stroke-to-path,
+;; used by convert-selected-strokes-to-path above); on the frontend-SVG
+;; renderer (render-wasm/v1 OFF) pure-CLJS stroke expansion is non-trivial
+;; and is DEFERRED — the event signature + menu wiring are in place so
+;; the feature activates the moment wasm is enabled, and is a safe no-op
+;; (returns nil) otherwise. This keeps the change purely additive.
+(defn outline-stroke
+  "Convert strokes on the selected shapes (or the given ids) into
+   sibling filled path shapes — Figma's Outline Stroke."
+  ([]
+   (outline-stroke nil))
+  ([ids]
+   (ptk/reify ::outline-stroke
+     ptk/WatchEvent
+     (watch [_ state _]
+       ;; Delegate to the existing stroke->path conversion, which is
+       ;; itself gated on render-wasm/v1 (returns nil when inactive, so
+       ;; this is a safe no-op on the frontend-SVG renderer).
+       (let [selected (or ids (dsh/lookup-selected state))
+             objects  (dsh/lookup-page-objects state)
+             has-stroke? (some #(seq (:strokes (get objects %))) selected)]
+         (when (and (features/active-feature? state "render-wasm/v1")
+                    has-stroke?)
+           (rx/of (convert-selected-strokes-to-path selected))))))))

@@ -27,6 +27,7 @@
    [app.main.ui.components.numeric-input :as deprecated-input]
    [app.main.ui.components.radio-buttons :refer [radio-button radio-buttons]]
    [app.main.ui.components.search-bar :refer [search-bar*]]
+   [app.main.ui.components.select :refer [select]]
    [app.main.ui.ds.buttons.icon-button :refer [icon-button*]]
    [app.main.ui.ds.foundations.assets.icon :refer [icon*] :as i]
    [app.main.ui.icons :as deprecated-icon]
@@ -64,6 +65,19 @@
 
 (def ^:private frame-options
   #{:presets :size :position :rotation :radius :clip-content :show-in-viewer})
+
+;; Figma-parity device frames (gap #35). A small set of device bezel
+;; presets the user can wrap a frame with. The value round-trips on the
+;; frame's optional :device-frame keyword; absent = no bezel = today's
+;; behavior. The viewer chrome (drawing the bezel around the frame) is
+;; DEFERRED — only the picker + persistence are wired in v1.
+(def ^:private device-frame-options
+  [{:value "none"      :label (tr "workspace.options.device-frame.none")}
+   {:value "iphone"    :label (tr "workspace.options.device-frame.iphone")}
+   {:value "ipad"      :label (tr "workspace.options.device-frame.ipad")}
+   {:value "android"   :label (tr "workspace.options.device-frame.android")}
+   {:value "desktop"   :label (tr "workspace.options.device-frame.desktop")}
+   {:value "pixel"     :label (tr "workspace.options.device-frame.pixel")}])
 
 (defn- type->options
   [type]
@@ -466,7 +480,44 @@
         handle-fit-content
         (mf/use-fn
          (fn []
-           (st/emit! (dwt/selected-fit-content))))]
+           (st/emit! (dwt/selected-fit-content))))
+
+        ;; Figma-parity device frames (gap #35). Stores the chosen bezel
+        ;; preset on the frame via dwsh/update-shapes (save-undo defaults
+        ;; true). :none clears the key so the frame reverts to today's
+        ;; behavior. Viewer chrome is deferred.
+        on-device-frame-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [value]
+           (let [value-kw (keyword value)]
+             (st/emit! (dwsh/update-shapes ids
+                        (fn [shape]
+                          (if (= value-kw :none)
+                            (dissoc shape :device-frame)
+                            (assoc shape :device-frame value-kw))))))))
+
+        ;; Figma-parity scale tool (gap #37). Applies a proportional
+        ;; scale factor (percent) to the selected shape's width and
+        ;; height via the existing update-dimensions event. Scaling of
+        ;; child blur / stroke / font sizes (true Figma scale) is
+        ;; DEFERRED — only geometry is scaled in v1.
+        scale-input* (mf/use-state nil)
+        on-scale-change
+        (mf/use-fn
+         (mf/deps ids values)
+         (fn [value]
+           (when (and (number? value)
+                      (> value 0)
+                      (:width values)
+                      (:height values))
+             (let [factor (/ value 100)
+                   new-w  (max 1 (Math/round (* (:width values) factor)))
+                   new-h  (max 1 (Math/round (* (:height values) factor)))]
+               (st/emit! (udw/trigger-bounding-box-cloaking ids)
+                         (udw/update-dimensions ids :width new-w)
+                         (udw/update-dimensions ids :height new-h))
+               (reset! scale-input* nil)))))]
 
     [:section {:class (stl/css :element-set)
                :aria-label "shape-measures-section"}
@@ -717,4 +768,27 @@
                     :title (tr "workspace.options.show-in-viewer")
                     :class (stl/css-case  :clip-content-label true
                                           :selected (not (:hide-in-viewer values)))}
-            [:> icon* {:icon-id i/play}]]])])]))
+            [:> icon* {:icon-id i/play}]]])])
+
+     ;; Figma-parity device frames (gap #35). Only for frame selections.
+     ;; The value round-trips on :device-frame; viewer chrome deferred.
+     (when (= type :frame)
+       [:div {:class (stl/css :device-frame-row)}
+        [:span {:class (stl/css :select-name)} (tr "workspace.options.device-frame")]
+        [:& select {:default-value (or (d/name (:device-frame values)) "none")
+                    :options device-frame-options
+                    :on-change on-device-frame-change}]])
+
+     ;; Figma-parity scale tool (gap #37). Proportional scale factor
+     ;; (percent) applied to width/height. Renders only for single
+     ;; selections with concrete dimensions.
+     (when (and (some? (:width values))
+                 (some? (:height values))
+                 (not (= :multiple (:width values))))
+       [:div {:class (stl/css :scale-row)}
+        [:span {:class (stl/css :select-name)} (tr "workspace.options.scale")]
+        [:> deprecated-input/numeric-input* {:no-validate true
+                                             :placeholder "100"
+                                             :min 0
+                                             :value @scale-input*
+                                             :on-change on-scale-change}]])]))

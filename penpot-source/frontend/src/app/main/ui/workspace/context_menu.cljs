@@ -24,6 +24,7 @@
    [app.main.data.workspace.guides :as dwg]
    [app.main.data.workspace.interactions :as dwi]
    [app.main.data.workspace.libraries :as dwl]
+   [app.main.data.workspace.path.shapes-to-path :as dwps]
    [app.main.data.workspace.selection :as dws]
    [app.main.data.workspace.shape-layout :as dwsl]
    [app.main.data.workspace.shapes :as dwsh]
@@ -438,6 +439,12 @@
         do-start-editing     (fn [] (timers/schedule #(st/emit! (dw/start-editing-selected))))
         do-transform-to-path #(st/emit! (dw/convert-selected-to-path))
         do-strokes-to-path   #(st/emit! (dw/convert-selected-strokes-to-path))
+        ;; Figma-parity "Outline stroke" (gap #27). Converts a stroked
+        ;; shape's stroke into an editable filled path. Reuses the
+        ;; stroke->path geometry from the render-wasm path; on the
+        ;; frontend-SVG renderer it is a guarded no-op (see
+        ;; shapes_to_path.cljs outline-stroke note).
+        do-outline-stroke    #(st/emit! (dwps/outline-stroke))
 
         make-do-bool
         (fn [bool-type]
@@ -465,6 +472,16 @@
                 (contains? cf/flags :stroke-path))
        [:> menu-entry* {:title (tr "workspace.shape.menu.stroke-to-path")
                         :on-click do-strokes-to-path}])
+
+     ;; Figma-parity "Outline stroke" (gap #27). Same render-wasm guard
+     ;; as stroke-to-path — the real offset geometry needs the wasm
+     ;; stroke-to-path primitive; the menu wiring is in place so it
+     ;; activates together with stroke-to-path.
+     (when (and has-strokes?
+                (features/active-feature? @st/state "render-wasm/v1")
+                (contains? cf/flags :stroke-path))
+       [:> menu-entry* {:title (tr "workspace.shape.menu.outline-stroke")
+                        :on-click do-outline-stroke}])
 
      (when (and (not has-frame?)
                 (not disable-booleans)

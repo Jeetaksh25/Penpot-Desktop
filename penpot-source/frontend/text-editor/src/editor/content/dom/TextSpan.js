@@ -33,6 +33,20 @@ export const STYLES = [
   ["line-height"],
   ["letter-spacing", "px"],
   ["text-decoration"],
+  // Feature 20 — advanced underline controls, per-range rich text. These are
+  // real CSS properties, so the editor renders them live and round-trips them
+  // via app.util.text.content.styles without a custom mapping.
+  ["text-decoration-style"],
+  ["text-decoration-thickness"],
+  ["text-decoration-offset"],
+  ["text-decoration-skip-ink"],
+  ["text-decoration-color"],
+  // Feature 78 — superscript / subscript. The model attr is :baseline-shift
+  // mapped to CSS vertical-align in styles.cljs, applied on spans.
+  ["vertical-align"],
+  // Feature 18 — inline hyperlink, round-trips as a transit-encoded CSS
+  // custom property. Live editor visual is applied by the export renderer.
+  ["--hyperlink"],
   ["text-transform"],
 ];
 

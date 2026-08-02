@@ -22,6 +22,26 @@
    [app.util.i18n :as i18n :refer [tr]]
    [rumext.v2 :as mf]))
 
+;; Figma-parity per-shadow blend modes (gap #9). Reuses the existing
+;; layer-level blend-mode labels so no new i18n keys are needed.
+(def ^:private blend-mode-options
+  [{:value :normal :label (tr "workspace.options.layer-options.blend-mode.normal")}
+   {:value :darken :label (tr "workspace.options.layer-options.blend-mode.darken")}
+   {:value :multiply :label (tr "workspace.options.layer-options.blend-mode.multiply")}
+   {:value :color-burn :label (tr "workspace.options.layer-options.blend-mode.color-burn")}
+   {:value :lighten :label (tr "workspace.options.layer-options.blend-mode.lighten")}
+   {:value :screen :label (tr "workspace.options.layer-options.blend-mode.screen")}
+   {:value :color-dodge :label (tr "workspace.options.layer-options.blend-mode.color-dodge")}
+   {:value :overlay :label (tr "workspace.options.layer-options.blend-mode.overlay")}
+   {:value :soft-light :label (tr "workspace.options.layer-options.blend-mode.soft-light")}
+   {:value :hard-light :label (tr "workspace.options.layer-options.blend-mode.hard-light")}
+   {:value :difference :label (tr "workspace.options.layer-options.blend-mode.difference")}
+   {:value :exclusion :label (tr "workspace.options.layer-options.blend-mode.exclusion")}
+   {:value :hue :label (tr "workspace.options.layer-options.blend-mode.hue")}
+   {:value :saturation :label (tr "workspace.options.layer-options.blend-mode.saturation")}
+   {:value :color :label (tr "workspace.options.layer-options.blend-mode.color")}
+   {:value :luminosity :label (tr "workspace.options.layer-options.blend-mode.luminosity")}])
+
 (mf/defc shadow-row*
   [{:keys [index shadow is-open
            on-reorder
@@ -104,6 +124,18 @@
          (fn [value]
            (trigger-bounding-box-cloaking)
            (on-update index :style (keyword value))))
+
+        ;; Figma-parity per-shadow blend mode (gap #9). Default :normal =
+        ;; today's compositing. on-update already route through the
+        ;; shadow-menu on-update (update-in + check-shadow), so no menu
+        ;; change is needed. Renderer application deferred.
+        shadow-blend-mode (or (:blend-mode shadow) :normal)
+        on-blend-mode-change
+        (mf/use-fn
+         (mf/deps index on-update trigger-bounding-box-cloaking)
+         (fn [value]
+           (trigger-bounding-box-cloaking)
+           (on-update index :blend-mode (keyword value))))
 
         on-toggle-visibility
         (mf/use-fn
@@ -214,4 +246,16 @@
                           :on-change on-update-color
                           :on-detach on-detach-color
                           :on-open on-open-row
-                          :on-close on-close-row}]]])]]))
+                          :on-close on-close-row}]]
+
+         ;; Figma-parity per-shadow blend mode (gap #9).
+         [:div {:class (stl/css :shadow-advanced-row)
+               :data-testid "shadow.blend-mode-options"}
+          [:div {:class (stl/css :shadow-advanced-blur)
+                 :title (tr "workspace.options.blend-mode")}
+           [:span {:class (stl/css :shadow-advanced-label)}
+            (tr "workspace.options.blend-mode")]
+           [:& select {:default-value shadow-blend-mode
+                       :options blend-mode-options
+                       :disabled hidden?
+                       :on-change on-blend-mode-change}]]]])]]))

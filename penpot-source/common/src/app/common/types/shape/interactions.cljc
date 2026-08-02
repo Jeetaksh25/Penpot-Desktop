@@ -33,7 +33,10 @@
     :mouse-over
     :mouse-enter
     :mouse-leave
-    :after-delay})
+    :after-delay
+    ;; Figma #33: keyboard + input-change triggers.
+    :key-down
+    :on-change})
 
 (def action-types
   #{:navigate
@@ -41,7 +44,12 @@
     :toggle-overlay
     :close-overlay
     :prev-screen
-    :open-url})
+    :open-url
+    ;; Figma #10: change-to variant action (interactive components).
+    :change-to
+    ;; Figma #73: swap one overlay for another; scroll to an object.
+    :swap-overlay
+    :scroll-to})
 
 (def overlay-positioning-types
   #{:manual
@@ -58,7 +66,9 @@
     :ease
     :ease-in
     :ease-out
-    :ease-in-out})
+    :ease-in-out
+    ;; Figma #34: custom cubic-bezier easing (4 control points).
+    :custom-bezier})
 
 (def direction-types
   #{:right
@@ -70,7 +80,21 @@
   #{:in :out})
 
 (def animation-types
-  #{:dissolve :slide :push})
+  #{:dissolve :slide :push
+    ;; Figma #11: smart animate (matched-property tweening).
+    :smart-animate})
+
+;; Figma #34: the 4 control points of a custom cubic-bezier easing.
+;; Stored alongside :easing in the animation map when :easing is :custom-bezier.
+;; All four are optional so a partially-authored map (one coordinate set at a
+;; time in the UI) still validates — `easing-str` falls back to 0/1 for any
+;; missing coordinate, so a partial map never produces an invalid easing string.
+(def schema:bezier-ctrl
+  [:map {:title "BezierCtrl"}
+   [:x1 {:optional true} ::sm/safe-number]
+   [:y1 {:optional true} ::sm/safe-number]
+   [:x2 {:optional true} ::sm/safe-number]
+   [:y2 {:optional true} ::sm/safe-number]])
 
 (def schema:dissolve-animation
   [:map {:title "AnimationDisolve"}
@@ -79,7 +103,9 @@
    [:easing [::sm/one-of easing-types]]
    [:way {:optional true} [::sm/one-of way-types]]
    [:offset-effect {:optional true} :boolean]
-   [:direction {:optional true} [::sm/one-of direction-types]]])
+   [:direction {:optional true} [::sm/one-of direction-types]]
+   ;; Figma #34: cubic-bezier control points (only meaningful when :easing is :custom-bezier).
+   [:bezier-ctrl {:optional true} schema:bezier-ctrl]])
 
 (def schema:slide-animation
   [:map {:title "AnimationSlide"}
@@ -88,25 +114,43 @@
    [:easing [::sm/one-of easing-types]]
    [:way [::sm/one-of way-types]]
    [:direction [::sm/one-of direction-types]]
-   [:offset-effect :boolean]])
+   [:offset-effect :boolean]
+   ;; Figma #34: cubic-bezier control points (only meaningful when :easing is :custom-bezier).
+   [:bezier-ctrl {:optional true} schema:bezier-ctrl]])
 
 (def schema:push-animation
   [:map {:title "PushAnimation"}
    [:animation-type [:= :push]]
    [:duration ::sm/safe-int]
    [:easing [::sm/one-of easing-types]]
-   [:direction [::sm/one-of direction-types]]])
+   [:direction [::sm/one-of direction-types]]
+   ;; Figma #34: cubic-bezier control points (only meaningful when :easing is :custom-bezier).
+   [:bezier-ctrl {:optional true} schema:bezier-ctrl]])
+
+;; Figma #11: smart animate. v1 schema only — the matched-property tweening
+;; runtime is deferred (see viewer/interactions.cljs `animate-go-to-frame`,
+;; where :smart-animate currently falls back to the dissolve crossfade so the
+;; transition still happens without breaking). Duration + easing are authored
+;; here; the renderer is responsible for the per-layer matching when wired.
+(def schema:smart-animate-animation
+  [:map {:title "SmartAnimateAnimation"}
+   [:animation-type [:= :smart-animate]]
+   [:duration ::sm/safe-int]
+   [:easing [::sm/one-of easing-types]]
+   [:bezier-ctrl {:optional true} schema:bezier-ctrl]])
 
 (def schema:animation
   [:multi {:dispatch :animation-type
            :title "Animation"
            :gen/gen (sg/one-of (sg/generator schema:dissolve-animation)
                                (sg/generator schema:slide-animation)
-                               (sg/generator schema:push-animation))
+                               (sg/generator schema:push-animation)
+                               (sg/generator schema:smart-animate-animation))
            :decode/json #(update % :animation-type keyword)}
    [:dissolve schema:dissolve-animation]
    [:slide schema:slide-animation]
-   [:push schema:push-animation]])
+   [:push schema:push-animation]
+   [:smart-animate schema:smart-animate-animation]])
 
 (sm/register! ::animation schema:animation)
 
@@ -125,7 +169,21 @@
    [:close-click-outside {:optional true} :boolean]
    [:background-overlay {:optional true} :boolean]
    [:position-relative-to {:optional true} [:maybe ::sm/uuid]]
-   [:url {:optional true} :string]])
+   [:url {:optional true} :string]
+   ;; Figma #73: per-interaction enable/disable without deleting. Absent = enabled.
+   [:disabled {:optional true} :boolean]
+   ;; Figma #33: key-down trigger filter. :key-code is a key name like "Enter",
+   ;; "Escape", "a" (matching `KeyboardEvent.key`); absent = any key fires.
+   [:key-code {:optional true} [:maybe :string]]
+   [:key-modifiers {:optional true} [:maybe [:set :keyword]]]
+   ;; Figma #10: change-to variant action. The component-instance target whose
+   ;; variant should change, plus the property-name -> value overrides to apply.
+   [:change-to-variant-id {:optional true} [:maybe ::sm/uuid]]
+   [:change-to-props {:optional true} [:map-of :string :any]]
+   ;; Figma #73: scroll-to target shape id (any object within a top-level frame).
+   ;; Reuses :destination when the target is a frame; this field allows a
+   ;; non-frame shape target that does not fit :destination's frame-oriented semantics.
+   [:scroll-to-target {:optional true} [:maybe ::sm/uuid]]])
 
 (def schema:navigate-interaction
   [:map {:title "NavigateInteraction"}
@@ -178,6 +236,43 @@
    [:event-type [::sm/one-of event-types]]
    [:url :string]])
 
+;; Figma #10: change-to variant action (interactive components). Swaps the
+;; variant of the target component instance on trigger. Depends on #1 typed
+;; component properties — :change-to-props mirrors the instance's
+;; component-property-values shape (property-name -> value).
+(def schema:change-to-interaction
+  [:map {:title "ChangeToInteraction"}
+   [:action-type [:= :change-to]]
+   [:event-type [::sm/one-of event-types]]
+   [:change-to-variant-id {:optional true} [:maybe ::sm/uuid]]
+   [:change-to-props {:optional true} [:map-of :string :any]]
+   [:animation {:optional true} schema:animation]])
+
+;; Figma #73: swap-overlay replaces the currently-open overlay with another
+;; overlay frame, reusing the overlay positioning settings. :destination is the
+;; new overlay frame id; overlay opts are authored exactly like open-overlay.
+(def schema:swap-overlay-interaction
+  [:map {:title "SwapOverlayInteraction"}
+   [:action-type [:= :swap-overlay]]
+   [:event-type [::sm/one-of event-types]]
+   [:overlay-position {:optional true} ::gpt/point]
+   [:overlay-pos-type {:optional true} [::sm/one-of overlay-positioning-types]]
+   [:destination {:optional true} [:maybe ::sm/uuid]]
+   [:close-click-outside {:optional true} :boolean]
+   [:background-overlay {:optional true} :boolean]
+   [:animation {:optional true} schema:animation]
+   [:position-relative-to {:optional true} [:maybe ::sm/uuid]]])
+
+;; Figma #73: scroll-to scrolls the viewport to an object within a top-level
+;; frame. :destination holds the target shape id (a frame or any descendant).
+(def schema:scroll-to-interaction
+  [:map {:title "ScrollToInteraction"}
+   [:action-type [:= :scroll-to]]
+   [:event-type [::sm/one-of event-types]]
+   [:destination {:optional true} [:maybe ::sm/uuid]]
+   [:scroll-to-target {:optional true} [:maybe ::sm/uuid]]
+   [:animation {:optional true} schema:animation]])
+
 (def schema:interaction
   [:schema {:title "Interaction"
             :gen/gen (sg/one-of (sg/generator schema:navigate-interaction)
@@ -185,7 +280,10 @@
                                 (sg/generator schema:close-overlay-interaction)
                                 (sg/generator schema:toggle-overlay-interaction)
                                 (sg/generator schema:prev-scren-interaction)
-                                (sg/generator schema:open-url-interaction))}
+                                (sg/generator schema:open-url-interaction)
+                                (sg/generator schema:change-to-interaction)
+                                (sg/generator schema:swap-overlay-interaction)
+                                (sg/generator schema:scroll-to-interaction))}
    [:and
     schema:generic-interaction-attrs
     [:multi {:dispatch :action-type :title "InteractionAttrs"}
@@ -194,7 +292,10 @@
      [:toggle-overlay schema:toggle-overlay-interaction]
      [:close-overlay schema:close-overlay-interaction]
      [:prev-screen schema:prev-scren-interaction]
-     [:open-url schema:open-url-interaction]]]])
+     [:open-url schema:open-url-interaction]
+     [:change-to schema:change-to-interaction]
+     [:swap-overlay schema:swap-overlay-interaction]
+     [:scroll-to schema:scroll-to-interaction]]]])
 
 (def check-interaction
   (sm/check-fn schema:interaction))
@@ -275,7 +376,33 @@
             :open-url
             (assoc interaction
                    :action-type action-type
-                   :url (get interaction :url ""))))]
+                   :url (get interaction :url ""))
+
+            ;; Figma #10: change-to variant action. Carry over any previously
+            ;; authored variant id / props so toggling the action type keeps state.
+            :change-to
+            (assoc interaction
+                   :action-type action-type
+                   :change-to-variant-id (get interaction :change-to-variant-id)
+                   :change-to-props (get interaction :change-to-props))
+
+            ;; Figma #73: swap-overlay reuses the overlay positioning settings,
+            ;; mirroring the :open-overlay / :toggle-overlay defaults.
+            :swap-overlay
+            (let [overlay-pos-type (get interaction :overlay-pos-type :center)
+                  overlay-position (get interaction :overlay-position (gpt/point 0 0))]
+              (assoc interaction
+                     :action-type action-type
+                     :overlay-pos-type overlay-pos-type
+                     :overlay-position overlay-position
+                     :destination (get interaction :destination)))
+
+            ;; Figma #73: scroll-to carries the target shape id in :destination
+            ;; (a frame or any descendant of a top-level frame).
+            :scroll-to
+            (assoc interaction
+                   :action-type action-type
+                   :destination (get interaction :destination))))]
 
     (cond-> new-interaction
       (not (allowed-animation? action-type
@@ -303,7 +430,10 @@
 
 (defn has-destination
   [interaction]
-  (#{:navigate :open-overlay :toggle-overlay :close-overlay}
+  (#{:navigate :open-overlay :toggle-overlay :close-overlay
+    ;; Figma #73: swap-overlay (new overlay frame) + scroll-to (target shape)
+    ;; both carry a destination id.
+    :swap-overlay :scroll-to}
    (:action-type interaction)))
 
 (defn destination?
@@ -356,9 +486,88 @@
 
   (assoc interaction :url url))
 
+;; Figma #73: per-interaction enable/disable without deleting.
+;; Absent :disabled = enabled (existing behavior unchanged).
+(defn disabled?
+  [interaction]
+  (true? (:disabled interaction)))
+
+(defn set-disabled
+  [interaction disabled]
+
+  (assert (check-interaction interaction))
+  (assert (boolean? disabled)
+          "expected a boolean for `disabled`")
+
+  (assoc interaction :disabled disabled))
+
+;; Figma #33: key-down trigger filter. :key-code is a key name like "Enter"
+;; or "a" (matching `KeyboardEvent.key`); nil/absent = any key fires.
+(defn has-key-code?
+  [interaction]
+  (= (:event-type interaction) :key-down))
+
+(defn set-key-code
+  [interaction key-code]
+
+  (assert (check-interaction interaction))
+  (assert (or (nil? key-code) (string? key-code))
+          "expected a string (or nil) for `key-code`")
+  (assert (has-key-code? interaction)
+          "expected compatible interaction map with key-code param")
+
+  (assoc interaction :key-code key-code))
+
+;; Figma #10: change-to variant action.
+(defn has-change-to?
+  [interaction]
+  (= (:action-type interaction) :change-to))
+
+(defn set-change-to-variant
+  [interaction variant-id]
+
+  (assert (check-interaction interaction))
+  (assert (or (nil? variant-id) (uuid? variant-id))
+          "expected a uuid (or nil) for `change-to-variant-id`")
+  (assert (has-change-to? interaction)
+          "expected compatible interaction map with change-to action")
+
+  (assoc interaction :change-to-variant-id variant-id))
+
+(defn set-change-to-props
+  [interaction props]
+
+  (assert (check-interaction interaction))
+  (assert (map? props)
+          "expected a map for `change-to-props`")
+  (assert (has-change-to? interaction)
+          "expected compatible interaction map with change-to action")
+
+  (assoc interaction :change-to-props props))
+
+;; Figma #34: cubic-bezier control points, only meaningful when :easing
+;; is :custom-bezier. Stored in the animation map alongside :easing.
+(defn has-bezier-ctrl?
+  [interaction]
+  (= (-> interaction :animation :easing) :custom-bezier))
+
+(defn set-bezier-ctrl
+  [interaction bezier-ctrl]
+
+  (assert (check-interaction interaction))
+  (assert (map? bezier-ctrl)
+          "expected a map with :x1 :y1 :x2 :y2 for `bezier-ctrl`")
+  (assert (has-bezier-ctrl? interaction)
+          "expected compatible interaction map with custom-bezier easing")
+
+  (update interaction :animation assoc :bezier-ctrl bezier-ctrl))
+
 (defn has-overlay-opts
   [interaction]
-  (#{:open-overlay :toggle-overlay} (:action-type interaction)))
+  (#{:open-overlay :toggle-overlay
+    ;; Figma #73: swap-overlay authors the same overlay positioning settings.
+    :swap-overlay}
+   (:action-type interaction)))
 
 (defn set-overlay-pos-type
   [interaction overlay-pos-type shape objects]
@@ -542,20 +751,33 @@
 
 (defn has-animation?
   [interaction]
-  (#{:navigate :open-overlay :close-overlay :toggle-overlay} (:action-type interaction)))
+  (#{:navigate :open-overlay :close-overlay :toggle-overlay
+    ;; Figma #73: swap-overlay transitions like an overlay animation.
+    ;; Figma #10/#11: change-to may animate (notably with :smart-animate).
+    :swap-overlay :change-to}
+   (:action-type interaction)))
 
 (defn allow-push?
   [action-type]
   ; Push animation is not allowed for overlay actions
   (= :navigate action-type))
 
+;; Figma #11: smart animate is allowed for navigation, change-to (variant
+;; transitions) and swap-overlay. Other actions fall back to dissolve/slide.
+(defn allow-smart-animate?
+  [action-type]
+  (#{:navigate :change-to :swap-overlay} action-type))
+
 (defn allowed-animation?
   [action-type animation-type]
   ; Some specific combinations are forbidden, but may occur if the action type
   ; is changed from a type that allows the animation to another one that doesn't.
-  ; Currently the only case is an overlay action with push animation.
-  (or (not= animation-type :push)
-      (allow-push? action-type)))
+  ; Currently the only cases are an overlay action with push animation, and a
+  ; non-smart-animate-capable action with smart-animate.
+  (and (or (not= animation-type :push)
+           (allow-push? action-type))
+       (or (not= animation-type :smart-animate)
+           (allow-smart-animate? action-type))))
 
 (defn set-animation-type
   [interaction animation-type]
@@ -594,11 +816,18 @@
         (update :animation assoc
                 :duration (get-in interaction [:animation :duration] 300)
                 :easing (get-in interaction [:animation :easing] :linear)
-                :direction (get-in interaction [:animation :direction] :right))))))
+                :direction (get-in interaction [:animation :direction] :right))
+
+        ;; Figma #11: smart animate. Duration + easing authored here; the
+        ;; matched-property tweening runtime is deferred (see viewer dispatch).
+        (= animation-type :smart-animate)
+        (update :animation assoc
+                :duration (get-in interaction [:animation :duration] 300)
+                :easing (get-in interaction [:animation :easing] :linear))))))
 
 (defn has-duration?
   [interaction]
-  (#{:dissolve :slide :push} (-> interaction :animation :animation-type)))
+  (#{:dissolve :slide :push :smart-animate} (-> interaction :animation :animation-type)))
 
 (defn set-duration
   [interaction duration]
@@ -612,7 +841,7 @@
 
 (defn has-easing?
   [interaction]
-  (#{:dissolve :slide :push} (-> interaction :animation :animation-type)))
+  (#{:dissolve :slide :push :smart-animate} (-> interaction :animation :animation-type)))
 
 (defn set-easing
   [interaction easing]

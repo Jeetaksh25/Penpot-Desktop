@@ -28,7 +28,17 @@
    [:blur ::sm/safe-number]
    [:spread ::sm/safe-number]
    [:hidden :boolean]
-   [:color schema:color]])
+   [:color schema:color]
+   ;; Figma-parity per-item blend modes (gap #9). Optional blend mode for
+   ;; this single shadow; absent = :normal = today's compositing. The
+   ;; renderer applies the shadow with its own mix-blend-mode — that
+   ;; wiring is deferred (high blast-radius compositing change, no build
+   ;; to verify); the field round-trips on the shadow.
+   [:blend-mode {:optional true}
+    [::sm/one-of #{:normal :darken :multiply :color-burn
+                   :lighten :screen :color-dodge :overlay
+                   :soft-light :hard-light :difference :exclusion
+                   :hue :saturation :color :luminosity}]]])
 
 (def check-shadow
   (sm/check-fn schema:shadow))

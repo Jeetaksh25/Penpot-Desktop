@@ -88,7 +88,16 @@
    [:crop-x {:optional true} ::sm/safe-number]
    [:crop-y {:optional true} ::sm/safe-number]
    [:crop-w {:optional true} ::sm/safe-number]
-   [:crop-h {:optional true} ::sm/safe-number]])
+   [:crop-h {:optional true} ::sm/safe-number]
+   ;; Figma-parity image fill rotate/flip (gap #24). :fill-image-rotation
+   ;; is the in-fill rotation in degrees (free rotate; Shift snaps to 15
+   ;; in Figma). :fill-image-flip is a set (or single keyword) of
+   ;; :horizontal/:vertical. Both absent = the image renders as today.
+   ;; The renderer applies these to the image pattern transform; until
+   ;; that wiring is added the fields simply round-trip on the fill.
+   [:fill-image-rotation {:optional true} ::sm/safe-number]
+   [:fill-image-flip {:optional true}
+    [::sm/set {:gen/max 2} [::sm/one-of #{:horizontal :vertical}]]]])
 
 (def image-attrs
   "A set of attrs that corresponds to image data type"

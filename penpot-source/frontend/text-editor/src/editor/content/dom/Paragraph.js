@@ -46,6 +46,16 @@ export const STYLES = [
   ["text-transform"],
   ["text-align"],
   ["direction"],
+  // Feature 14/15/17 — paragraph/layer-level attrs round-tripped as CSS
+  // custom properties, see app.util.text.content.styles mapping. They are
+  // applied to the editor DOM only for persistence, no data loss on edit.
+  // The live visual is applied by the export/preview renderer
+  // app.main.ui.shapes.text.styles. Absent key = existing behavior.
+  ["--line-height-mode"],
+  ["--paragraph-spacing"],
+  ["--paragraph-indent"],
+  ["--max-lines"],
+  ["--text-overflow"],
 ];
 
 /**
