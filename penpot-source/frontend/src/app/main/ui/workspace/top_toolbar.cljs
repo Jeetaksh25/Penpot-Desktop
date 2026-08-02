@@ -68,6 +68,7 @@
     :path    (tr "workspace.toolbar.path"    (sc/get-tooltip :draw-path))
     :image   (tr "workspace.toolbar.image"   (sc/get-tooltip :insert-image))
     :curve   (tr "workspace.toolbar.curve"   (sc/get-tooltip :draw-curve))
+    :slice   (tr "workspace.toolbar.slice"   (sc/get-tooltip :draw-slice))
     :plugins (tr "workspace.toolbar.plugins" (sc/get-tooltip :plugins))
     :debug   "Debugging tool"
     (name tool)))
@@ -382,6 +383,15 @@
                          :group (get grouped-tools :free-draw)
                          :drawtool selected-drawing-tool
                          :on-select-tool on-select-tool}]
+
+        [:li {:class (stl/css :toolbar-option)}
+         [:> icon-button* {:variant "ghost"
+                           :tooltip-placement "bottom"
+                           :aria-pressed (= selected-drawing-tool :slice)
+                           :aria-label (tool-label :slice)
+                           :icon i/import-export
+                           :on-click on-select-tool
+                           :data-tool "slice"}]]
 
         (when separator?
           [:div {:class (stl/css :toolbar-separator)}])

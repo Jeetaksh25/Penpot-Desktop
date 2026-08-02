@@ -76,7 +76,11 @@
     :text
     :circle
     :svg-raw
-    :image})
+    :image
+    ;; Figma-parity slice tool: a rect-shaped export region that renders
+    ;; as a translucent dashed overlay (no visible content of its own) and
+    ;; is exported using its bounding box as the export bounds.
+    :slice})
 
 (def blend-modes
   #{:normal
@@ -269,6 +273,9 @@
 (def ^:private schema:rect-attrs
   [:map {:title "RectAttrs"}])
 
+(def ^:private schema:slice-attrs
+  [:map {:title "SliceAttrs"}])
+
 (def ^:private schema:circle-attrs
   [:map {:title "CircleAttrs"}])
 
@@ -316,6 +323,7 @@
                                     :image   (sg/generator schema:image-attrs)
                                     :circle  (sg/generator schema:circle-attrs)
                                     :rect    (sg/generator schema:rect-attrs)
+                                    :slice   (sg/generator schema:slice-attrs)
                                     :bool    (sg/generator schema:bool-attrs)
                                     :group   (sg/generator schema:group-attrs)
                                     :frame   (sg/generator schema:frame-attrs))]
@@ -360,6 +368,14 @@
     [:merge {:title "RectShape"}
      ctsl/schema:layout-child-attrs
      schema:rect-attrs
+     schema:shape-generic-attrs
+     schema:shape-geom-attrs
+     schema:shape-base-attrs]]
+
+   [:slice
+    [:merge {:title "SliceShape"}
+     ctsl/schema:layout-child-attrs
+     schema:slice-attrs
      schema:shape-generic-attrs
      schema:shape-geom-attrs
      schema:shape-base-attrs]]
@@ -468,6 +484,7 @@
                  (contains? allowed-shape-attrs attr)
                  (contains? allowed-shape-base-attrs attr))
     :rect    (contains? allowed-generic-attrs attr)
+    :slice   (contains? allowed-generic-attrs attr)
     :circle  (contains? allowed-generic-attrs attr)
     :image   (or (contains? allowed-image-attrs attr)
                  (contains? allowed-generic-attrs attr))
@@ -557,6 +574,16 @@
    :fills []
    :strokes []})
 
+(def ^:private minimal-slice-attrs
+  {:type :slice
+   :name "Slice"
+   ;; A slice renders no content of its own — it is an export region. We
+   ;; give it empty fills/strokes so generic handlers don't choke. Export
+   ;; specs are added by the user via the inspect panel (:exports lives on
+   ;; the generic shape attrs, shared by every type).
+   :fills []
+   :strokes []})
+
 (def ^:private minimal-multiple-attrs
   {:type :multiple})
 
@@ -572,6 +599,7 @@
     :group minimal-group-attrs
     :text minimal-text-attrs
     :svg-raw minimal-svg-raw-attrs
+    :slice minimal-slice-attrs
     ;; NOTE: used for create ephimeral shapes for multiple selection
     :multiple minimal-multiple-attrs))
 

@@ -22,6 +22,7 @@
    [app.main.ui.shapes.circle :as circle]
    [app.main.ui.shapes.image :as image]
    [app.main.ui.shapes.rect :as rect]
+   [app.main.ui.shapes.slice :as slice]
    [app.main.ui.shapes.text.fontfaces :as ff]
    [app.main.ui.workspace.shapes.bool :as bool]
    [app.main.ui.workspace.shapes.common :as common]
@@ -43,6 +44,7 @@
 (def circle-wrapper (common/generic-wrapper-factory circle/circle-shape))
 (def image-wrapper (common/generic-wrapper-factory image/image-shape))
 (def rect-wrapper (common/generic-wrapper-factory rect/rect-shape))
+(def slice-wrapper (common/generic-wrapper-factory slice/slice-shape))
 
 (defn- make-is-frame-overlap
   [vbox objects]
@@ -119,6 +121,7 @@
           :svg-raw [:> svg-raw-wrapper props]
           :bool    [:> bool-wrapper props]
           :frame   [:> nested-frame-wrapper props]
+          :slice   [:> slice-wrapper props]
           nil)]))))
 
 (mf/defc root-frame-shape-wrapper

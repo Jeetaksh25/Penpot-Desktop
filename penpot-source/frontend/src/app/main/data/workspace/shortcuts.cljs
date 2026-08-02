@@ -298,6 +298,11 @@
                           :subsections [:tools]
                           :fn #(emit-when-no-readonly (dwd/select-for-drawing :rect))}
 
+   :draw-slice           {:tooltip "S"
+                          :command "s"
+                          :subsections [:tools]
+                          :fn #(emit-when-no-readonly (dwd/select-for-drawing :slice))}
+
    :draw-ellipse         {:tooltip "E"
                           :command "e"
                           :subsections [:tools]

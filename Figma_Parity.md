@@ -58,9 +58,22 @@
 
 **DONE-v1 (commit pending).** Added optional `:crop-x/:crop-y/:crop-w/:crop-h` (normalized 0..1) to `schema:image` (color.cljc). Renderer (`ui/shapes/fills.cljs`): when an image has a valid crop rect, the `<image>` element is scaled/positioned so the crop region maps exactly onto `[0,0,width,height]` (the shape bounds / pattern tile); the uncropped borders land outside the tile and are clipped by the shape geometry — hidden, not deleted (reversible). Applied to both image sites (the `fills[]` image branch and the shape's own `:fill-image` padding branch). UI: a Crop section in the colorpicker image tab (colorpicker.cljs) with four percentage numeric inputs (X/Y/W/H) + a reset button, reusing the existing `update-colorpicker-color` event (the `:image` map flows straight to `:fill-image`, so crop fields persist on the fill and round-trip via `fill->color`/`get-color-from-colorpicker-state`). i18n `media.image-crop`/`media.image-crop-reset` (en.po) + scss layout (`colorpicker.scss`). **Known v1 limitations (→ polish #9):** crop is via numeric inputs only — on-canvas drag handles + aspect-ratio picker + Alt/Cmd-modifier corner drag are deferred.
 
-## 7. Slice tool (export regions)  `[P0 / M / absent]`
+## 7. Slice tool (export regions)  `[P0 / M / DONE-v1]`
 **Figma behavior.** Region tool (shortcut S) creates custom export areas on the canvas; per-slice export settings (PNG/JPG/SVG/PDF); bulk export via File > Export.
-**Implementation hint.** Add `:slice` to the toolbar tool set in `frontend/.../workspace/top_toolbar.cljs` (currently move/frame/rect/circle/line/arrow/text/image/path/curve/plugins/mcp/debug). Create a slice shape type in `common/src/app/common/types/shape.cljc` (a frame-like rect with `:type :slice` that renders only as an export region, not visible content). Add slice export handling in `frontend/.../ui/inspect/exports.cljs` and `data/exports/assets.cljs` (treat slice bbox as export bounds). Add shortcut `:slice` `S` in `data/workspace/shortcuts.cljs`.
+
+**DONE-v1 (this session).**
+- **Schema (`common/src/app/common/types/shape.cljc`):** `:slice` added to `shape-types`; `schema:slice-attrs` (empty closed map); `shape-generator` case `:slice`; `schema:shape-attrs` multi `[:slice [:merge ... layout-child-attrs schema:slice-attrs shape-generic-attrs shape-geom-attrs shape-base-attrs]]`; `is-allowed-switch-keep-attr?` `:slice` → generic attrs; `minimal-slice-attrs` `{:type :slice :name "Slice" :fills [] :strokes []}`; `get-minimal-shape` `:slice`.
+- **Renderer (`frontend/src/app/main/ui/shapes/slice.cljs`):** new `slice-shape` defc renders a translucent green dashed rect overlay (`fill "rgba(76,192,138,0.12)"`, `stroke "#4cc08a"`, `stroke-dasharray "8 4"`, `pointer-events "all"`) over the shape's bbox + transform. Ignores the shape's empty fills/strokes — fixed overlay style.
+- **Dispatch (`frontend/.../workspace/shapes.cljs`):** `slice-wrapper` via `generic-wrapper-factory`; `render-shape-content` case `:slice` → `slice-wrapper`.
+- **Toolbar (`top_toolbar.cljs`):** slice `icon-button*` (`i/import-export`, `data-tool "slice"`) after the free-draw group; `tool-label :slice`.
+- **Shortcut (`shortcuts.cljs`):** `:draw-slice {:tooltip "S" :command "s" :subsections [:tools]}` — verified no `:command "s"` conflict.
+- **i18n (`translations/en.po`):** `workspace.toolbar.slice` → `"Slice (%s)"`.
+- **Drawing flow verified (static):** `select-for-drawing :slice` → not path/comments/curve/line/arrow → `handle-drawing` default → `box/handle-drawing :slice` → `cts/setup-shape {:type :slice}` → `make-minimal-shape :slice` → `minimal-slice-attrs`; `setup-shape` default case `(setup-rect shape)` initializes geometry (same path as `:rect`).
+
+**v1 limitations (deferred to Round-1 checkup #8 / polish #9).**
+- **Export-clipping NOT implemented.** A Figma slice exports the underlying content clipped to the slice bbox; our v1 slice is just a selectable overlay region. Wiring the slice bbox as export bounds in `ui/inspect/exports.cljs` + `data/exports/assets.cljs` (treat slice shape's selrect as the export frame, render intersecting content clipped) is deferred.
+- Slice has no dedicated inspect-panel entry; export specs ride on the generic `:exports` attr (shared by all shape types), so a selected slice can already carry export settings via the existing exports panel, but the slice-bbox-as-default-export-bounds convenience is not wired.
+- No on-canvas resize handles specific to slices beyond the standard selection handles (which work for any rect-like shape).
 
 ## 8. Smart Selection (tidy up, pink handles, rearrange/resize reflow)  `[P0 / L / absent]`
 **Figma behavior.** Auto-activates on 3+ uniformly-spaced items (1D row/column or 2D grid); pink handles adjust spacing, pink rings rearrange/resize items. Tidy Up (Opt/Ctrl+Alt+T) arranges into rows/columns/grids. Reorder/duplicate/resize/delete with reflow.

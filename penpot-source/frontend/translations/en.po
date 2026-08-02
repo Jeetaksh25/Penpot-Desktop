@@ -9852,6 +9852,10 @@ msgstr "Plugins (%s)"
 msgid "workspace.toolbar.rect"
 msgstr "Rectangle (%s)"
 
+#: src/app/main/ui/workspace/top_toolbar.cljs:387
+msgid "workspace.toolbar.slice"
+msgstr "Slice (%s)"
+
 #: src/app/main/ui/workspace/left_toolbar.cljs
 #, unused
 msgid "workspace.toolbar.shortcuts"
