@@ -37,7 +37,9 @@
    :stroke-opacity
    :stroke-color-gradient
    :stroke-cap-start
-   :stroke-cap-end])
+   :stroke-cap-end
+   :stroke-join
+   :stroke-miter-limit])
 
 (defn- stroke-menu-check-props
   "A stroke-menu specific memoize check function that only checks if
@@ -158,6 +160,17 @@
           (st/emit! (udw/trigger-bounding-box-cloaking ids))
           (st/emit! (dc/change-stroke-attrs ids {:stroke-cap-end value} index)))
 
+        on-stroke-join-change
+        (fn [index value]
+          (st/emit! (udw/trigger-bounding-box-cloaking ids))
+          (st/emit! (dc/change-stroke-attrs ids {:stroke-join value} index)))
+
+        on-stroke-miter-limit-change
+        (fn [index value]
+          (when-not (str/empty? value)
+            (st/emit! (udw/trigger-bounding-box-cloaking ids))
+            (st/emit! (dc/change-stroke-attrs ids {:stroke-miter-limit value} index))))
+
         on-stroke-cap-switch
         (fn [index]
           (let [stroke-cap-start (get-in values [:strokes index :stroke-cap-start])
@@ -244,6 +257,8 @@
                               :on-stroke-cap-start-change on-stroke-cap-start-change
                               :on-stroke-cap-end-change on-stroke-cap-end-change
                               :on-stroke-cap-switch on-stroke-cap-switch
+                              :on-stroke-join-change on-stroke-join-change
+                              :on-stroke-miter-limit-change on-stroke-miter-limit-change
                               :on-toggle-visibility on-toggle-visibility
                               :disable-drag disable-drag
                               :on-focus on-focus

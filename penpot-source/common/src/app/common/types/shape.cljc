@@ -147,6 +147,12 @@
     [::sm/one-of stroke-caps]]
    [:stroke-cap-end {:optional true}
     [::sm/one-of stroke-caps]]
+   ;; Figma-parity: stroke join (miter/round/bevel) and miter limit.
+   ;; SVG defaults are :miter and 4, which match Figma's defaults, so both
+   ;; stay optional — an unset join renders identically to today.
+   [:stroke-join {:optional true}
+    [::sm/one-of #{:miter :round :bevel}]]
+   [:stroke-miter-limit {:optional true} ::sm/safe-number]
    [:stroke-color {:optional true} clr/schema:hex-color]
    [:stroke-color-gradient {:optional true} clr/schema:gradient]
    [:stroke-image {:optional true} clr/schema:image]

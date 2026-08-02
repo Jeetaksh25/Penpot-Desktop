@@ -42,6 +42,8 @@
            on-stroke-cap-start-change
            on-stroke-cap-end-change
            on-stroke-cap-switch
+           on-stroke-join-change
+           on-stroke-miter-limit-change
            on-toggle-visibility
            disable-drag
            on-focus
@@ -215,6 +217,31 @@
          (mf/deps index on-stroke-cap-switch)
          #(on-stroke-cap-switch index))
 
+        ;; Figma-parity: stroke join (miter/round/bevel) + miter limit.
+        ;; Unset join = :miter and unset miter limit = 4, the SVG defaults,
+        ;; so legacy strokes render pixel-identically.
+        stroke-join         (or (:stroke-join stroke) :miter)
+        stroke-miter-limit  (or (:stroke-miter-limit stroke) 4)
+
+        stroke-joins-options
+        (mf/with-memo [stroke-join]
+          (d/concat-vec
+           (when (= :multiple stroke-join)
+             [{:value :multiple :label "--"}])
+           [{:value :miter :label (tr "workspace.options.stroke.join.miter") :id "miter"}
+            {:value :round :label (tr "workspace.options.stroke.join.round") :id "round"}
+            {:value :bevel :label (tr "workspace.options.stroke.join.bevel") :id "bevel"}]))
+
+        on-join-change
+        (mf/use-fn
+         (mf/deps index on-stroke-join-change)
+         #(on-stroke-join-change index (keyword %)))
+
+        on-miter-limit-change
+        (mf/use-fn
+         (mf/deps index on-stroke-miter-limit-change)
+         #(on-stroke-miter-limit-change index %))
+
         on-toggle-visibility
         (mf/use-fn
          (mf/deps index on-toggle-visibility)
@@ -362,4 +389,25 @@
                      :options stroke-caps-options
                      :data-testid "stroke.cap-end"
                      :disabled hidden?
-                     :on-change on-caps-end-change}]])]))
+                     :on-change on-caps-end-change}])]
+
+     ;; Stroke Joins (Figma-parity: miter/round/bevel + miter limit).
+     ;; Shown for every stroke: joins apply to closed shapes' corners too,
+     ;; not only open paths. Miter limit only matters when join is :miter.
+     [:div {:class (stl/css :stroke-caps-options)
+            :data-testid "stroke.join-options"}
+      [:> select* {:default-selected (d/name stroke-join)
+                   :options stroke-joins-options
+                   :data-testid "stroke.join"
+                   :disabled hidden?
+                   :on-change on-join-change}]
+      (when (= :miter stroke-join)
+        [:> numeric-input-wrapper* {:on-change on-miter-limit-change
+                                    :text-icon "MITER"
+                                    :min 1
+                                    :on-focus on-focus
+                                    :on-blur on-blur
+                                    :attr :stroke-miter-limit
+                                    :class (stl/css :numeric-input-wrapper)
+                                    :property (tr "workspace.options.stroke.miter-limit")
+                                    :value stroke-miter-limit}])]]))

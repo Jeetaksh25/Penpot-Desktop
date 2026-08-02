@@ -190,6 +190,17 @@
         (when (not= style :svg)
           (obj/set! attrs "strokeDasharray" (calculate-dasharray style width dash gap)))
 
+        ;; Figma-parity: stroke join + miter limit. These are pure SVG
+        ;; attributes that apply to the path's own stroke regardless of
+        ;; stroke alignment (inner/outer render via <use> which inherits
+        ;; these style keys, so joins render correctly there too). Unset =
+        ;; SVG defaults (:miter, 4) which match Figma, so legacy strokes
+        ;; render pixel-identically.
+        (when-let [join (:stroke-join data)]
+          (obj/set! attrs "strokeLinejoin" (name join)))
+        (when-let [miter (:stroke-miter-limit data)]
+          (obj/set! attrs "strokeMiterlimit" miter))
+
         ;; For simple line caps we use svg stroke-line-cap attribute. This
         ;; only works if all caps are the same and we are not using the tricks
         ;; for inner or outer strokes.

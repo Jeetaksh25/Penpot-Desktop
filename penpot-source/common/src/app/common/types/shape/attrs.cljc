@@ -54,7 +54,7 @@
             :stroke-opacity
             :stroke-color-gradient
             :stroke-cap-start
-            :stroke-cap-end
+            :stroke-cap-end :stroke-join :stroke-miter-limit
 
             :exports
 
@@ -163,7 +163,7 @@
            :stroke-opacity
            :stroke-color-gradient
            :stroke-cap-start
-           :stroke-cap-end
+           :stroke-cap-end :stroke-join :stroke-miter-limit
 
            :shadow
 
@@ -221,7 +221,7 @@
              :stroke-opacity
              :stroke-color-gradient
              :stroke-cap-start
-             :stroke-cap-end
+             :stroke-cap-end :stroke-join :stroke-miter-limit
 
              :shadow
 
@@ -279,7 +279,7 @@
            :stroke-opacity
            :stroke-color-gradient
            :stroke-cap-start
-           :stroke-cap-end
+           :stroke-cap-end :stroke-join :stroke-miter-limit
 
            :shadow
 
@@ -336,7 +336,7 @@
            :stroke-opacity
            :stroke-color-gradient
            :stroke-cap-start
-           :stroke-cap-end
+           :stroke-cap-end :stroke-join :stroke-miter-limit
 
            :shadow
 
@@ -458,7 +458,7 @@
               :stroke-opacity
               :stroke-color-gradient
               :stroke-cap-start
-              :stroke-cap-end
+              :stroke-cap-end :stroke-join :stroke-miter-limit
 
               :shadow
 
@@ -516,7 +516,7 @@
            :stroke-opacity
            :stroke-color-gradient
            :stroke-cap-start
-           :stroke-cap-end
+           :stroke-cap-end :stroke-join :stroke-miter-limit
 
            :shadow
 
