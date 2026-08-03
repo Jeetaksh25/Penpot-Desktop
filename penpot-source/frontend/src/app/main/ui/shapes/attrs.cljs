@@ -129,7 +129,7 @@
                    "a" r4 "," r4 " 0 0 1 " (- r4) "," (- r4) " "
                    "v" (- left) " "
                    "a" r1 "," r1 " 0 0 1 " r1 "," (- r1) " "
-                   "z")}))))
+                   "z")})))))
 
 (defn add-border-props!
   [props shape]

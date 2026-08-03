@@ -547,7 +547,7 @@
                      :options stroke-caps-options
                      :data-testid "stroke.cap-end"
                      :disabled hidden?
-                     :on-change on-caps-end-change}])]
+                     :on-change on-caps-end-change}]])
 
      ;; Stroke Joins (Figma-parity: miter/round/bevel + miter limit).
      ;; Shown for every stroke: joins apply to closed shapes' corners too,
@@ -627,4 +627,4 @@
         [:& select {:default-value stroke-blend-mode
                     :options blend-mode-options
                     :disabled hidden?
-                    :on-change on-blend-mode-change*}]]])))
+                    :on-change on-blend-mode-change*}]])]))

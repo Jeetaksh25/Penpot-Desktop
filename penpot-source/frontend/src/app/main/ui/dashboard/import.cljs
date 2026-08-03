@@ -51,13 +51,13 @@
                           (mapv (fn [file]
                                   {:name (.-name file)
                                    :uri  (wapi/create-uri file)}))
-                          (not-empty)))]
+                          (not-empty))]
          (when entries
            (st/emit! (modal/show
                       {:type :import
                        :project-id project-id
                        :entries entries
-                       :on-finish-import on-finish-import})))))))
+                       :on-finish-import on-finish-import}))))))))
 
 (mf/defc import-form*
   {::mf/forward-ref true}

@@ -233,7 +233,7 @@
   [objects shape origin]
   (let [pairs (box-style objects shape origin)
         kept (->> pairs (remove #(#{:position :left :top} (first %))))]
-    (into [[:position "relative]] kept)))
+    (into [[:position "relative"]] kept)))
 
 (defn- render-hoisted-component
   "Render one hoisted component as its own `components/<name>.jsx` source
@@ -286,7 +286,7 @@
      (when uses-svg? ",\n    \"react-native-svg\": \"^15.3.0\"")
      (when uses-masked-view? ",\n    \"@react-native-masked-view/masked-view\": \"^0.3.1\"")
      "\n  }\n"
-     "}\n")))
+     "}\n"))
 
 (defn- rn-readme [comp-name]
   (dm/fmt

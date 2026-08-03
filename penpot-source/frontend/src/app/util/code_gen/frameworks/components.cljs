@@ -72,7 +72,7 @@
     (loop [n base i 1]
       (if (contains? used n)
         (recur (dm/str base i) (inc i))
-        [n (conj used n)])))))
+        [n (conj used n)]))))
 
 (defn collect-hoistable
   "Detect hoistable component-instance groups among the reachable shapes

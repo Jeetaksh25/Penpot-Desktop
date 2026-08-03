@@ -91,4 +91,4 @@
           :placeholder "--"
           :min 0 :max 1
           :on-change on-contrast-change
-          :value (:contrast params 0.5)}]])]))
+          :value (:contrast params 0.5)}]]])))

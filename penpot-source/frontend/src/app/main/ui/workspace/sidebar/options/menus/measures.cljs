@@ -561,7 +561,7 @@
                (st/emit! (udw/trigger-bounding-box-cloaking ids)
                          (udw/update-dimensions ids :width new-w)
                          (udw/update-dimensions ids :height new-h))
-               (reset! scale-input* nil))))
+               (reset! scale-input* nil)))))
 
         ;; Figma-parity 3D transforms (gap #66). The optional :transform-3d
         ;; map on the shape (rotation-x/y/z + perspective). The renderer 3D
@@ -925,7 +925,7 @@
                                              :placeholder "100"
                                              :min 0
                                              :value @scale-input*
-                                             :on-change on-scale-change}])])
+                                             :on-change on-scale-change}]])
      ;; Figma-parity 3D transforms (gap #66). Optional :transform-3d map
      ;; on the shape (rotation-x/y/z + perspective). Renders ONLY when the
      ;; shape carries :transform-3d; absent = no UI (byte-identical). The

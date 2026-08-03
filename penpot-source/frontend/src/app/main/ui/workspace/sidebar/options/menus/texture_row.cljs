@@ -118,7 +118,7 @@
                    :checked clip-to-shape?
                    :on-change on-toggle-clip}]
           [:span {:class (stl/css :texture-clip-label)}
-           (tr "workspace.options.texture-options.clip-to-shape")]]])]]))
+           (tr "workspace.options.texture-options.clip-to-shape")]]]])]))
 
 (mf/defc texture-menu*
   {::mf/wrap [#(mf/memo' % check-texture-menu-props)]}

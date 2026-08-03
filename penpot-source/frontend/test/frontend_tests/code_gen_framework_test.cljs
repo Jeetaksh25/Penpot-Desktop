@@ -79,7 +79,7 @@
                     "winui3-xml" "flutter" "tailwind"]]
         (let [code (cg/generate-framework-code objects type shapes)]
           (is (string? code) (str type " returns a string"))
-          (is (not (str/blank? code)) (str type " code is non-empty"))))))
+          (is (not (str/blank? code)) (str type " code is non-empty")))))))
 
 (deftest react-code-shape
   (testing "the React snippet uses absolute positioning and a default export"
