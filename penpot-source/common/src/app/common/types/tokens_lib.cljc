@@ -521,6 +521,87 @@
 
 ;; === TokenSets (collection)
 
+;; Figma-parity variable collections (gap #43). A Collection is a Figma-style
+;; top-level grouping container that sits ABOVE Sets: it groups related token
+;; sets and carries its own mode list. This is purely ADDITIVE — the existing
+;; TokensLib deftype is unchanged (the file's tokens-lib is still the implicit
+;; root collection). A Collection record is stored out-of-band by the UI; the
+;; CRUD UI lives in frontend ui/workspace/tokens/collections.cljs. Wiring
+;; collections into the TokensLib persistence path is DEFERRED (would reshape
+;; the tokens-lib internal structure — high blast-radius without a build).
+(defprotocol ICollection
+  (get-set-ids [_] "ordered sequence of set ids that belong to this collection")
+  (get-modes [_] "ordered sequence of mode names defined on this collection")
+  (add-set-id [_ set-id] "add a set id to the collection")
+  (remove-set-id [_ set-id] "remove a set id from the collection")
+  (add-mode [_ mode-name] "add a mode name to the collection")
+  (remove-mode [_ mode-name] "remove a mode name from the collection"))
+
+(defrecord Collection [id name description modified-at set-ids modes]
+  cp/Datafiable
+  (datafy [this] (into {} this))
+
+  INamedItem
+  (get-id [_] id)
+  (get-name [_] name)
+  (get-description [_] description)
+  (get-modified-at [_] modified-at)
+  (rename [this new-name]
+    (assoc this :name new-name :modified-at (ct/now)))
+  (reid [this new-id]
+    (assoc this :id new-id :modified-at (ct/now)))
+  (set-description [this new-description]
+    (assoc this :description (d/nilv new-description "") :modified-at (ct/now)))
+
+  ICollection
+  (get-set-ids [_] (seq set-ids))
+  (get-modes [_] (seq modes))
+  (add-set-id [this set-id]
+    (assoc this :set-ids (conj (or set-ids #{}) set-id) :modified-at (ct/now)))
+  (remove-set-id [this set-id]
+    (assoc this :set-ids (disj (or set-ids #{}) set-id) :modified-at (ct/now)))
+  (add-mode [this mode-name]
+    (assoc this :modes (conj (or modes []) mode-name) :modified-at (ct/now)))
+  (remove-mode [this mode-name]
+    (assoc this :modes (vec (remove #(= % mode-name) (or modes []))) :modified-at (ct/now))))
+
+(defn collection?
+  [o]
+  (instance? Collection o))
+
+(declare make-collection)
+
+(def schema:collection-attrs
+  [:map {:title "TokenCollection"}
+   [:id ::sm/uuid]
+   [:name :string]
+   [:description {:optional true} :string]
+   [:modified-at {:optional true} ::ct/inst]
+   [:set-ids {:optional true} [:set ::sm/uuid]]
+   [:modes {:optional true} [:vector :string]]])
+
+(def schema:collection
+  [:and
+   (sm/required-keys schema:collection-attrs)
+   [:fn collection?]])
+
+(def ^:private check-collection-attrs
+  (sm/check-fn schema:collection-attrs :hint "expected valid params for token-collection"))
+
+(def check-collection
+  (sm/check-fn schema:collection :hint "expected valid token-collection"))
+
+(defn make-collection
+  [& {:as attrs}]
+  (-> attrs
+      (update :id #(or % (uuid/next)))
+      (update :modified-at #(or % (ct/now)))
+      (update :description d/nilv "")
+      (update :set-ids #(or % #{}))
+      (update :modes #(or % []))
+      (check-collection-attrs)
+      (map->Collection)))
+
 (defprotocol ITokenSets
   "Collection of sets and set groups."
   (add-set [_ token-set]

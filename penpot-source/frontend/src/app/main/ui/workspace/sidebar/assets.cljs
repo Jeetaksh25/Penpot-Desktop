@@ -166,6 +166,19 @@
             :handler on-section-filter-change}
            {:name    (tr "workspace.assets.typography")
             :id      "typographies"
+            :handler on-section-filter-change}
+           ;; Figma-parity reusable styles (gap #32). Optional filter
+           ;; entries; the file-library renderer only renders a section
+           ;; when the file actually carries the corresponding styles, so
+           ;; selecting these on a file without them is a no-op.
+           {:name    (tr "workspace.assets.effect-styles")
+            :id      "effect-styles"
+            :handler on-section-filter-change}
+           {:name    (tr "workspace.assets.stroke-styles")
+            :id      "stroke-styles"
+            :handler on-section-filter-change}
+           {:name    (tr "workspace.assets.grid-styles")
+            :id      "grid-styles"
             :handler on-section-filter-change}])]
 
     (mf/with-effect [file-id term section]

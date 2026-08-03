@@ -45,6 +45,14 @@
 (def ^:private snap-nodes-icon
   (deprecated-icon/icon-xref :snap-nodes (stl/css :snap-nodes-icon :pathbar-icon)))
 
+;; Figma-parity vector-network tool icons (gaps #28/#29). Reuse existing
+;; icon xrefs; the interactive geometry behind these modes is DEFERRED.
+(def ^:private shape-builder-icon
+  (deprecated-icon/icon-xref :boolean-union (stl/css :merge-nodes-icon :pathbar-icon)))
+
+(def ^:private paint-bucket-icon
+  (deprecated-icon/icon-xref :fill-content (stl/css :merge-nodes-icon :pathbar-icon)))
+
 (defn check-enabled [content selected-points]
   (when content
     (let [segments (path.segm/get-segments-with-points content selected-points)
@@ -139,7 +147,20 @@
         on-toggle-snap
         (mf/use-fn
          (fn [_]
-           (st/emit! (drp/toggle-snap))))]
+           (st/emit! (drp/toggle-snap))))
+
+        ;; Figma-parity vector-network tools (gaps #28/#29). Toggle the
+        ;; edit-mode; the interactive geometry is DEFERRED — see the
+        ;; registered no-op render in shapes/path/editor.cljs.
+        on-select-shape-builder
+        (mf/use-fn
+         (fn [_]
+           (st/emit! (drp/change-edit-mode :shape-builder))))
+
+        on-select-paint-bucket
+        (mf/use-fn
+         (fn [_]
+           (st/emit! (drp/change-edit-mode :paint-bucket))))]
 
     [:div {:class (stl/css :sub-actions)
            :data-dont-clear-path true}
@@ -210,6 +231,26 @@
                 :title (tr "workspace.path.actions.make-curve" (sc/get-tooltip :make-curve))
                 :on-click on-make-curve}
        to-curve-icon]]
+
+     ;; Figma-parity vector-network tools (gaps #28/#29). Toggle the
+     ;; edit-mode only; interactive merge/extract/subtract (#28, via
+     ;; common.types.path/bool) and enclosed-region flood-fill (#29,
+     ;; graph-cycle on path topology) are DEFERRED.
+     [:div {:class (stl/css :sub-actions-group)}
+      ;; Shape builder mode
+      [:button {:class  (stl/css-case :is-toggled (= edit-mode :shape-builder)
+                                      :topbar-btn true)
+                :title (tr "workspace.path.actions.shape-builder" (sc/get-tooltip :shape-builder))
+                :on-click on-select-shape-builder}
+       shape-builder-icon]
+
+      ;; Paint bucket mode
+      [:button {:class  (stl/css-case :is-toggled (= edit-mode :paint-bucket)
+                                      :topbar-btn true)
+                :title (tr "workspace.path.actions.paint-bucket" (sc/get-tooltip :paint-bucket))
+                :on-click on-select-paint-bucket}
+       paint-bucket-icon]]
+
      [:div {:class (stl/css :sub-actions-group)}
       ;; Toggle snap
       [:button {:class  (stl/css-case :is-toggled snap-toggled

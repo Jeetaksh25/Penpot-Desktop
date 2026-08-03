@@ -7,6 +7,7 @@
 (ns app.main.ui.workspace.sidebar.options.menus.fill
   (:require-macros [app.main.style :as stl])
   (:require
+   [app.common.data :as d]
    [app.common.types.color :as clr]
    [app.common.types.fills :as types.fills]
    [app.common.types.shape.attrs :refer [default-color]]
@@ -125,7 +126,32 @@
                                     (assoc (:fill-image fill)
                                            :fill-image-flip new-flip)))))))
         on-flip-h (mf/use-fn (mf/deps toggle-flip) #(toggle-flip :horizontal))
-        on-flip-v (mf/use-fn (mf/deps toggle-flip) #(toggle-flip :vertical))]
+        on-flip-v (mf/use-fn (mf/deps toggle-flip) #(toggle-flip :vertical))
+
+        ;; Figma-parity video fill (gap #22). A guarded additive "Replace
+        ;; with video" affordance. It reuses the existing
+        ;; dwm/upload-fill-image media pipeline; until the upload pipeline
+        ;; (data/workspace/media.cljs validate-file + the backend media
+        ;; object endpoint) is extended to accept video mtypes, the upload
+        ;; is rejected with the existing "media type not supported" toast
+        ;; (graceful, no crash). The video mtype round-trips on the schema
+        ;; (color.cljc) and the binary fills path (fills/impl.cljc) once a
+        ;; video is accepted. The HTML <video> renderer application is
+        ;; deferred.
+        video-ref (mf/use-ref)
+        on-pick-video (mf/use-fn (mf/deps video-ref) #(dom/click (mf/ref-val video-ref)))
+        on-video-file (mf/use-fn
+                        (mf/deps index on-change-image-attrs)
+                        (fn [file]
+                          (let [on-success
+                                (fn [img]
+                                  (let [new-img (-> (select-keys img [:id :width :height :mtype :name])
+                                                    (assoc :keep-aspect-ratio true))]
+                                    (on-change-image-attrs
+                                     index
+                                     (fn [fill]
+                                       (assoc fill :fill-image new-img)))))]
+                            (st/emit! (dwm/upload-fill-image file on-success)))))]
     (when (some? image)
       [:div {:style #js {:display "flex"
                          :align-items "center"
@@ -150,7 +176,66 @@
        [:> file-uploader {:accept "image/*"
                           :input-id (str "fill-image-replace-" index)
                           :on-selected on-file
-                          :ref file-ref}]])))
+                          :ref file-ref}]
+       [:> icon-button* {:variant "ghost"
+                         :aria-label (tr "workspace.options.fill.image.replace-video")
+                         :on-click on-pick-video
+                         :icon i/play}]
+       [:> file-uploader {:accept "video/mp4,video/webm"
+                          :input-id (str "fill-video-replace-" index)
+                          :on-selected on-video-file
+                          :ref video-ref}]])))
+
+;; Figma-parity image adjustments (gap #23). Rendered only for image fills.
+;; Seven adjustment sliders, each -100..100 in the UI mapped to -1..1 on
+;; the image map (0/absent = no adjustment). Reuses the per-fill
+;; on-change-image-attrs callback (dwsh/update-shapes, undo on). The
+;; renderer applies them as a CSS `filter:` chain on the image element
+;; (attrs.cljs, not owned here) — that wiring is deferred; the values
+;; round-trip on the fill via the vector fills path.
+(mf/defc image-adjustments-controls*
+  {::mf/wrap [#(mf/memo' %)]}
+  [{:keys [index value on-change-image-attrs]}]
+  (let [image       (:fill-image value)
+        adjustments (or (:adjustments image) {})
+        on-change-adj
+        (mf/use-fn
+         (mf/deps index on-change-image-attrs)
+         (fn [field value]
+           (let [v   (/ (max -100 (min (or value 0) 100)) 100)
+                 img (if (zero? v)
+                       (d/dissoc-in image [:adjustments field])
+                       (assoc-in image [:adjustments field] v))]
+             (on-change-image-attrs
+              index
+              (fn [fill]
+                (assoc fill :fill-image img))))))]
+    (when (some? image)
+      [:div {:style #js {:display "flex"
+                         :flex-direction "column"
+                         :gap "2px"
+                         :padding "4px 8px 0"}}
+       [:span {:style #js {:font-size "11px"
+                           :color "var(--color-foreground-secondary)"
+                           :padding-top "2px"}}
+        (tr "workspace.options.fill.image.adjustments")]
+       (for [field [:exposure :contrast :saturation
+                    :temperature :tint :highlights :shadows]]
+         (let [raw (get adjustments field 0)
+               val (* (or raw 0) 100)]
+           [:div {:key (str "adj-" (name field))
+                  :style #js {:display "flex"
+                              :align-items "center"
+                              :gap "6px"}}
+            [:span {:style #js {:font-size "10px"
+                                :color "var(--color-foreground-secondary)"
+                                :width "84px"}}
+             (tr (str "workspace.options.fill.image.adjustment."
+                      (name field)))]
+            [:input {:type "range"
+                     :min -100 :max 100 :step 1
+                     :value val
+                     :on-change #(on-change-adj field (.. % -target -value))}]]))])))
 
 (def fill-attrs
   #{:fills :hide-fill-on-export})
@@ -245,10 +330,22 @@
 
         on-change
         (mf/use-fn
-         (mf/deps ids)
+         (mf/deps ids fills)
          (fn [color index]
-           (let [color (select-keys color clr/color-attrs)]
-             (st/emit! (dc/change-fill ids color index)))))
+           (let [color (select-keys color clr/color-attrs)
+                 ;; Figma-parity pattern fill (gap #25). Editing a pattern
+                 ;; fill via the colorpicker converts it to a
+                 ;; solid/gradient/image fill: we drop :fill-pattern and
+                 ;; merge the picked color so the result carries exactly
+                 ;; one color attr (has-valid-fill-attrs?), avoiding an
+                 ;; invalid fill. Reuses update-shapes (undo on).
+                 cur   (when (vector? fills) (nth fills index nil))]
+             (if (:fill-pattern cur)
+               (st/emit! (dwsh/update-shapes
+                          ids
+                          #(update-in % [:fills index]
+                                      (fn [f] (-> f (dissoc :fill-pattern) (merge color))))))
+               (st/emit! (dc/change-fill ids color index))))))
 
         ;; Figma-parity per-item blend modes (gap #9). Stores the selected
         ;; blend mode on the individual fill. Reuses dwsh/update-shapes
@@ -270,6 +367,31 @@
          (fn [index update-fn]
            (st/emit! (udw/trigger-bounding-box-cloaking ids))
            (st/emit! (dwsh/update-shapes ids #(update-in % [:fills index] update-fn)))))
+
+        ;; Figma-parity pattern fill (gap #25). Adds a default pattern fill
+        ;; (rectangular tiling, no source shape yet) to the selected shapes
+        ;; via the standard update-shapes event (undo on). The SVG <pattern>
+        ;; tiling renderer + the source-shape picker are deferred; the
+        ;; :fill-pattern value round-trips on the fill via the vector fills
+        ;; path. Rendered only when fills can be added (single selection).
+        on-add-pattern
+        (mf/use-fn
+         (mf/deps ids multiple?)
+         (fn [_]
+           (when can-add-fills?
+             (st/emit! (udw/trigger-bounding-box-cloaking ids))
+             (st/emit!
+              (dwsh/update-shapes
+               ids
+               (fn [shape]
+                 (let [fills (or (:fills shape) [])
+                       pattern-fill {:fill-pattern {:pattern-shape-id (:id shape)
+                                                    :pattern-tiling :rectangular
+                                                    :pattern-scale 1.0
+                                                    :pattern-offset-x 0
+                                                    :pattern-offset-y 0}}]
+                   (assoc shape :fills (conj fills pattern-fill))))))
+             (open-content))))
 
         on-reorder
         (mf/use-fn
@@ -352,12 +474,21 @@
                       :class        (stl/css-case :fill-title-bar (not has-fills?))}
 
        (when (not (= :multiple fills))
-         [:> icon-button* {:variant "ghost"
-                           :aria-label (tr "workspace.options.fill.add-fill")
-                           :on-click on-add
-                           :data-testid "add-fill"
-                           :disabled (not can-add-fills?)
-                           :icon i/add}])]]
+         [:*
+          [:> icon-button* {:variant "ghost"
+                            :aria-label (tr "workspace.options.fill.add-fill")
+                            :on-click on-add
+                            :data-testid "add-fill"
+                            :disabled (not can-add-fills?)
+                            :icon i/add}]
+          ;; Figma-parity pattern fill (gap #25). Adds a pattern fill
+          ;; (stub: rectangular tiling, no source picker yet).
+          [:> icon-button* {:variant "ghost"
+                            :aria-label (tr "workspace.options.fill.add-pattern")
+                            :on-click on-add-pattern
+                            :data-testid "add-pattern-fill"
+                            :disabled (not can-add-fills?)
+                            :icon i/grid}]])]]
 
      (when open?
        [:div {:class (stl/css :fill-content)}
@@ -405,7 +536,12 @@
                 ;; Renders nothing for non-image fills.
                 [:> image-fill-controls* {:index index
                                           :value value
-                                          :on-change-image-attrs on-change-image-attrs}]]))])
+                                          :on-change-image-attrs on-change-image-attrs}]
+                ;; Figma-parity image adjustments (gap #23).
+                ;; Renders nothing for non-image fills.
+                [:> image-adjustments-controls* {:index index
+                                                  :value value
+                                                  :on-change-image-attrs on-change-image-attrs}]]))])
 
         (when (or (= type :frame)
                   (and (= type :multiple)

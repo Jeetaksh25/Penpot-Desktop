@@ -10593,3 +10593,243 @@ msgstr "Scale (%s)"
 msgid "workspace.options.scale"
 msgstr "Scale"
 
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype-title"
+msgstr "OpenType features"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.liga"
+msgstr "Ligatures"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.dlig"
+msgstr "Discretionary ligatures"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.calt"
+msgstr "Contextual alternates"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.ordn"
+msgstr "Ordinals"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.pnum"
+msgstr "Proportional figures"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.tnum"
+msgstr "Tabular figures"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.lnum"
+msgstr "Lining figures"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.onum"
+msgstr "Old-style figures"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.frac"
+msgstr "Fractions"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.zero"
+msgstr "Slashed zero"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.ss01"
+msgstr "Stylistic set 01"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.ss02"
+msgstr "Stylistic set 02"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.smcp"
+msgstr "Small caps"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.sups"
+msgstr "Superscript"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.subs"
+msgstr "Subscript"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.opentype.kern"
+msgstr "Kerning"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/typography.cljs
+msgid "workspace.options.text-options.variable-title"
+msgstr "Variable font"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/text.cljs
+msgid "workspace.options.text-options.list-type.none"
+msgstr "None"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/text.cljs
+msgid "workspace.options.text-options.list-type.bulleted"
+msgstr "Bulleted"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/text.cljs
+msgid "workspace.options.text-options.list-type.numbered"
+msgstr "Numbered"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/text.cljs
+msgid "workspace.options.text-options.list-spacing"
+msgstr "List spacing"
+
+#: src/app/main/ui/workspace/colorpicker/gradients.cljs
+msgid "workspace.gradients.mesh"
+msgstr "Mesh"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.image.replace-video"
+msgstr "Replace with video"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.image.adjustments"
+msgstr "Adjustments"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.image.adjustment.exposure"
+msgstr "Exposure"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.image.adjustment.contrast"
+msgstr "Contrast"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.image.adjustment.saturation"
+msgstr "Saturation"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.image.adjustment.temperature"
+msgstr "Temperature"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.image.adjustment.tint"
+msgstr "Tint"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.image.adjustment.highlights"
+msgstr "Highlights"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.image.adjustment.shadows"
+msgstr "Shadows"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/fill.cljs
+msgid "workspace.options.fill.add-pattern"
+msgstr "Add pattern fill"
+
+#: src/app/main/ui/workspace/context_menu.cljs
+msgid "workspace.shape.menu.mask-mode"
+msgstr "Mask mode"
+
+#: src/app/main/ui/workspace/context_menu.cljs
+msgid "workspace.shape.menu.mask-mode.alpha"
+msgstr "Alpha"
+
+#: src/app/main/ui/workspace/context_menu.cljs
+msgid "workspace.shape.menu.mask-mode.vector"
+msgstr "Vector"
+
+#: src/app/main/ui/workspace/context_menu.cljs
+msgid "workspace.shape.menu.mask-mode.luminance"
+msgstr "Luminance"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.code-connect"
+msgstr "Code Connect"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.code-connect.type"
+msgstr "Framework"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.code-connect.add"
+msgstr "Add framework"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.code-connect.remove"
+msgstr "Remove"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.exposed-nested"
+msgstr "Exposed nested instances"
+
+#: src/app/main/ui/workspace/sidebar/options/menus/component.cljs
+msgid "workspace.options.component.exposed-nested.type"
+msgstr "Property"
+
+#: src/app/main/ui/workspace/sidebar/assets.cljs
+msgid "workspace.assets.effect-styles"
+msgstr "Effect styles"
+
+#: src/app/main/ui/workspace/sidebar/assets.cljs
+msgid "workspace.assets.stroke-styles"
+msgstr "Stroke styles"
+
+#: src/app/main/ui/workspace/sidebar/assets.cljs
+msgid "workspace.assets.grid-styles"
+msgstr "Grid styles"
+
+#: src/app/main/ui/inspect/code.cljs
+msgid "inspect.code.code-connect"
+msgstr "Code Connect"
+
+#: src/app/main/ui/workspace/tokens/collections.cljs
+msgid "workspace.tokens.collections.title"
+msgstr "Collections"
+
+#: src/app/main/ui/workspace/tokens/collections.cljs
+msgid "workspace.tokens.collections.add"
+msgstr "Add"
+
+#: src/app/main/ui/workspace/tokens/collections.cljs
+msgid "workspace.tokens.collections.add-placeholder"
+msgstr "New collection name"
+
+#: src/app/main/ui/workspace/tokens/collections.cljs
+msgid "workspace.tokens.collections.rename"
+msgstr "Rename"
+
+#: src/app/main/ui/workspace/tokens/collections.cljs
+msgid "workspace.tokens.collections.remove"
+msgstr "Remove"
+
+#: src/app/main/ui/workspace/tokens/collections.cljs
+msgid "workspace.tokens.collections.sets-count"
+msgstr "%s sets"
+
+#: src/app/main/ui/workspace/tokens/collections.cljs
+msgid "workspace.tokens.collections.modes-count"
+msgstr "%s modes"
+
+#: src/app/main/ui/workspace/tokens/collections.cljs
+msgid "workspace.tokens.collections.empty"
+msgstr "No collections yet"
+
+#: src/app/main/ui/workspace/viewport/path_actions.cljs
+msgid "workspace.path.actions.shape-builder"
+msgstr "Shape builder (%s)"
+
+#: src/app/main/ui/workspace/viewport/path_actions.cljs
+msgid "workspace.path.actions.paint-bucket"
+msgstr "Paint bucket (%s)"
+
+#: src/app/main/ui/workspace/shapes/path/editor.cljs
+msgid "workspace.path.mode.shape-builder"
+msgstr "Shape builder"
+
+#: src/app/main/ui/workspace/shapes/path/editor.cljs
+msgid "workspace.path.mode.paint-bucket"
+msgstr "Paint bucket"
+
+#: src/app/main/ui/workspace/right_header.cljs
+msgid "workspace.header.play-mode"
+msgstr "Play in canvas"
+

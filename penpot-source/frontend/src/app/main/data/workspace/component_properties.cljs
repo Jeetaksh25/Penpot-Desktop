@@ -126,3 +126,43 @@
          (dwu/commit-undo-transaction undo-id)
          (ev/event {::ev/name "set-component-property-value"
                     ::ev/origin "workspace:design-tab-component"}))))))
+;; Figma-parity Code Connect (gap #40). Additive events that persist the
+;; optional :code-connect map (framework-id -> code-template string) on a
+;; main component. Same changes-builder + undo-transaction pattern as the
+;; typed-property events above. The code-gen engine reads :code-connect to
+;; emit real component refs in Dev Mode (see app.util.code-gen).
+(defn update-code-connect
+  "Set or replace a single framework's code-template on a main component.
+  A nil/empty template removes the framework entry."
+  [component-id framework template]
+  (ptk/reify ::update-component-code-connect
+    ptk/WatchEvent
+    (watch [it state _]
+      (let [page-id (:current-page-id state)
+            data    (dsh/lookup-file-data state)
+            objects (dsh/lookup-page-objects state)
+            tpl     (str (or template ""))
+            changes (-> (pcb/empty-changes it page-id)
+                        (pcb/with-objects objects)
+                        (pcb/with-library-data data)
+                        (pcb/update-component component-id
+                          (fn [component]
+                            (let [current (or (:code-connect component) {})
+                                  updated (if (str/blank? tpl)
+                                            (dissoc current framework)
+                                            (assoc current framework tpl))]
+                              (if (empty? updated)
+                                (dissoc component :code-connect)
+                                (assoc component :code-connect updated))))))
+            undo-id (js/Symbol)]
+        (rx/of
+         (dwu/start-undo-transaction undo-id)
+         (dch/commit-changes changes)
+         (dwu/commit-undo-transaction undo-id)
+         (ev/event {::ev/name "update-component-code-connect"
+                    ::ev/origin "workspace:design-tab-component"}))))))
+
+(defn remove-code-connect
+  "Remove a single framework's code-template from a main component."
+  [component-id framework]
+  (update-code-connect component-id framework nil))

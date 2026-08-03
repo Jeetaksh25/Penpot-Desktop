@@ -742,6 +742,170 @@
                         :value "lowercase"
                         :id "text-transform-lowercase"}]]]))
 
+;; Feature 12 — OpenType features. The model attr `:font-feature-settings`
+;; is stored as a CSS `font-feature-settings` string (e.g. `"liga" 1, "dlig"
+;; 0`), so it renders LIVE in the contenteditable and round-trips 1:1 in
+;; `app.util.text.content.styles`. This panel parses the string into a
+;; feature-tag -> 0/1 map, offers a static set of common OpenType features as
+;; toggle buttons, and rebuilds the string on every toggle. Reading the
+;; actually-available features from opentype.js font metadata (GSUB table) is
+;; deferred — the font's parsed object is only retained at upload-parse time
+;; (`app.main.data.fonts/process-upload`) and not on the `fontsdb` registry,
+;; so we can't cheaply read it at UI time without re-parsing the ArrayBuffer
+;; (high blast-radius, deferred to a build-verified pass). The static list
+;; covers the Figma common set; unsupported toggles are simply inert.
+(def ^:private opentype-common-features
+  [["liga" "workspace.options.text-options.opentype.liga"]
+   ["dlig" "workspace.options.text-options.opentype.dlig"]
+   ["calt" "workspace.options.text-options.opentype.calt"]
+   ["ordn" "workspace.options.text-options.opentype.ordn"]
+   ["pnum" "workspace.options.text-options.opentype.pnum"]
+   ["tnum" "workspace.options.text-options.opentype.tnum"]
+   ["lnum" "workspace.options.text-options.opentype.lnum"]
+   ["onum" "workspace.options.text-options.opentype.onum"]
+   ["frac" "workspace.options.text-options.opentype.frac"]
+   ["zero" "workspace.options.text-options.opentype.zero"]
+   ["ss01" "workspace.options.text-options.opentype.ss01"]
+   ["ss02" "workspace.options.text-options.opentype.ss02"]
+   ["smcp" "workspace.options.text-options.opentype.smcp"]
+   ["sups" "workspace.options.text-options.opentype.sups"]
+   ["subs" "workspace.options.text-options.opentype.subs"]
+   ["kern" "workspace.options.text-options.opentype.kern"]])
+
+(defn- parse-font-feature-settings
+  "Parse a CSS `font-feature-settings` string into a map {tag -> 1|0}."
+  [value]
+  (if (or (nil? value) (= value :multiple) (str/empty? value))
+    {}
+    (let [re (js/RegExp. "\"([A-Za-z0-9]{4})\"\\s+(\\d+)" "g")
+          out (volatile! {})]
+      (loop [m (.exec re value)]
+        (when m
+          (vswap! out assoc (aget m 1) (js/parseInt (aget m 2) 10))
+          (recur (.exec re value))))
+      (deref out))))
+
+(defn- build-font-feature-settings
+  "Build a CSS `font-feature-settings` string from a {tag -> 1|0} map, or nil
+  when the map is empty (absent key = existing behavior)."
+  [features]
+  (let [entries (seq features)]
+    (if (empty? entries)
+      nil
+      (->> entries
+           (sort-by first)
+           (map (fn [[tag v]] (str/concat "\"" tag "\" " v)))
+           (str/join ", ")))))
+
+(mf/defc opentype-options*
+  [{:keys [values on-change on-blur]}]
+  (let [raw (:font-feature-settings values)
+        multiple? (= raw :multiple)
+        features (if multiple? {} (parse-font-feature-settings raw))
+        toggle
+        (mf/use-fn
+         (mf/deps features on-change on-blur)
+         (fn [tag]
+           (let [current (get features tag 0)
+                 next (if (= current 1) 0 1)
+                 new-features (assoc features tag next)
+                 new-value (build-font-feature-settings new-features)]
+             (on-change {:font-feature-settings new-value})
+             (when (some? on-blur) (on-blur)))))]
+    [:div {:class (stl/css :text-transform)}
+     [:div {:class (stl/css :opentype-features-title)}
+      (tr "workspace.options.text-options.opentype-title")]
+     (if multiple?
+       [:span {:class (stl/css :font-option-name :font-family-mixed)}
+        (tr "settings.multiple")]
+       [:div {:class (stl/css :text-decoration-options)}
+        (for [[tag label-msgid] opentype-common-features]
+          (let [on (= (get features tag 0) 1)]
+            [:button {:key tag
+                      :type "button"
+                      :class (stl/css-case :opentype-feature-btn true
+                                           :opentype-feature-on on)
+                      :title (tr label-msgid)
+                      :on-click #(toggle tag)}
+             tag]))])]))
+
+;; Feature 13 — variable-font axes. The model attr `:font-variation-settings`
+;; is stored as a CSS `font-variation-settings` string (e.g. `"wght" 400,
+;; "wdth" 80`), rendered LIVE in the contenteditable and round-tripped 1:1.
+;; This panel parses the string into an {axis -> number} map and offers a
+;; static set of common axes as sliders. Reading the actually-available axes
+;; from opentype.js font metadata (fvar table) is deferred for the same
+;; reason as OpenType features (parsed font not retained on fontsdb); the
+;; static list covers the standard registered axes. Sliders for axes a font
+;; doesn't expose are inert.
+(def ^:private variable-common-axes
+  [["wght" 100 900 1]
+   ["wdth" 25 200 1]
+   ["opsz" 8 144 1]
+   ["slnt" 0 90 1]
+   ["GRAD" -200 150 1]])
+
+(defn- parse-font-variation-settings
+  "Parse a CSS `font-variation-settings` string into a map {axis -> number}."
+  [value]
+  (if (or (nil? value) (= value :multiple) (str/empty? value))
+    {}
+    (let [re (js/RegExp. "\"([A-Za-z0-9]{4})\"\\s+(-?\\d+(?:\\.\\d+)?)" "g")
+          out (volatile! {})]
+      (loop [m (.exec re value)]
+        (when m
+          (vswap! out assoc (aget m 1) (js/parseFloat (aget m 2)))
+          (recur (.exec re value))))
+      (deref out))))
+
+(defn- build-font-variation-settings
+  "Build a CSS `font-variation-settings` string from an {axis -> number} map,
+  or nil when empty (absent key = existing behavior)."
+  [axes]
+  (let [entries (seq axes)]
+    (if (empty? entries)
+      nil
+      (->> entries
+           (sort-by first)
+           (map (fn [[axis v]] (str/concat "\"" axis "\" " v)))
+           (str/join ", ")))))
+
+(mf/defc variable-font-options*
+  [{:keys [values on-change on-blur]}]
+  (let [raw (:font-variation-settings values)
+        multiple? (= raw :multiple)
+        axes (if multiple? {} (parse-font-variation-settings raw))
+        on-axis-change
+        (mf/use-fn
+         (mf/deps axes on-change on-blur)
+         (fn [axis value]
+           (let [parsed (js/parseFloat value)
+                 new-axes (if (or (nil? parsed) (js/isNaN parsed))
+                            (dissoc axes axis)
+                            (assoc axes axis parsed))
+                 new-value (build-font-variation-settings new-axes)]
+             (on-change {:font-variation-settings new-value})
+             (when (some? on-blur) (on-blur)))))]
+    [:div {:class (stl/css :text-transform)}
+     [:div {:class (stl/css :opentype-features-title)}
+      (tr "workspace.options.text-options.variable-title")]
+     (if multiple?
+       [:span {:class (stl/css :font-option-name :font-family-mixed)}
+        (tr "settings.multiple")]
+       [:div {:class (stl/css :text-decoration-options)}
+        (for [[axis min max step] variable-common-axes]
+          (let [v (get axes axis)]
+            [:div {:key axis :class (stl/css :letter-spacing)}
+             [:span {:class (stl/css :icon)} axis]
+             [:input {:type "range"
+                      :min min
+                      :max max
+                      :step step
+                      :aria-label axis
+                      :title axis
+                      :value (if (some? v) v min)
+                      :on-change #(on-axis-change axis (dom/get-target-val %))}]]))])]))
+
 (mf/defc text-options*
   [{:keys [ids editor values on-change on-blur show-recent advanced-spacing?]}]
   (let [full-size-selector? (and show-recent (= (mf/use-ctx ctx/sidebar) :right))
@@ -759,7 +923,16 @@
      [:> font-options* opts]
      [:div {:class (stl/css :typography-variations)}
       [:> spacing-options* opts]
-      [:> text-transform-options* opts]]]))
+      [:> text-transform-options* opts]]
+     ;; Feature 12 / 13 — OpenType Details + Variable-font axes panels. Only
+     ;; mounted for text shapes (advanced-spacing? is true only in the
+     ;; text-shape sidebar, not the typography asset editor) since these attrs
+     ;; are not part of the typography schema. Additive: absent value = nothing
+     ;; rendered changes; the panels only persist optional CSS-string attrs.
+     (when advanced-spacing?
+       [:*
+        [:> opentype-options* opts]
+        [:> variable-font-options* opts]])]))
 
 (mf/defc typography-advanced-options*
   {::mf/wrap [mf/memo]}

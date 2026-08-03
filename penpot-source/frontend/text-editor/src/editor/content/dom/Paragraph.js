@@ -56,6 +56,15 @@ export const STYLES = [
   ["--paragraph-indent"],
   ["--max-lines"],
   ["--text-overflow"],
+  // Feature 16 — list style (paragraph-level). Round-tripped as CSS custom
+  // properties for persistence (no data loss on edit); renderer bullet /
+  // number markers are deferred. Absent key = existing behavior.
+  ["--list-type"],
+  ["--list-spacing"],
+  // Feature 19 — text on a path (layer-level). Round-tripped as a
+  // transit-encoded CSS custom property; UI path picker + renderer SVG
+  // <textPath> are deferred. Absent key = existing behavior.
+  ["--text-on-path"],
 ];
 
 /**

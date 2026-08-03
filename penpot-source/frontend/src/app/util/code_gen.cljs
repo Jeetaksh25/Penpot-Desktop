@@ -175,3 +175,31 @@
       (.click link)
       (.remove link))
     (js/queueMicrotask #(wapi/revoke-uri uri))))
+
+;; ---------------------------------------------------------------------------
+;; Figma-parity Code Connect (gap #40).
+;;
+;; When a main component carries a :code-connect map (framework-id -> code
+;; template string, authored via the component sidebar UI), the Inspect Code
+;; panel surfaces the authored template for the currently selected framework
+;; instead of the auto-generated snippet. This helper is a pure lookup — it
+;; does NOT mutate the per-framework emission pipelines (which would touch
+;; every framework namespace); replacing the generated body with the authored
+;; template inside each framework emitter is DEFERRED (high blast-radius,
+;; needs a build to validate every framework). The Inspect panel wires this
+;; for display only.
+;; ---------------------------------------------------------------------------
+
+(defn component-code-connect-template
+  "Return the Code Connect code template authored for `type` on the main
+  component backing `shape`, or nil when none exists. `objects` is the page
+  objects map; the shape's component is resolved through :component-id /
+  :shape-ref. Returns nil for non-component shapes or components without a
+  :code-connect entry for the requested framework — callers fall back to the
+  auto-generated snippet."
+  [objects type shape]
+  (let [type (str type)]
+    (when-let [component-id (:component-id shape)]
+      (when-let [component (get objects component-id)]
+        (when-let [code-connect (:code-connect component)]
+          (get code-connect type))))))

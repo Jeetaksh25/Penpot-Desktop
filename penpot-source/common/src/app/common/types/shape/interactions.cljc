@@ -11,7 +11,13 @@
    [app.common.geom.point :as gpt]
    [app.common.geom.shapes.bounds :as gsb]
    [app.common.schema :as sm]
-   [app.common.schema.generators :as sg]))
+   [app.common.schema.generators :as sg]
+   ;; Figma-parity variables in prototyping (gap #30). The expression +
+   ;; set-variable / conditional action schemas live in the additive
+   ;; expressions namespace; interactions.cljc only references them for the
+   ;; action schemas below. The viewer dispatch that actually evaluates
+   ;; expressions and conditionally runs then/else actions is DEFERRED.
+   [app.common.expressions :as cexpr]))
 
 ;; WARNING: options are not deleted when changing event or action
 ;; type, so it can be restored if the user changes it back later.
@@ -49,7 +55,14 @@
     :change-to
     ;; Figma #73: swap one overlay for another; scroll to an object.
     :swap-overlay
-    :scroll-to})
+    :scroll-to
+    ;; Figma #30: variables in prototyping. Set a variable, switch a
+    ;; variable mode, or conditionally run one of two action lists. v1 is
+    ;; SCHEMA ONLY — the viewer expression evaluation + conditional
+    ;; dispatch is high blast-radius and is DEFERRED (see feature notes).
+    :set-variable
+    :set-variable-mode
+    :conditional})
 
 (def overlay-positioning-types
   #{:manual
@@ -273,6 +286,40 @@
    [:scroll-to-target {:optional true} [:maybe ::sm/uuid]]
    [:animation {:optional true} schema:animation]])
 
+;; Figma #30: set-variable writes a variable (token) value on trigger. The
+;; target variable is a token id; :expression is evaluated at trigger time
+;; (deferred runtime) or :value is assigned directly. Both are optional so a
+;; partially-authored action still validates.
+(def schema:set-variable-interaction
+  [:map {:title "SetVariableInteraction"}
+   [:action-type [:= :set-variable]]
+   [:event-type [::sm/one-of event-types]]
+   [:variable-id {:optional true} [:maybe ::sm/uuid]]
+   [:expression {:optional true} cexpr/schema:expression]
+   [:value {:optional true} ::sm/any]])
+
+;; Figma #30: set-variable-mode switches the active variable mode (e.g.
+;; light/dark) for a collection or the page on trigger. :collection-id is
+;; optional — absent applies to the page-level mode.
+(def schema:set-variable-mode-interaction
+  [:map {:title "SetVariableModeInteraction"}
+   [:action-type [:= :set-variable-mode]]
+   [:event-type [::sm/one-of event-types]]
+   [:mode-name {:optional true} [:maybe :string]]
+   [:collection-id {:optional true} [:maybe ::sm/uuid]]])
+
+;; Figma #30: conditional evaluates :condition (an expression) and runs
+;; :then-actions or :else-actions. The action lists are vectors of generic
+;; interaction maps; the viewer is responsible for dispatching them
+;; (deferred runtime — high blast-radius on every viewer shape wrapper).
+(def schema:conditional-interaction
+  [:map {:title "ConditionalInteraction"}
+   [:action-type [:= :conditional]]
+   [:event-type [::sm/one-of event-types]]
+   [:condition {:optional true} cexpr/schema:expression]
+   [:then-actions {:optional true} [:vector ::sm/any]]
+   [:else-actions {:optional true} [:vector ::sm/any]]])
+
 (def schema:interaction
   [:schema {:title "Interaction"
             :gen/gen (sg/one-of (sg/generator schema:navigate-interaction)
@@ -295,7 +342,12 @@
      [:open-url schema:open-url-interaction]
      [:change-to schema:change-to-interaction]
      [:swap-overlay schema:swap-overlay-interaction]
-     [:scroll-to schema:scroll-to-interaction]]]])
+     [:scroll-to schema:scroll-to-interaction]
+     ;; Figma #30: variable actions. Schema-only dispatch entries; the
+     ;; viewer does not yet evaluate/dispatch them (deferred runtime).
+     [:set-variable schema:set-variable-interaction]
+     [:set-variable-mode schema:set-variable-mode-interaction]
+     [:conditional schema:conditional-interaction]]]])
 
 (def check-interaction
   (sm/check-fn schema:interaction))
@@ -402,7 +454,30 @@
             :scroll-to
             (assoc interaction
                    :action-type action-type
-                   :destination (get interaction :destination))))]
+                   :destination (get interaction :destination))
+
+            ;; Figma #30: variable actions. Carry over previously authored
+            ;; fields so toggling the action type keeps state. These never
+            ;; carry an animation, so the cond-> below strips :animation.
+            :set-variable
+            (assoc interaction
+                   :action-type action-type
+                   :variable-id (get interaction :variable-id)
+                   :expression (get interaction :expression)
+                   :value (get interaction :value))
+
+            :set-variable-mode
+            (assoc interaction
+                   :action-type action-type
+                   :mode-name (get interaction :mode-name)
+                   :collection-id (get interaction :collection-id))
+
+            :conditional
+            (assoc interaction
+                   :action-type action-type
+                   :condition (get interaction :condition)
+                   :then-actions (get interaction :then-actions)
+                   :else-actions (get interaction :else-actions))))]
 
     (cond-> new-interaction
       (not (allowed-animation? action-type
@@ -544,6 +619,93 @@
           "expected compatible interaction map with change-to action")
 
   (assoc interaction :change-to-props props))
+
+;; Figma #30: variable action predicates. Schema-only v1 — the viewer
+;; dispatch that evaluates expressions / runs conditional branches is
+;; DEFERRED (high blast-radius on every viewer shape wrapper). These
+;; helpers let the interactions panel author the actions safely.
+(defn has-set-variable?
+  [interaction]
+  (= (:action-type interaction) :set-variable))
+
+(defn has-set-variable-mode?
+  [interaction]
+  (= (:action-type interaction) :set-variable-mode))
+
+(defn has-conditional?
+  [interaction]
+  (= (:action-type interaction) :conditional))
+
+(defn set-variable-id
+  [interaction variable-id]
+
+  (assert (check-interaction interaction))
+  (assert (or (nil? variable-id) (uuid? variable-id))
+          "expected a uuid (or nil) for `variable-id`")
+  (assert (has-set-variable? interaction)
+          "expected compatible interaction map with set-variable action")
+
+  (assoc interaction :variable-id variable-id))
+
+(defn set-variable-expression
+  [interaction expression]
+
+  (assert (check-interaction interaction))
+  (assert (has-set-variable? interaction)
+          "expected compatible interaction map with set-variable action")
+
+  (assoc interaction :expression expression))
+
+(defn set-variable-value
+  [interaction value]
+
+  (assert (check-interaction interaction))
+  (assert (has-set-variable? interaction)
+          "expected compatible interaction map with set-variable action")
+
+  (assoc interaction :value value))
+
+(defn set-mode-name
+  [interaction mode-name]
+
+  (assert (check-interaction interaction))
+  (assert (or (nil? mode-name) (string? mode-name))
+          "expected a string (or nil) for `mode-name`")
+  (assert (has-set-variable-mode? interaction)
+          "expected compatible interaction map with set-variable-mode action")
+
+  (assoc interaction :mode-name mode-name))
+
+(defn set-condition
+  [interaction condition]
+
+  (assert (check-interaction interaction))
+  (assert (has-conditional? interaction)
+          "expected compatible interaction map with conditional action")
+
+  (assoc interaction :condition condition))
+
+(defn set-then-actions
+  [interaction then-actions]
+
+  (assert (check-interaction interaction))
+  (assert (vector? then-actions)
+          "expected a vector for `then-actions`")
+  (assert (has-conditional? interaction)
+          "expected compatible interaction map with conditional action")
+
+  (assoc interaction :then-actions then-actions))
+
+(defn set-else-actions
+  [interaction else-actions]
+
+  (assert (check-interaction interaction))
+  (assert (vector? else-actions)
+          "expected a vector for `else-actions`")
+  (assert (has-conditional? interaction)
+          "expected compatible interaction map with conditional action")
+
+  (assoc interaction :else-actions else-actions))
 
 ;; Figma #34: cubic-bezier control points, only meaningful when :easing
 ;; is :custom-bezier. Stored in the animation map alongside :easing.

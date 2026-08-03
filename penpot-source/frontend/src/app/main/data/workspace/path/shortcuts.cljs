@@ -37,6 +37,24 @@
                      :subsections [:path-editor]
                      :fn #(st/emit! (drp/change-edit-mode :draw))}
 
+   ;; Figma-parity vector-network tools (gaps #28/#29). These shortcuts
+   ;; only switch the path edit-mode so the secondary-toolbar toggle is
+   ;; reachable. The interactive geometry is DEFERRED:
+   ;;   #28 shape-builder — drag merge/extract/subtract via the boolean
+   ;;       engine (common.types.path/bool) is not yet wired.
+   ;;   #29 paint-bucket — enclosed-region (graph-cycle) detection and
+   ;;       filled sub-path creation is not yet wired.
+   ;; See editor.cljs for the registered no-op render of these modes.
+   :shape-builder   {:tooltip "B"
+                     :command "b"
+                     :subsections [:path-editor]
+                     :fn #(st/emit! (drp/change-edit-mode :shape-builder))}
+
+   :paint-bucket    {:tooltip (ds/shift "B")
+                     :command "shift+b"
+                     :subsections [:path-editor]
+                     :fn #(st/emit! (drp/change-edit-mode :paint-bucket))}
+
    :add-node        {:tooltip (ds/shift "+")
                      :command "shift++"
                      :subsections [:path-editor]

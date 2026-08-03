@@ -364,6 +364,25 @@
         do-remove-group #(st/emit! (dw/ungroup-selected))
         do-mask-group   #(st/emit! (dw/mask-group))
         do-unmask-group #(st/emit! (dw/unmask-group))
+
+        ;; Figma-parity mask variants (gap #26). The mask group is the
+        ;; selected shape with :masked-group true. We set :mask-mode on it
+        ;; via the standard update-shapes event (undo on). :alpha is the
+        ;; default/legacy mode; dissoc'ing :mask-mode reverts to it.
+        mask-group      (when has-mask? (d/seek :masked-group shapes))
+        current-mode    (or (some-> mask-group :mask-mode) :alpha)
+        do-set-mask-mode
+        (mf/use-fn
+         (mf/deps shapes)
+         (fn [mode]
+           (let [mg-ids (into #{} (keep #(when (:masked-group %) (:id %))) shapes)]
+             (st/emit!
+              (dwsh/update-shapes
+               mg-ids
+               (fn [shape]
+                 (if (= mode :alpha)
+                   (dissoc shape :mask-mode)
+                   (assoc shape :mask-mode mode))))))))
         do-create-artboard-from-selection
         #(st/emit! (dwsh/create-artboard-from-selection))
 
@@ -390,6 +409,22 @@
           [:> menu-entry* {:title (tr "workspace.shape.menu.unmask")
                            :shortcut (sc/get-tooltip :unmask)
                            :on-click do-unmask-group}])
+
+        ;; Figma-parity mask variants (gap #26). A "Mask mode" submenu with
+        ;; the three Figma modes; the active mode is prefixed with a check
+        ;; mark (the plain menu-entry variant does not render is-selected).
+        ;; Rendered only when a mask group is selected.
+        (when has-mask?
+          [:> menu-entry* {:title (tr "workspace.shape.menu.mask-mode")}
+           [:> menu-entry* {:title (str (when (= current-mode :alpha) "✓ ")
+                                         (tr "workspace.shape.menu.mask-mode.alpha"))
+                            :on-click #(do-set-mask-mode :alpha)}]
+           [:> menu-entry* {:title (str (when (= current-mode :vector) "✓ ")
+                                         (tr "workspace.shape.menu.mask-mode.vector"))
+                            :on-click #(do-set-mask-mode :vector)}]
+           [:> menu-entry* {:title (str (when (= current-mode :luminance) "✓ ")
+                                         (tr "workspace.shape.menu.mask-mode.luminance"))
+                            :on-click #(do-set-mask-mode :luminance)}]])
 
         [:> menu-entry* {:title (tr "workspace.shape.menu.create-artboard-from-selection")
                          :shortcut (sc/get-tooltip :artboard-selection)

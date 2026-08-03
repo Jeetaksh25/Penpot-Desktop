@@ -230,6 +230,14 @@
    [:locked {:optional true} :boolean]
    [:hidden {:optional true} :boolean]
    [:masked-group {:optional true} :boolean]
+   ;; Figma-parity mask variants (gap #26). :alpha (default/absent) is the
+   ;; existing alpha-channel mask (byte-identical when this key is absent).
+   ;; :vector is a hard-edged clip by the mask outline (SVG <clipPath>).
+   ;; :luminance masks by brightness (SVG <mask mask-type="luminance">).
+   ;; Only meaningful on a mask group (:masked-group true); ignored on
+   ;; plain shapes, so it is fully backward compatible.
+   [:mask-mode {:optional true}
+    [::sm/one-of #{:alpha :vector :luminance}]]
    [:fills {:optional true} schema:fills]
    [:proportion {:optional true} ::sm/safe-number]
    [:proportion-lock {:optional true} :boolean]
@@ -470,7 +478,7 @@
 (def ^:private allowed-shape-attrs
   #{:page-id :component-id :component-file :component-root :main-instance
     :remote-synced :shape-ref :touched :blocked :collapsed :locked
-    :hidden :masked-group :fills :proportion :proportion-lock :constraints-h
+    :hidden :masked-group :mask-mode :fills :proportion :proportion-lock :constraints-h
     :constraints-v :fixed-scroll :r1 :r2 :r3 :r4 :corner-smoothing :rotation :opacity :grids :exports
     :strokes :blend-mode :interactions :shadow :blur :background-blur :grow-type :applied-tokens
     :plugin-data})

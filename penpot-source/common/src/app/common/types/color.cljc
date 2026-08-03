@@ -72,6 +72,16 @@
   [:map {:title "PlainColorAttrs"}
    [:color schema:hex-color]])
 
+;; Figma-parity video fill (gap #22). The :mtype field above is already a
+;; free-form string (no enum constraint), so video media types round-trip
+;; through the schema unchanged. We declare the supported set here for
+;; documentation and for UI upload affordances (fill.cljs). The binary
+;; fills path (fills/impl.cljc) maps these to dedicated byte codes so the
+;; binary encoding does not throw on a video mtype.
+(def video-mtypes
+  #{"video/mp4"
+    "video/webm"})
+
 (def schema:image
   [:map {:title "ImageColor" :closed true}
    [:width [::sm/int {:min 0 :gen/gen sg/int}]]
@@ -80,6 +90,22 @@
    [:id ::sm/uuid]
    [:name {:optional true} ::sm/text]
    [:keep-aspect-ratio {:optional true} :boolean]
+   ;; Figma-parity image adjustments (gap #23). Per-image-fill filter
+   ;; values, each -1.0..1.0 (0/absent = no adjustment). The renderer
+   ;; applies them as a CSS `filter:` chain on the image element
+   ;; (attrs.cljs, not owned here) — that wiring is deferred (high
+   ;; blast-radius compositing change, no build to verify); the values
+   ;; round-trip on the fill via the vector fills path (the binary fills
+   ;; optimization path drops them, same as crop/rotation/flip).
+   [:adjustments {:optional true}
+    [:map {:title "ImageAdjustments" :closed true}
+     [:exposure {:optional true} [::sm/safe-number {:min -1 :max 1}]]
+     [:contrast {:optional true} [::sm/safe-number {:min -1 :max 1}]]
+     [:saturation {:optional true} [::sm/safe-number {:min -1 :max 1}]]
+     [:temperature {:optional true} [::sm/safe-number {:min -1 :max 1}]]
+     [:tint {:optional true} [::sm/safe-number {:min -1 :max 1}]]
+     [:highlights {:optional true} [::sm/safe-number {:min -1 :max 1}]]
+     [:shadows {:optional true} [::sm/safe-number {:min -1 :max 1}]]]]
    ;; Figma-parity non-destructive image crop. All four are normalized to
    ;; the image's own pixel dimensions (0..1): crop-x/y is the top-left of
    ;; the visible region, crop-w/h its size. Absent = show the whole image.
@@ -108,7 +134,23 @@
    [:image schema:image]])
 
 (def gradient-types
-  #{:linear :radial :angular :diamond})
+  #{:linear :radial :angular :diamond
+    ;; Figma-parity gradient mesh fill (gap #21). :mesh is a multi-point
+    ;; grid gradient. The renderer (Coon-patch / tensor-product mesh
+    ;; interpolation) is deferred (significant GPU work, no build to
+    ;; verify); a :mesh gradient currently round-trips on the vector fills
+    ;; path (the binary fills optimization path drops the mesh-only keys,
+    ;; same as crop/rotation/flip). The on-canvas point editor is also
+    ;; deferred — the colorpicker exposes a "Mesh" type option stub.
+    :mesh})
+
+(def schema:mesh-point
+  [:map {:title "MeshPoint" :closed true}
+   [:color schema:hex-color]
+   [:opacity {:optional true} [::sm/number {:min 0 :max 1}]]
+   ;; Grid cell coordinates, normalized 0..1 within the shape bounds.
+   [:x [::sm/number {:min 0 :max 1}]]
+   [:y [::sm/number {:min 0 :max 1}]]])
 
 (def schema:gradient
   [:map {:title "Gradient" :closed true}
@@ -123,7 +165,18 @@
      [:map {:title "GradientStop"}
       [:color schema:hex-color]
       [:opacity {:optional true} [::sm/number {:min 0 :max 1}]]
-      [:offset [::sm/number {:min 0 :max 1}]]]]]])
+      [:offset [::sm/number {:min 0 :max 1}]]]]]
+   ;; Figma-parity gradient mesh (gap #21). Only meaningful when
+   ;; :type :mesh. :mesh-points is a flat grid (e.g. 2x2 / 3x3) of color
+   ;; points; :mesh-cols / :mesh-rows give the grid dimensions;
+   ;; :mesh-tessellation toggles finer subdivision. All optional — a
+   ;; plain linear/radial/angular/diamond gradient carries none of them,
+   ;; so existing gradients are byte-identical.
+   [:mesh-points {:optional true}
+    [:vector {:gen/max 9} schema:mesh-point]]
+   [:mesh-cols {:optional true} ::sm/int]
+   [:mesh-rows {:optional true} ::sm/int]
+   [:mesh-tessellation {:optional true} :boolean]])
 
 (def gradient-attrs
   "A set of attrs that corresponds to gradient data type"

@@ -48,6 +48,15 @@ export const STYLES = [
   // custom property. Live editor visual is applied by the export renderer.
   ["--hyperlink"],
   ["text-transform"],
+  // Feature 12 — OpenType features. Real CSS property (string value like
+  // '"liga" 1, "dlig" 0'), so the contenteditable renders ligatures /
+  // stylistic sets LIVE and round-trips 1:1 via app.util.text.content.styles
+  // (get-style-name returns "font-feature-settings"). Additive.
+  ["font-feature-settings"],
+  // Feature 13 — variable-font axes. Real CSS property (string value like
+  // '"wght" 400, "wdth" 80'), so the contenteditable renders the variation
+  // LIVE and round-trips 1:1. Additive.
+  ["font-variation-settings"],
 ];
 
 /**

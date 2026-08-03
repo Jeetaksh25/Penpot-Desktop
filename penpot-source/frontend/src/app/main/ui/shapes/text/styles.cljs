@@ -108,7 +108,14 @@
       (-> (obj/set! "display" "-webkit-box")
           (obj/set! "WebkitBoxOrient" "vertical")
           (obj/set! "WebkitLineClamp" max-lines-num)
-          (obj/set! "overflow" "hidden")))))
+          (obj/set! "overflow" "hidden")
+
+      ;; Feature 16 — list styles. `:list-type` / `:list-spacing` are
+      ;; paragraph-level attrs that persist + round-trip through the editor
+      ;; DOM, but rendering actual bullet/number markers requires editor
+      ;; content-model list nodes (deferred — additive optional fields only).
+      ;; So no CSS is emitted here yet; the attrs are simply preserved.
+      ))))
 
 (defn generate-text-styles
   ([shape data]
@@ -235,4 +242,16 @@
                              (= text-decoration "line-through")
                              (= text-decoration "overline"))
                        text-decoration
-                       "underline")))))))
+                       "underline")))
+
+       ;; Feature 12 — OpenType features. The model attr is already a CSS
+       ;; `font-feature-settings` string, so it is emitted verbatim. Additive:
+       ;; only applied when present; absent = existing behavior. The live
+       ;; contenteditable round-trips the same real CSS property.
+       (some? (:font-feature-settings data))
+       (obj/set! "fontFeatureSettings" (:font-feature-settings data))
+
+       ;; Feature 13 — variable-font axes. The model attr is already a CSS
+       ;; `font-variation-settings` string, emitted verbatim. Additive.
+       (some? (:font-variation-settings data))
+       (obj/set! "fontVariationSettings" (:font-variation-settings data))))))

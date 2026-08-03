@@ -18,6 +18,7 @@
    [app.main.ui.css-cursors :as cur]
    [app.main.ui.hooks :as hooks]
    [app.util.dom :as dom]
+   [app.util.i18n :refer [tr]]
    [app.util.keyboard :as kbd]
    [clojure.set :refer [map-invert]]
    [goog.events :as events]
@@ -341,6 +342,31 @@
              :style {:fill "none"
                      :stroke accent-color
                      :strokeWidth (/ 1 zoom)}}]
+
+     ;; Figma-parity vector-network tools (gaps #28/#29). The
+     ;; :shape-builder and :paint-bucket edit-modes are REGISTERED here
+     ;; (selectable from the path secondary toolbar / shortcuts) but their
+     ;; interactive geometry is DEFERRED:
+     ;;   #28 — drag merge/extract/subtract via the boolean engine
+     ;;         (app.common.types.path.bool) is not yet wired.
+     ;;   #29 — enclosed-region (graph-cycle on path nodes/segments)
+     ;;         detection and filled sub-path creation is not yet wired.
+     ;; This guarded badge is the only visual surface; it renders solely
+     ;; under one of the new modes (opt-in), so the editor is
+     ;; byte-identical when edit-mode is :draw or :move.
+     (when (or (= edit-mode :shape-builder)
+               (= edit-mode :paint-bucket))
+       [:g.path-mode-badge {:pointer-events "none"}
+        [:text {:x (-> content first path.helpers/segment->point :x)
+                :y (- (-> content first path.helpers/segment->point :y)
+                      (/ 14 zoom))
+                :style {:fill secondary-color
+                        :font-size (/ 11 zoom)
+                        :font-weight 600}}
+         (if (= edit-mode :shape-builder)
+           (tr "workspace.path.mode.shape-builder")
+           (tr "workspace.path.mode.paint-bucket"))]])
+
      (when (and preview (not drag-handler))
        [:> path-preview* {:segment preview
                           :from last-p

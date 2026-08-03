@@ -34,6 +34,16 @@
     ;; component with no typed properties (the common case today) carries
     ;; no key, so this is fully backward compatible.
     [:component-properties {:optional true} ctcp/schema:component-properties]
+    ;; Figma-parity Code Connect (gap #40). Optional map of framework-id
+    ;; (e.g. "react", "nextjs", "vue") -> code-template string. Absent =
+    ;; generic element code is emitted as today. The code-gen engine reads
+    ;; this to emit real component references in Dev Mode.
+    [:code-connect {:optional true} [:map-of :string :string]]
+    ;; Figma-parity expose nested instances (gap #42). Optional list of
+    ;; shape-ref ids (ids of nested instances inside the component's main
+    ;; instance) whose component properties should be surfaced at the top
+    ;; level. Absent = no nested properties are exposed (existing behavior).
+    [:exposed-nested-instances {:optional true} [:vector ::sm/uuid]]
     [:plugin-data {:optional true} ctpg/schema:plugin-data]]
    ctv/schema:variant-component])
 

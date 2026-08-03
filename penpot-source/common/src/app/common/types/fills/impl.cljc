@@ -146,7 +146,13 @@
                   "image/png"     0x02
                   "image/gif"     0x03
                   "image/webp"    0x04
-                  "image/svg+xml" 0x05)]
+                  "image/svg+xml" 0x05
+                  ;; Figma-parity video fill (gap #22). Dedicated byte
+                  ;; codes so the binary fills path does not throw on a
+                  ;; video mtype. The HTML <video> renderer application is
+                  ;; deferred; the mtype round-trips here.
+                  "video/mp4"     0x06
+                  "video/webm"    0x07)]
         (buf/write-short buffer (+ offset 2) val)))
 
     (if (and (some? ref-file)
@@ -221,7 +227,10 @@
                                   0x02 "image/png"
                                   0x03 "image/gif"
                                   0x04 "image/webp"
-                                  0x05 "image/svg+xml")]
+                                  0x05 "image/svg+xml"
+                                  ;; Figma-parity video fill (gap #22).
+                                  0x06 "video/mp4"
+                                  0x07 "video/webm")]
                     {:fill-opacity opacity
                      :fill-image {:id id
                                   :width width
@@ -414,7 +423,15 @@
 
 (defn from-plain
   [fills]
-  (let [fills   (into [] xf:take-fills fills)
+  (let [;; Figma-parity pattern fill (gap #25). The binary fills format
+        ;; only encodes solid/gradient/image fills; a :fill-pattern fill
+        ;; has no binary representation yet (the SVG <pattern> renderer is
+        ;; deferred). Filter it out here so the binary path does not raise
+        ;; :invalid-fill. This means pattern fills are dropped on the
+        ;; binary-fills optimization path (data loss) — pattern fills are
+        ;; only fully supported on the vector fills path (the default,
+        ;; :frontend-binary-fills off). Documented v1 limitation.
+        fills   (into [] (remove :fill-pattern) (xf:take-fills fills))
         total   (count fills)
         dbuffer (buf/allocate (+ 4 (* MAX-FILLS FILL-U8-SIZE)))
         mbuffer (buf/allocate (* total METADATA-U8-SIZE))]

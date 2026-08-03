@@ -74,6 +74,35 @@
 ;; COMPONENTS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Figma-parity reusable styles (gap #32). Minimal, read-only assets-panel
+;; section that lists effect/stroke/grid style names. The full apply-style
+;; authoring + drag-onto-canvas interaction lives in shadow_row.cljs /
+;; stroke.cljs / frame_grid.cljs (owned by another group) and is DEFERRED.
+;; This section only renders when the file actually carries the corresponding
+;; styles (absent key = no section = existing behavior).
+(mf/defc styles-section*
+  {::mf/private true}
+  [{:keys [file-id section-id title styles is-open open-status-ref]}]
+  (let [open-status (mf/deref open-status-ref)
+        is-open     (or ^boolean is-open
+                        ^boolean (get open-status section-id false))
+        styles-seq  (->> (vals styles)
+                         (filter some?)
+                         (sort-by #(str/lower (:name % " "))))]
+    (when (seq styles-seq)
+      [:div {:class (stl/css :asset-block)}
+       [:> title-bar*
+        {:title      title
+         :open       is-open
+         :on-click   #(st/emit! (dw/set-assets-section-open file-id section-id (not is-open)))}]
+       (when ^boolean is-open
+         [:ul {:class (stl/css :assets-list)}
+          (for [style styles-seq]
+            [:li {:key (dm/str (:id style))
+                  :class (stl/css :asset-item)}
+             [:span {:class (stl/css :asset-name)}
+              (:name style)]])])])))
+
 (mf/defc file-library-title*
   {::mf/private true}
   [{:keys [is-open is-local file-id page-id file-name]}]
@@ -144,7 +173,7 @@
 
 (mf/defc file-library-content*
   {::mf/private true}
-  [{:keys [file is-local is-loaded open-status-ref on-clear-selection filters colors typographies components count-variants]}]
+  [{:keys [file is-local is-loaded open-status-ref on-clear-selection filters colors typographies components count-variants effect-styles stroke-styles grid-styles]}]
   (let [open-status       (mf/deref open-status-ref)
 
         file-id           (:id file)
@@ -174,6 +203,24 @@
                  (= filters-section "typographies"))
              (or (pos? (count typographies))
                  (not has-filters-term?)))
+
+        ;; Figma-parity reusable styles (gap #32). Only render a section
+        ;; when the file actually carries the corresponding styles AND the
+        ;; filter selects them (or "all"). Absent/empty = no section.
+        show-effect-styles?
+        (and (or (= filters-section "all")
+                 (= filters-section "effect-styles"))
+             (pos? (count effect-styles)))
+
+        show-stroke-styles?
+        (and (or (= filters-section "all")
+                 (= filters-section "stroke-styles"))
+             (pos? (count stroke-styles)))
+
+        show-grid-styles?
+        (and (or (= filters-section "all")
+                 (= filters-section "grid-styles"))
+             (pos? (count grid-styles)))
 
         force-open-components?
         (when ^boolean has-filters-term? (> 60 (count components)))
@@ -295,9 +342,39 @@
             :on-assets-delete on-assets-delete
             :on-clear-selection on-clear-selection}])
 
+        (when ^boolean show-effect-styles?
+          [:> styles-section*
+           {:file-id         file-id
+            :section-id      :effect-styles
+            :title           (tr "workspace.assets.effect-styles")
+            :styles          effect-styles
+            :is-open         (get open-status :effect-styles false)
+            :open-status-ref open-status-ref}])
+
+        (when ^boolean show-stroke-styles?
+          [:> styles-section*
+           {:file-id         file-id
+            :section-id      :stroke-styles
+            :title           (tr "workspace.assets.stroke-styles")
+            :styles          stroke-styles
+            :is-open         (get open-status :stroke-styles false)
+            :open-status-ref open-status-ref}])
+
+        (when ^boolean show-grid-styles?
+          [:> styles-section*
+           {:file-id         file-id
+            :section-id      :grid-styles
+            :title           (tr "workspace.assets.grid-styles")
+            :styles          grid-styles
+            :is-open         (get open-status :grid-styles false)
+            :open-status-ref open-status-ref}])
+
         (when (and (not ^boolean show-components?)
                    (not ^boolean show-colors?)
-                   (not ^boolean show-typography?))
+                   (not ^boolean show-typography?)
+                   (not ^boolean show-effect-styles?)
+                   (not ^boolean show-stroke-styles?)
+                   (not ^boolean show-grid-styles?))
           [:div  {:class (stl/css :asset-title)}
            [:span {:class (stl/css :no-found-icon)}
             deprecated-icon/search]
@@ -314,6 +391,13 @@
 
         colors       (:colors library)
         typographies (:typographies library)
+
+        ;; Figma-parity reusable styles (gap #32). Pulled straight from the
+        ;; file :data map (schema:data optional fields). Absent = nil = the
+        ;; section predicates above short-circuit to no rendering.
+        effect-styles (:effect-styles library)
+        stroke-styles (:stroke-styles library)
+        grid-styles   (:grid-styles library)
 
         filters-term (:term filters)
         is-loaded    (some? library)
@@ -392,6 +476,9 @@
          :colors filtered-colors
          :components filtered-components
          :typographies filtered-typographies
+         :effect-styles effect-styles
+         :stroke-styles stroke-styles
+         :grid-styles grid-styles
          :on-clear-selection unselect-all
          :open-status-ref open-status-ref
          :count-variants count-variants}])]))

@@ -63,6 +63,43 @@
 (def text-transform-attrs
   [:text-transform])
 
+;; Feature 12 — OpenType features. Span-level, applied to a character range.
+;; The value is a CSS `font-feature-settings` string (e.g. "\"liga\" 1, \"dlig\"
+;; 0") so it round-trips 1:1 with the real CSS property of the same name in the
+;; editor DOM (`TextSpan.js` STYLES) and renders LIVE in the contenteditable.
+;; The UI (OpenType Details tab) builds the string from per-feature toggles.
+;; Reading available features from opentype.js font metadata (GSUB table) is
+;; deferred — a static common-features list is offered for now.
+(def text-opentype-attrs
+  [:font-feature-settings])
+
+;; Feature 13 — variable-font axes. Span-level. The value is a CSS
+;; `font-variation-settings` string (e.g. "\"wght\" 400, \"wdth\" 80"), again
+;; round-tripped 1:1 with the real CSS property so the contenteditable renders
+;; the variation LIVE. The UI (Variable tab) builds the string from per-axis
+;; sliders. Reading available axes from opentype.js font metadata (fvar table)
+;; is deferred — a static common-axes list is offered for now.
+(def text-variation-attrs
+  [:font-variation-settings])
+
+;; Feature 16 — list styles. Paragraph-level: `:list-type` is `:none`,
+;; `:bulleted` or `:numbered`; `:list-spacing` is the px gap between list
+;; items. They round-trip as `--list-type` / `--list-spacing` CSS custom
+;; properties on paragraph nodes (see `app.util.text.content.styles` mapping).
+;; Editor content-model list nodes + renderer bullet/number markers are
+;; deferred (additive optional fields only — no content-model rewrite).
+(def text-list-attrs
+  [:list-type
+   :list-spacing])
+
+;; Feature 19 — text on a path. Layer-level. The value is a map
+;; `{:path-id <uuid> :start-offset <number>}` referencing a vector path shape;
+;; it round-trips as a transit-encoded `--text-on-path` CSS custom property
+;; (mirroring `:hyperlink`). UI to pick a path + renderer SVG `<textPath>`
+;; flow are deferred (additive optional field only).
+(def text-on-path-attrs
+  [:text-on-path])
+
 ;; Inline baseline shift (superscript / subscript). Span-level, applied to a
 ;; character range. Mirrors `:vertical-align` (root, text-box valign) but lives
 ;; on spans; the editor maps it to the CSS `vertical-align` property (see
@@ -109,26 +146,36 @@
    text-link-attrs
    text-overflow-attrs
    text-transform-attrs
+   text-opentype-attrs
+   text-variation-attrs
+   text-list-attrs
+   text-on-path-attrs
    text-fills))
 
 ;; Attrs that are paragraph/layer-level in the DOM editor (not stored on
 ;; individual text spans). Line-height is paragraph-level; the new
 ;; line-height-mode / paragraph-spacing / paragraph-indent pair with it, and
-;; text-overflow / max-lines are layer-level. They are kept on paragraph nodes
-;; (and read by the renderer from paragraph data) but stripped from spans so
-;; they don't pollute per-range rich-text diffs.
+;; text-overflow / max-lines are layer-level. Feature 16 list-type /
+;; list-spacing are paragraph-level, and Feature 19 text-on-path is
+;; layer-level. They are kept on paragraph nodes (and read by the renderer
+;; from paragraph data) but stripped from spans so they don't pollute
+;; per-range rich-text diffs.
 (def ^:private paragraph-level-attrs
   #{:line-height
     :line-height-mode
     :paragraph-spacing
     :paragraph-indent
     :text-overflow
-    :max-lines})
+    :max-lines
+    :list-type
+    :list-spacing
+    :text-on-path})
 
 (def text-span-attrs
   "Inline text span attrs. Paragraph-level attrs (line-height, line-height-mode,
-   paragraph-spacing, paragraph-indent, text-overflow, max-lines) are excluded;
-   they may still be stored redundantly on span nodes after token apply."
+   paragraph-spacing, paragraph-indent, text-overflow, max-lines, list-type,
+   list-spacing, text-on-path) are excluded; they may still be stored
+   redundantly on span nodes after token apply."
   (vec (remove paragraph-level-attrs text-node-attrs)))
 
 (defn text-node-attr?
@@ -375,7 +422,8 @@
    Paragraph-level attrs on text nodes are ignored: they are paragraph-level
    and may be stored redundantly on spans (e.g. after token apply / bulk
    update-all-attrs). This covers line-height and the new line-height-mode /
-   paragraph-spacing / paragraph-indent / text-overflow / max-lines attrs."
+   paragraph-spacing / paragraph-indent / text-overflow / max-lines /
+   list-type / list-spacing / text-on-path attrs."
   [a b]
   (let [strip-span-paragraph-attrs
         #(transform-nodes is-text-node?

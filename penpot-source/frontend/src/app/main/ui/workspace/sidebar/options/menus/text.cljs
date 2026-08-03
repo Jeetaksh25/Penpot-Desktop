@@ -438,6 +438,59 @@
                 :placeholder (if multiple? (tr "settings.multiple") "--")
                 :on-change on-max-lines-change}])]))
 
+;; Feature 16 — list styles. `:list-type` is "none"/"bulleted"/"numbered";
+;; `:list-spacing` is the px gap between list items. Paragraph-level attrs
+;; that round-trip as `--list-type` / `--list-spacing` CSS custom properties
+;; (see `app.util.text.content.styles`). Editor content-model list nodes +
+;; renderer bullet/number markers are deferred (additive optional fields
+;; only — schema + persistence + UI shipped). Rendered only in "more
+;; options". Additive: absent value = no change to existing rendering.
+(mf/defc list-options*
+  [{:keys [values on-change on-blur]}]
+  (let [list-type (some-> (:list-type values) d/name)
+        list-spacing (:list-spacing values)
+        multiple? (or (= list-type :multiple) (= list-spacing :multiple))
+        options
+        (mf/with-memo []
+          [{:value "none"     :id "list-type-none"
+            :label (tr "workspace.options.text-options.list-type.none")}
+           {:value "bulleted" :id "list-type-bulleted"
+            :label (tr "workspace.options.text-options.list-type.bulleted")}
+           {:value "numbered" :id "list-type-numbered"
+            :label (tr "workspace.options.text-options.list-type.numbered")}])
+
+        on-type-change
+        (mf/use-fn
+         (mf/deps on-change on-blur)
+         (fn [value]
+           (on-change {:list-type (if (= value "none") nil value)})
+           (when (some? on-blur) (on-blur))))
+
+        on-spacing-change
+        (mf/use-fn
+         (mf/deps on-change)
+         (fn [event]
+           (let [value (dom/get-target-val event)]
+             (when (and (some? value) (not= "" value))
+               (on-change {:list-spacing value})))))]
+
+    [:div {:class (stl/css :text-decoration-options)}
+     [:> radio-buttons* {:selected     (when (#{"none" "bulleted" "numbered"} list-type) list-type)
+                         :on-change    on-type-change
+                         :name         "list-type-options"
+                         :allow-empty  false
+                         :options      options}]
+     (when (and (#{"bulleted" "numbered"} list-type) (not multiple?))
+       [:input {:type "number"
+                :min 0
+                :max 1000
+                :step 1
+                :aria-label (tr "workspace.options.text-options.list-spacing")
+                :title (tr "workspace.options.text-options.list-spacing")
+                :value (if multiple? "" (or list-spacing ""))
+                :placeholder (if multiple? (tr "settings.multiple") "--")
+                :on-change on-spacing-change}])]))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Helpers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -525,7 +578,19 @@
          (identical? (get o-values :text-overflow)
                      (get n-values :text-overflow))
          (identical? (get o-values :max-lines)
-                     (get n-values :max-lines)))))
+                     (get n-values :max-lines))
+         ;; Feature 12/13/16/19 — new additive text attrs. Added here so the
+         ;; memoized text-menu* re-renders when any of them changes.
+         (identical? (get o-values :font-feature-settings)
+                     (get n-values :font-feature-settings))
+         (identical? (get o-values :font-variation-settings)
+                     (get n-values :font-variation-settings))
+         (identical? (get o-values :list-type)
+                     (get n-values :list-type))
+         (identical? (get o-values :list-spacing)
+                     (get n-values :list-spacing))
+         (identical? (get o-values :text-on-path)
+                     (get n-values :text-on-path)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Main component
@@ -831,4 +896,8 @@
            [:> advanced-underline-options* common-props]
            [:> super-sub-options* common-props]
            [:> hyperlink-options* common-props]
-           [:> truncation-options* common-props]])])]))
+           [:> truncation-options* common-props]
+           ;; Feature 16 — list style controls (paragraph-level). Only
+           ;; rendered when the "more options" panel is open. Sets optional
+           ;; attrs via the existing `on-change` -> `emit-update!` path.
+           [:> list-options* common-props]])])]))

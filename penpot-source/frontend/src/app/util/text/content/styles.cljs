@@ -39,7 +39,16 @@
    :paragraph-indent [identity identity]
    :max-lines [identity identity]
    :text-overflow [identity identity]
-   :hyperlink [encode decode]})
+   :hyperlink [encode decode]
+   ;; Feature 16 — paragraph-level list style. Round-tripped as CSS custom
+   ;; properties for persistence (no data loss on edit); renderer bullet /
+   ;; number markers are deferred. Absent key = existing behavior.
+   :list-type [identity identity]
+   :list-spacing [identity identity]
+   ;; Feature 19 — text on a path (layer-level). Value is a map
+   ;; `{:path-id <uuid> :start-offset <number>}`, transit-encoded like
+   ;; :hyperlink. UI path picker + renderer SVG <textPath> are deferred.
+   :text-on-path [encode decode]})
 
 (defn normalize-style-value
   "This function adds units to style values"

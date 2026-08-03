@@ -8,7 +8,7 @@
   (:require
    [app.common.data.macros :as dm]
    [app.main.ui.context :as muc]
-   [app.main.ui.shapes.mask :refer [mask-url clip-url mask-factory]]
+   [app.main.ui.shapes.mask :refer [mask-url luminance-mask-url clip-url mask-factory]]
    [rumext.v2 :as mf]))
 
 (defn group-shape
@@ -30,13 +30,25 @@
                             (rest childs)
                             childs)
 
+            ;; Figma-parity mask variants (gap #26). :mask-mode lives on the
+            ;; mask GROUP shape (the parent carrying :masked-group), not on
+            ;; the mask child. :vector = clip only (no mask element);
+            ;; :luminance = luminance <mask>; :alpha / absent = the legacy
+            ;; alpha <mask>. Byte-identical when :mask-mode is absent.
+            mask-mode     (when ^boolean masked-group?
+                            (or (:mask-mode shape) :alpha))
+
             wrapper       (if ^boolean masked-group? "g" mf/Fragment)
             clip-props    (if ^boolean masked-group?
                             #js {:clipPath (clip-url render-id mask)}
                             #js {})
 
             mask-props    (if ^boolean masked-group?
-                            #js {:mask (mask-url render-id mask)}
+                            (case mask-mode
+                              :vector   #js {}
+                              :luminance #js {:mask (luminance-mask-url render-id mask)}
+                              ;; :alpha / default — legacy behavior.
+                              #js {:mask (mask-url render-id mask)})
                             #js {})
 
             current-svg-root-id (mf/use-ctx muc/current-svg-root-id)
@@ -56,7 +68,7 @@
          [:> wrapper clip-props
           [:> wrapper mask-props
            (when ^boolean masked-group?
-             [:& render-mask {:mask mask}])
+             [:& render-mask {:mask mask :mask-mode mask-mode}])
 
            (for [item childs]
              [:& shape-wrapper

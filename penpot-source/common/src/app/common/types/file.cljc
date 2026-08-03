@@ -31,6 +31,9 @@
    [app.common.types.tokens-lib :refer [schema:tokens-lib]]
    [app.common.types.typographies-list :as ctyl]
    [app.common.types.typography :as cty]
+   ;; Figma-parity reusable styles (gap #32). Imported for the optional
+   ;; style-collection schemas added to schema:data below.
+   [app.common.types.styles :as ctsty]
    [app.common.uuid :as uuid]
    [clojure.set :as set]
    [cuerdas.core :as str]))
@@ -85,6 +88,11 @@
    [:colors {:optional true} schema:colors]
    [:components {:optional true} schema:components]
    [:typographies {:optional true} schema:typographies]
+   ;; Figma-parity reusable styles (gap #32). Optional style collections —
+   ;; absent = no styles = existing behavior. Each mirrors schema:colors.
+   [:effect-styles {:optional true} ctsty/schema:effect-styles]
+   [:stroke-styles {:optional true} ctsty/schema:stroke-styles]
+   [:grid-styles {:optional true} ctsty/schema:grid-styles]
    [:plugin-data {:optional true} schema:plugin-data]
    [:tokens-lib {:optional true} schema:tokens-lib]])
 

@@ -42,6 +42,13 @@
           [:text-transform {:optional true} ::sm/text]
           [:typography-ref-id {:optional true} [:maybe ::sm/uuid]]
           [:typography-ref-file {:optional true} [:maybe ::sm/uuid]]
+          ;; Feature 16 — paragraph-level list style. `:list-type` is
+          ;; "none"/"bulleted"/"numbered"; `:list-spacing` is the px gap
+          ;; between list items. Optional — absent = plain paragraph
+          ;; (existing behavior). Editor content-model list nodes + renderer
+          ;; bullet/number markers are deferred (additive optional fields).
+          [:list-type {:optional true} ::sm/text]
+          [:list-spacing {:optional true} ::sm/text]
           [:children
            [:vector {:min 1 :gen/max 2 :gen/min 1}
             [:map
@@ -56,6 +63,12 @@
              [:direction {:optional true} ::sm/text]
              [:text-decoration {:optional true} ::sm/text]
              [:text-transform {:optional true} ::sm/text]
+             ;; Feature 12 — OpenType features (span-level). CSS
+             ;; font-feature-settings string. Optional.
+             [:font-feature-settings {:optional true} ::sm/text]
+             ;; Feature 13 — variable-font axes (span-level). CSS
+             ;; font-variation-settings string. Optional.
+             [:font-variation-settings {:optional true} ::sm/text]
              [:typography-ref-id {:optional true} [:maybe ::sm/uuid]]
              [:typography-ref-file {:optional true} [:maybe ::sm/uuid]]]]]]]]]]]]])
 

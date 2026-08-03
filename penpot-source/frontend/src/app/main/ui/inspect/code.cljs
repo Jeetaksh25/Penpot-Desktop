@@ -30,6 +30,7 @@
    [app.util.code-gen :as cg]
    [app.util.dom :as dom]
    [app.util.http :as http]
+   [app.util.i18n :as i18n :refer [tr]]
    [beicon.v2.core :as rx]
    [cuerdas.core :as str]
    [okulary.core :as l]
@@ -172,6 +173,20 @@
          (fn []
            (when framework?
              (cg/generate-framework-code objects markup-type shapes))))
+
+        ;; Figma-parity Code Connect (gap #40). When the selected shape is a
+        ;; component instance whose main component authored a Code Connect
+        ;; template for the currently selected framework, surface it here for
+        ;; display. Replacing the auto-generated `framework-code` body with the
+        ;; authored template inside every framework emitter is DEFERRED
+        ;; (high blast-radius across all framework namespaces); this is a
+        ;; read-only surface in the Inspect panel.
+        code-connect-template
+        (mf/use-memo
+         (mf/deps markup-type shapes objects)
+         (fn []
+           (when (and framework? (= 1 (count shapes)))
+             (cg/component-code-connect-template objects markup-type (first shapes)))))
 
         markup-code
         (mf/use-memo
@@ -337,6 +352,13 @@
         [:button {:class (stl/css :download-button)
                   :on-click handle-copy-all-code}
          "Copy all code"])]
+
+     (when (some? code-connect-template)
+       [:div {:class (stl/css :code-connect-banner)}
+        [:div {:class (stl/css :code-connect-label)}
+         (tr "inspect.code.code-connect")]
+        [:> code-block* {:type markup-type
+                         :code code-connect-template}]])
 
      #_[:div.attributes-block
         [:button.download-button {:on-click handle-open-review}

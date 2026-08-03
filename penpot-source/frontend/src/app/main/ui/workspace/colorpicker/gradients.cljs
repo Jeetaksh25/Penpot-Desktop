@@ -22,6 +22,7 @@
    [app.main.ui.hooks :as h]
    [app.main.ui.workspace.sidebar.options.rows.color-row :refer [color-row*]]
    [app.util.dom :as dom]
+   [app.util.i18n :refer [tr]]
    [cuerdas.core :as str]
    [rumext.v2 :as mf]))
 
@@ -200,9 +201,19 @@
         handle-change-type
         (mf/use-callback
          (mf/deps on-change-type)
-         (fn [event]
+         (fn [type]
            (when on-change-type
-             (on-change-type event))))
+             ;; Figma-parity gradient mesh (gap #21). The "Mesh" option is
+             ;; a UI stub: selecting it is a no-op for now because the
+             ;; colorpicker state-machine type->gradient-type mapping
+             ;; (data/workspace/colors.cljs, not owned here) has no
+             ;; :mesh-gradient clause and its `case` would throw on the
+             ;; unknown type. The :mesh gradient type is registered in the
+             ;; schema (color.cljc) and round-trips on the vector fills
+             ;; path; the on-canvas point editor + Coon-patch renderer are
+             ;; deferred. Guard here so the stub cannot trigger the throw.
+             (when (not= type :mesh-gradient)
+               (on-change-type type)))))
 
         handle-add-stop
         (mf/use-callback
@@ -340,7 +351,10 @@
         :options [{:value :linear-gradient :label "Linear"}
                   {:value :radial-gradient :label "Radial"}
                   {:value :angular-gradient :label "Angular"}
-                  {:value :diamond-gradient :label "Diamond"}]
+                  {:value :diamond-gradient :label "Diamond"}
+                  ;; Figma-parity gradient mesh (gap #21). Stub option;
+                  ;; selecting it is a guarded no-op (see handle-change-type).
+                  {:value :mesh-gradient :label (tr "workspace.gradients.mesh")}]
         :on-change handle-change-type
         :class (stl/css :gradient-options-select)}]
 

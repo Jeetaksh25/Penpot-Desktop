@@ -187,7 +187,19 @@
          (mf/deps team)
          (fn []
            (st/emit! (dtm/check-and-invite-members {:team-id (:id team)
-                                                    :origin :workspace}))))]
+                                                    :origin :workspace}))))
+
+        ;; Figma-parity in-canvas prototype preview (gap #36). Toggles a
+        ;; session-only layout flag (:play-mode). The overlay that embeds
+        ;; the viewer interaction dispatch on the workspace canvas is
+        ;; DEFERRED — see viewport.cljs / viewport/interactions.cljs.
+        play-mode?
+        (contains? layout :play-mode)
+
+        on-toggle-play-mode
+        (mf/use-fn
+         (fn []
+           (st/emit! (dw/toggle-layout-flag :play-mode))))]
 
     (mf/with-effect [editing?]
       (when ^boolean editing?
@@ -237,6 +249,15 @@
             :title (tr "workspace.header.share")
             :on-click open-share-dialog}
         deprecated-icon/share])
+
+     ;; Figma-parity in-canvas prototype preview (gap #36). Toggle button
+     ;; next to the viewer play button. The overlay itself is DEFERRED.
+     [:> icon-button* {:variant "ghost"
+                       :aria-pressed play-mode?
+                       :aria-label (tr "workspace.header.play-mode")
+                       :title (tr "workspace.header.play-mode")
+                       :icon i/play
+                       :on-click on-toggle-play-mode}]
 
      [:a {:class (stl/css :viewer-btn)
           :title (tr "workspace.header.viewer" (sc/get-tooltip :open-viewer))

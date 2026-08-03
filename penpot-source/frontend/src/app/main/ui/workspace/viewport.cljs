@@ -253,6 +253,10 @@
         show-grid-editor?        (and editing-shape (ctl/grid-layout? editing-shape))
         show-presence?           page-id
         show-prototypes?         (= options-mode :prototype)
+        ;; Figma-parity in-canvas prototype preview (gap #36). Session-only
+        ;; layout flag toggled from right_header.cljs. The overlay that
+        ;; embeds the viewer interaction dispatch is DEFERRED.
+        play-mode?               (contains? layout :play-mode)
         show-selection-handlers? (and (seq selected) (not show-text-editor?))
         show-snap-distance?      (and (contains? layout :dynamic-alignment)
                                       (= transform :move)
@@ -749,7 +753,21 @@
               :zoom zoom
               :objects objects-modified
               :current-transform transform
-              :is-hover-disabled hover-disabled?}])])
+              :is-hover-disabled hover-disabled?}])
+
+          ;; Figma-parity in-canvas prototype preview (gap #36). The
+          ;; overlay that embeds viewer/shapes.cljs interaction dispatch
+          ;; (reusing the viewer dispatch — NOT duplicating it) on the
+          ;; workspace canvas is DEFERRED — see
+          ;; viewport/interactions.cljs `play-mode-overlay*`. Mounted
+          ;; only under the session-only :play-mode layout flag, so this
+          ;; branch is byte-identical-off (defaults to false).
+          (when ^boolean play-mode?
+            [:> interactions/play-mode-overlay*
+             {:vbox vbox
+              :zoom zoom
+              :objects objects-modified
+              :page-id page-id}])])
 
        (when show-gradient-handlers?
          [:> gradients/gradient-handlers*

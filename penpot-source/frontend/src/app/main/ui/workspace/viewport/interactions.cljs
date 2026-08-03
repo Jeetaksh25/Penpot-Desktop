@@ -378,3 +378,28 @@
                                      :shape shape
                                      :selected selected
                                      :zoom zoom}])))]]))
+
+;; Figma-parity in-canvas prototype preview (gap #36). This is the future
+;; mount point for the in-canvas play overlay: it should render the
+;; selected flow's frames and dispatch interactions by REUSING the
+;; viewer/shapes.cljs interaction dispatch — NOT duplicating it. The
+;; viewer-dispatch embedding is DEFERRED (high blast-radius without a
+;; build); for now only a dimmed backdrop renders so the play-mode toggle
+;; in right_header.cljs has visible feedback. Mounted only under the
+;; session-only :play-mode layout flag (see viewport.cljs), so the
+;; workspace is byte-identical when the flag is off.
+(mf/defc play-mode-overlay*
+  [{:keys [vbox zoom objects page-id]}]
+  [:g.play-mode-overlay {:pointer-events "none"}
+   (when (some? vbox)
+     [:rect {:x (:x vbox)
+             :y (:y vbox)
+             :width (:width vbox)
+             :height (:height vbox)
+             :style {:fill "var(--app-black)"
+                     :fill-opacity 0.25}}])
+   ;; FIXME/DEFERRED: render the active flow's frames via the viewer
+   ;; shape-wrapper factory and dispatch interaction events (navigate /
+   ;; open-overlay / etc.) reusing app.main.ui.viewer.shapes dispatch —
+   ;; do not duplicate the interaction engine here.
+   ])

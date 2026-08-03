@@ -179,7 +179,12 @@
    [:type schema:token-type]
    [:value ::sm/any]
    [:description {:optional true} :string]
-   [:modified-at {:optional true} ::ct/inst]])
+   [:modified-at {:optional true} ::ct/inst]
+   ;; Figma-parity variable modes (gap #31). Optional map of mode-name ->
+   ;; value; the token's :value is the default (Auto / no-mode) value. A
+   ;; token with no :modes carries no key, so existing behavior is
+   ;; unchanged. Per-context mode resolution runtime is DEFERRED.
+   [:modes {:optional true} [:map-of :string ::sm/any]]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; SCHEMA: Token application to shape

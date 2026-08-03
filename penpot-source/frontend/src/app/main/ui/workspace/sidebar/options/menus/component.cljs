@@ -48,6 +48,9 @@
    [app.main.ui.workspace.sidebar.options.menus.variants-help-modal]
    [app.util.debug :as dbg]
    [app.util.dom :as dom]
+   ;; Figma #40: Code Connect — reads the framework-meta keys to populate
+   ;; the "add framework" picker in the authoring UI.
+   [app.util.code-gen :as cg]
    [app.util.i18n :as i18n :refer [tr]]
    [app.util.timers :as tm]
    [cuerdas.core :as str]
@@ -1079,6 +1082,118 @@
                  :value (get values (:name property))
                  :on-set-value on-set-value}])])])])))
 
+;; Figma-parity Code Connect (gap #40). Authoring surface for the optional
+;; :code-connect map (framework-id -> code-template string) on a main
+;; component. Renders ONLY on a main instance, and only when the component
+;; already carries :code-connect OR the user opens the section — so a
+;; component without it is byte-identical to before. The code-gen engine
+;; (app.util.code-gen) reads :code-connect to emit real component refs in
+;; Dev Mode; the per-framework emission replacement is additive (see
+;; code_gen.cljs `component-code-connect-template`).
+(mf/defc component-code-connect-row*
+  {::mf/private true}
+  [{:keys [component-id framework template]}]
+  (let [on-template-change
+        (mf/use-fn
+         (mf/deps component-id framework)
+         (fn [event]
+           (let [value (dom/get-target-val event)]
+             (st/emit! (dwcp/update-code-connect component-id framework value)))))
+
+        on-remove
+        (mf/use-fn
+         (mf/deps component-id framework)
+         #(st/emit! (dwcp/remove-code-connect component-id framework)))]
+
+    [:div {:class (stl/css :component-typed-property-row)}
+     [:span {:class (stl/css :component-typed-property-label)} framework]
+     [:> input-with-meta* {:value (str (or template ""))
+                           :max-length 4000
+                           :on-blur on-template-change}]
+     [:> icon-button* {:variant "ghost"
+                       :icon i/remove
+                       :aria-label (tr "workspace.options.component.code-connect.remove")
+                       :on-click on-remove}]]))
+
+(mf/defc component-code-connect*
+  {::mf/private true}
+  [{:keys [shape component main-instance?]}]
+  (let [component-id (:component-id shape)
+        code-connect (or (:code-connect component) {})
+        open*          (mf/use-state false)
+        open?          (deref open*)
+        toggle-content (mf/use-fn #(swap! open* not))
+
+        frameworks (keys (or (some-> cg/framework-meta) {}))
+
+        add-framework
+        (mf/use-fn
+         (mf/deps component-id)
+         (fn [framework]
+           (st/emit! (dwcp/update-code-connect component-id framework ""))))]
+
+    ;; Only render on a main instance, and only when there is something to
+    ;; show OR the user has expanded the section. A component with no
+    ;; :code-connect and a collapsed section renders nothing.
+    (when (and main-instance? (or (seq code-connect) open?))
+      [:div {:class (stl/css :component-typed-properties-section)}
+       [:> title-bar* {:collapsable  true
+                       :collapsed    (not open?)
+                       :on-collapsed toggle-content
+                       :title        (tr "workspace.options.component.code-connect")
+                       :class        (stl/css :component-title-bar)
+                       :title-class  (stl/css :component-title-bar-title)}
+        [:span {:class (stl/css :component-title-bar-type)}
+        (tr "workspace.options.component.code-connect.type")]]
+
+       (when open?
+         [:div {:class (stl/css :component-content)}
+          [:div {:class (stl/css :component-typed-property-list)}
+           (for [[framework template] code-connect]
+             [:> component-code-connect-row*
+              {:key (str framework)
+               :component-id component-id
+               :framework framework
+               :template template}])]
+          (when (seq frameworks)
+            [:> icon-button* {:variant "ghost"
+                              :aria-label (tr "workspace.options.component.code-connect.add")
+                              :on-click #(add-framework (first frameworks))
+                              :icon i/add}])])])))
+
+;; Figma-parity expose nested instances (gap #42). Surfaces the typed
+;; component properties of nested instances (whose shape-refs are listed in
+;; :exposed-nested-instances) at the top level, so designers can edit
+;; everything from one place. Renders ONLY on a main instance and ONLY when
+;; the component has a non-empty :exposed-nested-instances list. v1 limit:
+;; hover-to-highlight on canvas + the configuration modal are DEFERRED.
+(mf/defc component-exposed-nested*
+  {::mf/private true}
+  [{:keys [shape component main-instance?]}]
+  (let [component-id (:component-id shape)
+        exposed-ids  (or (:exposed-nested-instances component) [])
+        properties   (or (:component-properties component) [])]
+
+    (when (and main-instance? (seq exposed-ids))
+      [:div {:class (stl/css :component-typed-properties-section)}
+       [:> title-bar* {:collapsable  true
+                       :collapsed    true
+                       :title        (tr "workspace.options.component.exposed-nested")
+                       :class        (stl/css :component-title-bar)
+                       :title-class  (stl/css :component-title-bar-title)}
+        [:span {:class (stl/css :component-title-bar-type)}
+        (tr "workspace.options.component.exposed-nested.type")]]
+       ;; The nested-instance property rows reuse the typed-property main
+       ;; row (gap #1). A future hover-to-highlight will highlight the
+       ;; nested instance shape on canvas — deferred (needs viewport hook).
+       [:div {:class (stl/css :component-content)}
+        [:div {:class (stl/css :component-typed-property-list)}
+         (for [property properties]
+           [:> component-typed-property-main-row*
+            {:key (str (:id property))
+             :component-id component-id
+             :property property}])]]])))
+
 (mf/defc component-menu*
   [{:keys [shapes is-swap-opened]}]
   (let [current-file-id (mf/use-ctx ctx/current-file-id)
@@ -1258,6 +1373,19 @@
             [:> component-typed-properties* {:shape shape
                                              :component component
                                              :main-instance? main-instance?}])
+
+          ;; Figma #40: Code Connect authoring (main instance only).
+          ;; Figma #42: exposed nested instances (main instance only).
+          ;; Both render only under their own guards inside the component.
+          (when (and (not is-swap-opened) (not multi))
+            [:> component-exposed-nested* {:shape shape
+                                           :component component
+                                           :main-instance? main-instance?}])
+
+          (when (and (not is-swap-opened) (not multi))
+            [:> component-code-connect* {:shape shape
+                                         :component component
+                                         :main-instance? main-instance?}])
 
           (when (and (not is-swap-opened) (not multi))
             [:> component-annotation* {:id id

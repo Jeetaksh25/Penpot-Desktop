@@ -137,7 +137,12 @@
                                      :linear :linear-gradient
                                      :radial :radial-gradient
                                      :angular :angular-gradient
-                                     :diamond :diamond-gradient)
+                                     :diamond :diamond-gradient
+                                     ;; Figma-parity gradient mesh (gap #21).
+                                     ;; A loaded :mesh gradient opens the
+                                     ;; mesh tab; authoring is a stub (see
+                                     ;; gradients.cljs guard).
+                                     :mesh :mesh-gradient)
                                    :color))
 
         active-color-tab*      (hooks/use-persisted-state ::color-tab "ramp")
@@ -158,7 +163,12 @@
         color-type             (get state :type :color)
         selected-mode          (case color-type
                                  (:linear-gradient :radial-gradient
-                                  :angular-gradient :diamond-gradient)
+                                  :angular-gradient :diamond-gradient
+                                  ;; Figma-parity gradient mesh (gap #21):
+                                  ;; render the gradient panel for a loaded
+                                  ;; mesh gradient (the Mesh type option is
+                                  ;; a stub in gradients.cljs).
+                                  :mesh-gradient)
                                  :gradient
 
                                  color-type)

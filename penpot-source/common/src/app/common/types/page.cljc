@@ -89,6 +89,12 @@
    ;; unset so existing files render identically to before.
    [:pixel-grid-color {:optional true} ctc/schema:hex-color]
    [:pixel-grid-opacity {:optional true} ::sm/safe-number]
+   ;; Figma-parity variable modes (gap #31). Optional per-page mode name.
+   ;; Objects on the page default to Auto (inherit the page mode); a nil /
+   ;; absent value = no mode assignment = existing behavior. Per-frame /
+   ;; per-object mode attr needs shape.cljc (not owned) and is DEFERRED;
+   ;; the propagation.cljs mode-resolution runtime is also DEFERRED.
+   [:variable-mode {:optional true} [:maybe :string]]
 
    [:comment-thread-positions {:optional true}
     [:map-of ::sm/uuid schema:comment-thread-position]]])
