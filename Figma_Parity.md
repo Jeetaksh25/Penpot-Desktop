@@ -551,3 +551,26 @@ Each implemented feature gets: schema (common types) → data event → workspac
 **Round 2 — polish.** A polish workflow over all implemented features: UX consistency with existing Penpot panels, copy/i18n keys present in `translations/en.po`, keyboard shortcuts wired in `shortcuts.cljs`, accessibility (focus, contrast), edge cases (empty selections, zero-size, negative inputs, mode switches), performance micro-opts (no re-render storms, memoized selectors), and visual smoothness (transitions, hover states). Static verify.
 
 All verification is static (read + reason) — no builds, no image viewing — per the standing constraint.
+---
+
+## Renderer completion pass (task #25, commit 3e5a799, pushed to `features`)
+
+All previously-deferred renderers from Round-2 are now **IMPLEMENTED (not deferred)** as additive + guarded frontend-SVG code, verified statically (no build, no image views). Byte-identical-when-inactive invariant preserved across all 3 gate sites (shape->filters / filter-str / add-fill-props!):
+
+- **mesh gradient (#21)** — `mesh-gradient` defc in gradients.cljs; bilinear-interpolated 4-point patches, deterministic tessellation N=16/8.
+- **glass (#61)** — frost feTurbulence+feGaussianBlur, refraction feDisplacementMap on bgBlur/frostBlur, RGB dispersion (3x feColorMatrix+feOffset+feBlend), feSpecularLighting highlight, final feBlend over filter-in.
+- **noise (#62)** / **texture (#63)** — feTurbulence-based overlay / displacement filters.
+- **shader SVG presets (#64)** — clouds/halftone/noise via feTurbulence; arbitrary presets stay on the WebGL2 canvas path (no :filter attr).
+- **stacked-blur (#74)** — N chained feGaussianBlur + feMerge from the `:blurs` VECTOR slot's `:radii`.
+- **3D transform (#66)** — CSS matrix3d on the wrapping `<g>` (transforms_3d.cljc); nil when slot absent → no style keys.
+- **brush stamp (#52)** — path.cljs brush-stamp-shape with deterministic sin/abs scatter (no Math/random).
+- **variable-width stroke (#53)** — custom_stroke.cljs first cond clause gated on `:segment-widths`.
+- **pixel-preview rasterization (#46)** — viewport/pixel_preview.cljs <canvas> drawImage with imageSmoothingEnabled=false.
+- **per-shape outline-stroke fallback (#45)** — custom_stroke.cljs, emits only in outline-mode for unstroked non-frame/group shapes.
+- **text-SVG fields (#17/#18/#78/#12/#13/#50)** — truncation/baseline-shift/hyperlink/font-feature+variation (drops Chromium "normal" default)/hanging-punctuation in svg_text.cljs + text_svg_position.cljs.
+- **spell-check (#48)** — TextEditor.js #runSpellCheck decorator (NullDictionary default → 0 iterations → byte-identical).
+- **multi-text-edit (#49)** — multi_editor.cljs mounts only when >1 text selected.
+
+3-cluster adversarial verify (V2 mesh/brush clean, V3 3D/pixel/text clean, V1 effects found 3 — all fixed): CRITICAL stacked-blur cross-site gate now uses `(keep :value (remove :hidden :blurs))` at all 3 sites; MEDIUM glass feDisplacementMap wired to blurred inputs; LOW glass composes over filter-in. Schema fixes: stacked-blur reads `:blurs` VECTOR, shader-effect reads `:shader-effect` VECTOR `:shader-preset` (aliased `:preset`); shape.cljs dissocs new effect slots from -blur/-shadow variants (no double-apply).
+
+Full feature list: `docs/New_Features_1.md` (all 78, one per line; #38/#41/#67 marked scope-deferred).
