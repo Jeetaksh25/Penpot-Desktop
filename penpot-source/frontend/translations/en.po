@@ -11506,6 +11506,144 @@ msgid "workspace.ai.bar.tool-text-copied"
 msgstr "Copied to clipboard: %s"
 
 
+
+# Phase 1 — Vector Craftsmanship (Shape Builder / Pathfinder / paint bucket / outline stroke / offset path / bool per-child mode)
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.tools.shape-builder"
+msgstr "Shape Builder"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.tools.shape-builder.hint"
+msgstr "Click a region to isolate it, drag across regions to merge, hold Alt and click/drag to erase."
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.tools.paint-bucket"
+msgstr "Paint Bucket"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.tools.paint-bucket.hint"
+msgstr "Click an enclosed region to fill it."
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.title"
+msgstr "Pathfinder"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.shape-modes"
+msgstr "Shape Modes"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.pathfinders"
+msgstr "Pathfinders"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.unite"
+msgstr "Unite"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.minus-front"
+msgstr "Minus Front"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.intersect"
+msgstr "Intersect"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.exclude"
+msgstr "Exclude"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.divide"
+msgstr "Divide"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.trim"
+msgstr "Trim"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.merge"
+msgstr "Merge"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.crop"
+msgstr "Crop"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.outline"
+msgstr "Outline"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.minus-back"
+msgstr "Minus Back"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.expand"
+msgstr "Expand"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.pathfinder.alt-non-destructive"
+msgstr "Alt-click for a non-destructive compound shape."
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.bool.expand"
+msgstr "Expand"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.bool.expand.hint"
+msgstr "Finalize the live boolean into a path, keeping a copy of the original."
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.bool.child-mode"
+msgstr "Child mode"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.bool.child-mode.union"
+msgstr "Add"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.bool.child-mode.difference"
+msgstr "Subtract"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.bool.child-mode.intersection"
+msgstr "Intersect"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.bool.child-mode.exclusion"
+msgstr "Exclude"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.outline-stroke"
+msgstr "Outline Stroke"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.offset-path"
+msgstr "Offset Path"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.offset-path.distance"
+msgstr "Distance"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.offset-path.join"
+msgstr "Join"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.offset-path.join.miter"
+msgstr "Miter"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.offset-path.join.round"
+msgstr "Round"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.offset-path.join.bevel"
+msgstr "Bevel"
+
+#: figma-parity/p1/vector-craftsmanship
+msgid "workspace.shape.offset-path.miter-limit"
+msgstr "Miter Limit"
+
 #: figma-parity/p2b/interactions
 msgid "workspace.options.prototype-sections.title"
 msgstr "Prototype sections"
