@@ -10,8 +10,10 @@
    [app.common.types.path.segment :as path.segm]
    [app.main.data.workspace.path :as drp]
    [app.main.data.workspace.path.shortcuts :as sc]
+   [app.main.data.workspace.path.shapes-to-path :as dwps]
    [app.main.store :as st]
    [app.main.ui.icons :as deprecated-icon]
+   [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
    [rumext.v2 :as mf]))
 
@@ -53,6 +55,14 @@
 (def ^:private paint-bucket-icon
   (deprecated-icon/icon-xref :fill-content (stl/css :merge-nodes-icon :pathbar-icon)))
 
+;; Figma-parity Offset vector (#55) / Simplify vector (#56) icons. Reuse
+;; existing icon xrefs; the offset/simplify math lives in shapes_to_path.cljs.
+(def ^:private offset-vector-icon
+  (deprecated-icon/icon-xref :move (stl/css :move-icon :pathbar-icon)))
+
+(def ^:private simplify-vector-icon
+  (deprecated-icon/icon-xref :remove (stl/css :remove :pathbar-icon)))
+
 (defn check-enabled [content selected-points]
   (when content
     (let [segments (path.segm/get-segments-with-points content selected-points)
@@ -79,6 +89,12 @@
   (let [{:keys [edit-mode selected-points snap-toggled]} state
 
         content (:content shape)
+
+        ;; Figma-parity Simplify vector (#56) threshold/intensity. Local
+        ;; component state; the value is the RDP perpendicular-distance
+        ;; epsilon in path units. Additive — only read by the simplify
+        ;; button below.
+        simplify-threshold* (mf/use-state 1.0)
 
         enabled-buttons
         (mf/use-memo
@@ -160,7 +176,26 @@
         on-select-paint-bucket
         (mf/use-fn
          (fn [_]
-           (st/emit! (drp/change-edit-mode :paint-bucket))))]
+           (st/emit! (drp/change-edit-mode :paint-bucket))))
+
+        ;; Figma-parity Offset vector (#55) / Simplify vector (#56). Apply
+        ;; the shapes_to_path ops to the edited path's id. NOTE: these
+        ;; operate on the committed shape content via dwsh/update-shapes;
+        ;; for a path mid-edit with uncommitted modifiers the edit-mode
+        ;; state integration is DEFERRED (would need edition.cljs changes,
+        ;; out of scope) — the buttons are additive UI and a safe no-op
+        ;; when the shape has no content.
+        on-offset-vector
+        (mf/use-fn
+         (mf/deps (:id shape))
+         (fn [_]
+           (st/emit! (dwps/offset-vector [(:id shape)] 1.0))))
+
+        on-simplify-vector
+        (mf/use-fn
+         (mf/deps (:id shape) @simplify-threshold*)
+         (fn [_]
+           (st/emit! (dwps/simplify-vector [(:id shape)] @simplify-threshold*))))]
 
     [:div {:class (stl/css :sub-actions)
            :data-dont-clear-path true}
@@ -250,6 +285,34 @@
                 :title (tr "workspace.path.actions.paint-bucket" (sc/get-tooltip :paint-bucket))
                 :on-click on-select-paint-bucket}
        paint-bucket-icon]]
+
+     ;; Figma-parity Offset vector (#55) / Simplify vector (#56). Apply
+     ;; the shapes_to_path ops to the edited path. The simplify threshold
+     ;; is a local range control (RDP epsilon in path units).
+     [:div {:class (stl/css :sub-actions-group)}
+      ;; Offset vector
+      [:button {:class  (stl/css :topbar-btn)
+                :title (tr "workspace.path.actions.offset-vector")
+                :on-click on-offset-vector}
+       offset-vector-icon]
+
+      ;; Simplify vector
+      [:button {:class  (stl/css :topbar-btn)
+                :title (tr "workspace.path.actions.simplify-vector")
+                :on-click on-simplify-vector}
+       simplify-vector-icon]
+
+      ;; Simplify threshold / intensity
+      [:input {:type "range"
+               :min 0.1
+               :max 20
+               :step 0.1
+               :value @simplify-threshold*
+               :title (tr "workspace.path.actions.simplify-threshold")
+               :on-change (fn [event]
+                            (let [value (js/Number (dom/get-value (dom/get-current-target event)))]
+                              (when-not (js/isNaN value)
+                                (reset! simplify-threshold* value))))}]]
 
      [:div {:class (stl/css :sub-actions-group)}
       ;; Toggle snap

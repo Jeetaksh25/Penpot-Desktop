@@ -184,7 +184,15 @@
    ;; value; the token's :value is the default (Auto / no-mode) value. A
    ;; token with no :modes carries no key, so existing behavior is
    ;; unchanged. Per-context mode resolution runtime is DEFERRED.
-   [:modes {:optional true} [:map-of :string ::sm/any]]])
+   [:modes {:optional true} [:map-of :string ::sm/any]]
+   ;; Figma-parity variable scopes (gap #75). Optional author-controllable
+   ;; set of token-attrs this token may be applied to (e.g.
+   ;; #{:corner-radius :width :height}). Absent = all applicable attrs for
+   ;; the token type are allowed = today's behavior (backward compatible).
+   ;; The tokens application UI gates which fields are shown/applyable by
+   ;; intersecting the token's effective attrs with :scopes when present.
+   [:scopes {:optional true}
+    [::sm/set :keyword]]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; SCHEMA: Token application to shape

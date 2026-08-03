@@ -10,6 +10,7 @@
    [app.common.types.shape.layout :as ctl]
    [app.main.refs :as refs]
    [app.main.ui.workspace.sidebar.options.menus.blur :refer [blur-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.glass-row :refer [glass-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.constraints :refer [constraint-attrs constraints-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.exports :refer [exports-menu* exports-attrs]]
    [app.main.ui.workspace.sidebar.options.menus.fill :as fill]
@@ -18,9 +19,11 @@
    [app.main.ui.workspace.sidebar.options.menus.layout-container :refer [layout-container-flex-attrs layout-container-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.layout-item :refer [layout-item-attrs layout-item-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.measures :refer [measure-attrs measures-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.noise-row :refer [noise-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.shadow :refer [shadow-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.stroke :refer [stroke-attrs stroke-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.svg-attrs :refer [svg-attrs-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.texture-row :refer [texture-menu*]]
    [rumext.v2 :as mf]))
 
 (mf/defc options*
@@ -136,6 +139,19 @@
 
      [:> blur-menu* {:ids ids
                      :values (select-keys shape [:blur :background-blur])}]
+
+     ;; Figma-parity glass / noise / texture effects (gaps #61 #62 #63).
+     ;; Guarded: each section renders only when the shape already has the
+     ;; corresponding opaque effect vector slot, so existing shapes (which
+     ;; never carry these slots) are byte-identical. The renderer shader /
+     ;; overlay for each is deferred (see notes in glass.cljc / noise.cljc /
+     ;; texture.cljc); the values round-trip via dwsh/update-shapes.
+     (when (seq (get shape :glass))
+       [:> glass-menu* {:ids ids :values (get shape :glass)}])
+     (when (seq (get shape :noise))
+       [:> noise-menu* {:ids ids :values (get shape :noise)}])
+     (when (seq (get shape :texture))
+       [:> texture-menu* {:ids ids :values (get shape :texture)}])
 
      [:> svg-attrs-menu* {:ids ids
                           :values (select-keys shape [:svg-attrs])}]

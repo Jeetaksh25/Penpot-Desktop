@@ -10833,3 +10833,341 @@ msgstr "Paint bucket"
 msgid "workspace.header.play-mode"
 msgstr "Play in canvas"
 
+#: figma-parity/p2/top-toolbar
+msgid "workspace.toolbar.polygon"
+msgstr "Polygon"
+
+
+#: figma-parity/p2/top-toolbar
+msgid "workspace.toolbar.star"
+msgstr "Star"
+
+
+#: figma-parity/p2/top-toolbar
+msgid "workspace.toolbar.note"
+msgstr "Sticky note"
+
+
+#: figma-parity/p2/top-toolbar
+msgid "workspace.toolbar.lasso"
+msgstr "Lasso"
+
+
+#: figma-parity/p2/main-menu
+msgid "workspace.header.menu.enable-outline-mode"
+msgstr "Enable outline mode"
+
+
+#: figma-parity/p2/main-menu
+msgid "workspace.header.menu.disable-outline-mode"
+msgstr "Disable outline mode"
+
+
+#: figma-parity/p2/main-menu
+msgid "workspace.header.menu.enable-pixel-preview"
+msgstr "Enable pixel preview"
+
+
+#: figma-parity/p2/main-menu
+msgid "workspace.header.menu.disable-pixel-preview"
+msgstr "Disable pixel preview"
+
+
+#: figma-parity/p2/main-menu
+msgid "workspace.header.menu.command-palette"
+msgstr "Command palette"
+
+
+#: figma-parity/p2/measures
+msgid "workspace.options.point-count"
+msgstr "Point count"
+
+
+#: figma-parity/p2/measures
+msgid "workspace.options.inner-radius"
+msgstr "Inner radius"
+
+
+#: figma-parity/p2/measures
+msgid "workspace.options.corner-radius"
+msgstr "Corner radius"
+
+
+#: figma-parity/p2/measures
+msgid "workspace.options.arc-start"
+msgstr "Arc start"
+
+
+#: figma-parity/p2/measures
+msgid "workspace.options.arc-end"
+msgstr "Arc end"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.placeholder"
+msgstr "Type a command..."
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.zoom-fit-all"
+msgstr "Zoom to fit all"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.zoom-selected"
+msgstr "Zoom to selection"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.zoom-reset"
+msgstr "Zoom to 100%"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.zoom-in"
+msgstr "Zoom in"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.zoom-out"
+msgstr "Zoom out"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.toggle-outline-mode"
+msgstr "Toggle outline mode"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.toggle-pixel-preview"
+msgstr "Toggle pixel preview"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.toggle-snap-pixel-grid"
+msgstr "Toggle snap to pixel grid"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.toggle-lasso"
+msgstr "Toggle lasso selection"
+
+
+#: figma-parity/p2/context-menu
+msgid "workspace.shape.menu.offset-vector"
+msgstr "Offset vector"
+
+
+#: figma-parity/p2/context-menu
+msgid "workspace.shape.menu.simplify-vector"
+msgstr "Simplify vector"
+
+
+#: figma-parity/p2/path-actions
+msgid "workspace.path.actions.offset-vector"
+msgstr "Offset vector"
+
+
+#: figma-parity/p2/path-actions
+msgid "workspace.path.actions.simplify-vector"
+msgstr "Simplify vector"
+
+
+#: figma-parity/p2/path-actions
+msgid "workspace.path.actions.simplify-threshold"
+msgstr "Simplify threshold"
+
+
+#: figma-parity/p2/typography
+msgid "workspace.options.text-options.hanging-punctuation"
+msgstr "Hanging punctuation"
+
+
+#: figma-parity/p2/text
+msgid "workspace.options.text-options.spell-check"
+msgstr "Spell check"
+
+
+#: figma-parity/p2/text
+msgid "workspace.options.text-options.multi-edit"
+msgstr "Multi-edit mode"
+
+
+#: figma-parity/p2/text
+msgid "workspace.options.text-options.multi-edit-tooltip"
+msgstr "Edits will apply to all selected text layers"
+
+
+#: figma-parity/p2/blur
+msgid "workspace.options.blur-options.progressive"
+msgstr "Progressive"
+
+
+#: figma-parity/p2/shadow
+msgid "workspace.options.shadow-options.grain"
+msgstr "Grain"
+
+
+#: figma-parity/p2/shadow
+msgid "workspace.options.shadow-options.grain-size"
+msgstr "Grain size"
+
+
+#: figma-parity/p2/fill
+msgid "workspace.options.fill-options.grain"
+msgstr "Grain"
+
+
+#: figma-parity/p2/fill
+msgid "workspace.options.fill-options.grain-size"
+msgstr "Grain size"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.title"
+msgstr "Glass"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.add-glass"
+msgstr "Add glass"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.toggle-glass"
+msgstr "Toggle glass"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.remove-glass"
+msgstr "Remove glass"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.refraction"
+msgstr "Refraction"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.dispersion"
+msgstr "Dispersion"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.frost"
+msgstr "Frost"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.splay"
+msgstr "Splay"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.light-angle"
+msgstr "Light angle"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.light-intensity"
+msgstr "Light intensity"
+
+
+#: figma-parity/p2/glass
+msgid "workspace.options.glass-options.depth"
+msgstr "Depth"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.title"
+msgstr "Noise"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.add-noise"
+msgstr "Add noise"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.toggle-noise"
+msgstr "Toggle noise"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.remove-noise"
+msgstr "Remove noise"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.color-mode.mono"
+msgstr "Mono"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.color-mode.duo"
+msgstr "Duo"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.color-mode.multi"
+msgstr "Multi"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.size-x"
+msgstr "Size X"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.size-y"
+msgstr "Size Y"
+
+
+#: figma-parity/p2/noise
+msgid "workspace.options.noise-options.density"
+msgstr "Density"
+
+
+#: figma-parity/p2/texture
+msgid "workspace.options.texture-options.title"
+msgstr "Texture"
+
+
+#: figma-parity/p2/texture
+msgid "workspace.options.texture-options.add-texture"
+msgstr "Add texture"
+
+
+#: figma-parity/p2/texture
+msgid "workspace.options.texture-options.toggle-texture"
+msgstr "Toggle texture"
+
+
+#: figma-parity/p2/texture
+msgid "workspace.options.texture-options.remove-texture"
+msgstr "Remove texture"
+
+
+#: figma-parity/p2/texture
+msgid "workspace.options.texture-options.size-x"
+msgstr "Size X"
+
+
+#: figma-parity/p2/texture
+msgid "workspace.options.texture-options.size-y"
+msgstr "Size Y"
+
+
+#: figma-parity/p2/texture
+msgid "workspace.options.texture-options.radius"
+msgstr "Radius"
+
+
+#: figma-parity/p2/texture
+msgid "workspace.options.texture-options.clip-to-shape"
+msgstr "Clip to shape"
+
+
+#: figma-parity/p2/exports
+msgid "workspace.options.export.presets"
+msgstr "Presets"

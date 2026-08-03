@@ -10,6 +10,9 @@
    [app.common.types.shape.layout :as ctl]
    [app.main.refs :as refs]
    [app.main.ui.workspace.sidebar.options.menus.blur :refer [blur-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.glass-row :refer [glass-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.noise-row :refer [noise-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.texture-row :refer [texture-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.constraints :refer [constraint-attrs constraints-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.exports :refer [exports-menu* exports-attrs]]
    [app.main.ui.workspace.sidebar.options.menus.fill :as fill]
@@ -135,6 +138,18 @@
      [:> shadow-menu* {:ids ids :values (get shape :shadow)}]
      [:> blur-menu* {:ids ids
                      :values (select-keys shape [:blur :background-blur])}]
+
+     ;; Figma-parity glass / noise / texture effects (gaps #61 #62 #63).
+     ;; Guarded: render only when the shape already has the opaque effect
+     ;; vector slot, so existing shapes are byte-identical. Renderer shader
+     ;; / overlay deferred (see glass.cljc / noise.cljc / texture.cljc).
+     (when (seq (get shape :glass))
+       [:> glass-menu* {:ids ids :values (get shape :glass)}])
+     (when (seq (get shape :noise))
+       [:> noise-menu* {:ids ids :values (get shape :noise)}])
+     (when (seq (get shape :texture))
+       [:> texture-menu* {:ids ids :values (get shape :texture)}])
+
      [:> svg-attrs-menu* {:ids ids
                           :values (select-keys shape [:svg-attrs])}]
      [:> exports-menu* {:type type

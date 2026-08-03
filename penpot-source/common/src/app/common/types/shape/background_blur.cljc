@@ -21,4 +21,11 @@
     [::sm/one-of #{:normal :darken :multiply :color-burn
                    :lighten :screen :color-dodge :overlay
                    :soft-light :hard-light :difference :exclusion
-                   :hue :saturation :color :luminosity}]]])
+                   :hue :saturation :color :luminosity}]]
+   ;; Figma-parity progressive blur (gap #60). Same optional falloff params
+   ;; as the layer blur; absent = :value is uniform = today's behavior. The
+   ;; renderer gradient-blur kernel is deferred; the fields round-trip.
+   [:progressive? {:optional true} :boolean]
+   [:start-radius {:optional true} ::sm/safe-number]
+   [:start-offset {:optional true} ::sm/safe-number]
+   [:end-offset {:optional true} ::sm/safe-number]])

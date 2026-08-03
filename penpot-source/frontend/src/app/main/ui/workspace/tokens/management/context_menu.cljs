@@ -365,7 +365,20 @@
   (reduce into #{} (map #(ctt/shape-type->attributes (:type %) (:layout %)) shapes)))
 
 (defn menu-actions [{:keys [type token selected-shapes] :as context-data}]
-  (let [context-data (assoc context-data :allowed-shape-attributes (allowed-shape-attributes selected-shapes))
+  (let [shape-attrs (allowed-shape-attributes selected-shapes)
+        ;; Figma-parity variable scopes (gap #75). When the token carries an
+        ;; optional author-controllable :scopes set (e.g. #{:r1 :r2} to scope a
+        ;; border-radius token to the top corners only), restrict the offered
+        ;; attributes to the intersection with :scopes. Absent :scopes = all
+        ;; shape-applicable attrs are offered = today's behavior (backward
+        ;; compatible). The downstream generic / all-or-separate action
+        ;; builders already intersect with :allowed-shape-attributes, so a
+        ;; narrower set here hides the out-of-scope apply entries.
+        scope-attrs (get token :scopes)
+        shape-attrs (if (seq scope-attrs)
+                      (set/intersection shape-attrs scope-attrs)
+                      shape-attrs)
+        context-data (assoc context-data :allowed-shape-attributes shape-attrs)
         with-actions (get shape-attribute-actions-map (or type (:type token)))
         attribute-actions (if with-actions (with-actions context-data) [])]
     attribute-actions))

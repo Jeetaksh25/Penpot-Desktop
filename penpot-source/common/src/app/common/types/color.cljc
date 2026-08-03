@@ -176,7 +176,15 @@
     [:vector {:gen/max 9} schema:mesh-point]]
    [:mesh-cols {:optional true} ::sm/int]
    [:mesh-rows {:optional true} ::sm/int]
-   [:mesh-tessellation {:optional true} :boolean]])
+   [:mesh-tessellation {:optional true} :boolean]
+   ;; Figma-parity grain on gradients (gap #65). Optional grain overlay per
+   ;; gradient: :intensity (0..1) and :size (cell size). Absent = no grain
+   ;; = today's rendering. The renderer grain overlay is deferred (no build
+   ;; to verify); the value round-trips on the gradient map.
+   [:grain {:optional true}
+    [:map {:title "GradientGrain" :closed true}
+     [:intensity {:optional true} [::sm/number {:min 0 :max 1}]]
+     [:size {:optional true} ::sm/safe-number]]]])
 
 (def gradient-attrs
   "A set of attrs that corresponds to gradient data type"

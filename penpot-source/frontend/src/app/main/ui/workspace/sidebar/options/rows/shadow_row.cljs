@@ -137,6 +137,25 @@
            (trigger-bounding-box-cloaking)
            (on-update index :blend-mode (keyword value))))
 
+        ;; Figma-parity grain on shadows (gap #65). Optional grain overlay
+        ;; per shadow: :intensity (0..1) and :size (cell size). Absent = no
+        ;; grain = today's rendering. The renderer grain overlay is deferred
+        ;; (no build to verify); the field round-trips via on-update, which
+        ;; already routes through update-in + check-shadow.
+        grain (or (:grain shadow) {})
+        on-update-grain-intensity
+        (mf/use-fn
+         (mf/deps index on-update trigger-bounding-box-cloaking)
+         (fn [value]
+           (trigger-bounding-box-cloaking)
+           (on-update index :grain (assoc grain :intensity value))))
+        on-update-grain-size
+        (mf/use-fn
+         (mf/deps index on-update trigger-bounding-box-cloaking)
+         (fn [value]
+           (trigger-bounding-box-cloaking)
+           (on-update index :grain (assoc grain :size value))))
+
         on-toggle-visibility
         (mf/use-fn
          (mf/deps index trigger-bounding-box-cloaking)
@@ -258,4 +277,30 @@
            [:& select {:default-value shadow-blend-mode
                        :options blend-mode-options
                        :disabled hidden?
-                       :on-change on-blend-mode-change}]]]])]]))
+                       :on-change on-blend-mode-change}]]]
+
+         ;; Figma-parity grain on shadows (gap #65). Optional grain overlay
+         ;; (intensity + size). Default intensity 0 = today's rendering.
+         ;; Renderer grain overlay deferred.
+         [:div {:class (stl/css :shadow-advanced-row)
+               :data-testid "shadow.grain-options"}
+          [:div {:class (stl/css :shadow-advanced-blur)
+                 :title (tr "workspace.options.shadow-options.grain")}
+           [:span {:class (stl/css :shadow-advanced-label)}
+            (tr "workspace.options.shadow-options.grain")]
+           [:> deprecated-input/numeric-input* {:no-validate true
+                                                :placeholder "0"
+                                                :min 0
+                                                :max 1
+                                                :step 0.05
+                                                :on-change on-update-grain-intensity
+                                                :value (:intensity grain)}]]
+          [:div {:class (stl/css :shadow-advanced-spread)
+                 :title (tr "workspace.options.shadow-options.grain-size")}
+           [:span {:class (stl/css :shadow-advanced-label)}
+            (tr "workspace.options.shadow-options.grain-size")]
+           [:> deprecated-input/numeric-input* {:no-validate true
+                                                :placeholder "--"
+                                                :min 0
+                                                :on-change on-update-grain-size
+                                                :value (:size grain)}]]]])]]))

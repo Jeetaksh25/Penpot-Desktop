@@ -1237,3 +1237,45 @@
 ;; -- Text Editor v3
 
 ;; @see texts_v3.cljs
+
+;; Feature 49 — multi-edit text dispatch. Additive event that fans a
+;; text-content update out to every id in `ids` (the currently selected
+;; text shapes), reusing the existing `dwsh/update-shapes` primitive with
+;; a shared undo-group so the whole multi-edit is one undo step. Used by
+;; the multi-edit flow when several text shapes are edited at once: the
+;; edited content is applied to all selected text shape ids.
+;;
+;; The LIVE multi-edit editor (a single contenteditable driving every
+;; selected text shape in lock-step) is the high-blast runtime piece and
+;; is DEFERRED — this event is the data/workspace dispatch surface a
+;; future multi-edit toolbar will emit against. Default `save-undo?`
+;; true; pass `:save-undo? false` for per-keystroke intermediate updates.
+(defn update-text-content-multi
+  [ids content & {:keys [update-name? save-undo?] :or {update-name? true save-undo? true}}]
+  (ptk/reify ::update-text-content-multi
+    ptk/WatchEvent
+    (watch [_ state _]
+      (let [undo-group (uuid/next)
+            objects   (dsh/lookup-page-objects state)
+            text-ids  (->> ids
+                          (filter (fn [id]
+                                    (when-let [shape (get objects id)]
+                                      (= :text (:type shape))))))
+            update-event
+            (dwsh/update-shapes
+             text-ids
+             (fn [shape]
+               (let [name (when update-name?
+                            (let [text (txt/content->text content)]
+                              (when (not= text "")
+                                (txt/generate-shape-name text))))]
+                 (cond-> shape
+                   true                  (assoc :content content)
+                   (some? name)         (assoc :name name))))
+             {:attrs #{:content :name} :undo-group (when save-undo? undo-group)})]
+        (rx/concat
+         (rx/of update-event)
+         (if (features/active-feature? state "render-wasm/v1")
+           (->> (rx/from text-ids)
+                (rx/map #(dwwt/resize-wasm-text-debounce % {:undo-group undo-group})))
+           (rx/empty)))))))

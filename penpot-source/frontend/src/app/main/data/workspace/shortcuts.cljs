@@ -334,6 +334,33 @@
                           :subsections [:tools]
                           :fn #(emit-when-no-readonly (dwd/select-for-drawing :curve))}
 
+   ;; Figma-parity polygon + star + sticky-note tools (gaps #44/#58).
+   ;; Box-drawn shapes routed through setup-shape exactly like rect/circle.
+   :draw-polygon         {:tooltip "Y"
+                          :command "y"
+                          :subsections [:tools]
+                          :fn #(emit-when-no-readonly (dwd/select-for-drawing :polygon))}
+
+   :draw-star            {:tooltip (ds/shift "Y")
+                          :command "shift+y"
+                          :subsections [:tools]
+                          :fn #(emit-when-no-readonly (dwd/select-for-drawing :star))}
+
+   :draw-note            {:tooltip "N"
+                          :command "n"
+                          :subsections [:tools]
+                          :fn #(emit-when-no-readonly (dwd/select-for-drawing :note))}
+
+   ;; Figma-parity lasso / freeform selection (gap #51). Toggles the
+   ;; :lasso-mode layout flag (captured by viewport/widgets.cljs). Not a
+   ;; shape-creating tool, so it does not route through select-for-drawing.
+   :lasso                {:tooltip "Q"
+                          :command "q"
+                          :subsections [:tools]
+                          :fn #(st/emit! :interrupt
+                                        (dwdc/clear-drawing)
+                                        (toggle-layout-flag :lasso-mode))}
+
    ;; Figma-parity scale tool (gap #37). Selects the :scale tool; the
    ;; canvas drag-to-scale interaction is deferred, the actionable
    ;; scaling lives in the measures sidebar scale-factor input.
@@ -473,6 +500,28 @@
                           :tooltip ","
                           :subsections [:main-menu]
                           :fn #(st/emit! (toggle-layout-flag :snap-pixel-grid))}
+
+   ;; Figma-parity outline / wireframe mode (gap #45). Renders shapes as
+   ;; stroked outlines only (guarded in viewport.cljs; default off).
+   :toggle-outline-mode  {:tooltip (ds/meta-shift "O")
+                          :command (ds/c-mod "shift+o")
+                          :subsections [:main-menu]
+                          :fn #(st/emit! (toggle-layout-flag :outline-mode))}
+
+   ;; Figma-parity pixel-preview render mode (gap #46). Rasterizes the
+   ;; canvas at device pixels (guarded in viewport.cljs; default off).
+   :toggle-pixel-preview {:tooltip (ds/meta-shift ",")
+                          :command (ds/c-mod "shift+,")
+                          :subsections [:main-menu]
+                          :fn #(st/emit! (toggle-layout-flag :pixel-preview))}
+
+   ;; Figma-parity command palette (gap #47). Mounts the unified quick-
+   ;; action overlay (command_palette.cljs). Cmd+K is already bound to
+   ;; create-component-variant, so the palette uses Cmd+/ instead.
+   :command-palette      {:tooltip (ds/meta "/")
+                          :command (ds/c-mod "/")
+                          :subsections [:main-menu]
+                          :fn #(st/emit! (toggle-layout-flag :command-palette))}
 
    :export-shapes        {:tooltip (ds/meta-shift "E")
                           :command (ds/c-mod "shift+e")

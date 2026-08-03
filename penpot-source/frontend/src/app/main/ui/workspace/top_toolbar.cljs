@@ -50,7 +50,13 @@
             :tools {:rect {:icon i/rectangle}
                     :circle {:icon i/ellipse}
                     :line {:icon i/easing-linear}
-                    :arrow {:icon i/stroke-arrow}}}
+                    :arrow {:icon i/stroke-arrow}
+                    ;; Figma-parity polygon + star tools (gap #58). Both
+                    ;; are box-drawn shapes routed through box/handle-drawing
+                    ;; via setup-shape; :polygon / :star are real shape
+                    ;; types (see shape.cljc + shape/polygon.cljc).
+                    :polygon {:icon i/stroke-triangle}
+                    :star {:icon i/stroke-diamond}}}
    :free-draw {:default-tool :path
                :tools {:path {:icon i/path}
                        :curve {:icon i/curve}}}})
@@ -71,6 +77,11 @@
     :scale   (tr "workspace.toolbar.scale"   (sc/get-tooltip :scale))
     :slice   (tr "workspace.toolbar.slice"   (sc/get-tooltip :draw-slice))
     :plugins (tr "workspace.toolbar.plugins" (sc/get-tooltip :plugins))
+    ;; Figma-parity polygon + star + sticky-note + lasso (gaps #44/#51/#58).
+    :polygon (tr "workspace.toolbar.polygon" (sc/get-tooltip :draw-polygon))
+    :star    (tr "workspace.toolbar.star"    (sc/get-tooltip :draw-star))
+    :note    (tr "workspace.toolbar.note"    (sc/get-tooltip :draw-note))
+    :lasso   (tr "workspace.toolbar.lasso"   (sc/get-tooltip :lasso))
     :debug   "Debugging tool"
     (name tool)))
 
@@ -330,6 +341,19 @@
                        (dw/clear-edition-mode)
                        (dw/select-for-drawing tool)))))
 
+        on-toggle-lasso
+        (mf/use-fn
+         (fn []
+           ;; Figma-parity lasso (gap #51). The lasso is a selection mode,
+           ;; not a shape-creating drawing tool, so it toggles the
+           ;; :lasso-mode layout flag (handled by viewport/widgets.cljs)
+           ;; instead of routing through select-for-drawing. Clearing the
+           ;; drawing tool first avoids a box-draw starting under the lasso.
+           (st/emit! :interrupt
+                     (dw/clear-edition-mode)
+                     (dwdc/clear-drawing)
+                     (dw/toggle-layout-flag :lasso-mode))))
+
         on-toggle-toolbar
         (mf/use-fn
          (fn [event]
@@ -390,6 +414,18 @@
                            :on-click on-select-tool
                            :data-tool "text"}]]
 
+        ;; Figma-parity sticky-note tool (gap #44). A box-drawn :note
+        ;; shape (see shapes/note.cljs); routed through select-for-drawing
+        ;; exactly like rect/circle.
+        [:li {:class (stl/css :toolbar-option)}
+         [:> icon-button* {:variant "ghost"
+                           :tooltip-placement "bottom"
+                           :aria-pressed (= selected-drawing-tool :note)
+                           :aria-label (tool-label :note)
+                           :icon i/comments
+                           :on-click on-select-tool
+                           :data-tool "note"}]]
+
         [:li {:class (stl/css :toolbar-option)}
          [:> image-upload-tool*]]
 
@@ -406,6 +442,18 @@
                            :icon i/import-export
                            :on-click on-select-tool
                            :data-tool "slice"}]]
+
+        ;; Figma-parity lasso / freeform selection tool (gap #51). Toggles
+        ;; the :lasso-mode layout flag (captured by viewport/widgets.cljs);
+        ;; not a shape-creating tool, so it has its own on-toggle handler.
+        [:li {:class (stl/css :toolbar-option)}
+         [:> icon-button* {:variant "ghost"
+                           :tooltip-placement "bottom"
+                           :aria-pressed (contains? layout :lasso-mode)
+                           :aria-label (tool-label :lasso)
+                           :icon i/path
+                           :on-click on-toggle-lasso
+                           :data-tool "lasso"}]]
 
         (when separator?
           [:div {:class (stl/css :toolbar-separator)}])

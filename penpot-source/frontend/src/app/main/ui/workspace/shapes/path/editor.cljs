@@ -9,6 +9,7 @@
    [app.common.data :as d]
    [app.common.data.macros :as dm]
    [app.common.geom.point :as gpt]
+   [app.common.math :as mth]
    [app.common.types.path :as path]
    [app.common.types.path.helpers :as path.helpers]
    [app.main.data.workspace.path :as drp]
@@ -66,7 +67,11 @@
         on-pointer-down
         (fn [event]
           (when (dom/left-mouse? event)
-            (dom/stop-propagation event)
+            ;; In vector-lasso mode (#57) let the pointer-down bubble to the
+            ;; root path-editor group so the lasso can start on a node; the
+            ;; node-click branches below are all no-ops in lasso mode.
+            (when-not (= edit-mode :vector-lasso)
+              (dom/stop-propagation event))
             (dom/prevent-default event)
 
             ;; When clicking on a hover point that lies on a segment (has metadata with
@@ -200,6 +205,64 @@
                :style {:fill "none"
                        :stroke-width 0}}]]))
 
+;; Figma-parity variable-width stroke width handle (gap #53). Renders a
+;; draggable handle perpendicular to the incoming segment at a node,
+;; offset by half the node's width. Pure render — guarded on a width
+;; data map being present (see path-editor* below); when no width data
+;; is present nothing renders and the editor is byte-identical. The
+;; renderer conversion to a filled outline path (SVG has no native
+;; variable-width stroke) is DEFERRED.
+(mf/defc path-width-handle*
+  {::mf/private true}
+  [{:keys [node position width zoom]}]
+  (let [nx (dm/get-prop node :x)
+        ny (dm/get-prop node :y)
+        px (dm/get-prop position :x)
+        py (dm/get-prop position :y)]
+    [:g.width-handle {:pointer-events "none"}
+     [:line
+      {:x1 nx :y1 ny :x2 px :y2 py
+       :style {:stroke secondary-color
+               :stroke-width (/ point-radius-stroke-width zoom)}}]
+     [:circle
+      {:cx px :cy py
+       :r (/ handler-side zoom)
+       :style {:stroke-width (/ handler-stroke-width zoom)
+               :stroke black-color
+               :fill secondary-color}}]]))
+
+;; Figma-parity vector lasso (#57). Local point-in-polygon helper (ray
+;; casting) used to select vector nodes inside a freehand lasso polygon.
+;; Conceptually reuses the canvas-level lasso logic but is self-contained
+;; here so snap.cljs (owned by another group) is not touched.
+(defn- point-in-polygon?
+  [point poly]
+  (let [px (dm/get-prop point :x)
+        py (dm/get-prop point :y)
+        n (count poly)]
+    (if (< n 3)
+      false
+      (loop [i 0 j (dec n) inside false]
+        (if (< i n)
+          (let [pi (nth poly i)
+                pj (nth poly j)
+                iy (dm/get-prop pi :y)
+                ix (dm/get-prop pi :x)
+                jy (dm/get-prop pj :y)
+                jx (dm/get-prop pj :x)
+                ;; edge spans the horizontal ray at y=py (one endpoint
+                ;; strictly above, the other not)
+                spans? (not= (> iy py) (> jy py))
+                ;; x-intersection of the edge with that ray
+                x-int (if (mth/almost-zero? (- jy iy))
+                        ix
+                        (/ (+ (* ix (- jy py)) (* jx (- py iy))) (- jy iy)))
+                inside (if (and spans? (< px x-int))
+                         (not inside)
+                         inside)]
+            (recur (inc i) i inside))
+          inside)))))
+
 (mf/defc path-preview*
   {::mf/private true}
   [{:keys [zoom segment from]}]
@@ -279,7 +342,10 @@
                 moving-handler
                 hover-handlers
                 hover-points
-                snap-toggled]}
+                snap-toggled
+                ;; Figma-parity variable-width (#53): optional per-node
+                ;; width map {segment-index width}. Absent = uniform stroke.
+                segment-widths]}
         state
 
         selected-points
@@ -322,7 +388,50 @@
              (or (some? drag-handler)
                  (some? preview)
                  (some? moving-handler)
-                 moving-nodes))]
+                 moving-nodes))
+
+        ;; Figma-parity vector lasso (#57). Local capture state: nil when
+        ;; inactive, a vector of gpt points while a lasso is being drawn.
+        ;; Active only in the :vector-lasso edit-mode (Q shortcut).
+        lasso-points (mf/use-state nil)
+        lasso-mode? (= edit-mode :vector-lasso)
+
+        ;; Figma-parity variable-width width handles (#53). Computed only
+        ;; when a non-empty segment-widths map is present; nil otherwise
+        ;; (the render guard below skips the whole group).
+        width-handles
+        (mf/with-memo [content segment-widths]
+          (path/width-handles content segment-widths))
+
+        on-lasso-pointer-down
+        (mf/use-fn
+         (mf/deps lasso-mode?)
+         (fn [event]
+           (when lasso-mode?
+             (dom/stop-propagation event)
+             (dom/prevent-default event)
+             ;; start a fresh lasso capture
+             (reset! lasso-points []))))
+
+        on-lasso-finish
+        (mf/use-fn
+         (mf/deps lasso-mode? content zoom)
+         (fn []
+           (when (and lasso-mode? (some? @lasso-points))
+             (let [poly @lasso-points]
+               ;; keep nodes whose anchor lies inside the lasso polygon
+               (when (>= (count poly) 3)
+                 (let [inside (seq (filter #(point-in-polygon? % poly) points))]
+                   (when (some? inside)
+                     (let [base-pts (map #(get point->base % %) inside)
+                           ;; first replaces the selection, the rest are
+                           ;; added (shift) — reuses the existing select-node
+                           ;; event (selection.cljs, not owned by this group)
+                           events (cons (drp/select-node (first base-pts) false)
+                                        (map #(drp/select-node % true)
+                                             (rest base-pts)))]
+                       (apply st/emit! events)))))
+               (reset! lasso-points nil)))))]
 
     (mf/with-layout-effect [edit-mode]
       (let [key (events/listen (dom/get-root) "dblclick"
@@ -337,11 +446,69 @@
        (when-let [point (path/closest-point base-content position (/ 0.01 zoom))]
          (reset! hover-point (when (< (gpt/distance position point) (/ 10 zoom)) point)))))
 
-    [:g.path-editor {:ref editor-ref}
+    ;; Figma-parity vector lasso (#57). While a lasso is active, append each
+    ;; mouse position (throttled by distance) to the capture polygon.
+    (hooks/use-stream
+     ms/mouse-position
+     (mf/deps lasso-mode? zoom)
+     (fn [position]
+       (when (and lasso-mode? (some? @lasso-points))
+         (let [pts @lasso-points
+               last-p (peek pts)]
+           (when (or (nil? last-p)
+                     (> (gpt/distance last-p position) (/ 2 zoom)))
+             (reset! lasso-points (conj pts position)))))))
+
+    ;; Figma-parity vector lasso (#57). Finish the lasso on pointer-up
+    ;; anywhere (so dragging outside the editor still completes). Only
+    ;; armed in lasso mode; cleaned up on mode change.
+    (mf/with-layout-effect [lasso-mode? on-lasso-finish]
+      (if lasso-mode?
+        (let [key (events/listen (dom/get-root) "pointerup" on-lasso-finish)]
+          #(events/unlistenByKey key))
+        (constantly nil)))
+
+    [:g.path-editor {:ref editor-ref
+                     ;; Figma-parity vector lasso (#57): start the lasso
+                     ;; capture on pointer-down only in lasso mode.
+                     :on-pointer-down (when lasso-mode? on-lasso-pointer-down)}
      [:path {:d (.toString content)
              :style {:fill "none"
                      :stroke accent-color
                      :strokeWidth (/ 1 zoom)}}]
+
+     ;; Figma-parity variable-width stroke width handles (#53). Rendered
+     ;; only when a non-empty per-node segment-widths map is present in the
+     ;; edit-path state; absent map = nothing renders (byte-identical). The
+     ;; renderer conversion to a filled outline path is DEFERRED.
+     (when (some? width-handles)
+       [:g.path-width-handles {:pointer-events "none"}
+        (for [{:keys [point position width]} width-handles]
+          [:> path-width-handle* {:key (dm/str "w-" (:x point) "-" (:y point))
+                                  :node point
+                                  :position position
+                                  :width width
+                                  :zoom zoom}])])
+
+     ;; Figma-parity vector lasso (#57). Renders the freehand capture
+     ;; polygon while a lasso is being drawn (active only in lasso mode).
+     (when (and lasso-mode? (some? @lasso-points) (>= (count @lasso-points) 2))
+       (let [lasso-path
+             (path/content
+              (into [{:command :move-to
+                      :params {:x (dm/get-prop (first @lasso-points) :x)
+                               :y (dm/get-prop (first @lasso-points) :y)}}]
+                    (map #(hash-map :command :line-to
+                                    :params {:x (dm/get-prop % :x)
+                                             :y (dm/get-prop % :y)}))
+                    (rest @lasso-points)))]
+         [:g.path-lasso {:pointer-events "none"}
+          [:path {:d (.toString lasso-path)
+                  :style {:fill secondary-color
+                          :fill-opacity 0.08
+                          :stroke secondary-color
+                          :strokeWidth (/ 1 zoom)
+                          :stroke-dasharray (/ 4 zoom)}}]]))
 
      ;; Figma-parity vector-network tools (gaps #28/#29). The
      ;; :shape-builder and :paint-bucket edit-modes are REGISTERED here

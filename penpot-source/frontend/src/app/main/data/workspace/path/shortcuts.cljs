@@ -55,6 +55,15 @@
                      :subsections [:path-editor]
                      :fn #(st/emit! (drp/change-edit-mode :paint-bucket))}
 
+   ;; Figma-parity vector lasso (gap #57). Q toggles a freehand-lasso
+   ;; edit-mode in the path editor; the lasso capture + node selection
+   ;; lives in shapes/path/editor.cljs (guarded on edit-mode). No global
+   ;; shortcut clash — bound to the :path-editor subsection only.
+   :vector-lasso    {:tooltip "Q"
+                     :command "q"
+                     :subsections [:path-editor]
+                     :fn #(st/emit! (drp/change-edit-mode :vector-lasso))}
+
    :add-node        {:tooltip (ds/shift "+")
                      :command "shift++"
                      :subsections [:path-editor]

@@ -94,7 +94,29 @@
    [:stroke-styles {:optional true} ctsty/schema:stroke-styles]
    [:grid-styles {:optional true} ctsty/schema:grid-styles]
    [:plugin-data {:optional true} schema:plugin-data]
-   [:tokens-lib {:optional true} schema:tokens-lib]])
+   [:tokens-lib {:optional true} schema:tokens-lib]
+   ;; Figma-parity reusable export presets (gap #76). Optional list of
+   ;; saved export settings (format, scale, suffix) that can be applied to
+   ;; multiple objects. Absent = no presets = today's behavior. The presets
+   ;; are authored / applied from the inspect exports panel; persistence to
+   ;; the backend rides the existing file-data rpc path like :colors.
+   [:export-presets {:optional true} schema:export-presets]])
+
+;; Figma-parity reusable export presets (gap #76). One preset captures a
+;; reusable export setting (a format / scale / suffix triple plus a name).
+;; The :type mirrors the per-object export :type enum (:png :jpeg :webp
+;; :svg :pdf and the code-export framework ids). Optional fields absent =
+;; the inspect export row defaults.
+(def schema:export-preset
+  [:map {:title "ExportPreset" :closed true}
+   [:id ::sm/uuid]
+   [:name :string]
+   [:type {:optional true} :keyword]
+   [:scale {:optional true} ::sm/safe-number]
+   [:suffix {:optional true} :string]])
+
+(def schema:export-presets
+  [:vector {:gen/max 5} schema:export-preset])
 
 (def schema:file
   "A schema for validate a file data structure; data is optional

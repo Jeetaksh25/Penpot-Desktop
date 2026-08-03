@@ -38,3 +38,14 @@
 .align-bottom[data-itype="root"] {
   justify-content: flex-end;
 }
+
+/* Feature 48 — spell-check squiggly underline. Applied to <span> wrappers
+   around misspelled words inserted by the editor when a dictionary is
+   active. Additive: only ever present when spell-check is enabled AND a
+   non-null dictionary is set (default NullDictionary marks nothing), so
+   the existing contenteditable rendering is byte-identical otherwise. */
+.text-editor-content .spellcheck-misspelled {
+  text-decoration: underline wavy #d92d20;
+  text-underline-offset: 2px;
+  text-decoration-skip-ink: none;
+}

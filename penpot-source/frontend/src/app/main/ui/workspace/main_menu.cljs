@@ -474,6 +474,50 @@
          (tr "workspace.header.menu.show-pixel-grid"))]
       [:> shortcuts* {:id :show-pixel-grid}]]
 
+     ;; Figma-parity outline / wireframe mode (gap #45). Renders shapes as
+     ;; stroked outlines only (guarded in viewport.cljs; default off).
+     [:> dropdown-menu-item* {:class (stl/css :base-menu-item :submenu-item)
+                              :on-click    toggle-flag
+                              :on-key-down (fn [event]
+                                             (when (kbd/enter? event)
+                                               (toggle-flag event)))
+                              :data-testid "outline-mode"
+                              :id          "file-menu-outline-mode"}
+      [:span {:class (stl/css :item-name)}
+       (if (contains? layout :outline-mode)
+         (tr "workspace.header.menu.disable-outline-mode")
+         (tr "workspace.header.menu.enable-outline-mode"))]
+      [:> shortcuts* {:id :toggle-outline-mode}]]
+
+     ;; Figma-parity pixel-preview render mode (gap #46). Rasterizes the
+     ;; canvas at device pixels (guarded in viewport.cljs; default off).
+     [:> dropdown-menu-item* {:class (stl/css :base-menu-item :submenu-item)
+                              :on-click    toggle-flag
+                              :on-key-down (fn [event]
+                                             (when (kbd/enter? event)
+                                               (toggle-flag event)))
+                              :data-testid "pixel-preview"
+                              :id          "file-menu-pixel-preview"}
+      [:span {:class (stl/css :item-name)}
+       (if (contains? layout :pixel-preview)
+         (tr "workspace.header.menu.disable-pixel-preview")
+         (tr "workspace.header.menu.enable-pixel-preview"))]
+      [:> shortcuts* {:id :toggle-pixel-preview}]]
+
+     ;; Figma-parity command palette (gap #47). Mounts the unified quick-
+     ;; action overlay (command_palette.cljs). Cmd+K is already bound to
+     ;; create-component-variant, so the palette uses Cmd+/ here too.
+     [:> dropdown-menu-item* {:class (stl/css :base-menu-item :submenu-item)
+                              :on-click    toggle-flag
+                              :on-key-down (fn [event]
+                                             (when (kbd/enter? event)
+                                               (toggle-flag event)))
+                              :data-testid "command-palette"
+                              :id          "file-menu-command-palette"}
+      [:span {:class (stl/css :item-name)}
+       (tr "workspace.header.menu.command-palette")]
+      [:> shortcuts* {:id :command-palette}]]
+
      [:> dropdown-menu-item* {:class (stl/css :base-menu-item :submenu-item)
                               :on-click    toggle-flag
                               :on-key-down (fn [event]

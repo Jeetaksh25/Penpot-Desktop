@@ -21,6 +21,8 @@
    [app.main.ui.context :as ctx]
    [app.main.ui.shapes.circle :as circle]
    [app.main.ui.shapes.image :as image]
+   [app.main.ui.shapes.note :as note]
+   [app.main.ui.shapes.polygon :as polygon]
    [app.main.ui.shapes.rect :as rect]
    [app.main.ui.shapes.slice :as slice]
    [app.main.ui.shapes.text.fontfaces :as ff]
@@ -45,6 +47,12 @@
 (def image-wrapper (common/generic-wrapper-factory image/image-shape))
 (def rect-wrapper (common/generic-wrapper-factory rect/rect-shape))
 (def slice-wrapper (common/generic-wrapper-factory slice/slice-shape))
+;; Figma-parity polygon + star + sticky-note wrappers (gaps #44/#58).
+;; They reuse the generic wrapper factory exactly like rect/circle, so
+;; selection, hover, and all generic shape behaviors apply unchanged.
+(def polygon-wrapper (common/generic-wrapper-factory polygon/polygon-shape))
+(def star-wrapper (common/generic-wrapper-factory polygon/star-shape))
+(def note-wrapper (common/generic-wrapper-factory note/note-shape))
 
 (defn- make-is-frame-overlap
   [vbox objects]
@@ -122,6 +130,10 @@
           :bool    [:> bool-wrapper props]
           :frame   [:> nested-frame-wrapper props]
           :slice   [:> slice-wrapper props]
+          ;; Figma-parity polygon + star + sticky-note (gaps #44/#58).
+          :polygon [:> polygon-wrapper props]
+          :star    [:> star-wrapper props]
+          :note    [:> note-wrapper props]
           nil)]))))
 
 (mf/defc root-frame-shape-wrapper

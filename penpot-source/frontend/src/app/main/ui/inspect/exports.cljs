@@ -21,6 +21,18 @@
    [okulary.core :as l]
    [rumext.v2 :as mf]))
 
+;; Figma-parity reusable export presets (gap #76). Saved presets live in
+;; the file data model (:export-presets, see file.cljc schema:data). This
+;; panel reads them from the current file data and offers an "Apply preset"
+;; dropdown that replaces the local export rows with the preset's
+;; format / scale / suffix. The dropdown renders only when at least one
+;; preset exists, so files without presets are byte-identical. Saving /
+;; deleting presets requires a workspace file-data mutation event (rpc)
+;; owned by the workspace data layer, so the save / delete affordances are
+;; deferred here (the schema round-trips and the apply UI is wired).
+(def ^:private export-presets-ref
+  (l/derived #(some-> % :export-presets) refs/workspace-data))
+
 (def ^:private exports-cache-ref
   (l/derived :inspect-exports-cache st/state))
 
@@ -130,6 +142,28 @@
              (when esc?
                (dom/blur! (dom/get-target event))))))
 
+        ;; Figma-parity reusable export presets (gap #76). Reads the saved
+        ;; presets from the current file data and, on selection, replaces the
+        ;; local export rows with the preset's format / scale / suffix.
+        presets (mf/deref export-presets-ref)
+        preset-options (mf/with-memo [presets]
+                         (mapv (fn [p]
+                                 {:value (str (:id p))
+                                  :label (:name p)})
+                               (or presets [])))
+        on-apply-preset
+        (mf/use-callback
+         (mf/deps shapes-key presets)
+         (fn [preset-id-str]
+           (when (seq presets)
+             (let [preset (first (filter #(= (str (:id %)) preset-id-str) presets))]
+               (when preset
+                 (let [row {:type (or (:type preset) :png)
+                            :suffix (or (:suffix preset) "")
+                            :scale (or (:scale preset) 1)}]
+                   (reset! exports [row])
+                   (st/emit! (dv/update-exports-cache shapes-key [row]))))))))
+
         size-options [{:value "0.5" :label "0.5x"}
                       {:value "0.75" :label "0.75x"}
                       {:value "1" :label "1x"}
@@ -169,6 +203,19 @@
                       :class       (stl/css :title-spacing-export-viewer)}
        [:button {:class (stl/css :add-export)
                  :on-click add-export} deprecated-icon/add]]]
+
+     ;; Figma-parity reusable export presets (gap #76). Apply-preset dropdown;
+     ;; renders only when the file has at least one saved preset, so files
+     ;; without presets are byte-identical.
+     (when (seq presets)
+       [:div {:class (stl/css :export-presets)
+              :data-testid "export.presets"}
+        [:span {:class (stl/css :presets-label)}
+         (tr "workspace.options.export.presets")]
+        [:& select {:options preset-options
+                    :default-value ""
+                    :dropdown-class (stl/css :dropdown-upwards)
+                    :on-change on-apply-preset}]])
 
      (cond
        (= :multiple exports)

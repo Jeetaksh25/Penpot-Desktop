@@ -78,6 +78,15 @@
         paragraph-spacing (:paragraph-spacing data)
         paragraph-indent  (:paragraph-indent data)
 
+        ;; Feature 50 — hanging punctuation. Paragraph-level boolean. When
+        ;; true emit the real CSS `hanging-punctuation` property so opening
+        ;; quotes / bullet markers hang outside the text-box bounds for
+        ;; cleaner edges (Figma Type Settings > Indentation). Additive:
+        ;; absent / false = no CSS emitted, existing rendering unchanged.
+        ;; Renderer positioning of leading punctuation outside the bounds
+        ;; is deferred — the CSS property alone is the export here.
+        hanging-punctuation (true? (:hanging-punctuation data))
+
         ;; Feature 17 — max-lines + truncation. Per-paragraph -webkit-line-clamp
         ;; approximates Figma whole-box clamping (exact whole-box behavior is a
         ;; v1 limitation; single-paragraph text boxes — the common case — are
@@ -102,6 +111,12 @@
 
       (and (some? paragraph-indent) (not= "" paragraph-indent))
       (obj/set! "textIndent" (str paragraph-indent "px"))
+
+      ;; Feature 50 — hanging punctuation. `first last` pulls opening and
+      ;; closing punctuation outside the box edges; the leading-punctuation
+      ;; repositioning in the renderer is deferred (CSS property only).
+      hanging-punctuation
+      (obj/set! "hangingPunctuation" "first last")
 
       ;; Feature 17
       (and truncate? (some? max-lines) (not= "" max-lines) (pos? max-lines-num))

@@ -21,6 +21,11 @@ import { createParagraph } from "./content/dom/Paragraph.js";
 import { createEmptyTextSpan, createTextSpan } from "./content/dom/TextSpan.js";
 import { isLineBreak } from "./content/dom/LineBreak.js";
 import LayoutType from "./layout/LayoutType.js";
+import {
+  findMisspelledRanges,
+  collectText,
+  NullDictionary,
+} from "./content/SpellCheck.js";
 
 /**
  * @typedef {Object} TextEditorOptions
@@ -109,6 +114,33 @@ export class TextEditor extends EventTarget {
   #isDisposed = false;
 
   /**
+   * Feature 48 — spell check. When true the editor recomputes misspelled
+   * word ranges after each input; with the default NullDictionary no
+   * ranges are produced, so enabling this is a visual no-op until a real
+   * dictionary is set via `setSpellCheckDictionary`. Additive: default
+   * `false` keeps the existing contenteditable byte-identical.
+   *
+   * @type {boolean}
+   */
+  #spellCheckEnabled = false;
+
+  /**
+   * Pluggable dictionary `{ isMisspelled(word) -> boolean }`. Defaults to
+   * the NullDictionary (marks nothing). A real dictionary (hunspell /
+   * nspell) is DEFERRED under the no-build constraint.
+   *
+   * @type {{isMisspelled(word: string): boolean}}
+   */
+  #spellCheckDictionary = NullDictionary;
+
+  /**
+   * Most recent misspelled word ranges (empty with NullDictionary).
+   *
+   * @type {Array<{start: number, end: number, word: string}>}
+   */
+  #lastMisspelledRanges = [];
+
+  /**
    * Constructor.
    *
    * @param {HTMLElement} element
@@ -192,6 +224,78 @@ export class TextEditor extends EventTarget {
     addEventListeners(this.#element, this.#events, {
       capture: true,
     });
+  }
+
+  /**
+   * Feature 48 — spell-check pass.
+   *
+   * Collects the visible text of the root, computes misspelled word
+   * ranges with the current dictionary, and stores them on
+   * `#lastMisspelledRanges`. With the default NullDictionary the range
+   * list is empty and the DOM is left untouched.
+   *
+   * The live squiggly-underline rendering (wrapping each range in a
+   * `<span class="spellcheck-misspelled">` and restoring the caret
+   * selection afterward) is DEFERRED under the no-build constraint: it
+   * needs the content-model decoration support + a real bundled
+   * dictionary, neither of which is available yet. This hook is the
+   * integration point a future dictionary + decorator will call into.
+   */
+  #runSpellCheck() {
+    if (!this.#spellCheckEnabled || this.#isDisposed) {
+      this.#lastMisspelledRanges = [];
+      return;
+    }
+    const { text } = collectText(this.#root);
+    this.#lastMisspelledRanges = findMisspelledRanges(
+      text,
+      this.#spellCheckDictionary,
+    );
+    // DEFERRED: when a non-null dictionary returns ranges, wrap each
+    // range's text node in <span class="spellcheck-misspelled"> here and
+    // restore the selection. With NullDictionary ranges is always empty.
+  }
+
+  /**
+   * Enables or disables spell check. Additive: default `false`; enabling
+   * with the NullDictionary is a visual no-op.
+   *
+   * @param {boolean} enabled
+   * @returns {TextEditor}
+   */
+  setSpellCheck(enabled) {
+    this.#spellCheckEnabled = Boolean(enabled);
+    if (this.#spellCheckEnabled) {
+      this.#runSpellCheck();
+    } else {
+      this.#lastMisspelledRanges = [];
+    }
+    return this;
+  }
+
+  /**
+   * Returns whether spell check is enabled.
+   *
+   * @type {boolean}
+   */
+  get spellCheck() {
+    return this.#spellCheckEnabled;
+  }
+
+  /**
+   * Sets the dictionary used for spell check. Pass an object with
+   * `isMisspelled(word) -> boolean`. Until this is called with a real
+   * dictionary, the NullDictionary marks nothing.
+   *
+   * @param {{isMisspelled(word: string): boolean}} dictionary
+   * @returns {TextEditor}
+   */
+  setSpellCheckDictionary(dictionary) {
+    this.#spellCheckDictionary = dictionary || NullDictionary;
+    if (this.#spellCheckEnabled) {
+      this.#runSpellCheck();
+    }
+    return this;
   }
 
   /**
@@ -435,6 +539,14 @@ export class TextEditor extends EventTarget {
 
     if (e.inputType === "insertCompositionText" && e.data) {
       this.#notifyLayout(LayoutType.FULL, null);
+    }
+
+    // Feature 48 — recompute misspelled ranges after input when spell
+    // check is enabled. With the default NullDictionary this is a no-op
+    // (no ranges, no DOM change); the live squiggly-underline rendering
+    // is deferred pending a bundled dictionary (see `#runSpellCheck`).
+    if (this.#spellCheckEnabled) {
+      this.#runSpellCheck();
     }
   };
 

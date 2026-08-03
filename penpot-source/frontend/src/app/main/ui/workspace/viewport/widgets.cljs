@@ -10,10 +10,13 @@
    [app.common.data :as d]
    [app.common.data.macros :as dm]
    [app.common.geom.point :as gpt]
+   [app.common.geom.rect :as grc]
+   [app.common.geom.shapes :as gsh]
    [app.common.types.component :as ctk]
    [app.common.types.container :as ctn]
    [app.common.types.shape-tree :as ctt]
    [app.common.types.shape.layout :as ctl]
+   [app.common.types.shape.polygon :as ctsp]
    [app.common.uuid :as uuid]
    [app.main.data.common :as dcm]
    [app.main.data.workspace :as dw]
@@ -389,3 +392,91 @@
             :width icon-sz
             :height icon-sz
             :href "#icon-add"}]]))
+
+;; Figma-parity lasso / freeform selection tool (gap #51). Captures a
+;; freehand path while the pointer is down over the canvas and, on
+;; release, selects every shape whose bounds corners fall inside the
+;; captured polygon (app.common.types.shape.polygon/point-in-polygon?).
+;; Mounted ONLY under the :lasso-mode layout flag (see viewport.cljs),
+;; so it is byte-identical-off by default. Coordinate conversion mirrors
+;; cursor-tooltip* (mouse-position / zoom = page coords matching the
+;; viewport-controls viewBox).
+(mf/defc lasso-selection*
+  [{:keys [vbox zoom objects page-id]}]
+  (let [pos          (hooks/use-rxsub ms/mouse-position)
+        drawing*     (mf/use-state false)
+        drawing?     (deref drawing*)
+        points*      (mf/use-state [])
+        points       (deref points*)
+        pos-ref      (mf/use-ref nil)
+
+        page-coords  (some-> pos (gpt/divide (gpt/point zoom zoom)))
+
+        _            (when (some? page-coords)
+                      (mf/set-ref-val! pos-ref page-coords))
+
+        on-pointer-down
+        (mf/use-fn
+         (fn [_event]
+           (let [p (mf/ref-val pos-ref)]
+             (when (some? p)
+               (reset! drawing* true)
+               (reset! points* [p])))))
+
+        on-pointer-move
+        (mf/use-fn
+         (fn [_event]
+           (when ^boolean (deref drawing*)
+             (let [p (mf/ref-val pos-ref)]
+               (when (some? p)
+                 (swap! points* conj p))))))
+
+        on-pointer-up
+        (mf/use-fn
+         (mf/deps objects)
+         (fn [_event]
+           (when ^boolean (deref drawing*)
+             (let [poly (deref points*)
+                   n    (count poly)]
+               (if (< n 3)
+                 ;; A click / tiny drag selects nothing (avoid clearing
+                 ;; the current selection on an accidental click).
+                 nil
+                 (let [poly-idx (mapv #(array-map :x (:x %) :y (:y %)) poly)
+                       ;; Select any shape whose bounds has at least one
+                       ;; corner inside the lasso polygon.
+                       ids (into (d/ordered-set)
+                                 (for [shape  (vals objects)
+                                       :let [rect (:selrect shape)
+                                             pts  (grc/rect->points rect)]
+                                       :when (some #(ctsp/point-in-polygon? % poly-idx)
+                                                   pts)]
+                                   (:id shape)))]
+                   ;; Lasso stays the active tool after a selection so the
+                   ;; user can make another lasso without re-toggling.
+                   (st/emit! (dw/select-shapes ids))))
+               (reset! drawing* false)
+               (reset! points* [])))))]
+
+    (let [vx (:x vbox 0)
+          vy (:y vbox 0)
+          vw (:width vbox 0)
+          vh (:height vbox 0)
+          ;; A transparent rect covering the viewBox captures pointer
+          ;; events for the whole canvas while lasso mode is active.
+          points-str (str/join " " (map #(str (:x %) "," (:y %)) points))]
+      [:g.lasso-selection
+       [:rect {:x vx :y vy :width vw :height vh
+               :fill "transparent"
+               :style {:pointer-events "all"
+                       :cursor "crosshair"}
+               :on-pointer-down on-pointer-down
+               :on-pointer-move on-pointer-move
+               :on-pointer-up   on-pointer-up}]
+       (when (and ^boolean drawing? (>= (count points) 2))
+         [:polyline {:points points-str
+                     :fill "none"
+                     :stroke "var(--color-accent-tertiary)"
+                     :stroke-width (/ 1 zoom)
+                     :stroke-dasharray (str (/ 4 zoom) " " (/ 3 zoom))
+                     :pointer-events "none"}])])))

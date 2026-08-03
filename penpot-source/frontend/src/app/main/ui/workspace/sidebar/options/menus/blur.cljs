@@ -90,6 +90,38 @@
          (fn [value]
            (change-fn #(assoc-in % [blur-key :blend-mode] (keyword value)))))
 
+        ;; Figma-parity progressive blur (gap #60). When :progressive? is
+        ;; true the blur falloff varies across the shape (gradient-like
+        ;; blur). The :start-radius / :start-offset / :end-offset params
+        ;; describe the falloff region. All optional; absent = :value is a
+        ;; uniform blur = today's behavior. The renderer gradient-blur
+        ;; kernel is deferred (significant GPU work, no build to verify);
+        ;; the fields round-trip on the blur map via change!.
+        progressive? (boolean (:progressive? value))
+        handle-toggle-progressive
+        (mf/use-fn
+         (mf/deps change-fn blur-key)
+         (fn []
+           (change-fn #(update-in % [blur-key :progressive?] (fn [v] (not (boolean v)))))))
+
+        handle-change-start-radius
+        (mf/use-fn
+         (mf/deps change-fn blur-key)
+         (fn [v]
+           (change-fn #(assoc-in % [blur-key :start-radius] v))))
+
+        handle-change-start-offset
+        (mf/use-fn
+         (mf/deps change-fn blur-key)
+         (fn [v]
+           (change-fn #(assoc-in % [blur-key :start-offset] v))))
+
+        handle-change-end-offset
+        (mf/use-fn
+         (mf/deps change-fn blur-key)
+         (fn [v]
+           (change-fn #(assoc-in % [blur-key :end-offset] v))))
+
         handle-type-change
         (mf/use-fn
          (mf/deps change-fn value blur-key)
@@ -217,7 +249,45 @@
           :default-selected (d/name blur-blend-mode)
           :options blend-mode-options
           :disabled is-hidden
-          :on-change handle-blend-mode-change}]])]))
+          :on-change handle-blend-mode-change}]
+
+        ;; Figma-parity progressive blur (gap #60). Toggle + falloff params.
+        ;; Rendered only when the more-options panel is open; default off =
+        ;; today's uniform blur. Renderer falloff deferred.
+        [:div {:class (stl/css :blur-progressive-row)
+               :data-testid "blur.progressive-options"}
+         [:label {:class (stl/css :blur-progressive-toggle)}
+          [:input {:type "checkbox"
+                   :checked progressive?
+                   :on-change handle-toggle-progressive}]
+          [:span {:class (stl/css :blur-progressive-label)}
+           (tr "workspace.options.blur-options.progressive")]]
+         (when progressive?
+           [:div {:class (stl/css :blur-progressive-params)}
+            [:> numeric-input*
+             {:class (stl/css :numeric-input)
+              :placeholder "--"
+              :min 0
+              :text-icon "value"
+              :on-change handle-change-start-radius
+              :name "blur-start-radius"
+              :value (:start-radius value)}]
+            [:> numeric-input*
+             {:class (stl/css :numeric-input)
+              :placeholder "--"
+              :min 0
+              :text-icon "value"
+              :on-change handle-change-start-offset
+              :name "blur-start-offset"
+              :value (:start-offset value)}]
+            [:> numeric-input*
+             {:class (stl/css :numeric-input)
+              :placeholder "--"
+              :min 0
+              :text-icon "value"
+              :on-change handle-change-end-offset
+              :name "blur-end-offset"
+              :value (:end-offset value)}]])]])]))
 
 (defn get-blurs [values]
   (cond-> []

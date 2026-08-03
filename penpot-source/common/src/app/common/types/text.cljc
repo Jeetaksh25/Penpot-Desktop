@@ -131,10 +131,21 @@
 (def root-attrs
   text-valign-attrs)
 
+;; Feature 50 — hanging punctuation. Paragraph-level boolean. When true the
+;; renderer/export pulls opening quotes / bullet markers outside the text-box
+;; bounds for cleaner edges (Figma Type Settings > Indentation). Additive
+;; optional: absent key = existing behavior. Round-trips as the real CSS
+;; `hanging-punctuation` property (see `app.main.ui.shapes.text.styles`); the
+;; renderer positioning of leading punctuation outside the text-box bounds is
+;; deferred (additive optional field + UI + export shipped).
+(def text-hanging-punctuation-attrs
+  [:hanging-punctuation])
+
 (def paragraph-attrs
   (d/concat-vec
    text-align-attrs
-   text-direction-attrs))
+   text-direction-attrs
+   text-hanging-punctuation-attrs))
 
 (def text-node-attrs
   (d/concat-vec

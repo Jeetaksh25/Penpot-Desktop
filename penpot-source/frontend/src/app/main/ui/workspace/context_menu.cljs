@@ -480,6 +480,12 @@
         ;; frontend-SVG renderer it is a guarded no-op (see
         ;; shapes_to_path.cljs outline-stroke note).
         do-outline-stroke    #(st/emit! (dwps/outline-stroke))
+        ;; Figma-parity Offset vector (#55) / Simplify vector (#56).
+        ;; Apply to each selected path shape via the shapes_to_path ops
+        ;; (dwsh/update-shapes, undo-able). See shapes_to_path.cljs for
+        ;; the offset/simplify math and DEFERRED notes.
+        do-offset-vector     #(st/emit! (dwps/offset-vector))
+        do-simplify-vector   #(st/emit! (dwps/simplify-vector))
 
         make-do-bool
         (fn [bool-type]
@@ -517,6 +523,17 @@
                 (contains? cf/flags :stroke-path))
        [:> menu-entry* {:title (tr "workspace.shape.menu.outline-stroke")
                         :on-click do-outline-stroke}])
+
+     ;; Figma-parity Offset vector (#55) / Simplify vector (#56). Apply
+     ;; to selected path shapes only; both are additive ops that replace
+     ;; each path's content via dwsh/update-shapes (undo-able).
+     (when has-path?
+       [:*
+        [:> menu-separator* {}]
+        [:> menu-entry* {:title (tr "workspace.shape.menu.offset-vector")
+                         :on-click do-offset-vector}]
+        [:> menu-entry* {:title (tr "workspace.shape.menu.simplify-vector")
+                         :on-click do-simplify-vector}]])
 
      (when (and (not has-frame?)
                 (not disable-booleans)

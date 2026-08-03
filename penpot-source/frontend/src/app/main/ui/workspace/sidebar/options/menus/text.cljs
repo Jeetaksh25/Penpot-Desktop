@@ -561,6 +561,10 @@
                      (get n-values :paragraph-spacing))
          (identical? (get o-values :paragraph-indent)
                      (get n-values :paragraph-indent))
+         ;; Feature 50 — hanging punctuation (paragraph-level boolean). Added
+         ;; here so the memoized text-menu* re-renders when it toggles.
+         (identical? (get o-values :hanging-punctuation)
+                     (get n-values :hanging-punctuation))
          (identical? (get o-values :text-decoration-style)
                      (get n-values :text-decoration-style))
          (identical? (get o-values :text-decoration-thickness)
@@ -606,6 +610,44 @@
         menu-state           (deref menu-state*)
         main-menu-open?      (:main-menu menu-state)
         more-options-open?   (:more-options menu-state)
+
+        ;; Feature 48 — spell-check toggle (in the text editor toolbar
+        ;; surrogate: the text-shape "more options" panel; main_menu is
+        ;; owned by group V). Local UI state only; the actual in-canvas
+        ;; squiggly underline is DEFERRED pending a bundled dictionary
+        ;; (see `@penpot/text-editor` content/SpellCheck.js NullDictionary). With
+        ;; the default dictionary enabling this is a visual no-op, so it
+        ;; is safe and additive. Only shown for the v2 contenteditable
+        ;; editor (`text-editor/v2`), never the WASM editor.
+        spell-check*         (mf/use-state false)
+        spell-check?         (deref spell-check*)
+        text-editor-v2?      (features/active-feature? @st/state "text-editor/v2")
+
+        ;; Feature 49 — multi-edit text. When several text shapes are
+        ;; selected (`(> (count ids) 1)`, which only happens via the
+        ;; multi-selection sidebar) the text menu shows a "multi-edit
+        ;; mode" indicator. The data dispatch (`dwt/update-text-content-multi`)
+        ;; is wired; the LIVE editor that drives every selected text shape
+        ;; in lock-step is the high-blast runtime piece and is DEFERRED
+        ;; (additive: indicator is informational only, no behavior change).
+        multi-edit?          (and text-editor-v2? (> (count ids) 1))
+        multi-edit-count     (count ids)
+
+        on-toggle-spell-check
+        (mf/use-fn
+         (mf/deps text-editor-v2? spell-check?)
+         (fn [_]
+           (let [next? (not spell-check?)]
+             (reset! spell-check* next?)
+             ;; Wire the preference to the live editor instance when the
+             ;; v2 editor is mounted. Guarded: a missing instance (no
+             ;; active edit) is a no-op; the toggle state is still kept so
+             ;; the next edit-session can pick it up.
+             (when text-editor-v2?
+               (when-let [instance (mf/deref refs/workspace-editor)]
+                 (when (and (some? instance)
+                            (fn? (.-setSpellCheck instance)))
+                   (.setSpellCheck instance next?)))))))
 
         token-dropdown-open* (mf/use-state false)
         token-dropdown-open? (deref token-dropdown-open*)
@@ -833,6 +875,15 @@
 
      (when main-menu-open?
        [:div {:class (stl/css :element-content)}
+        ;; Feature 49 — multi-edit-mode indicator. Informational badge shown
+        ;; only when 2+ text shapes are selected (via the multi-selection
+        ;; sidebar). The live lock-step editor is deferred; this surfaces
+        ;; that the data dispatch `dwt/update-text-content-multi` is active.
+        (when multi-edit?
+          [:div {:class (stl/css :multiple-typography)
+                 :title (tr "workspace.options.text-options.multi-edit-tooltip")}
+           [:span {:class (stl/css :multiple-text)}
+            (str (tr "workspace.options.text-options.multi-edit") " (" multi-edit-count ")")]])
         (cond
           (and token-typography-row-enabled? (= :multiple current-token-name) (= typography-id :multiple))
           [:div {:class (stl/css :multiple-typography)}
@@ -900,4 +951,25 @@
            ;; Feature 16 — list style controls (paragraph-level). Only
            ;; rendered when the "more options" panel is open. Sets optional
            ;; attrs via the existing `on-change` -> `emit-update!` path.
-           [:> list-options* common-props]])])]))
+           [:> list-options* common-props]
+
+           ;; Feature 48 — spell-check toggle. Only rendered in the "more
+           ;; options" panel for the v2 contenteditable editor. The live
+           ;; squiggly underline is deferred pending a bundled dictionary;
+           ;; with the NullDictionary this toggle is a visual no-op. No
+           ;; `on-change`/`emit-update!` — it does not persist an attr, only
+           ;; drives the editor instance via `setSpellCheck`.
+           (when text-editor-v2?
+             [:div {:class (stl/css :letter-spacing)
+                    :title (tr "workspace.options.text-options.spell-check")}
+              [:label {:for "text-spell-check"
+                       :style #js {:display "flex"
+                                   :align-items "center"
+                                   :gap "var(--sp-xs)"
+                                   :cursor "pointer"}}
+               [:input {:type "checkbox"
+                        :id "text-spell-check"
+                        :checked spell-check?
+                        :on-change on-toggle-spell-check
+                        :style #js {:cursor "pointer"}}]
+               (tr "workspace.options.text-options.spell-check")]])])])]))

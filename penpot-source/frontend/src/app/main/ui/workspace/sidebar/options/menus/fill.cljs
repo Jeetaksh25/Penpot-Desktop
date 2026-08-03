@@ -71,13 +71,42 @@
                  :options blend-mode-options
                  :on-change handle}]]))
 
-;; Figma-parity image fill rotate / flip / replace (gap #24). Rendered
-;; only for image fills (a :fill-image key is present). Rotate bumps the
-;; in-fill rotation by 90 degrees (Figma also allows free rotate via the
-;; crop handles, which is deferred — needs the colorpicker crop matrix).
-;; Flip toggles :horizontal / :vertical in the :fill-image-flip set.
-;; Replace uploads a new image via the existing upload-fill-image event
-;; and swaps the :fill-image, preserving crop / rotation / flip.
+;; Figma-parity grain on fills (gap #65). Optional grain overlay per fill
+;; (:intensity 0..1 and :size). Absent = no grain = today's rendering. The
+;; renderer grain overlay on the paint is deferred (no build to verify);
+;; the field round-trips on the fill via dwsh/update-shapes. Rendered for
+;; every fill row (always additive — default intensity 0 = no-op).
+(mf/defc fill-grain-controls*
+  {::mf/wrap [#(mf/memo' %)]}
+  [{:keys [index value on-change-grain]}]
+  (let [grain          (or (:grain value) {})
+        on-intensity   (mf/use-fn (mf/deps index on-change-grain)
+                                  (fn [e]
+                                    (let [v (.. e -target -value)]
+                                      (on-change-grain index (assoc grain :intensity (d/parse-double v))))))
+        on-size        (mf/use-fn (mf/deps index on-change-grain)
+                                  (fn [e]
+                                    (let [v (.. e -target -value)]
+                                      (on-change-grain index (assoc grain :size (d/parse-double v))))))]
+    [:div {:style #js {:display "flex"
+                       :align-items "center"
+                       :gap "8px"
+                       :padding "4px 8px 0"}
+           :data-testid "fill.grain-options"}
+     [:span {:style #js {:font-size "11px"
+                         :color "var(--color-foreground-secondary)"}}
+      (tr "workspace.options.fill-options.grain")]
+     [:input {:type "number"
+              :min 0 :max 1 :step 0.05
+              :value (or (:intensity grain) 0)
+              :on-change on-intensity}]
+     [:span {:style #js {:font-size "11px"
+                         :color "var(--color-foreground-secondary)"}}
+      (tr "workspace.options.fill-options.grain-size")]
+     [:input {:type "number"
+              :min 0
+              :value (or (:size grain) "")
+              :on-change on-size}]]))
 (mf/defc image-fill-controls*
   {::mf/wrap [#(mf/memo' %)]}
   [{:keys [index value on-change-image-attrs]}]
@@ -358,6 +387,19 @@
            (st/emit! (udw/trigger-bounding-box-cloaking ids))
            (st/emit! (dwsh/update-shapes ids #(assoc-in % [:fills index :blend-mode] value)))))
 
+        ;; Figma-parity grain on fills (gap #65). Stores the grain map on
+        ;; the individual fill. Reuses dwsh/update-shapes (undo on). The
+        ;; renderer grain overlay on the paint is deferred (no build to
+        ;; verify); the value round-trips on the fill via the vector fills
+        ;; path (the binary fills optimization path drops it, same as the
+        ;; other Figma-parity image fields).
+        on-change-grain
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [index grain]
+           (st/emit! (udw/trigger-bounding-box-cloaking ids))
+           (st/emit! (dwsh/update-shapes ids #(assoc-in % [:fills index :grain] grain)))))
+
         ;; Figma-parity image fill rotate / flip / replace (gap #24). The
         ;; update-fn receives the fill map and returns a new fill (used for
         ;; rotate / flip / replace). Reuses dwsh/update-shapes (undo on).
@@ -532,6 +574,10 @@
                 [:> fill-blend-mode-select* {:index index
                                              :value value
                                              :on-change on-blend-mode-change}]
+                ;; Figma-parity grain on fills (gap #65).
+                [:> fill-grain-controls* {:index index
+                                           :value value
+                                           :on-change-grain on-change-grain}]
                 ;; Figma-parity image fill rotate / flip / replace (gap #24).
                 ;; Renders nothing for non-image fills.
                 [:> image-fill-controls* {:index index

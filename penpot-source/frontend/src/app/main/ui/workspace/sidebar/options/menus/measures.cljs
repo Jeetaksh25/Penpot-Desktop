@@ -444,6 +444,49 @@
         (mf/use-fn (mf/deps on-position-change) #(on-position-change % :y))
 
 
+        ;; Figma-parity polygon / star / arc controls (gaps #58 / #59).
+        ;; These type-specific attrs are NOT in measure-attrs, so we read
+        ;; them from `shape` in the render and write them via
+        ;; dwsh/update-shapes (the same path on-change-clip-content uses
+        ;; below). The render blocks are guarded by `type`, so this is
+        ;; byte-identical-off for rect/frame/text/etc. Point-count clamps
+        ;; to the schema range [3..60]; inner-radius to [0..1].
+        on-point-count-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [value]
+           (let [n (-> (fixed-decimal-value value)
+                       (js/Math.round)
+                       (max 3)
+                       (min 60))]
+             (st/emit! (dwsh/update-shapes ids #(assoc % :point-count n))))))
+
+        on-poly-inner-radius-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [value]
+           (let [r (-> (fixed-decimal-value value) (max 0) (min 1))]
+             (st/emit! (dwsh/update-shapes ids #(assoc % :inner-radius r))))))
+
+        on-poly-corner-radius-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [value]
+           (let [r (max 0 (fixed-decimal-value value))]
+             (st/emit! (dwsh/update-shapes ids #(assoc % :corner-radius r))))))
+
+        on-arc-start-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [value]
+           (st/emit! (dwsh/update-shapes ids #(assoc % :arc-start (fixed-decimal-value value))))))
+
+        on-arc-end-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [value]
+           (st/emit! (dwsh/update-shapes ids #(assoc % :arc-end (fixed-decimal-value value))))))
+
         ;; DETACH
         on-detach-token
         (mf/use-fn
@@ -778,6 +821,86 @@
         [:& select {:default-value (or (d/name (:device-frame values)) "none")
                     :options device-frame-options
                     :on-change on-device-frame-change}]])
+
+     ;; Figma-parity polygon / star geometry controls (gap #58). Point
+     ;; count + (star only) inner radius + (polygon/star) corner radius.
+     ;; Guarded by single-type selection; values come from `shape` since
+     ;; these attrs are not part of measure-attrs/values.
+     (when (#{:polygon :star} type)
+       [:div {:class (stl/css :geometry-row)}
+        [:div {:class (stl/css :rotation)
+               :title (tr "workspace.options.point-count")}
+         [:span {:class (stl/css :icon)} deprecated-icon/rotation]
+         [:> deprecated-input/numeric-input*
+          {:no-validate true
+           :min 3 :max 60
+           :data-wrap true
+           :placeholder "5"
+           :on-change on-point-count-change
+           :class (stl/css :numeric-input)
+           :value (:point-count shape)}]]
+        (when (= type :star)
+          [:div {:class (stl/css :rotation)
+                 :title (tr "workspace.options.inner-radius")}
+           [:span {:class (stl/css :icon)} deprecated-icon/rotation]
+           [:> deprecated-input/numeric-input*
+            {:no-validate true
+             :min 0 :max 1
+             :data-wrap true
+             :placeholder "0.5"
+             :on-change on-poly-inner-radius-change
+             :class (stl/css :numeric-input)
+             :value (:inner-radius shape)}]])
+        [:div {:class (stl/css :rotation)
+               :title (tr "workspace.options.corner-radius")}
+         [:span {:class (stl/css :icon)} deprecated-icon/rotation]
+         [:> deprecated-input/numeric-input*
+          {:no-validate true
+           :min 0
+           :data-wrap true
+           :placeholder "0"
+           :on-change on-poly-corner-radius-change
+           :class (stl/css :numeric-input)
+           :value (:corner-radius shape)}]]])
+
+     ;; Figma-parity arc / pie / ring controls (gap #59). Circle only.
+     ;; Setting both arc-start and arc-end turns the ellipse into an arc
+     ;; (see shapes/circle.cljs); inner-radius < 1 makes a ring/donut.
+     (when (= type :circle)
+       [:div {:class (stl/css :geometry-row)}
+        [:div {:class (stl/css :rotation)
+               :title (tr "workspace.options.arc-start")}
+         [:span {:class (stl/css :icon)} deprecated-icon/rotation]
+         [:> deprecated-input/numeric-input*
+          {:no-validate true
+           :min -360 :max 360
+           :data-wrap true
+           :placeholder "0"
+           :on-change on-arc-start-change
+           :class (stl/css :numeric-input)
+           :value (:arc-start shape)}]]
+        [:div {:class (stl/css :rotation)
+               :title (tr "workspace.options.arc-end")}
+         [:span {:class (stl/css :icon)} deprecated-icon/rotation]
+         [:> deprecated-input/numeric-input*
+          {:no-validate true
+           :min -360 :max 360
+           :data-wrap true
+           :placeholder "0"
+           :on-change on-arc-end-change
+           :class (stl/css :numeric-input)
+           :value (:arc-end shape)}]]
+        [:div {:class (stl/css :rotation)
+               :title (tr "workspace.options.inner-radius")}
+         [:span {:class (stl/css :icon)} deprecated-icon/rotation]
+         [:> deprecated-input/numeric-input*
+          {:no-validate true
+           :min 0 :max 1
+           :data-wrap true
+           :placeholder "1"
+           :on-change on-poly-inner-radius-change
+           :class (stl/css :numeric-input)
+           :value (:inner-radius shape)}]]])
 
      ;; Figma-parity scale tool (gap #37). Proportional scale factor
      ;; (percent) applied to width/height. Renders only for single

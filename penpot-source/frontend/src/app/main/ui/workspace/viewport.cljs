@@ -35,6 +35,9 @@
    [app.main.ui.workspace.shapes.text.viewport-texts-html :as stvh]
    [app.main.ui.workspace.top-toolbar :refer [top-toolbar*]]
    [app.main.ui.workspace.viewport-wasm :as viewport.wasm]
+   ;; Figma-parity command palette (gap #47). NEW overlay component,
+   ;; mounted only under the :command-palette layout flag (default off).
+   [app.main.ui.workspace.command-palette :as command-palette]
    [app.main.ui.workspace.viewport.actions :as actions]
    [app.main.ui.workspace.viewport.comments :as comments]
    [app.main.ui.workspace.viewport.debug :as wvd]
@@ -245,6 +248,21 @@
 
         show-pixel-grid?         (and (contains? layout :show-pixel-grid)
                                       (>= zoom 8))
+        ;; Figma-parity viewport render modes (gaps #45/#46). Both default
+        ;; to false (byte-identical rendering when the layout flag is off).
+        ;; :outline-mode renders shapes as stroked outlines only; the
+        ;; per-shape fill suppression is a high-blast-radius renderer change
+        ;; (every shape wrapper), so it is DEFERRED — the boolean is wired
+        ;; and a CSS class hook is emitted on the render SVG so a future
+        ;; stylesheet rule can hide fills. :pixel-preview rasterizes the
+        ;; canvas at device pixels reusing pixel_overlay.cljs offscreen
+        ;; canvas infra; that rasterization overlay is DEFERRED.
+        outline-mode?            (contains? layout :outline-mode)
+        pixel-preview?           (contains? layout :pixel-preview)
+        ;; Figma-parity lasso / freeform selection (gap #51). Drives the
+        ;; lasso widget in viewport/widgets.cljs, which captures a freehand
+        ;; path and selects intersecting shapes. Default off = no widget.
+        lasso-mode?              (contains? layout :lasso-mode)
         show-text-editor?        (and editing-shape (= :text (:type editing-shape)))
 
         hover-grid?              (and (some? @hover-top-frame-id)
@@ -379,7 +397,8 @@
 
      [:svg
       {:id "render"
-       :class (stl/css :render-shapes)
+       :class (stl/css-case :render-shapes true
+                            :outline-mode outline-mode?)
        :xmlns "http://www.w3.org/2000/svg"
        :xmlnsXlink "http://www.w3.org/1999/xlink"
        :xmlns:penpot "https://penpot.app/xmlns"
@@ -802,7 +821,24 @@
          {:objects base-objects
           :zoom zoom
           :vbox vbox
-          :bottom-padding (when palete-size (+ palete-size 8))}]]]]]))
+          :bottom-padding (when palete-size (+ palete-size 8))}]
+
+        ;; Figma-parity lasso / freeform selection (gap #51). Mounted only
+        ;; under the :lasso-mode layout flag; the widget captures a freehand
+        ;; path and selects shapes whose bounds intersect it. Byte-identical
+        ;; (nothing renders) when the flag is off.
+        (when ^boolean lasso-mode?
+          [:> widgets/lasso-selection*
+           {:vbox vbox
+            :zoom zoom
+            :objects base-objects
+            :page-id page-id}])]
+
+       ;; Figma-parity command palette (gap #47). HTML overlay (a child of
+       ;; the viewport div, not part of the canvas SVG); mounts only under
+       ;; the :command-palette layout flag (default off).
+       (when (contains? layout :command-palette)
+         [:> command-palette/command-palette* {}])]]]))
 
 (mf/defc viewport*
   [{:keys [file page] :as props}]

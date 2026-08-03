@@ -58,7 +58,17 @@
     [::sm/one-of #{:normal :darken :multiply :color-burn
                    :lighten :screen :color-dodge :overlay
                    :soft-light :hard-light :difference :exclusion
-                   :hue :saturation :color :luminosity}]]])
+                   :hue :saturation :color :luminosity}]]
+   ;; Figma-parity grain on fills (gap #65). Optional grain overlay per
+   ;; fill: :intensity (0..1) and :size (cell size). Absent = no grain =
+   ;; today's rendering. The renderer grain overlay on the paint is
+   ;; deferred (no build to verify); the value round-trips on the fill via
+   ;; the vector fills path (the binary fills optimization path drops it,
+   ;; same as the other Figma-parity image fields).
+   [:grain {:optional true}
+    [:map {:title "FillGrain" :closed true}
+     [:intensity {:optional true} [::sm/number {:min 0 :max 1}]]
+     [:size {:optional true} ::sm/safe-number]]]])
 
 (def fill-attrs
   "A set of attrs that corresponds to fill data type"

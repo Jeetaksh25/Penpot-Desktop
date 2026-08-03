@@ -33,7 +33,18 @@
     :display-artboard-names
     :snap-ruler-guides
     :show-pixel-grid
-    :snap-pixel-grid})
+    :snap-pixel-grid
+    ;; Figma-parity viewport render modes (gaps #45/#46/#51). All three
+    ;; default to absent (byte-identical rendering/interaction when the
+    ;; flag is off). :outline-mode renders shapes as stroked outlines
+    ;; only; :pixel-preview rasterizes the canvas at device pixels;
+    ;; :lasso-mode enables the freehand lasso selection widget.
+    :outline-mode
+    :pixel-preview
+    :lasso-mode
+    ;; Figma-parity command palette (gap #47). When set, the
+    ;; command-palette overlay mounts.
+    :command-palette})
 
 (def presets
   {:assets

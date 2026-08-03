@@ -30,6 +30,7 @@
    [app.common.types.shape.export :as ctse]
    [app.common.types.shape.interactions :as ctsi]
    [app.common.types.shape.layout :as ctsl]
+   [app.common.types.shape.polygon :as ctsp]
    [app.common.types.shape.shadow :as ctss]
    [app.common.types.shape.text :as ctsx]
    [app.common.types.stroke :as stroke]
@@ -81,7 +82,15 @@
     ;; Figma-parity slice tool: a rect-shaped export region that renders
     ;; as a translucent dashed overlay (no visible content of its own) and
     ;; is exported using its bounding box as the export bounds.
-    :slice})
+    :slice
+    ;; Figma-parity sticky notes (gap #44). A colored rectangle carrying
+    ;; freeform text; renders in shapes.cljs as a filled rect + text.
+    :note
+    ;; Figma-parity polygon + star tools (gap #58). Regular polygon / star
+    ;; shapes drawn as SVG paths; point-count/inner-radius/corner-radius
+    ;; live in shape/polygon.cljc (NEW) and are merged here.
+    :polygon
+    :star})
 
 (def blend-modes
   #{:normal
@@ -269,6 +278,19 @@
     [:vector {:gen/max 1} ctss/schema:shadow]]
    [:blur {:optional true} ctsb/schema:blur]
    [:background-blur {:optional true} ctsbb/schema:background-blur]
+   ;; Figma-parity advanced effects (gaps #61/#62/#63). These are OPAQUE
+   ;; effect-vector slots owned by group V but consumed by group E2.
+   ;; Each holds a vector of effect maps; ::sm/any keeps the slot opaque so
+   ;; E2 can define schema:glass-effect / schema:noise-effect /
+   ;; schema:texture-effect in NEW files (shape/glass.cljc,
+   ;; shape/noise.cljc, shape/texture.cljc) and read/write these vectors
+   ;; WITHOUT editing this file. Absent key = no effect = today's render
+   ;; (byte-identical). The renderer compositing for each effect is
+   ;; deferred (high blast-radius GPU work, no build to verify); the
+   ;; values round-trip on the shape via dwsh/update-shapes.
+   [:glass {:optional true} [:vector ::sm/any]]
+   [:noise {:optional true} [:vector ::sm/any]]
+   [:texture {:optional true} [:vector ::sm/any]]
    [:grow-type {:optional true}
     [::sm/one-of grow-types]]
    [:applied-tokens {:optional true} cto/schema:applied-tokens]
@@ -303,8 +325,48 @@
 (def ^:private schema:slice-attrs
   [:map {:title "SliceAttrs"}])
 
+(def ^:private schema:note-attrs
+  [:map {:title "NoteAttrs"}
+   ;; Figma-parity sticky notes (gap #44). All optional; absent = a plain
+   ;; colored rect (the fallback render). :note-text is the freeform body
+   ;; text; :note-color is a hex fill color for the sticky; :note-text-color
+   ;; is the body text color. The shape is rect-shaped (x/y/width/height)
+   ;; and renders as a filled rect + wrapped text in shapes.cljs.
+   [:note-text {:optional true} :string]
+   [:note-color {:optional true} clr/schema:hex-color]
+   [:note-text-color {:optional true} clr/schema:hex-color]])
+
+(def ^:private schema:polygon-attrs
+  [:map {:title "PolygonAttrs"}
+   ;; Figma-parity polygon tool (gap #58). :point-count = number of sides
+   ;; (3..60). :corner-radius rounds the vertices (0 = sharp). Both
+   ;; optional; absent = a 5-point polygon with sharp corners (rendered
+   ;; as a regular-polygon SVG path in shapes.cljs). See shape/polygon.cljc.
+   [:point-count {:optional true} [::sm/int {:min 3 :max 60}]]
+   [:corner-radius {:optional true} ::sm/safe-number]])
+
+(def ^:private schema:star-attrs
+  [:map {:title "StarAttrs"}
+   ;; Figma-parity star tool (gap #58). :point-count = number of points
+   ;; (3..60). :inner-radius = ratio of inner to outer radius (0..1).
+   ;; :corner-radius rounds the outer points (0 = sharp). All optional;
+   ;; absent = a 5-point star with inner-radius 0.5, sharp points. See
+   ;; shape/polygon.cljc for the shared polygon/star path builder.
+   [:point-count {:optional true} [::sm/int {:min 3 :max 60}]]
+   [:inner-radius {:optional true} [::sm/safe-number {:min 0 :max 1}]]
+   [:corner-radius {:optional true} ::sm/safe-number]])
+
 (def ^:private schema:circle-attrs
-  [:map {:title "CircleAttrs"}])
+  [:map {:title "CircleAttrs"}
+   ;; Figma-parity arc / pie / ring / donut (gap #59). All optional; absent
+   ;; = a plain full ellipse (byte-identical with today). :arc-start and
+   ;; :arc-end are angles in degrees (0 = +x axis, clockwise). When both
+   ;; are present the renderer (shapes.cljs circle branch) emits an SVG
+   ;; path arc (A command) instead of <ellipse>; :inner-radius (0..1 of
+   ;; the radius) turns an arc/pie into a ring/donut.
+   [:arc-start {:optional true} ::sm/safe-number]
+   [:arc-end {:optional true} ::sm/safe-number]
+   [:inner-radius {:optional true} [::sm/safe-number {:min 0 :max 1}]]])
 
 (def ^:private schema:svg-raw-attrs
   [:map {:title "SvgRawAttrs"}])
@@ -351,6 +413,9 @@
                                     :circle  (sg/generator schema:circle-attrs)
                                     :rect    (sg/generator schema:rect-attrs)
                                     :slice   (sg/generator schema:slice-attrs)
+                                    :note    (sg/generator schema:note-attrs)
+                                    :polygon (sg/generator schema:polygon-attrs)
+                                    :star    (sg/generator schema:star-attrs)
                                     :bool    (sg/generator schema:bool-attrs)
                                     :group   (sg/generator schema:group-attrs)
                                     :frame   (sg/generator schema:frame-attrs))]
@@ -403,6 +468,30 @@
     [:merge {:title "SliceShape"}
      ctsl/schema:layout-child-attrs
      schema:slice-attrs
+     schema:shape-generic-attrs
+     schema:shape-geom-attrs
+     schema:shape-base-attrs]]
+
+   [:note
+    [:merge {:title "NoteShape"}
+     ctsl/schema:layout-child-attrs
+     schema:note-attrs
+     schema:shape-generic-attrs
+     schema:shape-geom-attrs
+     schema:shape-base-attrs]]
+
+   [:polygon
+    [:merge {:title "PolygonShape"}
+     ctsl/schema:layout-child-attrs
+     schema:polygon-attrs
+     schema:shape-generic-attrs
+     schema:shape-geom-attrs
+     schema:shape-base-attrs]]
+
+   [:star
+    [:merge {:title "StarShape"}
+     ctsl/schema:layout-child-attrs
+     schema:star-attrs
      schema:shape-generic-attrs
      schema:shape-geom-attrs
      schema:shape-base-attrs]]
@@ -481,7 +570,10 @@
     :hidden :masked-group :mask-mode :fills :proportion :proportion-lock :constraints-h
     :constraints-v :fixed-scroll :r1 :r2 :r3 :r4 :corner-smoothing :rotation :opacity :grids :exports
     :strokes :blend-mode :interactions :shadow :blur :background-blur :grow-type :applied-tokens
-    :plugin-data})
+    :plugin-data
+    ;; Figma-parity advanced effects (gaps #61/#62/#63): opaque effect
+    ;; vectors owned by group V, consumed by group E2. Round-trip safe.
+    :glass :noise :texture})
 
 (def ^:private allowed-shape-geom-attrs #{:x :y :width :height})
 (def ^:private allowed-shape-base-attrs #{:id :name :type :selrect :points :transform
@@ -513,6 +605,9 @@
                  (contains? allowed-shape-base-attrs attr))
     :rect    (contains? allowed-generic-attrs attr)
     :slice   (contains? allowed-generic-attrs attr)
+    :note    (contains? allowed-generic-attrs attr)
+    :polygon (contains? allowed-generic-attrs attr)
+    :star    (contains? allowed-generic-attrs attr)
     :circle  (contains? allowed-generic-attrs attr)
     :image   (or (contains? allowed-image-attrs attr)
                  (contains? allowed-generic-attrs attr))
@@ -612,6 +707,43 @@
    :fills []
    :strokes []})
 
+(def ^:private minimal-note-attrs
+  {:type :note
+   :name "Sticky note"
+   ;; Figma-parity sticky note (gap #44). A colored rect carrying text.
+   ;; Default yellow (#FFE680) with dark text — the classic sticky-note
+   ;; look. Rendered in shapes.cljs :note wrapper as a filled rect +
+   ;; wrapped text.
+   :fills [{:fill-color "#ffe680"
+            :fill-opacity 1}]
+   :strokes []
+   :note-text ""
+   :note-color "#ffe680"
+   :note-text-color "#333333"})
+
+(def ^:private minimal-polygon-attrs
+  {:type :polygon
+   :name "Polygon"
+   ;; Figma-parity polygon (gap #58). Default 5-sided, sharp corners.
+   ;; Rendered as a regular-polygon SVG path in shapes.cljs :polygon.
+   :fills [{:fill-color default-color
+            :fill-opacity 1}]
+   :strokes []
+   :point-count 5
+   :corner-radius 0})
+
+(def ^:private minimal-star-attrs
+  {:type :star
+   :name "Star"
+   ;; Figma-parity star (gap #58). Default 5-point, inner-radius 0.5,
+   ;; sharp points. Rendered as a star SVG path in shapes.cljs :star.
+   :fills [{:fill-color default-color
+            :fill-opacity 1}]
+   :strokes []
+   :point-count 5
+   :inner-radius 0.5
+   :corner-radius 0})
+
 (def ^:private minimal-multiple-attrs
   {:type :multiple})
 
@@ -628,6 +760,9 @@
     :text minimal-text-attrs
     :svg-raw minimal-svg-raw-attrs
     :slice minimal-slice-attrs
+    :note minimal-note-attrs
+    :polygon minimal-polygon-attrs
+    :star minimal-star-attrs
     ;; NOTE: used for create ephimeral shapes for multiple selection
     :multiple minimal-multiple-attrs))
 

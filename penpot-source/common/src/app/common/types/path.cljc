@@ -14,6 +14,7 @@
    [app.common.geom.point :as gpt]
    [app.common.geom.rect :as grc]
    [app.common.geom.shapes.common :as gco]
+   [app.common.math :as mth]
    [app.common.types.path.bool :as bool]
    [app.common.types.path.helpers :as helpers]
    [app.common.types.path.impl :as impl]
@@ -396,5 +397,73 @@
      (if (identical? shape shape')
        shape'
        (update shape' :content impl/path-data)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; VARIABLE-WIDTH STROKES (Figma-parity #53)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Per-node variable-width stroke data. The path's binary segment format
+;; (impl.cljc, fixed 28-byte layout) has no room for a width field, so the
+;; width data lives OUTSIDE the content as a plain map
+;;   {segment-index width}
+;; keyed by the index of the segment whose endpoint is the node. An absent
+;; map (or absent index) means "uniform stroke width" — the existing
+;; behavior — so the feature is purely additive. Persistence on the shape
+;; (shape.cljc :stroke-width is a single scalar) and the renderer conversion
+;; to a filled outline path (SVG has no native variable-width stroke) are
+;; DEFERRED — see the editor.cljs width-handle render guard and the note on
+;; `width-handles`. These accessors are pure so they can be reused by a
+;; future shape slot / renderer pass without change.
+
+(defn make-segment-widths
+  "Create an empty per-node segment-widths map. Additive: an empty/absent
+  map means uniform stroke width."
+  []
+  {})
+
+(defn get-segment-width
+  "Get the variable-width value for a segment index, or `fallback` when
+  the widths map is absent or has no entry for `index`."
+  ([widths index]
+   (get-segment-width widths index nil))
+  ([widths index fallback]
+   (if (and (map? widths) (contains? widths index))
+     (get widths index)
+     fallback)))
+
+(defn set-segment-width
+  "Associate a width value with a segment index in the widths map."
+  [widths index width]
+  (assoc widths index width))
+
+(defn width-handles
+  "Given path content and a per-node width map {segment-index width},
+  compute width-handle positions for the vector editor. Each handle is
+  placed perpendicular to the incoming segment at the node, offset by half
+  the node's width. Returns a vector of {:index :width :point :position}
+  (point = node, position = handle). Entries for :close-path segments or
+  out-of-range indices are skipped. Pure and additive — only meaningful
+  when a non-empty widths map is supplied; returns nil otherwise."
+  [content widths]
+  (when (and (map? widths) (pos? (count widths)))
+    (let [content (impl/path-data content)]
+      (into []
+            (keep
+             (fn [[index width]]
+               (when-let [segment (nth content index nil)]
+                 (let [node (helpers/segment->point segment)]
+                   (when (some? node)
+                     (let [prev (when (pos? index) (nth content (dec index) nil))
+                           prev-point (some-> prev helpers/segment->point)
+                           tangent (if (and prev-point (not= prev-point node))
+                                     (gpt/unit (gpt/to-vec prev-point node))
+                                     (gpt/point 1 0))
+                           normal (gpt/perpendicular tangent)
+                           offset (gpt/scale normal (/ width 2))]
+                       {:index index
+                        :width width
+                        :point node
+                        :position (gpt/add node offset)}))))))
+            widths))))
 
 (dm/export impl/decode-segments)

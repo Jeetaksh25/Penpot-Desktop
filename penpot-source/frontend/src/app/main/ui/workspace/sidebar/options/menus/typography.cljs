@@ -587,9 +587,25 @@
                 line-height-mode
                 letter-spacing
                 paragraph-spacing
-                paragraph-indent]} values
+                paragraph-indent
+                hanging-punctuation]} values
         line-height (or line-height "1.2")
         letter-spacing (or letter-spacing "0")
+        ;; Feature 50 — hanging punctuation. Paragraph-level boolean. When
+        ;; true the export emits the real CSS `hanging-punctuation` property so
+        ;; opening quotes / bullet markers hang outside the text-box bounds
+        ;; for cleaner edges (Figma Type Settings > Indentation). Additive
+        ;; optional: absent key / :multiple = nothing rendered changes; the
+        ;; renderer positioning of leading punctuation outside the bounds is
+        ;; deferred (see `app.main.ui.shapes.text.styles`).
+        hanging? (true? hanging-punctuation)
+        hanging-multiple? (= :multiple hanging-punctuation)
+        on-hanging-change
+        (mf/use-fn
+         (mf/deps on-change on-blur)
+         (fn [_event]
+           (on-change {:hanging-punctuation (not hanging?)})
+           (when (some? on-blur) (on-blur))))
         ;; Feature 14 — line-height mode. Absent / "auto" = legacy unitless
         ;; multiplier (existing behavior); "percent" = value/100; "px" = px.
         line-height-mode (if (= line-height-mode :multiple)
@@ -709,7 +725,29 @@
           :placeholder (if (= :multiple paragraph-indent) (tr "settings.multiple") "--")
           :on-change #(handle-change % :paragraph-indent)
           :is-nillable (= :multiple paragraph-indent)
-          :on-blur on-blur}]])]))
+          :on-blur on-blur}]])
+
+     ;; Feature 50 — hanging punctuation toggle. Lives in the indentation
+     ;; group (Figma exposes it under Type Settings > Indentation). Additive:
+     ;; only rendered for text shapes (advanced-spacing?), absent / :multiple
+     ;; = no change. Native checkbox keeps it CSS-free (no new typography.scss
+     ;; rules); the indeterminate state represents a mixed multi-selection.
+     (when advanced-spacing?
+       [:div {:class (stl/css :letter-spacing)
+              :title (tr "workspace.options.text-options.hanging-punctuation")}
+        [:label {:for "text-hanging-punctuation"
+                 :style #js {:display "flex"
+                             :align-items "center"
+                             :gap "var(--sp-xs)"
+                             :cursor "pointer"}}
+         [:input {:type "checkbox"
+                  :id "text-hanging-punctuation"
+                  :checked (or hanging? hanging-multiple?)
+                  :indeterminate hanging-multiple?
+                  :on-change on-hanging-change
+                  :disabled hanging-multiple?
+                  :style #js {:cursor "pointer"}}]
+         (tr "workspace.options.text-options.hanging-punctuation")]])]))
 
 (mf/defc text-transform-options*
   [{:keys [values on-change on-blur]}]
