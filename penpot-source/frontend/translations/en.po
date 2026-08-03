@@ -11688,6 +11688,138 @@ msgstr "Subscription token"
 msgid "workspace.ai.settings.ovion-cloud-note"
 msgstr "Ovion Cloud is a subscription-based AI service (coming soon). For now, use your own DeepInfra or Ollama key."
 
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.section-image-mcp"
+msgstr "AI Image & MCP"
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.design-system-guidelines"
+msgstr "Design system guidelines"
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.design-system-guidelines-hint"
+msgstr "Optional. When set, generated designs snap colors and spacing to your token grid and reuse existing library components."
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.image-model"
+msgstr "Image model slug (text-to-image)"
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.bg-remove-model"
+msgstr "Background-removal model slug"
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.upscale-model"
+msgstr "Upscale model slug"
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.mcp-enabled"
+msgstr "Enable local MCP server"
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.mcp-enabled-hint"
+msgstr "Exposes the canvas to MCP-compatible AI clients on 127.0.0.1."
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.mcp-port"
+msgstr "MCP port (0 = auto-pick)"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.generate-image"
+msgstr "Generate image"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.review-design"
+msgstr "Review design"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.spec-doc"
+msgstr "Spec doc"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.variants"
+msgstr "Variant %s of %s"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.variants-prev"
+msgstr "Previous variant"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.variants-next"
+msgstr "Next variant"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.review-score"
+msgstr "Score: %s"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.review-strengths"
+msgstr "Strengths"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.review-issues"
+msgstr "Issues"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.review-recommendations"
+msgstr "Recommendations"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.close"
+msgstr "Close"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.title"
+msgstr "AI Image"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.prompt"
+msgstr "Describe the image to generate"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.size"
+msgstr "Size"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.size-square"
+msgstr "1:1"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.size-portrait"
+msgstr "2:3"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.size-landscape"
+msgstr "3:2"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.generate"
+msgstr "Generate"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.insert"
+msgstr "Copy to clipboard"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.empty"
+msgstr "No image yet - enter a prompt and generate."
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.remove-bg"
+msgstr "Remove background"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.upscale-2x"
+msgstr "Upscale 2x"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.upscale-4x"
+msgstr "Upscale 4x"
+
+#: src/app/main/ui/workspace/ai_image.cljs
+msgid "workspace.ai.image.edit-hint"
+msgstr "Edit generated image"
+
 #: src/app/main/ui/components/window_titlebar.cljs
 msgid "titlebar.settings"
 msgstr "AI settings"

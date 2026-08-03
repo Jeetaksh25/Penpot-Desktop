@@ -16,6 +16,7 @@ mod commands;
 mod llm;
 mod fonts;
 mod code_export;
+mod mcp_server;
 
 /// Hide the console window for a spawned process. The Tauri app uses the
 /// `windows` subsystem (GUI, no parent console), so without this every
@@ -761,6 +762,15 @@ pub fn run() {
             llm::llm_agent_progress,
             fonts::fonts_download_family,
             code_export::write_code_zip,
+            llm::llm_generate_design_system,
+            llm::llm_review_design,
+            llm::llm_generate_spec_doc,
+            llm::llm_generate_image,
+            llm::llm_remove_background,
+            llm::llm_upscale_image,
+            llm::llm_mcp_status,
+            llm::llm_mcp_start,
+            llm::llm_mcp_stop,
         ])
         .setup(|app| {
             let handle = app.handle().clone();

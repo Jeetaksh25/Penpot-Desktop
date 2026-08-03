@@ -39,8 +39,11 @@
    [app.main.data.workspace.shape-layout :as dwsl]
    [app.main.data.workspace.shapes :as dwsh]
    [app.main.data.workspace.texts :as dwt]
+   [app.main.data.workspace.tokens.application :as dwta]
+   [app.main.data.workspace.tokens.library-edit :as dwtl]
    [app.main.data.workspace.variants :as dwv]
    [app.main.store :as st]
+   [app.common.types.tokens-lib :as ctob]
    [cuerdas.core :as str]))
 
 ;; ── Helpers ──────────────────────────────────────────────────────────────────
@@ -66,6 +69,20 @@
     {:ok true}
     (catch :default e
       {:ok false :error (str (or (some-> e .-message) e))})))
+
+(defn- resolve-active-token
+  "Resolve a token by name from the current file's active token sets.
+  Returns the token object (satisfies `ctob/token?`) or nil when the
+  tokens feature is unavailable / no active set contains the name. This
+  is defensive by design so the agent loop never crashes on a missing
+  token."
+  [state token-name]
+  (try
+    (some-> (dsh/lookup-file-data state)
+            :tokens-lib
+            (ctob/get-tokens-in-active-sets)
+            (get (str token-name)))
+    (catch :default _ nil)))
 
 (defn- default-text-root
   "A minimal Penpot text content tree (root → paragraph-set → paragraph → text)."
@@ -789,7 +806,141 @@
     geometry, content). No arguments."
     :schema {:type "object" :properties {}}
     :execute
-    (fn [_a state] {:ok true :selection (or (dg/selection->snippet state) [])})}})
+    (fn [_a state] {:ok true :selection (or (dg/selection->snippet state) [])})}
+
+   ;; ── AI depth: alternatives, generated image fills, design tokens ──────────
+   "create_alternative"
+   {:description
+    "Duplicate the shape with `selection_id` as a sibling variant. When the
+    target is a component main-instance, the duplicate is combined with the
+    original into a new variant container (component variants); otherwise a
+    plain sibling duplicate is produced. Returns `{:ok true :id <new-id>}`."
+    :schema
+    {:type "object"
+     :properties {:selection_id {:type "string"}}
+     :required ["selection_id"]}
+    :execute
+    (fn [a state]
+      (if-let [id (parse-uuid (:selection_id a))]
+        (let [objects (dsh/lookup-page-objects state)
+              shape (get objects id)]
+          (if (nil? shape)
+            {:ok false :error "shape not found"}
+            (let [return-ref (atom nil)
+                  component? (true? (:main-instance shape))]
+              (if component?
+                ;; Component: duplicate (keep original selected), then combine
+                ;; the [original duplicate] pair into a variant container.
+                (let [res (safe-emit! (dw/duplicate-shapes
+                                        #{id}
+                                        :change-selection? false
+                                        :return-ref return-ref))
+                      new-id @return-ref]
+                  (cond
+                    (false? (:ok res)) res
+                    (nil? new-id) res
+                    :else
+                    (let [res2 (safe-emit! (dwv/combine-as-variants [id new-id] {}))]
+                      (cond-> res2 (true? (:ok res2)) (assoc :id new-id)))))
+                ;; Non-component: plain sibling duplicate, select the new shape.
+                (let [res (safe-emit! (dw/duplicate-shapes
+                                        #{id}
+                                        :change-selection? true
+                                        :return-ref return-ref))]
+                  (cond-> res
+                          (and (true? (:ok res)) @return-ref)
+                          (assoc :id @return-ref)))))))
+        {:ok false :error "invalid selection_id"}))}
+
+   "set_generated_image_fill"
+   {:description
+    "Apply an AI-generated image (base64 + mime) as the fill of the shape
+    with `shape_id`. The fill is built as a Penpot image fill map and
+    applied via `dw/update-shape`. NOTE: registering the base64 bytes as a
+    backend media object (so the renderer can fetch it) is a separate
+    upload step performed outside this tool; here we attach the image-fill
+    structure so the shape is marked image-filled. Returns `{:ok true}`."
+    :schema
+    {:type "object"
+     :properties {:shape_id {:type "string"}
+                  :image_base64 {:type "string"}
+                  :mime {:type "string"}}
+     :required ["shape_id" "image_base64"]}
+    :execute
+    (fn [a _state]
+      (if-let [id (parse-uuid (:shape_id a))]
+        (let [b64 (str (:image_base64 a))
+              mime (or (:mime a) "image/png")
+              fill {:type :image
+                    :fill-image {:id (uuid/next)
+                                 :width 0
+                                 :height 0
+                                 :mtype mime
+                                 :name "ai-generated"}
+                    :fill-opacity 1}]
+          (if (str/empty? b64)
+            {:ok false :error "image_base64 required"}
+            (safe-emit! (dw/update-shape id {:fills [fill]}))))
+        {:ok false :error "invalid shape_id"}))}
+
+   "apply_color_token"
+   {:description
+    "Apply a named color token to the fill of the shape with `shape_id`.
+    The token must exist in the file's active token sets. Defensive: if the
+    tokens feature is unavailable or the token is missing/not a color
+    token, returns `{:ok false :error \"token not found\"}`."
+    :schema
+    {:type "object"
+     :properties {:shape_id {:type "string"} :token {:type "string"}}
+     :required ["shape_id" "token"]}
+    :execute
+    (fn [a state]
+      (if-let [id (parse-uuid (:shape_id a))]
+        (if-let [token (resolve-active-token state (:token a))]
+          (if (= :color (:type token))
+            (safe-emit! (dwta/apply-token-from-input
+                         {:token token :shape-ids [id]}))
+            {:ok false :error "token not found"})
+          {:ok false :error "token not found"})
+        {:ok false :error "invalid shape_id"}))}
+
+   "apply_typography_token"
+   {:description
+    "Apply a named typography token to the text shape with `shape_id`. The
+    token must exist in the file's active token sets. Defensive: if the
+    tokens feature is unavailable or the token is missing/not a typography
+    token, returns `{:ok false :error \"token not found\"}`."
+    :schema
+    {:type "object"
+     :properties {:shape_id {:type "string"} :token {:type "string"}}
+     :required ["shape_id" "token"]}
+    :execute
+    (fn [a state]
+      (if-let [id (parse-uuid (:shape_id a))]
+        (if-let [token (resolve-active-token state (:token a))]
+          (if (= :typography (:type token))
+            (safe-emit! (dwta/apply-token-from-input
+                         {:token token :shape-ids [id]}))
+            {:ok false :error "token not found"})
+          {:ok false :error "token not found"})
+        {:ok false :error "invalid shape_id"}))}
+
+   "create_color_token"
+   {:description
+    "Create a new color token with `name` and a hex/rgba `value` in the
+    file's token library. If no token set exists yet, a default 'Global'
+    set is created automatically by the tokens event. Returns `{:ok true}`."
+    :schema
+    {:type "object"
+     :properties {:name {:type "string"} :value {:type "string"}}
+     :required ["name" "value"]}
+    :execute
+    (fn [a _state]
+      (let [name (str (:name a)) value (str (:value a))]
+        (if (str/empty? name)
+          {:ok false :error "name required"}
+          (let [token (ctob/make-token :type :color :name name :value value)]
+            (safe-emit! (dwtl/create-token token))))))}})
 
 ;; ── Public API ────────────────────────────────────────────────────────────────
 

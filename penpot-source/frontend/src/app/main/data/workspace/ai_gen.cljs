@@ -102,7 +102,8 @@
                   :frame_width   (:frame-width options)
                   :frame_height  (:frame-height options)
                   :file_id       (:file-id options)
-                  :use_memory    (:use-memory options)}
+                  :use_memory    (:use-memory options)
+                  :variants      (:variants options)}
                  (cond-> (:selection options)
                    (assoc :selection (clj->js (:selection options)))))
         req #js {:prompt  (str prompt)
@@ -160,6 +161,77 @@
     "deepinfra"   (boolean (:deepinfra_api_key_set cfg))
     ;; Unknown provider defaults to the DeepInfra key requirement.
     (boolean (:deepinfra_api_key_set cfg))))
+
+;; ── Phase 2 IPC wrappers (design system / review / spec-doc / image / MCP) ────
+;;
+;; Mirror the existing `invoke-*` style: a thin promesa wrapper around the
+;; Tauri `invoke` for the Phase 2 `llm_*` commands registered in lib.rs. Each
+;; returns a promesa promise of the JS object the backend serializes; the
+;; caller keywordizes with `js->clj` at the call site.
+
+(defn invoke-generate-design-system
+  "Generate a design-system (tokens) payload from a prompt and optional
+   reference image/URL. Returns a JS object
+   {:colors [{:name :value}] :typography {:families [...] :scale [...]}
+    :spacing [i32] :radii [i32]}."
+  [{:keys [prompt source-image source-url]}]
+  (invoke "llm_generate_design_system"
+          #js {:request (clj->js {:prompt       (str prompt)
+                                  :source_image (clj->js source-image)
+                                  :source_url   source-url})}))
+
+(defn invoke-review-design
+  "Run a NON-mutating UX review. `screenshot` is a FileInput map
+   {:name :mime :base64}; `selection-meta` is a free CLJS map (bounds + ids).
+   Returns a JS object {:score :summary :strengths :issues :recommendations}."
+  [screenshot selection-meta]
+  (invoke "llm_review_design"
+          #js {:request (clj->js {:screenshot      (clj->js screenshot)
+                                  :selection_meta (clj->js selection-meta)})}))
+
+(defn invoke-generate-spec-doc
+  "Generate a spec document (markdown + html) for the given scope. `scope` is
+   \"page\" | \"selection\"; `scene` is the serialized scene value (the output
+   of `dg/serialize-scene`). Returns a JS object {:markdown :html}."
+  [scope scene]
+  (invoke "llm_generate_spec_doc"
+          #js {:request (clj->js {:scope scope :scene (clj->js scene)})}))
+
+(defn invoke-generate-image
+  "Generate a raster image from `prompt`. `size` is \"1024x1024\" |
+   \"1024x1792\" | \"1792x1024\". Returns a JS object {:image_base64 :mime}."
+  [prompt size]
+  (invoke "llm_generate_image"
+          #js {:request (clj->js {:prompt (str prompt) :size (str size)})}))
+
+(defn invoke-remove-background
+  "Remove the background from `image-input` (a FileInput map). Returns a JS
+   object {:image_base64 :mime}."
+  [image-input]
+  (invoke "llm_remove_background"
+          #js {:request (clj->js {:image (clj->js image-input)})}))
+
+(defn invoke-upscale-image
+  "Upscale `image-input` (a FileInput map) by `scale` (2 | 4). Returns a JS
+   object {:image_base64 :mime}."
+  [image-input scale]
+  (invoke "llm_upscale_image"
+          #js {:request (clj->js {:image (clj->js image-input) :scale scale})}))
+
+(defn invoke-mcp-start
+  "Start the MCP server on `port` (0 = auto-pick). Resolves to nil."
+  [port]
+  (p/then (invoke "llm_mcp_start" #js {:port port}) identity))
+
+(defn invoke-mcp-stop
+  "Stop the MCP server. Resolves to nil."
+  []
+  (p/then (invoke "llm_mcp_stop" #js {}) identity))
+
+(defn invoke-mcp-status
+  "Read the MCP server status. Returns a JS object {:running :port :tools}."
+  []
+  (p/then (invoke "llm_mcp_status" #js {}) identity))
 
 ;; ── Agent loop IPC wrappers ───────────────────────────────────────────────────
 ;;
@@ -454,6 +526,45 @@
     (update [_ state]
       (assoc-in state [:workspace-local :ai-update-sel] value))))
 
+(defn set-ai-design-system
+  "Store the generated design-system (tokens) payload so the bar / settings can
+   preview it. `payload` is the keywordized
+   {:colors [{:name :value}] :typography {:families :scale} :spacing :radii}
+   map, or nil."
+  [payload]
+  (ptk/reify ::set-ai-design-system
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:workspace-local :ai-design-system] payload))))
+
+(defn set-ai-review
+  "Store the UX review result. `payload` is the keywordized
+   {:score :summary :strengths :issues :recommendations} map, or nil.
+   NON-mutating — review never touches the canvas."
+  [payload]
+  (ptk/reify ::set-ai-review
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:workspace-local :ai-review] payload))))
+
+(defn set-ai-spec-doc
+  "Store the generated spec document. `payload` is the keywordized
+   {:markdown :html} map, or nil."
+  [payload]
+  (ptk/reify ::set-ai-spec-doc
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:workspace-local :ai-spec-doc] payload))))
+
+(defn set-ai-image
+  "Store a generated/edited image. `payload` is {:base64 :mime} or nil. Shared
+   by generate-image, remove-background, and upscale-image."
+  [payload]
+  (ptk/reify ::set-ai-image
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:workspace-local :ai-image] payload))))
+
 ;; ── The generate event ───────────────────────────────────────────────────────
 
 (defn- err->str
@@ -483,6 +594,7 @@
     (watch [_ state _]
       (let [my-id      (swap! gen-id inc)
             target     (:target options "new-board")
+            variants   (or (:variants options) 1)
             is-update  (= target "update-selection")
             bounds     (when is-update (dg/selection-bounds state))
             ;; Only attach a selection context when we actually have a non-empty
@@ -500,12 +612,24 @@
             ;; or superseded while the (uninterruptible) HTTP request was in
             ;; flight — otherwise a cancelled run would still pop its preview
             ;; and a fast cancel+regenerate would race the wrong spec in.
+            ;;
+            ;; Variants: the backend may fan out (`:variants` > 1 threaded into
+            ;; `build-request` options) and return either a bare DesignSpec or
+            ;; `{:specs [spec ...]}`. variants=1 is byte-identical-when-inactive:
+            ;; the preview carries `:spec` only. variants>1 carries `:specs` so
+            ;; the UI carousel can render them; `:spec` is omitted on that path.
             handle     (fn [result]
                          (when (= my-id @gen-id)
-                           (let [spec (js->clj result :keywordize-keys true)]
+                           (let [res   (js->clj result :keywordize-keys true)
+                                 specs (if (contains? res :specs)
+                                         (vec (:specs res))
+                                         [res])
+                                 preview (if (> variants 1)
+                                           {:specs specs :target target}
+                                           {:spec (first specs) :target target})]
                              (st/emit! (set-ai-busy false)
                                        (set-ai-error nil)
-                                       (set-ai-preview {:spec spec :target target})))))
+                                       (set-ai-preview preview)))))
             handle-err (fn [err]
                          (when (= my-id @gen-id)
                            (st/emit! (set-ai-busy false)
@@ -534,6 +658,200 @@
           (p/then  (fn [_] (st/emit! (set-ai-busy false))))
           (p/catch (fn [_] (st/emit! (set-ai-busy false)))))
       (rx/of (set-ai-busy false)))))
+
+;; ── Phase 2 WatchEvents (design system / review / spec-doc / image) ──────────
+;;
+;; Each mirrors `generate-design`'s shape: a `my-id` from the gen-id guard, a
+;; detached promise that feeds the result back through st/emit!, into a Phase 2
+;; state slot, and an immediate `set-ai-busy true` so the bar shows its spinner.
+;; A late-arriving result whose `my-id` no longer matches `@gen-id` is dropped
+;; (cancel-generation / a newer generation bumps the atom). Errors land in
+;; `:ai-error` via `err->str`. All are byte-identical-when-inactive: when the
+;; caller never emits them, no state slot is touched.
+
+(defn generate-design-system
+  "Generate a design-system (tokens) payload. Keys:
+     :prompt        prompt string
+     :source-image  optional FileInput map ({:name :mime :base64})
+     :source-url    optional reference URL string
+   On success stores the payload via `set-ai-design-system`."
+  [{:keys [prompt source-image source-url]}]
+  (ptk/reify ::generate-design-system
+    ptk/WatchEvent
+    (watch [_ _ _]
+      (let [my-id (swap! gen-id inc)
+            handle
+            (fn [result]
+              (when (= my-id @gen-id)
+                (let [payload (js->clj result :keywordize-keys true)]
+                  (st/emit! (set-ai-busy false)
+                            (set-ai-error nil)
+                            (set-ai-design-system payload)))))
+            handle-err
+            (fn [err]
+              (when (= my-id @gen-id)
+                (st/emit! (set-ai-busy false)
+                          (set-ai-error (err->str err)))))]
+        (-> (invoke-generate-design-system
+             {:prompt prompt :source-image source-image :source-url source-url})
+            (p/then handle)
+            (p/catch handle-err))
+        (rx/of (set-ai-busy true))))))
+
+(defn review-design
+  "Run a NON-mutating UX review of the current canvas. Captures the viewport
+   PNG + selection metadata, invokes `llm_review_design`, and stores the result
+   via `set-ai-review`. Never touches the canvas."
+  [{:keys [selection-meta]}]
+  (ptk/reify ::review-design
+    ptk/WatchEvent
+    (watch [_ state _]
+      (let [my-id (swap! gen-id inc)
+            file-id (str (:current-file-id state))
+            meta (or selection-meta
+                     (let [bounds (dg/selection-bounds state)]
+                       (when bounds
+                         {:bounds bounds
+                          :selection (or (dg/selection->snippet state) [])})))
+            handle
+            (fn [screenshot]
+              (if (nil? screenshot)
+                (when (= my-id @gen-id)
+                  (st/emit! (set-ai-busy false)
+                            (set-ai-error (tr "workspace.ai.bar.error-generic"))))
+                (-> (invoke-review-design screenshot meta)
+                    (p/then
+                     (fn [result]
+                       (when (= my-id @gen-id)
+                         (let [payload (js->clj result :keywordize-keys true)]
+                           (st/emit! (set-ai-busy false)
+                                     (set-ai-error nil)
+                                     (set-ai-review payload))))))
+                    (p/catch
+                     (fn [err]
+                       (when (= my-id @gen-id)
+                         (st/emit! (set-ai-busy false)
+                                   (set-ai-error (err->str err)))))))))
+            handle-err
+            (fn [err]
+              (when (= my-id @gen-id)
+                (st/emit! (set-ai-busy false)
+                          (set-ai-error (err->str err)))))]
+        (-> (capture-viewport-png)
+            (p/then handle)
+            (p/catch handle-err))
+        (rx/of (set-ai-busy true))))))
+
+(defn generate-spec-doc
+  "Generate a spec document for `scope` (\"page\" | \"selection\"). Serializes
+   the current scene (page or selection snippet), invokes
+   `llm_generate_spec_doc`, and stores the result via `set-ai-spec-doc`."
+  [{:keys [scope]}]
+  (ptk/reify ::generate-spec-doc
+    ptk/WatchEvent
+    (watch [_ state _]
+      (let [my-id (swap! gen-id inc)
+            sc    (or scope "page")
+            scene (if (= sc "selection")
+                    (or (dg/selection->snippet state) [])
+                    (or (dg/serialize-scene state) ""))
+            handle
+            (fn [result]
+              (when (= my-id @gen-id)
+                (let [payload (js->clj result :keywordize-keys true)]
+                  (st/emit! (set-ai-busy false)
+                            (set-ai-error nil)
+                            (set-ai-spec-doc payload)))))
+            handle-err
+            (fn [err]
+              (when (= my-id @gen-id)
+                (st/emit! (set-ai-busy false)
+                          (set-ai-error (err->str err)))))]
+        (-> (invoke-generate-spec-doc sc scene)
+            (p/then handle)
+            (p/catch handle-err))
+        (rx/of (set-ai-busy true))))))
+
+(defn generate-image
+  "Generate a raster image from `prompt`. `size` is \"1024x1024\" |
+   \"1024x1792\" | \"1792x1024\". Stores {:base64 :mime} via `set-ai-image`."
+  [{:keys [prompt size]}]
+  (ptk/reify ::generate-image
+    ptk/WatchEvent
+    (watch [_ _ _]
+      (let [my-id (swap! gen-id inc)
+            handle
+            (fn [result]
+              (when (= my-id @gen-id)
+                (let [res (js->clj result :keywordize-keys true)
+                      payload {:base64 (:image_base64 res)
+                               :mime   (:mime res "image/png")}]
+                  (st/emit! (set-ai-busy false)
+                            (set-ai-error nil)
+                            (set-ai-image payload)))))
+            handle-err
+            (fn [err]
+              (when (= my-id @gen-id)
+                (st/emit! (set-ai-busy false)
+                          (set-ai-error (err->str err)))))]
+        (-> (invoke-generate-image prompt (or size "1024x1024"))
+            (p/then handle)
+            (p/catch handle-err))
+        (rx/of (set-ai-busy true))))))
+
+(defn remove-background
+  "Remove the background from `image-input` (a FileInput map). Stores the
+   result {:base64 :mime} via `set-ai-image`."
+  [{:keys [image-input]}]
+  (ptk/reify ::remove-background
+    ptk/WatchEvent
+    (watch [_ _ _]
+      (let [my-id (swap! gen-id inc)
+            handle
+            (fn [result]
+              (when (= my-id @gen-id)
+                (let [res (js->clj result :keywordize-keys true)
+                      payload {:base64 (:image_base64 res)
+                               :mime   (:mime res "image/png")}]
+                  (st/emit! (set-ai-busy false)
+                            (set-ai-error nil)
+                            (set-ai-image payload)))))
+            handle-err
+            (fn [err]
+              (when (= my-id @gen-id)
+                (st/emit! (set-ai-busy false)
+                          (set-ai-error (err->str err)))))]
+        (-> (invoke-remove-background image-input)
+            (p/then handle)
+            (p/catch handle-err))
+        (rx/of (set-ai-busy true))))))
+
+(defn upscale-image
+  "Upscale `image-input` (a FileInput map) by `scale` (2 | 4). Stores the
+   result {:base64 :mime} via `set-ai-image`."
+  [{:keys [image-input scale]}]
+  (ptk/reify ::upscale-image
+    ptk/WatchEvent
+    (watch [_ _ _]
+      (let [my-id (swap! gen-id inc)
+            handle
+            (fn [result]
+              (when (= my-id @gen-id)
+                (let [res (js->clj result :keywordize-keys true)
+                      payload {:base64 (:image_base64 res)
+                               :mime   (:mime res "image/png")}]
+                  (st/emit! (set-ai-busy false)
+                            (set-ai-error nil)
+                            (set-ai-image payload)))))
+            handle-err
+            (fn [err]
+              (when (= my-id @gen-id)
+                (st/emit! (set-ai-busy false)
+                          (set-ai-error (err->str err)))))]
+        (-> (invoke-upscale-image image-input (or scale 2))
+            (p/then handle)
+            (p/catch handle-err))
+        (rx/of (set-ai-busy true))))))
 
 ;; ── The agent loop ─────────────────────────────────────────────────────────────
 ;;

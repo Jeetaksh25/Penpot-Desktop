@@ -43,6 +43,8 @@
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.workspace.ai-design :as ad]
+   [app.main.ui.workspace.ai-image]              ; bare require — loads the :ai-image modal registration
+   [app.main.ui.workspace.ai-settings]           ; bare require — loads the :ai-settings modal registration (opened from this bar + the titlebar gear)
    [app.main.ui.workspace.ai-motion :as aim]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
@@ -268,6 +270,33 @@
 .ai-close:hover { color: var(--ai-ink); }
 .ai-close:focus-visible { outline: none; box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral), 0 0 0 3px var(--ai-coral-faint); }
 .ai-close .ai-i { width: 18px; height: 18px; }
+
+/* ── Multi-variant carousel (Phase 2) ──────────────────────────────────────
+   When the preview carries :specs (vector >1), variants render side-by-side
+   with prev/next arrows and a dot indicator. Arrows reuse the .ai-circle
+   surface; the dot row sits under the body. No scale motion — calm only. */
+.ai-var-wrap { display: flex; flex-direction: column; gap: 10px; }
+.ai-var-row { display: flex; align-items: stretch; gap: 10px; }
+.ai-var-col { flex: 1 1 0; min-width: 0; }
+.ai-var-arrow { flex: none; align-self: center; }
+.ai-dots-ind { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.ai-dot { width: 7px; height: 7px; border-radius: 50%; background: #e2e2e2;
+  border: none; padding: 0; cursor: pointer;
+  transition: background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-dot.is-cur { background: var(--ai-coral); }
+.ai-dot:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ai-coral-faint); }
+
+/* ── Review / Spec-doc result modal (read-only text) ───────────────────────
+   Reuses .ai-modal / .ai-overlay. The body renders a scrollable text column
+   with a coral score badge for reviews and a monospace-ish pre for spec-doc. */
+.ai-result-body { white-space: pre-wrap; word-break: break-word; font-family: var(--ai-font);
+  font-size: 13px; line-height: 1.55; color: var(--ai-ink); }
+.ai-result-sec { font-size: 12px; font-weight: 700; color: var(--ai-grey);
+  margin-top: 12px; margin-bottom: 4px; font-family: var(--ai-font); }
+.ai-result-list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5;
+  color: var(--ai-ink); font-family: var(--ai-font); }
+.ai-result-score { font-size: 13px; font-weight: 700; color: var(--ai-coral);
+  background: var(--ai-coral-faint); padding: 4px 10px; border-radius: var(--ai-radius-sm); }
 ")
 
 (defn- style-block
@@ -351,6 +380,34 @@
 (def ^:private lucide-check
   (li [[:path {:d "M20 6 9 17l-5-5"}]]))
 
+;; Phase 2 — carousel + cluster action glyphs (Lucide, stroke-width 2).
+(def ^:private lucide-chevron-left
+  (li [[:path {:d "m15 18-6-6 6-6"}]]))
+
+(def ^:private lucide-chevron-right
+  (li [[:path {:d "m9 18 6-6-6-6"}]]))
+
+(def ^:private lucide-image
+  (li [[:rect {:x 3 :y 3 :width 18 :height 18 :rx 2 :ry 2}]
+       [:circle {:cx 9 :cy 9 :r 2}]
+       [:path {:d "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"}]]))
+
+;; "scan-eye" — corner scan brackets + an eye in the middle.
+(def ^:private lucide-scan-eye
+  (li [[:path {:d "M3 7V5a2 2 0 0 1 2-2h2"}]
+       [:path {:d "M17 3h2a2 2 0 0 1 2 2v2"}]
+       [:path {:d "M21 17v2a2 2 0 0 1-2 2h-2"}]
+       [:path {:d "M7 21H5a2 2 0 0 1-2-2v-2"}]
+       [:path {:d "M3 12a9 9 0 0 1 18 0"}]
+       [:path {:d "M12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6"}]]))
+
+(def ^:private lucide-file-text
+  (li [[:path {:d "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"}]
+       [:path {:d "M14 2v4a2 2 0 0 0 2 2h4"}]
+       [:path {:d "M16 13H8"}]
+       [:path {:d "M16 17H8"}]
+       [:path {:d "M10 9H8"}]]))
+
 ;; ── Small presentational bits ───────────────────────────────────────────────
 
 ;; Frame presets — the Screen selection pill. Each pairs a backend value
@@ -387,10 +444,13 @@
         file-input*    (mf/use-ref nil)
         prompt-ref     (mf/use-ref nil)
         pop-ref        (mf/use-ref nil)             ; Screen popover element (for anime entrance)
+        variant-idx*   (mf/use-state 0)             ; Phase 2 carousel current variant
 
         busy          (mf/deref refs/ai-busy)
         preview       (mf/deref refs/ai-preview)
         error*        (mf/deref refs/ai-error)
+        review*       (mf/deref refs/ai-review)      ; Phase 2 review result slot
+        spec-doc*     (mf/deref refs/ai-spec-doc)    ; Phase 2 spec-doc result slot
         selected      (mf/deref refs/selected-shapes)
         has-sel?      (boolean (seq selected))
 
@@ -406,6 +466,7 @@
         screen-open?  (deref screen-open?*)
         attachments   (deref attachments*)
         stage         (deref stage*)
+        variant-idx   (deref variant-idx*)
 
         ;; The input pill drops from a full pill (999px) to a rounded
         ;; rectangle (~22px) when the prompt grows past one line, mirroring
@@ -514,11 +575,35 @@
 
         on-apply
         (mf/use-fn
-         (mf/deps preview)
+         (mf/deps preview variant-idx)
          (fn []
-           (let [{:keys [spec target]} preview]
-             (st/emit! (dg/apply-design-spec {:spec spec :target target})
-                       (ai/clear-ai-preview)))))
+           (let [{:keys [spec specs target]} preview
+                 chosen (if (and (vector? specs) (seq specs))
+                          (get specs variant-idx spec)
+                          spec)
+                 ;; Thread the user's design-system guidelines (from the AI
+                 ;; Settings config) into apply-design-spec so the data layer's
+                 ;; `apply-design-constraints` can snap colors/spacing to the
+                 ;; token grid + emit reuse markers. Blank → not threaded →
+                 ;; byte-identical to the unconstrained apply path.
+                 apply-opts (fn [guidelines]
+                              (cond-> {:spec chosen :target target}
+                                (not (str/empty? guidelines))
+                                (assoc :design-system-guidelines guidelines)))]
+             (-> (ai/invoke-get-config)
+                 (p/then
+                  (fn [cfg-js]
+                    (let [cfg (js->clj cfg-js :keywordize-keys true)
+                          guidelines (or (:design_system_guidelines cfg) "")]
+                      (st/emit! (dg/apply-design-spec (apply-opts guidelines))
+                                (ai/clear-ai-preview)))))
+                 (p/catch
+                  (fn [_]
+                    ;; Config read failed — fall back to the byte-identical
+                    ;; unconstrained apply so a settings hiccup never blocks
+                    ;; applying a generated spec.
+                    (st/emit! (dg/apply-design-spec {:spec chosen :target target})
+                              (ai/clear-ai-preview))))))))
 
         on-cancel-preview
         (mf/use-fn (fn [] (st/emit! (ai/clear-ai-preview))))
@@ -528,7 +613,54 @@
          (mf/deps on-generate)
          (fn []
            (st/emit! (ai/clear-ai-preview))
-           (on-generate)))]
+           (on-generate)))
+
+        ;; ── Phase 2: carousel nav + cluster actions ────────────────────────
+        on-var-prev
+        (mf/use-fn
+         (mf/deps variant-idx)
+         (fn []
+           (let [n (count (:specs preview))]
+             (when (and (int? n) (> n 1))
+               (reset! variant-idx* (mod (dec variant-idx) n))))))
+
+        on-var-next
+        (mf/use-fn
+         (mf/deps variant-idx)
+         (fn []
+           (let [n (count (:specs preview))]
+             (when (and (int? n) (> n 1))
+               (reset! variant-idx* (mod (inc variant-idx) n))))))
+
+        on-var-pick
+        (mf/use-fn
+         (fn [i] (reset! variant-idx* i)))
+
+        open-image
+        (mf/use-fn
+         (fn []
+           (st/emit! (modal/show {:type :ai-image}))))
+
+        on-review-design
+        (mf/use-fn
+         (fn []
+           (st/emit! (ai/set-ai-error nil)
+                     (ai/review-design))))
+
+        on-spec-doc
+        (mf/use-fn
+         (mf/deps has-sel?)
+         (fn []
+           (st/emit! (ai/set-ai-error nil)
+                     (ai/generate-spec-doc {:scope (if has-sel? "selection" "page")}))))
+
+        on-close-review
+        (mf/use-fn
+         (fn [] (st/emit! (ai/set-ai-review nil))))
+
+        on-close-spec-doc
+        (mf/use-fn
+         (fn [] (st/emit! (ai/set-ai-spec-doc nil))))]
 
     ;; ── Subscribe to backend ai-progress events → local stage text.
     (mf/with-effect
@@ -559,6 +691,11 @@
     ;; BEFORE emitting "done", so the spinner would otherwise spin forever).
     (mf/with-effect [error*]
       (when error* (reset! stage* nil)))
+
+    ;; Reset the carousel to the first variant whenever a fresh preview lands.
+    (mf/with-effect [preview]
+      (reset! variant-idx* 0)
+      nil)
 
     ;; ── Auto-grow the prompt textarea to fit its content (up to 160px),
     ;; so the input pill expands the way the reference's does. Runs on
@@ -624,6 +761,31 @@
            :on-mouse-down aim/press-white-in
            :on-mouse-up aim/press-white-out}
           lucide-settings]
+         ;; Phase 2 cluster actions: image / review / spec-doc (coral on hover).
+         [:button.ai-circle
+          {:type "button" :on-click open-image
+           :title (tr "workspace.ai.bar.generate-image")
+           :on-mouse-enter aim/hov-white-in
+           :on-mouse-leave aim/hov-white-out
+           :on-mouse-down aim/press-white-in
+           :on-mouse-up aim/press-white-out}
+          lucide-image]
+         [:button.ai-circle
+          {:type "button" :on-click on-review-design
+           :title (tr "workspace.ai.bar.review-design")
+           :on-mouse-enter aim/hov-white-in
+           :on-mouse-leave aim/hov-white-out
+           :on-mouse-down aim/press-white-in
+           :on-mouse-up aim/press-white-out}
+          lucide-scan-eye]
+         [:button.ai-circle
+          {:type "button" :on-click on-spec-doc
+           :title (tr "workspace.ai.bar.spec-doc")
+           :on-mouse-enter aim/hov-white-in
+           :on-mouse-leave aim/hov-white-out
+           :on-mouse-down aim/press-white-in
+           :on-mouse-up aim/press-white-out}
+          lucide-file-text]
 
          ;; attachment thumbnails live inside the cluster so the paperclip's
          ;; result is visible without leaving the primary bar.
@@ -704,38 +866,133 @@
 
       ;; ── Preview modal ───────────────────────────────────────────────────
       (when-let [p preview]
-        [:div.ai-overlay {:on-click on-cancel-preview}
+        (let [specs  (:specs p)
+              multi? (and (vector? specs) (> (count specs) 1))
+              cur    (if multi? (get specs variant-idx) (:spec p))]
+          [:div.ai-overlay {:on-click on-cancel-preview}
+           [:div.ai-modal {:on-click #(.stopPropagation %)}
+            [:div.ai-modal-head
+             [:div {:style #js {"display" "flex" "alignItems" "center" "gap" "10px"}}
+              [:span.ai-modal-title (tr "workspace.ai.bar.preview-title")]
+              [:span.ai-badge (if (= (:target p) "update-selection")
+                                (tr "workspace.ai.bar.preview-region")
+                                (tr "workspace.ai.bar.preview-full"))]
+              (when multi?
+                [:span.ai-badge
+                 (tr "workspace.ai.bar.variants" (inc variant-idx) (count specs))])]
+             [:button.ai-close {:type "button" :on-click on-cancel-preview
+                                :on-mouse-enter aim/hov-white-in
+                                :on-mouse-leave aim/hov-white-out
+                                :on-mouse-down aim/press-white-in
+                                :on-mouse-up aim/press-white-out}
+              lucide-x]]
+            [:div.ai-modal-body
+             (if multi?
+               [:div.ai-var-wrap
+                [:div.ai-var-row
+                 [:button.ai-circle.ai-var-arrow
+                  {:type "button" :on-click on-var-prev
+                   :title (tr "workspace.ai.bar.variants-prev")
+                   :on-mouse-enter aim/hov-white-in
+                   :on-mouse-leave aim/hov-white-out
+                   :on-mouse-down aim/press-white-in
+                   :on-mouse-up aim/press-white-out}
+                  lucide-chevron-left]
+                 [:div.ai-var-col (dg/spec->preview cur)]
+                 [:button.ai-circle.ai-var-arrow
+                  {:type "button" :on-click on-var-next
+                   :title (tr "workspace.ai.bar.variants-next")
+                   :on-mouse-enter aim/hov-white-in
+                   :on-mouse-leave aim/hov-white-out
+                   :on-mouse-down aim/press-white-in
+                   :on-mouse-up aim/press-white-out}
+                  lucide-chevron-right]]
+                [:div.ai-dots-ind
+                 (for [i (range (count specs))]
+                   [:button.ai-dot {:key i :type "button"
+                                    :class (when (= i variant-idx) "is-cur")
+                                    :on-click #(on-var-pick i)
+                                    :aria-label (tr "workspace.ai.bar.variants"
+                                                     (inc i) (count specs))}])]]
+               (dg/spec->preview cur))]
+            [:div.ai-modal-foot
+             [:button.ai-btn.ai-btn-ghost {:on-click on-regenerate
+                                           :on-mouse-enter aim/hov-white-in
+                                           :on-mouse-leave aim/hov-white-out
+                                           :on-mouse-down aim/press-white-in
+                                           :on-mouse-up aim/press-white-out}
+              (tr "workspace.ai.bar.regenerate")]
+             [:button.ai-btn.ai-btn-ghost {:on-click on-cancel-preview
+                                           :on-mouse-enter aim/hov-white-in
+                                           :on-mouse-leave aim/hov-white-out
+                                           :on-mouse-down aim/press-white-in
+                                           :on-mouse-up aim/press-white-out}
+              (tr "workspace.ai.bar.cancel")]
+             [:button.ai-btn.ai-btn-primary {:on-click on-apply
+                                             :on-mouse-enter aim/hov-coral-in
+                                             :on-mouse-leave aim/hov-coral-out
+                                             :on-mouse-down aim/press-coral-in
+                                             :on-mouse-up aim/press-coral-out}
+              (tr "workspace.ai.bar.apply")]]]]))
+
+      ;; ── Review design result modal (read-only) ───────────────────────────
+      (when-let [r review*]
+        [:div.ai-overlay {:on-click on-close-review}
          [:div.ai-modal {:on-click #(.stopPropagation %)}
           [:div.ai-modal-head
            [:div {:style #js {"display" "flex" "alignItems" "center" "gap" "10px"}}
-            [:span.ai-modal-title (tr "workspace.ai.bar.preview-title")]
-            [:span.ai-badge (if (= (:target p) "update-selection")
-                              (tr "workspace.ai.bar.preview-region")
-                              (tr "workspace.ai.bar.preview-full"))]]
-           [:button.ai-close {:type "button" :on-click on-cancel-preview
+            [:span.ai-modal-title (tr "workspace.ai.bar.review-design")]
+            (when (number? (:score r))
+              [:span.ai-result-score
+               (tr "workspace.ai.bar.review-score" (:score r))])]
+           [:button.ai-close {:type "button" :on-click on-close-review
                               :on-mouse-enter aim/hov-white-in
                               :on-mouse-leave aim/hov-white-out
                               :on-mouse-down aim/press-white-in
                               :on-mouse-up aim/press-white-out}
             lucide-x]]
           [:div.ai-modal-body
-           (dg/spec->preview (:spec p))]
+           (when (:summary r)
+             [:div [:div.ai-result-body (:summary r)]])
+           (when (seq (:strengths r))
+             [:div [:div.ai-result-sec (tr "workspace.ai.bar.review-strengths")]
+              [:ul.ai-result-list (for [s (:strengths r)] [:li {:key s} s])]])
+           (when (seq (:issues r))
+             [:div [:div.ai-result-sec (tr "workspace.ai.bar.review-issues")]
+              [:ul.ai-result-list
+               (for [it (:issues r)]
+                 [:li {:key (str (get it :title) (get it :severity))}
+                  (str (get it :title "") " — " (get it :detail ""))])]])
+           (when (seq (:recommendations r))
+             [:div [:div.ai-result-sec (tr "workspace.ai.bar.review-recommendations")]
+              [:ul.ai-result-list (for [s (:recommendations r)] [:li {:key s} s])]])]
           [:div.ai-modal-foot
-           [:button.ai-btn.ai-btn-ghost {:on-click on-regenerate
-                                         :on-mouse-enter aim/hov-white-in
-                                         :on-mouse-leave aim/hov-white-out
-                                         :on-mouse-down aim/press-white-in
-                                         :on-mouse-up aim/press-white-out}
-            (tr "workspace.ai.bar.regenerate")]
-           [:button.ai-btn.ai-btn-ghost {:on-click on-cancel-preview
-                                         :on-mouse-enter aim/hov-white-in
-                                         :on-mouse-leave aim/hov-white-out
-                                         :on-mouse-down aim/press-white-in
-                                         :on-mouse-up aim/press-white-out}
-            (tr "workspace.ai.bar.cancel")]
-           [:button.ai-btn.ai-btn-primary {:on-click on-apply
-                                            :on-mouse-enter aim/hov-coral-in
-                                            :on-mouse-leave aim/hov-coral-out
-                                            :on-mouse-down aim/press-coral-in
-                                            :on-mouse-up aim/press-coral-out}
-            (tr "workspace.ai.bar.apply")]]]])]]))
+           [:button.ai-btn.ai-btn-primary {:on-click on-close-review
+                                           :on-mouse-enter aim/hov-coral-in
+                                           :on-mouse-leave aim/hov-coral-out
+                                           :on-mouse-down aim/press-coral-in
+                                           :on-mouse-up aim/press-coral-out}
+            (tr "workspace.ai.bar.close")]]]])
+
+      ;; ── Spec doc result modal (read-only markdown) ───────────────────────
+      (when-let [sd spec-doc*]
+        [:div.ai-overlay {:on-click on-close-spec-doc}
+         [:div.ai-modal {:on-click #(.stopPropagation %)}
+          [:div.ai-modal-head
+           [:div {:style #js {"display" "flex" "alignItems" "center" "gap" "10px"}}
+            [:span.ai-modal-title (tr "workspace.ai.bar.spec-doc")]]
+           [:button.ai-close {:type "button" :on-click on-close-spec-doc
+                              :on-mouse-enter aim/hov-white-in
+                              :on-mouse-leave aim/hov-white-out
+                              :on-mouse-down aim/press-white-in
+                              :on-mouse-up aim/press-white-out}
+            lucide-x]]
+          [:div.ai-modal-body
+           [:div.ai-result-body (or (:markdown sd) (:html sd) "")]]
+          [:div.ai-modal-foot
+           [:button.ai-btn.ai-btn-primary {:on-click on-close-spec-doc
+                                           :on-mouse-enter aim/hov-coral-in
+                                           :on-mouse-leave aim/hov-coral-out
+                                           :on-mouse-down aim/press-coral-in
+                                           :on-mouse-up aim/press-coral-out}
+            (tr "workspace.ai.bar.close")]]]])]]))

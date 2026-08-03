@@ -38,6 +38,7 @@
    [app.common.geom.shapes.transforms :as gtr]
    [app.common.types.design-spec :as cds]
    [app.common.types.text :as txt]
+   [app.common.types.tokens-lib :as ctob]
    [app.common.uuid :as uuid]
    [app.main.data.changes :as dch]
    [app.main.data.helpers :as dsh]
@@ -46,6 +47,7 @@
    [app.main.data.workspace.undo :as dwu]
    [app.util.i18n :as i18n :refer [tr]]
    [beicon.v2.core :as rx]
+   [cuerdas.core :as str]
    [potok.v2.core :as ptk]))
 
 ;; ── Public helpers ──────────────────────────────────────────────────────────
@@ -113,19 +115,35 @@
 (def ^:private scene-defaults
   {:max-shapes 200 :max-depth 6 :max-content-chars 500 :max-total-chars 12000})
 
-(defn- scene-fill-summary [f]
-  (cond
-    (:fill-image f)          {:image true}
-    (:fill-color-gradient f) {:gradient true}
-    :else                    {:color   (:fill-color f "#cccccc")
-                              :opacity (:fill-opacity f 1)}))
+(defn- scene-fill-summary
+  "Summarize one fill. When `token-name` is present and resolves to a color
+   token in `color-tokens` (name -> hex), emit `{:token name}` instead of the
+   raw hex (token awareness for the agent scene channel). Defensive: falls back
+   to the raw value when the token is absent or not a color token."
+  ([f] (scene-fill-summary f nil nil))
+  ([f token-name color-tokens]
+   (cond
+     (:fill-image f)          {:image true}
+     (:fill-color-gradient f) {:gradient true}
+     :else                    (let [tok (when (and token-name
+                                                   (contains? color-tokens token-name))
+                                          token-name)]
+                                (cond-> {:opacity (:fill-opacity f 1)}
+                                  tok  (assoc :token tok)
+                                  (nil? tok) (assoc :color (:fill-color f "#cccccc")))))))
 
-(defn- scene-stroke-summary [strokes]
-  (when-let [s (first strokes)]
-    {:color   (:stroke-color s)
-     :width   (:stroke-width s)
-     :opacity (:stroke-opacity s)
-     :style   (:stroke-style s)}))
+(defn- scene-stroke-summary
+  ([strokes] (scene-stroke-summary strokes nil nil))
+  ([strokes token-name color-tokens]
+   (when-let [s (first strokes)]
+     (let [tok (when (and token-name
+                          (contains? color-tokens token-name))
+                 token-name)]
+       (cond-> {:width   (:stroke-width s)
+                :opacity (:stroke-opacity s)
+                :style   (:stroke-style s)}
+         tok  (assoc :token tok)
+         (nil? tok) (assoc :color (:stroke-color s)))))))
 
 (defn- scene-typography [shape]
   (when (= :text (:type shape))
@@ -148,7 +166,7 @@
         (some? (:layout-align-items shape))     (assoc :align (name (:layout-align-items shape)))
         (some? (:layout-justify-content shape)) (assoc :justify (name (:layout-justify-content shape)))))))
 
-(defn- scene-shape-record [shape selected-set max-content-chars]
+(defn- scene-shape-record [shape selected-set max-content-chars color-tokens]
   (let [typo    (scene-typography shape)
         layout  (scene-layout-summary shape)
         content (when (= :text (:type shape))
@@ -157,7 +175,10 @@
                       (when (pos? (count t))
                         (if (> (count t) max-content-chars)
                           (str (subs t 0 max-content-chars) "…")
-                          t)))))]
+                          t)))))
+        applied (:applied-tokens shape)
+        fill-tok   (get applied :fill)
+        stroke-tok (get applied :stroke-color)]
     (cond-> {:id          (str (:id shape))
              :type        (name (:type shape :rect))
              :name        (:name shape "")
@@ -166,8 +187,9 @@
              :w           (:width shape 0)
              :h           (:height shape 0)
              :rotation    (:rotation shape 0)
-             :fills       (mapv scene-fill-summary (:fills shape))
-             :stroke      (scene-stroke-summary (:strokes shape))
+             :fills       (mapv #(scene-fill-summary % fill-tok color-tokens)
+                                (:fills shape))
+             :stroke      (scene-stroke-summary (:strokes shape) stroke-tok color-tokens)
              :opacity     (:opacity shape)
              :r1          (:r1 shape)
              :hidden      (boolean (:hidden shape))
@@ -178,11 +200,33 @@
       (some? typo)    (assoc :typography typo)
       (some? layout)  (assoc :layout layout))))
 
+(defn- color-tokens-from-state
+  "Return a map {token-name hex-string} of the active color tokens, or nil when
+   the file has no tokens-lib. Defensive: any failure yields nil so the scene
+   serializer falls back to raw fill/stroke values."
+  [state]
+  (try
+    (let [tlib (-> (dsh/lookup-file-data state) :tokens-lib)]
+      (when tlib
+        (let [active (ctob/get-tokens-in-active-sets tlib)]
+          (into {}
+                (keep (fn [[name tok]]
+                        (when (= :color (:type tok))
+                          (let [v (:value tok)]
+                            (when (string? v) [name v])))))
+                active))))
+    (catch :default _ nil)))
+
 (defn serialize-scene
   "Walk the current page's shape map and emit a token-bounded, depth-indented
   structured description of the visible scene so the AI agent can reason about
   the canvas before generating / region-updating. Pure + read-only — it never
   emits dw*/pcb/dch/dwu.
+
+  Token awareness: when a shape's `:applied-tokens` references a color token
+  that exists in the active token sets, the fill/stroke summary emits
+  `{:token \"color.primary\"}` instead of the raw hex. Defensive — falls back
+  to raw values when no tokens-lib / no attribution.
 
   Returns a string (one compact shape record per line), or nil when the page
   has no shapes. Bounded by max-shapes / max-depth / max-content-chars /
@@ -192,7 +236,8 @@
   ([state {:keys [max-shapes max-depth max-content-chars max-total-chars]
            :or {max-shapes 200 max-depth 6 max-content-chars 500 max-total-chars 12000}}]
    (let [objects  (dsh/lookup-page-objects state)
-         selected (into #{} (dsh/lookup-selected state))]
+         selected (into #{} (dsh/lookup-selected state))
+         color-tokens (color-tokens-from-state state)]
      (if-not (seq objects)
        nil
        (let [marker-budget 80
@@ -217,7 +262,9 @@
                                (when-let [s (get objects id)]
                                  (when-not (:hidden s)
                                    (vswap! visited conj id)
-                                   (let [rec  (scene-shape-record s selected max-content-chars)
+                                   (let [rec  (scene-shape-record s selected
+                                                                   max-content-chars
+                                                                   color-tokens)
                                          line (str (apply str (repeat depth "  "))
                                                    (pr-str rec))]
                                      (when (push! line)
@@ -275,6 +322,208 @@
                  obj-map
                  obj-map))))
 
+;; ── Design-system constraint layer (Phase 2) ────────────────────────────────
+;;
+;; `apply-design-constraints` post-processes the shape tree produced by
+;; `cds/spec->shape-tree` BEFORE the pcb build, so generated geometry honors
+;; the workspace's design system (tokens) + free-form guidelines. It is ONLY
+;; called when the AI config's `:design-system-guidelines` is non-blank
+;; (byte-identical-when-inactive: blank guidelines → this fn never runs and the
+;; tree is committed verbatim, exactly as before).
+;;
+;; It is PURE and DEFENSIVE: any failure inside a per-shape transform is
+;; swallowed so a malformed token / component entry never aborts the whole
+;; generation. It returns a new tree (same shape as the input plus an optional
+;; `:reuse-markers` map {uuid component-id}).
+
+(defn- hex->rgb
+  "Parse a #rrggbb / #rgb hex string into [r g b] ints, or nil."
+  [hex]
+  (when (and (string? hex) (str/starts-with? hex "#"))
+    (let [h (subs hex 1)]
+      (cond
+        (= (count h) 6) [(js/parseInt (subs h 0 2) 16)
+                         (js/parseInt (subs h 2 4) 16)
+                         (js/parseInt (subs h 4 6) 16)]
+        (= (count h) 3) [(js/parseInt (str (nth h 0) (nth h 0)) 16)
+                         (js/parseInt (str (nth h 1) (nth h 1)) 16)
+                         (js/parseInt (str (nth h 2) (nth h 2)) 16)]
+        :else nil))))
+
+(defn- color-distance
+  "Squared euclidean distance between two hex colors. nil when either is
+   unparseable (so the caller skips resolution for that fill)."
+  [a b]
+  (when-let [[r1 g1 b1] (hex->rgb a)]
+    (when-let [[r2 g2 b2] (hex->rgb b)]
+      (+ (* (- r1 r2) (- r1 r2))
+         (* (- g1 g2) (- g1 g2))
+         (* (- b1 b2) (- b1 b2))))))
+
+(defn- nearest-color-token
+  "Given a hex literal and a map {token-name hex}, return the [name hex] pair
+   with the smallest RGB distance, or nil when the map is empty / no token
+   parses. An exact match short-circuits."
+  [hex color-tokens]
+  (when (and hex (seq color-tokens))
+    (reduce
+     (fn [best [name tok-hex]]
+       (let [d (color-distance hex tok-hex)]
+         (cond
+           (nil? d) best
+           (= d 0)  (reduced [name tok-hex])
+           (or (nil? best) (< d (best 2))) [name tok-hex d]
+           :else best)))
+     nil
+     color-tokens)))
+
+(defn- snap-to-grid
+  "Round `v` to the nearest multiple of `unit` (default 8). Non-numbers and
+   non-positive units pass through unchanged."
+  ([v] (snap-to-grid v 8))
+  ([v unit]
+   (if (and (number? v) (number? unit) (pos? unit))
+     (* (Math/round (/ v unit)) unit)
+     v)))
+
+(defn- resolve-fills
+  "Replace raw hex fill colors with the nearest color token's hex and stamp
+   `:applied-tokens {:fill token-name}` on the shape. Returns the shape
+   unchanged when no color tokens exist."
+  [shape color-tokens]
+  (if (or (nil? color-tokens) (empty? color-tokens))
+    shape
+    (let [fills (:fills shape)
+          new-fills (mapv
+                     (fn [f]
+                       (if-let [fc (:fill-color f)]
+                         (if-let [[name tok-hex] (nearest-color-token fc color-tokens)]
+                           (assoc f :fill-color tok-hex
+                                    :fill-token name)
+                           f)
+                         f))
+                     fills)]
+      (cond-> shape
+        (not= new-fills fills)
+        (-> (assoc :fills new-fills)
+            (assoc :applied-tokens
+                   (merge (:applied-tokens shape)
+                          (into {}
+                                (keep (fn [f] (when (:fill-token f)
+                                                [:fill (:fill-token f)])))
+                                new-fills)))
+            ;; drop the transient marker so it never reaches pcb validation.
+            (as-> s (assoc s :fills
+                           (mapv #(dissoc % :fill-token) (:fills s)))))))))
+
+(defn- snap-shape
+  "Snap position/size/gap/radii to the spacing grid. Defensive: only numbers
+   are snapped; nil keys are left alone."
+  [shape spacing-unit]
+  (if (or (nil? spacing-unit) (not (pos? spacing-unit)))
+    shape
+    (let [snap (fn [v] (snap-to-grid v spacing-unit))]
+      (-> shape
+          (update :x        snap)
+          (update :y        snap)
+          (update :width    snap)
+          (update :height   snap)
+          (update :layout-gap snap)
+          (update :r1       snap)
+          (update :r2       snap)
+          (update :r3       snap)
+          (update :r4       snap)))))
+
+(defn- component-reuse-markers
+  "Build {uuid component-id} for shapes whose `:name` matches a library
+   component name. Returns {} when there are no matches / no components."
+  [obj-map component-name->id]
+  (if (empty? component-name->id)
+    {}
+    (reduce-kv
+     (fn [m id shape]
+       (let [nm (:name shape)]
+         (if-let [cid (get component-name->id nm)]
+           (assoc m id cid)
+           m)))
+     {}
+     obj-map)))
+
+(defn apply-design-constraints
+  "Post-process the `tree` (output of `cds/spec->shape-tree`) so the generated
+   geometry honors the workspace design system. PURE + DEFENSIVE.
+
+   Args:
+     tree                  the {:objects :order :id-map :interactions :flows} map
+     guidelines            the AI config `:design-system-guidelines` string
+                           (already known non-blank by the caller)
+     color-tokens          {token-name hex} of active color tokens (may be nil)
+     spacing-unit          grid unit (number) for snapping, or nil to skip
+     component-name->id    {component-name component-id} for reuse markers
+
+   Returns a new tree with:
+     - fills resolved to the nearest color token (+ `:applied-tokens`)
+     - position/size/gap/radii snapped to the spacing grid
+     - a `:reuse-markers` {uuid component-id} map when names match components
+
+   Any per-shape failure is swallowed (the shape passes through unchanged) so a
+   bad token / component entry never aborts the whole generation."
+  [tree guidelines color-tokens spacing-unit component-name->id]
+  (let [guidelines (or guidelines "")]
+    (if (str/blank? guidelines)
+      tree
+      (let [objects (:objects tree)
+            new-objects
+            (reduce-kv
+             (fn [m id shape]
+               (let [s1 (try (resolve-fills shape color-tokens)
+                          (catch :default _ shape))
+                     s2 (try (snap-shape s1 spacing-unit)
+                          (catch :default _ s1))]
+                 (assoc m id s2)))
+             (array-map)
+             objects)
+            markers (try (component-reuse-markers new-objects component-name->id)
+                      (catch :default _ {}))]
+        (-> tree
+            (assoc :objects new-objects)
+            (assoc :reuse-markers markers))))))
+
+(defn- active-spacing-unit
+  "Pick the spacing grid unit from the active spacing tokens: the smallest
+   nonzero spacing token value, or nil when none. Defensive — any failure
+   yields nil (caller then skips the snap step)."
+  [state]
+  (try
+    (let [tlib (-> (dsh/lookup-file-data state) :tokens-lib)]
+      (when tlib
+        (let [active (ctob/get-tokens-in-active-sets tlib)]
+          (->> (keep (fn [[_ tok]]
+                       (when (= :spacing (:type tok))
+                         (let [v (:value tok)]
+                           (when (number? v) v))))
+                     active)
+               (filter pos?)
+               seq
+               (apply min)))))
+    (catch :default _ nil)))
+
+(defn- component-name->id
+  "Build {component-name component-id} from the current file's component
+   library. Returns {} when there are no components. Defensive."
+  [state]
+  (try
+    (let [comps (-> (dsh/lookup-file-data state) :components)]
+      (if (empty? comps)
+        {}
+        (into {}
+              (keep (fn [[cid c]]
+                      (let [nm (:name c)]
+                        (when (and nm (not (str/blank? (str nm))))
+                          [(str nm) cid]))))
+              comps)))
+    (catch :default _ {})))
+
 ;; ── The apply event ──────────────────────────────────────────────────────────
 
 (defn apply-design-spec
@@ -316,15 +565,29 @@
           (rx/of (ntf/info (tr "workspace.ai.bar.invalid-spec")))
 
           (let [is-update   (= target "update-selection")
+                ;; Design-system constraints: ONLY applied when the AI config's
+                ;; `:design-system-guidelines` opt is non-blank. Byte-identical-
+                ;; when-inactive — blank/absent guidelines skip this entirely
+                ;; and the tree is committed verbatim, exactly as before. The
+                ;; UI bar passes `:design-system-guidelines` through from the
+                ;; fetched `llm_get_config` view when applying a preview.
+                guidelines  (:design-system-guidelines opts)
+                tree-c      (if (and guidelines (not (str/blank? guidelines)))
+                              (apply-design-constraints
+                               tree guidelines
+                               (color-tokens-from-state state)
+                               (active-spacing-unit state)
+                               (component-name->id state))
+                              tree)
                 ;; Region update origin = current selection top-left.
                 bounds      (when is-update (selection-bounds state))
                 ox          (or (some-> bounds :x) 0)
                 oy          (or (some-> bounds :y) 0)
-                obj-map     (-> (:objects tree)
-                                (bake-interactions (:interactions tree))
+                obj-map     (-> (:objects tree-c)
+                                (bake-interactions (:interactions tree-c))
                                 (translate-tree ox oy))
-                order       (:order tree)
-                flows       (:flows tree)
+                order       (:order tree-c)
+                flows       (:flows tree-c)
                 selected    (when is-update (dsh/lookup-selected state))
                 undo-id     (uuid/next)
 

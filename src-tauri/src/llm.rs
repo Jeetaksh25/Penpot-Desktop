@@ -169,6 +169,33 @@ pub struct LlmConfig {
 
     #[serde(default = "default_memory_turns")]
     pub memory_max_turns: usize,
+
+    // ── Phase 2 (AI Depth) ──
+    /// Free-form design-system guidelines the design-system / review / spec-doc
+    /// generators honor when non-blank. Byte-identical-when-inactive: blank =
+    /// no constraints applied.
+    #[serde(default = "default_design_system_guidelines")]
+    pub design_system_guidelines: String,
+
+    /// DeepInfra image-generation model slug (FLUX by default).
+    #[serde(default = "default_image_model")]
+    pub image_model: String,
+
+    /// DeepInfra background-removal model slug (BiRefNet by default).
+    #[serde(default = "default_bg_remove_model")]
+    pub bg_remove_model: String,
+
+    /// DeepInfra upscaling model slug (RealESRGAN x4plus by default).
+    #[serde(default = "default_upscale_model")]
+    pub upscale_model: String,
+
+    /// MCP server enabled toggle. Default false (byte-identical-when-inactive).
+    #[serde(default = "default_mcp_enabled")]
+    pub mcp_enabled: bool,
+
+    /// MCP server port; 0 = auto-pick. UI shows 0 as "auto".
+    #[serde(default = "default_mcp_port")]
+    pub mcp_port: u16,
 }
 
 fn default_provider() -> String { "deepinfra".into() }
@@ -186,6 +213,12 @@ fn default_ovion_cloud_endpoint() -> String { "https://api.ovion.app/v1".into() 
 fn default_timeout() -> u64 { 240 }
 fn default_memory_enabled() -> bool { true }
 fn default_memory_turns() -> usize { 6 }
+fn default_design_system_guidelines() -> String { String::new() }
+fn default_image_model() -> String { "black-forest-labs/FLUX-1.1-pro".into() }
+fn default_bg_remove_model() -> String { "briaai/BiRefNet".into() }
+fn default_upscale_model() -> String { "philzooks/RealESRGAN_x4plus".into() }
+fn default_mcp_enabled() -> bool { false }
+fn default_mcp_port() -> u16 { 0 }
 
 impl Default for LlmConfig {
     fn default() -> Self {
@@ -209,6 +242,12 @@ impl Default for LlmConfig {
             timeout_secs: default_timeout(),
             memory_enabled: default_memory_enabled(),
             memory_max_turns: default_memory_turns(),
+            design_system_guidelines: default_design_system_guidelines(),
+            image_model: default_image_model(),
+            bg_remove_model: default_bg_remove_model(),
+            upscale_model: default_upscale_model(),
+            mcp_enabled: default_mcp_enabled(),
+            mcp_port: default_mcp_port(),
         }
     }
 }
@@ -237,6 +276,12 @@ struct LlmConfigView {
     timeout_secs: u64,
     memory_enabled: bool,
     memory_max_turns: usize,
+    design_system_guidelines: String,
+    image_model: String,
+    bg_remove_model: String,
+    upscale_model: String,
+    mcp_enabled: bool,
+    mcp_port: u16,
 }
 
 fn load_config(app: &AppHandle) -> LlmConfig {
@@ -532,6 +577,46 @@ struct GenerateRequest {
     files: Vec<FileInput>,
     #[serde(default)]
     options: GenerateOptions,
+}
+
+// ── Phase 2 request structs (AI Depth) ───────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct DesignSystemGenRequest {
+    pub prompt: String,
+    #[serde(default)]
+    pub source_image: Option<ImageInput>,
+    #[serde(default)]
+    pub source_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ReviewRequest {
+    pub screenshot: ImageInput,
+    #[serde(default)]
+    pub selection_meta: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpecDocRequest {
+    /// "page" | "selection"
+    pub scope: String,
+    pub scene: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ImageGenRequest {
+    pub prompt: String,
+    /// "1024x1024" | "1024x1792" | "1792x1024"
+    pub size: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ImageEditRequest {
+    pub image: ImageInput,
+    /// scale factor for upscale (2 | 4); ignored by remove_background.
+    #[serde(default)]
+    pub scale: Option<u32>,
 }
 
 // ── Progress events to the frontend ─────────────────────────────────────────
@@ -1053,6 +1138,7 @@ fn build_prompt(template: &str) -> String {
 // Responses: DeepInfra OpenAI-shaped (`choices[0].message.content`); Ollama
 // (`message.content`).
 
+#[derive(Debug, Clone, Deserialize)]
 struct ImageInput {
     mime: String,
     b64: String,
@@ -1868,6 +1954,146 @@ fn infer_preset(prompt: &str) -> &'static str {
     }
 }
 
+// ── Phase 2 helpers (AI Depth) ───────────────────────────────────────────────
+//
+// Image generation / edit run against the DeepInfra image-INFERENCE endpoint
+// (not the OpenAI-compatible chat endpoint). The configured `deepinfra_base`
+// is `https://api.deepinfra.com/v1/openai` for chat; image inference lives at
+// `https://api.deepinfra.com/v1/inference/<model>`, so we strip the `/openai`
+// suffix and append `/inference/<model>`. The body is `{"inputs": <prompt or
+// data-url>}` per the DeepInfra image-inference shape; the response is either
+// `{"images":[{"data": <b64>}]}` or `{"output":[...]}` — both are handled.
+
+/// POST a JSON body to the DeepInfra image-inference endpoint for `model` and
+/// return the parsed response Value. Defensive: returns an Err string on any
+/// non-success status or unparseable body.
+async fn deepinfra_image_inference(
+    cfg: &LlmConfig,
+    model: &str,
+    body: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let key = cfg.deepinfra_api_key.trim();
+    if key.is_empty() {
+        return Err(
+            "DeepInfra provider selected but no API key is configured (set it in Settings or .env.local).".into(),
+        );
+    }
+    let base = cfg.deepinfra_base.trim_end_matches('/');
+    let inf_base = base.strip_suffix("/openai").unwrap_or(base);
+    let url = format!("{inf_base}/inference/{model}");
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(cfg.timeout_secs))
+        .build()
+        .map_err(|e| format!("http client build failed: {e}"))?;
+    let resp = client
+        .post(&url)
+        .bearer_auth(key)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("DeepInfra image request failed: {e}"))?;
+    let status = resp.status();
+    let text = resp
+        .text()
+        .await
+        .map_err(|e| format!("DeepInfra image read failed: {e}"))?;
+    if !status.is_success() {
+        let snippet: String = text.chars().take(500).collect();
+        return Err(format!("DeepInfra image error {status} (model {model}): {snippet}"));
+    }
+    serde_json::from_str(&text).map_err(|e| {
+        format!(
+            "DeepInfra image response parse failed: {e} (body: {})",
+            text.chars().take(300).collect::<String>()
+        )
+    })
+}
+
+/// Pull the first base64 image string out of a DeepInfra image-inference
+/// response. Handles `{"images":[{"data": <b64>}]}`, `{"output":[{"data": <b64>}]}`,
+/// and the bare-string-array variants. Returns Err on an unrecognized shape.
+fn extract_first_image_b64(val: &serde_json::Value) -> Result<String, String> {
+    for field in ["images", "output"] {
+        if let Some(arr) = val.get(field).and_then(|v| v.as_array()) {
+            if let Some(first) = arr.first() {
+                if let Some(data) = first.get("data").and_then(|d| d.as_str()) {
+                    return Ok(data.to_string());
+                }
+                if let Some(s) = first.as_str() {
+                    return Ok(s.to_string());
+                }
+            }
+        }
+    }
+    Err("DeepInfra image response had no recognizable image field (expected images[]/output[] with data)".into())
+}
+
+/// Parse a "WxH" size string into (width, height). Defaults to (1024, 1024).
+fn parse_size(size: &str) -> (u32, u32) {
+    let (w, h) = size
+        .split_once('x')
+        .and_then(|(w, h)| w.trim().parse::<u32>().ok().zip(h.trim().parse::<u32>().ok()))
+        .unwrap_or((1024, 1024));
+    (w, h)
+}
+
+// ── Phase 2 system prompts (design-system / review / spec-doc) ───────────────
+//
+// These reuse the chat-completions endpoint (call_deepinfra-style via
+// call_provider) with a tailored prompt. The model emits a JSON object that
+// Rust returns verbatim (parsed via extract_json like llm_generate does).
+
+const DESIGN_SYSTEM_PROMPT: &str = r#"You are the design-system extraction engine inside an Ovion-based desktop design studio. Produce a concrete design system as a single JSON object. Return ONLY valid JSON — no markdown, no prose, no fences.
+
+Output shape:
+{
+  "colors": [{"name": "primary", "value": "#hex"}, ...],
+  "typography": {
+    "families": ["Inter", ...],
+    "scale": [{"name": "h1", "size": 48, "weight": 700, "line_height": 1.1}, ...]
+  },
+  "spacing": [4, 8, 12, 16, 24, 32, 48, 64],
+  "radii": [0, 4, 8, 12, 16, 24]
+}
+
+Rules:
+- Ground every value in the user's prompt and any provided reference image/URL. When a reference is provided, extract the design language it follows.
+- All colors must be valid hex with AA-contrast for text on background.
+- Use a REAL typographic scale (a clear type scale with real line-heights) and a REAL spacing/radius scale (multiples of 4 or 8).
+- Honor any design-system guidelines provided verbatim.
+- Output ONLY the JSON object."#;
+
+const REVIEW_PROMPT: &str = r#"You are a senior UX/design reviewer inside an Ovion-based desktop design studio. You are given a screenshot of the current canvas (and optional selection metadata). Produce a NON-mutating design review as a single JSON object. Return ONLY valid JSON — no markdown, no prose, no fences.
+
+Output shape:
+{
+  "score": 0.0,
+  "summary": "1-2 sentence overall assessment",
+  "strengths": ["...", "..."],
+  "issues": [{"title": "...", "severity": "low" | "medium" | "high", "detail": "..."}],
+  "recommendations": ["...", "..."]
+}
+
+Rules:
+- score is a float 0..10.
+- Ground the review in the screenshot: real, specific observations about hierarchy, spacing, contrast, alignment, density, and consistency — not generic platitudes.
+- Honor any design-system guidelines provided as the benchmark.
+- Output ONLY the JSON object."#;
+
+const SPEC_DOC_PROMPT: &str = r#"You are the specification-document engine inside an Ovion-based desktop design studio. You are given a serialized scene (page or selection) and a scope. Produce a spec document as a single JSON object containing both markdown and html. Return ONLY valid JSON — no markdown, no prose, no fences.
+
+Output shape:
+{
+  "markdown": "# Spec\n\n... full markdown spec ...",
+  "html": "<h1>Spec</h1>... full rendered html ..."
+}
+
+Rules:
+- The markdown is the canonical spec; the html is a rendered version of the same content (semantic HTML, no scripts).
+- Document components, layout, typography, colors, spacing, interactions, and flows present in the scene.
+- Honor any design-system guidelines provided when describing tokens.
+- Output ONLY the JSON object."#;
+
 // ── Tauri commands ──────────────────────────────────────────────────────────
 
 #[tauri::command]
@@ -1893,6 +2119,12 @@ pub fn llm_get_config(app: AppHandle) -> LlmConfigView {
         timeout_secs: cfg.timeout_secs,
         memory_enabled: cfg.memory_enabled,
         memory_max_turns: cfg.memory_max_turns,
+        design_system_guidelines: cfg.design_system_guidelines,
+        image_model: cfg.image_model,
+        bg_remove_model: cfg.bg_remove_model,
+        upscale_model: cfg.upscale_model,
+        mcp_enabled: cfg.mcp_enabled,
+        mcp_port: cfg.mcp_port,
     }
 }
 
@@ -2350,4 +2582,178 @@ fn base64_encode(data: &[u8]) -> String {
         }
     }
     out
+}
+
+// ── Phase 2 Tauri commands (AI Depth) ────────────────────────────────────────
+//
+// design-system / review / spec-doc reuse the chat-completions endpoint
+// (call_provider) with a tailored prompt and return the model's JSON object
+// verbatim (extract_json). image-gen / bg-remove / upscale call the DeepInfra
+// image-INFERENCE endpoint and return {image_base64, mime}. mcp_* drive the
+// JSON-RPC skeleton in mcp_server.rs.
+
+#[tauri::command]
+pub async fn llm_generate_design_system(
+    app: AppHandle,
+    request: DesignSystemGenRequest,
+) -> Result<serde_json::Value, String> {
+    ABORT.store(false, Ordering::Relaxed);
+    check_aborted()?;
+    let cfg = load_config(&app);
+    emit_progress(&app, "design-system", "analyzing");
+
+    let mut user = format!("User request:\n{}\n", request.prompt);
+    if let Some(url) = &request.source_url {
+        if !url.trim().is_empty() {
+            user.push_str(&format!("\nReference URL: {url}\n"));
+        }
+    }
+    if !cfg.design_system_guidelines.trim().is_empty() {
+        user.push_str(&format!(
+            "\nDesign-system guidelines (honor verbatim):\n{}\n",
+            cfg.design_system_guidelines
+        ));
+    }
+
+    let images: Vec<ImageInput> = request.source_image.into_iter().collect();
+    let raw = call_provider(&cfg, &kimi_model(&cfg), DESIGN_SYSTEM_PROMPT, &user, &images).await?;
+    check_aborted()?;
+    let v = extract_json(&raw)?;
+    emit_progress(&app, "done", "design-system ready");
+    Ok(v)
+}
+
+#[tauri::command]
+pub async fn llm_review_design(
+    app: AppHandle,
+    request: ReviewRequest,
+) -> Result<serde_json::Value, String> {
+    ABORT.store(false, Ordering::Relaxed);
+    check_aborted()?;
+    let cfg = load_config(&app);
+    emit_progress(&app, "review", "analyzing screenshot");
+
+    let meta = if request.selection_meta.is_null() {
+        "(no selection metadata)".to_string()
+    } else {
+        serde_json::to_string_pretty(&request.selection_meta).unwrap_or_default()
+    };
+    let user = format!(
+        "Review the attached screenshot.\n\nSelection metadata:\n{meta}\n{}",
+        if cfg.design_system_guidelines.trim().is_empty() {
+            String::new()
+        } else {
+            format!("\nDesign-system guidelines (benchmark):\n{}\n", cfg.design_system_guidelines)
+        }
+    );
+    let images = vec![request.screenshot];
+    let raw = call_provider(&cfg, &kimi_model(&cfg), REVIEW_PROMPT, &user, &images).await?;
+    check_aborted()?;
+    let v = extract_json(&raw)?;
+    emit_progress(&app, "done", "review ready");
+    Ok(v)
+}
+
+#[tauri::command]
+pub async fn llm_generate_spec_doc(
+    app: AppHandle,
+    request: SpecDocRequest,
+) -> Result<serde_json::Value, String> {
+    ABORT.store(false, Ordering::Relaxed);
+    check_aborted()?;
+    let cfg = load_config(&app);
+    emit_progress(&app, "spec-doc", &format!("scope:{}", request.scope));
+
+    let scene = serde_json::to_string_pretty(&request.scene)
+        .unwrap_or_else(|_| "(unserializable scene)".to_string());
+    let mut user = format!("Scope: {}\n\nScene (JSON):\n{}\n", request.scope, scene);
+    if !cfg.design_system_guidelines.trim().is_empty() {
+        user.push_str(&format!(
+            "\nDesign-system guidelines (reference for tokens):\n{}\n",
+            cfg.design_system_guidelines
+        ));
+    }
+    let raw = call_provider(&cfg, &glm_model(&cfg), SPEC_DOC_PROMPT, &user, &[]).await?;
+    check_aborted()?;
+    let v = extract_json(&raw)?;
+    emit_progress(&app, "done", "spec-doc ready");
+    Ok(v)
+}
+
+#[tauri::command]
+pub async fn llm_generate_image(
+    app: AppHandle,
+    request: ImageGenRequest,
+) -> Result<serde_json::Value, String> {
+    ABORT.store(false, Ordering::Relaxed);
+    check_aborted()?;
+    let cfg = load_config(&app);
+    emit_progress(&app, "image-gen", &format!("model:{}", cfg.image_model));
+
+    let (w, h) = parse_size(&request.size);
+    let body = serde_json::json!({
+        "inputs": request.prompt,
+        "width": w,
+        "height": h,
+    });
+    let resp = deepinfra_image_inference(&cfg, &cfg.image_model, body).await?;
+    check_aborted()?;
+    let b64 = extract_first_image_b64(&resp)?;
+    emit_progress(&app, "done", "image ready");
+    Ok(serde_json::json!({ "image_base64": b64, "mime": "image/png" }))
+}
+
+#[tauri::command]
+pub async fn llm_remove_background(
+    app: AppHandle,
+    request: ImageEditRequest,
+) -> Result<serde_json::Value, String> {
+    ABORT.store(false, Ordering::Relaxed);
+    check_aborted()?;
+    let cfg = load_config(&app);
+    emit_progress(&app, "bg-remove", &format!("model:{}", cfg.bg_remove_model));
+
+    let data_url = format!("data:{};base64,{}", request.image.mime, request.image.b64);
+    let body = serde_json::json!({ "inputs": data_url });
+    let resp = deepinfra_image_inference(&cfg, &cfg.bg_remove_model, body).await?;
+    check_aborted()?;
+    let b64 = extract_first_image_b64(&resp)?;
+    emit_progress(&app, "done", "background removed");
+    Ok(serde_json::json!({ "image_base64": b64, "mime": "image/png" }))
+}
+
+#[tauri::command]
+pub async fn llm_upscale_image(
+    app: AppHandle,
+    request: ImageEditRequest,
+) -> Result<serde_json::Value, String> {
+    ABORT.store(false, Ordering::Relaxed);
+    check_aborted()?;
+    let cfg = load_config(&app);
+    let scale = request.scale.unwrap_or(2);
+    emit_progress(&app, "upscale", &format!("model:{} scale:{}x", cfg.upscale_model, scale));
+
+    let data_url = format!("data:{};base64,{}", request.image.mime, request.image.b64);
+    let body = serde_json::json!({ "inputs": data_url, "scale": scale });
+    let resp = deepinfra_image_inference(&cfg, &cfg.upscale_model, body).await?;
+    check_aborted()?;
+    let b64 = extract_first_image_b64(&resp)?;
+    emit_progress(&app, "done", "upscaled");
+    Ok(serde_json::json!({ "image_base64": b64, "mime": "image/png" }))
+}
+
+#[tauri::command]
+pub fn llm_mcp_status(app: AppHandle) -> Result<serde_json::Value, String> {
+    let _ = &app; // reserved for future per-app scoping
+    crate::mcp_server::status()
+}
+
+#[tauri::command]
+pub async fn llm_mcp_start(app: AppHandle, port: u16) -> Result<(), String> {
+    crate::mcp_server::start(app, port).await
+}
+
+#[tauri::command]
+pub fn llm_mcp_stop() -> Result<(), String> {
+    crate::mcp_server::stop()
 }

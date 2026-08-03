@@ -197,6 +197,20 @@
       type          (assoc :type type))]
    (when hint [:span.ais-hint hint])])
 
+(defn- textarea-field
+  "Like `field` but renders a <textarea> for long-form guidelines text.
+  Controlled by :value; auto-grow is left to the browser (rows attribute)."
+  [{:keys [label hint value on-change rows placeholder]}]
+  [:div.ais-field
+   [:span.ais-label label]
+   [:textarea.ais-input
+    (cond-> {:on-change on-change
+             :rows (or rows 4)
+             :style #js {"resize" "vertical" "minHeight" "84px"}
+             :placeholder placeholder}
+      (some? value) (assoc :value (or value "")))]
+   (when hint [:span.ais-hint hint])])
+
 ;; Registered as a modal so any surface (titlebar gear, AI bar gear) can open
 ;; it via `(st/emit! (modal/show {:type :ai-settings}))`. When opened through
 ;; the modal system `on-close` is nil and the close actions emit `modal/hide`;
@@ -233,7 +247,7 @@
                      (fn [e]
                        (let [v (.. e -target -value)]
                          (reset! cfg* (assoc (deref cfg*) k
-                                             (if (contains? #{:memory_enabled} k)
+                                             (if (contains? #{:memory_enabled :mcp_enabled} k)
                                                (.. e -target -checked)
                                                v)))))))
           save    (mf/use-fn
@@ -258,7 +272,13 @@
                                    :ovion_cloud_token       (:ovion_cloud_token cfg "")
                                    :timeout_secs            (safe-int (:timeout_secs cfg 240) 240)
                                    :memory_enabled          (boolean (:memory_enabled cfg true))
-                                   :memory_max_turns        (safe-int (:memory_max_turns cfg 6) 6)}]
+                                   :memory_max_turns        (safe-int (:memory_max_turns cfg 6) 6)
+                                   :design_system_guidelines (:design_system_guidelines cfg "")
+                                   :image_model             (:image_model cfg "")
+                                   :bg_remove_model         (:bg_remove_model cfg "")
+                                   :upscale_model           (:upscale_model cfg "")
+                                   :mcp_enabled             (boolean (:mcp_enabled cfg false))
+                                   :mcp_port                (safe-int (:mcp_port cfg 0) 0)}]
                        (-> (ai/invoke-set-config payload)
                            (p/then (fn [_]
                                      (reset! saving* false)
@@ -498,6 +518,42 @@
                     :type "number"
                     :value (:timeout_secs cfg 240)
                     :on-change (upd :timeout_secs)})
+
+            ;; ── AI Image & MCP (Phase 2) ────────────────────────────────────
+            ;; Image generation / edit model slugs + design-system guidelines
+            ;; consumed by the constraint layer, and the MCP server toggle/port.
+            ;; All non-secret plain fields. Byte-identical-when-inactive: blank
+            ;; slugs fall back to the Rust defaults; MCP off by default.
+            [:div.ais-section (tr "workspace.ai.settings.section-image-mcp")]
+            (textarea-field
+             {:label     (tr "workspace.ai.settings.design-system-guidelines")
+              :hint      (tr "workspace.ai.settings.design-system-guidelines-hint")
+              :value     (:design_system_guidelines cfg)
+              :rows      4
+              :on-change (upd :design_system_guidelines)})
+            (field {:label     (tr "workspace.ai.settings.image-model")
+                    :value     (:image_model cfg)
+                    :placeholder "black-forest-labs/FLUX-1.1-pro"
+                    :on-change (upd :image_model)})
+            (field {:label     (tr "workspace.ai.settings.bg-remove-model")
+                    :value     (:bg_remove_model cfg)
+                    :placeholder "briaai/BiRefNet"
+                    :on-change (upd :bg_remove_model)})
+            (field {:label     (tr "workspace.ai.settings.upscale-model")
+                    :value     (:upscale_model cfg)
+                    :placeholder "philzooknows/RealESRGAN_x4plus"
+                    :on-change (upd :upscale_model)})
+            [:label.ais-chk-row
+             [:input.ais-chk {:type "checkbox"
+                              :checked (boolean (:mcp_enabled cfg false))
+                              :on-change (upd :mcp_enabled)}]
+             [:span.ais-label (tr "workspace.ai.settings.mcp-enabled")]]
+            [:span.ais-hint (tr "workspace.ai.settings.mcp-enabled-hint")]
+            (field {:label     (tr "workspace.ai.settings.mcp-port")
+                    :type      "number"
+                    :value     (:mcp_port cfg 0)
+                    :placeholder "0"
+                    :on-change (upd :mcp_port)})
             ])]
 
         [:div.ais-foot

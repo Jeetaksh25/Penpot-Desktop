@@ -257,6 +257,20 @@
 (def ai-error
   (l/derived :ai-error workspace-local))
 
+;; Phase 2 — AI Depth result slots in :workspace-local. Each holds the most
+;; recent payload from its WatchEvent (nil = nothing yet / cleared).
+(def ai-design-system
+  (l/derived :ai-design-system workspace-local))
+
+(def ai-review
+  (l/derived :ai-review workspace-local))
+
+(def ai-spec-doc
+  (l/derived :ai-spec-doc workspace-local))
+
+(def ai-image
+  (l/derived :ai-image workspace-local))
+
 ;; "Update only the selection" generation preference. Lives here (not in the
 ;; AI bar's component state) so the AI Settings modal can host the toggle while
 ;; the AI bar still reads it at generate time. nil => default true (update the
