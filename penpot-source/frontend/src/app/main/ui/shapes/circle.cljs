@@ -40,8 +40,11 @@
         large     (if (> sweep 180.0) 1 0)
         [sx sy]   (arc-point cx cy rx ry start-norm)
         [ex ey]   (arc-point cx cy rx ry end-norm)]
-    (if (nil? inner-ratio)
+    (if (or (nil? inner-ratio) (>= inner-ratio 1))
       ;; Pie slice: move to center, line to start, arc to end, close.
+      ;; inner-ratio nil OR >= 1 degrades to a pie (a ratio of 1 would
+      ;; make the inner arc coincide with the outer arc, enclosing zero
+      ;; area — see gap #59; the measures control placeholder is "1").
       (dm/fmt "M%,%L%,%A%,% 0 % 1 %,%Z"
               cx cy sx sy rx ry large ex ey)
       ;; Ring / donut: outer arc, then line to inner end, inner arc back

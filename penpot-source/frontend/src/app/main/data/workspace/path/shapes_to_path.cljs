@@ -7,6 +7,7 @@
 (ns app.main.data.workspace.path.shapes-to-path
   (:require
    [app.common.data :as d]
+   [app.common.data.macros :as dm]
    [app.common.files.changes-builder :as pcb]
    [app.common.files.helpers :as cph]
    [app.common.geom.point :as gpt]

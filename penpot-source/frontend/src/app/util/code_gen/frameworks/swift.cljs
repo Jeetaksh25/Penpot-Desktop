@@ -114,13 +114,26 @@
             ", y: " (fc/fmt-num cy) ")")))
 
 (defn- overlay-stroke
-  "Emit a `.overlay(...)` modifier for a shape's stroke. Returns \"\" when
-  no stroke."
+  "Emit a `.overlay(...)` modifier for a shape's stroke, stroking a view
+  that matches the filled shape's geometry (Circle / RoundedRectangle /
+  UnevenRoundedRectangle / Rectangle) so the outline follows the shape
+  instead of a sharp bounding rect. Returns \"\" when no stroke."
   [shape level]
   (if-let [s (stroke-attrs shape)]
-    (dm/str "\n" (indent level)
-            ".overlay(Rectangle().stroke(" (:color s)
-            ", lineWidth: " (fc/fmt-num (:width s)) "))")
+    (let [r (radius shape)
+          stroke-view (cond
+                         (= r :circle) "Circle()"
+                         (number? r) (dm/str "RoundedRectangle(cornerRadius: " (fc/fmt-num r) ")")
+                         (vector? r) (let [[r1 r2 r3 r4] r]
+                                       (dm/str "UnevenRoundedRectangle(cornerRadius: 0"
+                                               ", topLeadingCornerRadius: " (fc/fmt-num r1)
+                                               ", topTrailingCornerRadius: " (fc/fmt-num r2)
+                                               ", bottomTrailingCornerRadius: " (fc/fmt-num r3)
+                                               ", bottomLeadingCornerRadius: " (fc/fmt-num r4) ")"))
+                         :else "Rectangle()")]
+      (dm/str "\n" (indent level)
+              ".overlay(" stroke-view ".stroke(" (:color s)
+              ", lineWidth: " (fc/fmt-num (:width s)) "))"))
     ""))
 
 (defn- render-shape
@@ -188,7 +201,13 @@
              bg (fill-color shape)
              shape-view (cond
                           (= r :circle) "Circle()"
-                          (number? r) "RoundedRectangle(cornerRadius: 0)"
+                          (number? r) (dm/str "RoundedRectangle(cornerRadius: " (fc/fmt-num r) ")")
+                          (vector? r) (let [[r1 r2 r3 r4] r]
+                                        (dm/str "UnevenRoundedRectangle(cornerRadius: 0"
+                                                ", topLeadingCornerRadius: " (fc/fmt-num r1)
+                                                ", topTrailingCornerRadius: " (fc/fmt-num r2)
+                                                ", bottomTrailingCornerRadius: " (fc/fmt-num r3)
+                                                ", bottomLeadingCornerRadius: " (fc/fmt-num r4) ")"))
                           :else "Rectangle()")
              fill-mod (cond
                         (nil? bg) ".fill(Color.clear)"

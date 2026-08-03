@@ -361,10 +361,29 @@
                                         (dwdc/clear-drawing)
                                         (toggle-layout-flag :lasso-mode))}
 
+   ;; Figma-parity brush tool (gap #52). A path-following stroke tool.
+   ;; The actual renderer path-following + scatter is DEFERRED; toggling
+   ;; the :brush-mode layout flag is a safe no-op until the renderer
+   ;; lands (mirrors the :lasso toggle). "b" is the path-editor
+   ;; shape-builder chord too, but that binds only in the :path-editor
+   ;; subsection (never active simultaneously with the global :tools
+   ;; binding) — same dual-subsection pattern as :lasso "q" vs the path
+   ;; editor's vector-lasso "q".
+   :brush                {:tooltip "B"
+                          :command "b"
+                          :subsections [:tools]
+                          :fn #(st/emit! :interrupt
+                                        (dwdc/clear-drawing)
+                                        (toggle-layout-flag :brush-mode))}
+
    ;; Figma-parity scale tool (gap #37). Selects the :scale tool; the
    ;; canvas drag-to-scale interaction is deferred, the actionable
-   ;; scaling lives in the measures sidebar scale-factor input.
-   :scale                {:tooltip "K"
+   ;; scaling lives in the measures sidebar scale-factor input. Uses the
+   ;; distinct id :draw-scale (and the K chord) so it does NOT collide
+   ;; with the pre-existing :scale scale-text toggle entry below, which
+   ;; is relocated to Alt+K (a duplicate :scale map key is a hard CLJS
+   ;; read error, and two mousetrap "k" binds would shadow each other).
+   :draw-scale           {:tooltip "K"
                           :command "k"
                           :subsections [:tools]
                           :fn #(emit-when-no-readonly (dwd/select-for-drawing :scale))}
@@ -400,8 +419,8 @@
                           :subsections [:tools]
                           :fn #(emit-when-no-readonly (dw/toggle-proportion-lock))}
 
-   :scale                {:tooltip "K"
-                          :command "k"
+   :scale                {:tooltip (ds/alt "K")
+                          :command "alt+k"
                           :subsections [:tools]
                           :fn #(emit-when-no-readonly (toggle-layout-flag :scale-text))}
 

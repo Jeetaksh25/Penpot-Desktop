@@ -83,6 +83,25 @@
    [:components-v2 {:optional true} ::sm/boolean]
    [:base-font-size {:optional true} :string]])
 
+;; Figma-parity reusable export presets (gap #76). One preset captures a
+;; reusable export setting (a format / scale / suffix triple plus a name).
+;; The :type mirrors the per-object export :type enum (:png :jpeg :webp
+;; :svg :pdf and the code-export framework ids). Optional fields absent =
+;; the inspect export row defaults. Defined BEFORE schema:data so the
+;; [:export-presets ...] reference inside schema:data resolves at compile
+;; time (a vector literal evaluates its elements eagerly; a forward
+;; reference with no def/declare is a hard Clojure/CLJS read error).
+(def schema:export-preset
+  [:map {:title "ExportPreset" :closed true}
+   [:id ::sm/uuid]
+   [:name :string]
+   [:type {:optional true} :keyword]
+   [:scale {:optional true} ::sm/safe-number]
+   [:suffix {:optional true} :string]])
+
+(def schema:export-presets
+  [:vector {:gen/max 5} schema:export-preset])
+
 (def schema:data
   [:map {:title "FileData"}
    [:pages [:vector ::sm/uuid]]
@@ -111,22 +130,6 @@
    ;; are authored / applied from the inspect exports panel; persistence to
    ;; the backend rides the existing file-data rpc path like :colors.
    [:export-presets {:optional true} schema:export-presets]])
-
-;; Figma-parity reusable export presets (gap #76). One preset captures a
-;; reusable export setting (a format / scale / suffix triple plus a name).
-;; The :type mirrors the per-object export :type enum (:png :jpeg :webp
-;; :svg :pdf and the code-export framework ids). Optional fields absent =
-;; the inspect export row defaults.
-(def schema:export-preset
-  [:map {:title "ExportPreset" :closed true}
-   [:id ::sm/uuid]
-   [:name :string]
-   [:type {:optional true} :keyword]
-   [:scale {:optional true} ::sm/safe-number]
-   [:suffix {:optional true} :string]])
-
-(def schema:export-presets
-  [:vector {:gen/max 5} schema:export-preset])
 
 (def schema:file
   "A schema for validate a file data structure; data is optional

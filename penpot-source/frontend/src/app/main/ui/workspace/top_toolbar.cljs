@@ -74,7 +74,7 @@
     :path    (tr "workspace.toolbar.path"    (sc/get-tooltip :draw-path))
     :image   (tr "workspace.toolbar.image"   (sc/get-tooltip :insert-image))
     :curve   (tr "workspace.toolbar.curve"   (sc/get-tooltip :draw-curve))
-    :scale   (tr "workspace.toolbar.scale"   (sc/get-tooltip :scale))
+    :scale   (tr "workspace.toolbar.scale"   (sc/get-tooltip :draw-scale))
     :slice   (tr "workspace.toolbar.slice"   (sc/get-tooltip :draw-slice))
     :plugins (tr "workspace.toolbar.plugins" (sc/get-tooltip :plugins))
     ;; Figma-parity polygon + star + sticky-note + lasso (gaps #44/#51/#58).
