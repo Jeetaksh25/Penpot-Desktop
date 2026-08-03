@@ -22,6 +22,7 @@
    [app.main.ui.components.copy-button :refer [copy-button*]]
    [app.main.ui.components.radio-buttons :refer [radio-button radio-buttons]]
    [app.main.ui.components.select :refer [select]]
+   [app.main.ui.inspect.a11y :refer [a11y-contrast*]]
    [app.main.ui.hooks.resize :refer [use-resize-hook]]
    [app.main.ui.icons :as deprecated-icon]
    [app.main.ui.shapes.text.fontfaces :refer [shapes->fonts]]
@@ -32,6 +33,7 @@
    [app.util.http :as http]
    [app.util.i18n :as i18n :refer [tr]]
    [beicon.v2.core :as rx]
+   [clojure.string :as cstr]
    [cuerdas.core :as str]
    [okulary.core :as l]
    [rumext.v2 :as mf]))
@@ -52,7 +54,8 @@
    {:value "android-xml"   :label "Android XML"}
    {:value "winui3-xml"    :label "WinUI 3 XAML"}
    {:value "flutter"       :label "Flutter"}
-   {:value "tailwind"      :label "Tailwind CSS"}])
+   {:value "tailwind"      :label "Tailwind CSS"}
+   {:value "swift"         :label "SwiftUI"}])
 
 (def page-template
   "<!DOCTYPE html>
@@ -113,6 +116,22 @@
                      embed-images? (replace-map (merge images-data fonts-data)))]
     (str/format page-template style-code markup-code)))
 
+;; Figma-parity px/rem toggle (gap #69). Converts `Npx` tokens in a CSS
+;; string to `(N/16)rem`. Pure post-processing — only applied when the
+;; user selects "rem"; the default "px" path is byte-identical to before.
+(defn- px->rem
+  [css]
+  (cstr/replace
+   css
+   #"[0-9]+(?:\.[0-9]+)?px"
+   (fn [match]
+     (let [n (js/parseFloat match)
+           rem (/ n 16)
+           s  (-> (str rem)
+                  (str/replace #"\.(\d*?[1-9])0+$" ".$1")
+                  (str/replace #"\.$" ""))]
+       (str s "rem")))))
+
 (mf/defc code*
   [{:keys [shapes frame on-expand from]}]
   (let [style-type*    (mf/use-state "css")
@@ -120,12 +139,18 @@
         fontfaces-css* (mf/use-state nil)
         images-data*   (mf/use-state nil)
         fonts-data*    (mf/use-state nil)
+        ;; Figma-parity px/rem toggle (gap #69). When "rem", the CSS style
+        ;; section's px values are scaled by 1/16 to rem. Default "px" =
+        ;; byte-identical to the legacy output. Applies only to the CSS
+        ;; section (frameworks use their own unit systems).
+        unit*          (mf/use-state "px")
 
         style-type     (deref style-type*)
         markup-type    (deref markup-type*)
         fontfaces-css  (deref fontfaces-css*)
         images-data    (deref images-data*)
         fonts-data     (deref fonts-data*)
+        unit           (deref unit*)
 
         collapsed*        (mf/use-state #{})
         collapsed-css?    (contains? @collapsed* :css)
@@ -163,6 +188,15 @@
             fontfaces-css "\n"
             (-> (cg/generate-style-code objects style-type shapes all-children)
                 (cb/format-code style-type)))))
+
+        ;; Figma-parity px/rem toggle (gap #69). The CSS shown/copied is the
+        ;; generated `style-code` with px values scaled to rem when the user
+        ;; selects "rem"; "px" (default) returns `style-code` unchanged.
+        display-style-code
+        (mf/use-memo
+         (mf/deps style-code unit)
+         (fn []
+           (if (= unit "rem") (px->rem style-code) style-code)))
 
         framework?
         (cg/framework? markup-type)
@@ -243,11 +277,18 @@
          (fn [value]
            (reset! markup-type* value)))
 
+        ;; Figma-parity px/rem toggle (gap #69).
+        set-unit
+        (mf/use-fn
+         (mf/deps unit*)
+         (fn [value]
+           (reset! unit* value)))
+
         handle-copy-all-code
         (mf/use-fn
-         (mf/deps style-code markup-code images-data fonts-data)
+         (mf/deps display-style-code markup-code images-data fonts-data)
          (fn []
-           (clipboard/to-clipboard (gen-all-code style-code markup-code images-data fonts-data))
+           (clipboard/to-clipboard (gen-all-code display-style-code markup-code images-data fonts-data))
            (let [origin (if (= :workspace from)
                           "workspace"
                           "viewer")]
@@ -297,8 +338,8 @@
                         (conj collapsed panel-type)))))))
         copy-css-fn
         (mf/use-fn
-         (mf/deps style-code images-data fonts-data)
-         #(replace-map style-code (merge images-data fonts-data)))
+         (mf/deps display-style-code images-data fonts-data)
+         #(replace-map display-style-code (merge images-data fonts-data)))
 
         copy-html-fn
         (mf/use-fn
@@ -344,6 +385,10 @@
 
     [:div {:class (stl/css-case :element-options true
                                 :viewer-code-block (= :viewer from))}
+     ;; Figma-parity accessibility insights (gap #77). WCAG contrast
+     ;; checker for a single text shape. The component renders nothing
+     ;; for any other selection, so this is purely additive + guarded.
+     [:> a11y-contrast* {:objects objects :shapes shapes}]
      [:div {:class (stl/css :attributes-block)}
       (if framework?
         [:button {:class (stl/css :download-button)
@@ -378,11 +423,14 @@
 
          [:div {:class (stl/css :code-lang-option)}
           "CSS"]
-         ;; We will have a select when we have more than one option
-         ;;  [:& select {:default-value style-type
-         ;;              :class (stl/css :code-lang-select)
-         ;;              :on-change set-style
-         ;;              :options [{:label "CSS" :value "css"}]}]
+         ;; Figma-parity px/rem toggle (gap #69). Scales the CSS section's
+         ;; px values by 1/16 to rem when "rem" is selected; "px" (default)
+         ;; is byte-identical to the legacy output.
+         [:& select {:default-value unit
+                     :options [{:value "px"  :label (tr "inspect.code.unit.px")}
+                               {:value "rem" :label (tr "inspect.code.unit.rem")}]
+                     :on-change set-unit
+                     :class (stl/css :code-unit-select)}]
 
          [:div {:class (stl/css :action-btns)}
           [:button {:class (stl/css :expand-button)
@@ -397,7 +445,7 @@
           [:div {:class (stl/css :code-row-display)
                  :style {:--code-height (dm/str (or style-size 400) "px")}}
            [:> code-block* {:type style-type
-                            :code style-code}]])
+                            :code display-style-code}]])
 
         [:div {:class (stl/css :resize-area)
                :on-pointer-down on-style-pointer-down

@@ -44,7 +44,11 @@
    :stroke-cap-start
    :stroke-cap-end
    :stroke-join
-   :stroke-miter-limit])
+   :stroke-miter-limit
+   ;; Figma-parity dynamic strokes (gap #54). Optional :variation map on
+   ;; the stroke (wiggle/noise amplitude + frequency + seed). The renderer
+   ;; per-segment jitter is deferred; the value round-trips here.
+   :variation])
 
 (defn- stroke-menu-check-props
   "A stroke-menu specific memoize check function that only checks if
@@ -206,6 +210,14 @@
             (st/emit! (udw/trigger-bounding-box-cloaking ids))
             (st/emit! (dc/change-stroke-attrs ids {side value} index))))
 
+        ;; Figma-parity dynamic strokes (gap #54). Updates the optional
+        ;; :variation map on the individual stroke via the existing
+        ;; change-stroke-attrs event (undo on). Renderer wiggle deferred.
+        on-stroke-variation-change
+        (fn [index value]
+          (st/emit! (udw/trigger-bounding-box-cloaking ids))
+          (st/emit! (dc/change-stroke-attrs ids {:variation value} index)))
+
         on-stroke-cap-switch
         (fn [index]
           (let [stroke-cap-start (get-in values [:strokes index :stroke-cap-start])
@@ -297,6 +309,8 @@
                               :on-blend-mode-change on-stroke-blend-mode-change
                               :on-stroke-width-mode-change on-stroke-width-mode-change
                               :on-stroke-side-change on-stroke-side-change
+                              ;; Figma-parity dynamic strokes (gap #54).
+                              :on-stroke-variation-change on-stroke-variation-change
                               :on-toggle-visibility on-toggle-visibility
                               :disable-drag disable-drag
                               :on-focus on-focus

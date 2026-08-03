@@ -802,6 +802,125 @@
           [:> flow-item* {:key id
                           :flow flow}])])]))
 
+;; Figma #72: prototype sections — titled groupings of frames for
+;; prototype flows. Edited in-session via dwi/prototype-section events
+;; (data/workspace/interactions.cljs); persistence to the page through the
+;; changes pipeline is DEFERRED. The canvas band overlay is also DEFERRED
+;; (high-blast on viewport.cljs). This panel is purely additive: it renders
+;; a new collapsible section below the page flows and never touches existing
+;; nodes. Empty by default, so an absent :prototype-sections field changes
+;; nothing about the rest of the sidebar.
+(mf/defc prototype-section-item*
+  {::mf/private true}
+  [{:keys [section frames-by-id add-frame-options]}]
+  (let [section-id (:id section)
+        frame-ids  (:frame-ids section [])
+
+        rename-section
+        (mf/use-fn
+         (mf/deps section-id)
+         (fn [value]
+           (when-not (str/empty? value)
+             (st/emit! (dwi/rename-prototype-section section-id value)))))
+
+        remove-section
+        (mf/use-fn
+         (mf/deps section-id)
+         #(st/emit! (dwi/remove-prototype-section section-id)))
+
+        add-frame
+        (mf/use-fn
+         (mf/deps section-id)
+         (fn [value]
+           (when-not (str/empty? value)
+             (let [frame-id (uuid/parse value)]
+               (st/emit! (dwi/add-frame-to-prototype-section section-id frame-id))))))
+
+        remove-frame
+        (mf/use-fn
+         (mf/deps section-id)
+         (fn [frame-id]
+           (st/emit! (dwi/remove-frame-from-prototype-section section-id frame-id))))]
+
+    [:div {:class (stl/css :prototype-section-item)}
+     [:> prototype-pill* {:title (:name section "")
+                          :is-editable true
+                          :on-change rename-section
+                          :right-button-icon-id i/remove
+                          :right-button-tooltip (tr "labels.remove")
+                          :on-right-button-click remove-section}]
+     [:div {:class (stl/css :content)}
+      (for [fid frame-ids]
+        (let [frame (get frames-by-id fid)]
+          [:div {:key (str fid)
+                 :class (stl/css :interaction-row)}
+           [:div {:class (stl/css :interaction-row-name)}
+            (or (:name frame)
+                (tr "workspace.options.prototype-sections.unnamed-frame"))]
+           [:> icon-button* {:variant "ghost"
+                             :aria-label (tr "labels.remove")
+                             :icon i/remove
+                             :on-click #(remove-frame fid)}]]))
+      (when (seq add-frame-options)
+        [:div {:class (stl/css :interaction-row-select)}
+         [:& select {:default-value ""
+                     :options add-frame-options
+                     :on-change add-frame
+                     :searchable? true
+                     :search-placeholder (tr "workspace.options.prototype-sections.add-frame")}]])]]))
+
+(mf/defc prototype-sections*
+  {::mf/private true}
+  [{:keys [sections]}]
+  (let [show-content* (mf/use-state true)
+        show-content? (deref show-content*)
+
+        toggle-content
+        (mf/use-fn
+         #(swap! show-content* not))
+
+        add-section
+        (mf/use-fn
+         #(st/emit! (dwi/add-prototype-section)))
+
+        frames       (mf/deref refs/workspace-frames)
+        frames-by-id (mf/with-memo [frames]
+                       (into {} (map (fn [f] [(:id f) f]) frames)))
+
+        grouped-ids  (mf/with-memo [sections]
+                       (set (mapcat #(seq (:frame-ids % [])) sections)))
+
+        add-frame-options
+        (mf/with-memo [frames grouped-ids]
+          (->> frames
+               (remove #(contains? grouped-ids (:id %)))
+               (map (fn [f] {:value (str (:id f)) :label (:name f)}))
+               (concat [{:value "" :label (tr "workspace.options.prototype-sections.add-frame")}])
+               (into [])))]
+
+    [:div {:class (stl/css :section)}
+     [:div {:class (stl/css :title)}
+      [:> title-bar* {:collapsable  (> (count sections) 0)
+                      :collapsed    (not show-content?)
+                      :on-collapsed toggle-content
+                      :title        (tr "workspace.options.prototype-sections.title")
+                      :class        (stl/css :title-bar)}
+       [:> icon-button* {:variant "ghost"
+                         :aria-label (tr "workspace.options.prototype-sections.add-section")
+                         :on-click add-section
+                         :icon i/add}]]]
+     (when show-content?
+       [:div {:class (stl/css :content)}
+        (if (seq sections)
+          (for [section sections]
+            [:> prototype-section-item* {:key (str (:id section))
+                                         :section section
+                                         :frames-by-id frames-by-id
+                                         :add-frame-options add-frame-options}])
+          [:div {:class (stl/css :empty)}
+           [:> empty-state* {:icon i/interaction
+                             :text (tr "workspace.options.prototype-sections.empty")}]])])]))
+
 (mf/defc shape-flows*
   [{:keys [flows shape]}]
   (let [show-content* (mf/use-state true)
@@ -886,6 +1005,9 @@
   [{:keys [shape]}]
   (let [interactions  (get shape :interactions [])
         flows         (mf/deref refs/workspace-page-flows)
+        ;; Figma #72: prototype sections — additive, in-session. Read from
+        ;; the dedicated ref (falls back to the page's :prototype-sections).
+        sections      (mf/deref refs/prototype-sections)
         framed-shape? (and shape (not (cfh/unframed-shape? shape)))]
 
     [:div {:class (stl/css :wrapper)}
@@ -895,6 +1017,12 @@
                            :shape shape}])
        (when flows
          [:> page-flows* {:flows flows}]))
+
+     ;; Figma #72: prototype sections panel. Rendered only when no shape is
+     ;; selected (i.e. the page-level flows view is showing), so it groups
+     ;; alongside page-flows rather than under a single frame's options.
+     (when-not shape
+       [:> prototype-sections* {:sections sections}])
 
      (when framed-shape?
        [:> interactions* {:interactions interactions

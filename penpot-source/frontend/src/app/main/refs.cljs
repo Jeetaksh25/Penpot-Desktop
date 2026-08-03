@@ -10,6 +10,7 @@
    [app.common.data :as d]
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cph]
+   [app.common.types.page :as ctp]
    [app.common.types.shape-tree :as ctt]
    [app.common.types.shape.layout :as ctl]
    [app.common.types.tokens-lib :as ctob]
@@ -255,6 +256,18 @@
 
 (def ai-error
   (l/derived :ai-error workspace-local))
+
+;; Figma #72: prototype sections — in-session sections vector edited by
+;; the interactions panel (see data/workspace/interactions.cljs). Falls
+;; back to the current page's :prototype-sections when the session slot
+;; is unset, so pages that carry sections still render them.
+(def prototype-sections
+  (l/derived
+   (fn [state]
+     (or (dm/get-in state [:workspace-local :prototype-sections])
+         (ctp/get-prototype-sections (dsh/lookup-page state))))
+   st/state
+   =))
 
 (def context-menu
   (l/derived :context-menu workspace-local))

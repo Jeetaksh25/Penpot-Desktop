@@ -11171,3 +11171,322 @@ msgstr "Clip to shape"
 #: figma-parity/p2/exports
 msgid "workspace.options.export.presets"
 msgstr "Presets"
+
+#: figma-parity/p2b/top-toolbar
+msgid "workspace.toolbar.brush"
+msgstr "Brush"
+
+
+#: figma-parity/p2b/brush
+msgid "workspace.options.brush-options.title"
+msgstr "Brush"
+
+
+#: figma-parity/p2b/brush
+msgid "workspace.options.brush-options.mode"
+msgstr "Mode"
+
+
+#: figma-parity/p2b/brush
+msgid "workspace.options.brush-options.mode.stretch"
+msgstr "Stretch"
+
+
+#: figma-parity/p2b/brush
+msgid "workspace.options.brush-options.mode.scatter"
+msgstr "Scatter"
+
+
+#: figma-parity/p2b/brush
+msgid "workspace.options.brush-options.size"
+msgstr "Size"
+
+
+#: figma-parity/p2b/brush
+msgid "workspace.options.brush-options.opacity"
+msgstr "Opacity"
+
+
+#: figma-parity/p2b/brush
+msgid "workspace.options.brush-options.spacing"
+msgstr "Spacing"
+
+
+#: figma-parity/p2b/brush
+msgid "workspace.options.brush-options.scatter"
+msgstr "Scatter"
+
+
+#: figma-parity/p2b/brush
+msgid "workspace.options.brush-options.source-shape"
+msgstr "Source shape"
+
+
+#: figma-parity/p2b/shader
+msgid "workspace.options.shader-options.title"
+msgstr "Shader"
+
+
+#: figma-parity/p2b/shader
+msgid "workspace.options.shader-options.preset"
+msgstr "Preset"
+
+
+#: figma-parity/p2b/shader
+msgid "workspace.options.shader-options.preset.clouds"
+msgstr "Clouds"
+
+
+#: figma-parity/p2b/shader
+msgid "workspace.options.shader-options.preset.halftone"
+msgstr "Halftone"
+
+
+#: figma-parity/p2b/shader
+msgid "workspace.options.shader-options.preset.noise"
+msgstr "Noise"
+
+
+#: figma-parity/p2b/shader
+msgid "workspace.options.shader-options.scale"
+msgstr "Scale"
+
+
+#: figma-parity/p2b/shader
+msgid "workspace.options.shader-options.contrast"
+msgstr "Contrast"
+
+
+#: figma-parity/p2b/transform-3d
+msgid "workspace.options.transform-3d.title"
+msgstr "3D Transform"
+
+
+#: figma-parity/p2b/transform-3d
+msgid "workspace.options.transform-3d.reset"
+msgstr "Reset 3D transform"
+
+
+#: figma-parity/p2b/transform-3d
+msgid "workspace.options.transform-3d.rotation-x"
+msgstr "Rotation X"
+
+
+#: figma-parity/p2b/transform-3d
+msgid "workspace.options.transform-3d.rotation-y"
+msgstr "Rotation Y"
+
+
+#: figma-parity/p2b/transform-3d
+msgid "workspace.options.transform-3d.rotation-z"
+msgstr "Rotation Z"
+
+
+#: figma-parity/p2b/transform-3d
+msgid "workspace.options.transform-3d.perspective"
+msgstr "Perspective"
+
+
+#: figma-parity/p2b/stroke
+msgid "workspace.options.stroke.variation.toggle"
+msgstr "Dynamic stroke"
+
+
+#: figma-parity/p2b/stroke
+msgid "workspace.options.stroke.variation.wiggle"
+msgstr "Wiggle"
+
+
+#: figma-parity/p2b/stroke
+msgid "workspace.options.stroke.variation.noise"
+msgstr "Noise"
+
+
+#: figma-parity/p2b/stroke
+msgid "workspace.options.stroke.variation.amplitude"
+msgstr "Amplitude"
+
+
+#: figma-parity/p2b/stroke
+msgid "workspace.options.stroke.variation.frequency"
+msgstr "Frequency"
+
+
+#: figma-parity/p2b/stroke
+msgid "workspace.options.stroke.variation.seed"
+msgstr "Seed"
+
+
+#: figma-parity/p2b/blur
+msgid "workspace.options.blur-options.stack-title"
+msgstr "Blur stack"
+
+
+#: figma-parity/p2b/blur
+msgid "workspace.options.blur-options.add-stack-blur"
+msgstr "Add stack blur"
+
+
+#: figma-parity/p2b/blur
+msgid "workspace.options.blur-options.move-stack-blur-up"
+msgstr "Move blur up"
+
+
+#: figma-parity/p2b/blur
+msgid "workspace.options.blur-options.move-stack-blur-down"
+msgstr "Move blur down"
+
+
+#: figma-parity/p2b/code
+msgid "inspect.code.unit.px"
+msgstr "px"
+
+
+#: figma-parity/p2b/code
+msgid "inspect.code.unit.rem"
+msgstr "rem"
+
+
+#: figma-parity/p2b/a11y
+msgid "inspect.a11y.contrast"
+msgstr "Contrast"
+
+
+#: figma-parity/p2b/a11y
+msgid "inspect.a11y.ratio"
+msgstr "Contrast ratio"
+
+
+#: figma-parity/p2b/a11y
+msgid "inspect.a11y.aa.normal"
+msgstr "AA · Normal text"
+
+
+#: figma-parity/p2b/a11y
+msgid "inspect.a11y.aa.large"
+msgstr "AA · Large text"
+
+
+#: figma-parity/p2b/a11y
+msgid "inspect.a11y.aaa.normal"
+msgstr "AAA · Normal text"
+
+
+#: figma-parity/p2b/a11y
+msgid "inspect.a11y.aaa.large"
+msgstr "AAA · Large text"
+
+
+#: figma-parity/p2b/a11y
+msgid "inspect.a11y.pass"
+msgstr "Pass"
+
+
+#: figma-parity/p2b/a11y
+msgid "inspect.a11y.fail"
+msgstr "Fail"
+
+
+#: figma-parity/p2b/a11y
+msgid "inspect.a11y.hint"
+msgstr "Measured against the nearest solid background fill behind the text."
+
+
+#: figma-parity/p2b/component
+msgid "workspace.options.component.playground"
+msgstr "Playground"
+
+
+#: figma-parity/p2b/component
+msgid "workspace.options.component.playground.type"
+msgstr "Dev Mode"
+
+
+#: figma-parity/p2b/component
+msgid "workspace.options.component.playground.reset"
+msgstr "Reset to defaults"
+
+
+#: figma-parity/p2b/component
+msgid "workspace.options.component.playground.hint"
+msgstr "Experiment with component properties. Edits apply to the selected instance."
+
+
+#: figma-parity/p2b/assets
+msgid "workspace.assets.visual-search"
+msgstr "Visual search"
+
+
+#: figma-parity/p2b/assets
+msgid "workspace.assets.visual-search-placeholder"
+msgstr "Search assets by name…"
+
+
+#: figma-parity/p2b/assets
+msgid "workspace.assets.visual-search-hint"
+msgstr "Semantic visual search requires the desktop AI backend (coming soon). Showing name matches."
+
+
+#: figma-parity/p2b/ai-bar
+msgid "workspace.ai.bar.tool-rename"
+msgstr "Rename with AI"
+
+
+#: figma-parity/p2b/ai-bar
+msgid "workspace.ai.bar.tool-rename-tooltip"
+msgstr "Suggest a descriptive name for the selected layer"
+
+
+#: figma-parity/p2b/ai-bar
+msgid "workspace.ai.bar.tool-generate-text"
+msgstr "Generate text"
+
+
+#: figma-parity/p2b/ai-bar
+msgid "workspace.ai.bar.tool-text-tooltip"
+msgstr "Generate placeholder copy for the selected text layer"
+
+
+#: figma-parity/p2b/ai-bar
+msgid "workspace.ai.bar.tool-select-shape"
+msgstr "Select a layer first"
+
+
+#: figma-parity/p2b/ai-bar
+msgid "workspace.ai.bar.tool-renamed"
+msgstr "Layer renamed"
+
+
+#: figma-parity/p2b/ai-bar
+msgid "workspace.ai.bar.tool-no-result"
+msgstr "AI did not return a usable result"
+
+
+#: figma-parity/p2b/ai-bar
+msgid "workspace.ai.bar.tool-text-copied"
+msgstr "Copied to clipboard: %s"
+
+
+#: figma-parity/p2b/interactions
+msgid "workspace.options.prototype-sections.title"
+msgstr "Prototype sections"
+
+
+#: figma-parity/p2b/interactions
+msgid "workspace.options.prototype-sections.add-section"
+msgstr "Add prototype section"
+
+
+#: figma-parity/p2b/interactions
+msgid "workspace.options.prototype-sections.empty"
+msgstr "No prototype sections yet"
+
+
+#: figma-parity/p2b/interactions
+msgid "workspace.options.prototype-sections.add-frame"
+msgstr "Add frame to section"
+
+
+#: figma-parity/p2b/interactions
+msgid "workspace.options.prototype-sections.unnamed-frame"
+msgstr "Unnamed frame"

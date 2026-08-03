@@ -69,6 +69,22 @@
 (def schema:sections
   [:map-of {:gen/max 2} ::sm/uuid schema:section])
 
+;; Figma #72: prototype sections. A titled region that groups frames for
+;; organization within a prototype flow. Distinct from canvas :sections
+;; (gap #39, which are bounds-based overlay regions): a prototype section
+;; carries the explicit list of frame ids it groups, so the interactions
+;; panel can list/rename/resection them. Optional vector on the page;
+;; absent = no sections = existing behavior. :frame-ids is optional so a
+;; freshly-created (still empty) section validates.
+(def schema:prototype-section
+  [:map {:title "PrototypeSection"}
+   [:id ::sm/uuid]
+   [:name :string]
+   [:frame-ids {:optional true} [:vector ::sm/uuid]]])
+
+(def schema:prototype-sections
+  [:vector schema:prototype-section])
+
 (def schema:page
   [:map {:title "FilePage"}
    [:id ::sm/uuid]
@@ -83,6 +99,13 @@
    ;; overlay (viewport.cljs) renders section titles only when this is
    ;; present and non-empty.
    [:sections {:optional true} schema:sections]
+   ;; Figma #72: prototype sections (titled frame groupings for prototype
+   ;; flows). Optional vector; absent = no sections = existing behavior.
+   ;; Persistence to the page through the changes pipeline is DEFERRED
+   ;; (needs a new :mod-prototype-section change type in changes.cljc,
+   ;; high-blast); the interactions panel edits these in-session via
+   ;; workspace-local state, see data/workspace/interactions.cljs.
+   [:prototype-sections {:optional true} schema:prototype-sections]
    [:plugin-data {:optional true} ctpg/schema:plugin-data]
    [:background {:optional true} ctc/schema:hex-color]
    ;; Per-page pixel grid color. Falls back to a hardcoded default when
@@ -137,3 +160,69 @@
   "Check if page is empty or contains shapes"
   [page]
   (= 1 (count (:objects page))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; PROTOTYPE SECTIONS (Figma #72)
+;;
+;; Pure helpers over a prototype-sections vector. The interactions panel
+;; edits these in-session (workspace-local); the page-level :prototype-sections
+;; field is the persistence target. All helpers are total: a missing/nil
+;; sections vector is treated as empty, so callers never need to special-case
+;; an absent field.
+
+(defn make-prototype-section
+  "Build a fresh prototype section map with a new id."
+  ([name]
+   (make-prototype-section (uuid/next) name))
+  ([id name]
+   {:id        id
+    :name      (or name "Section")
+    :frame-ids []}))
+
+(defn get-prototype-sections
+  "Return the page's prototype-sections vector (never nil)."
+  [page]
+  (or (:prototype-sections page) []))
+
+(defn add-prototype-section
+  "Append `section` to the `sections` vector."
+  [sections section]
+  (conj (or sections []) section))
+
+(defn rename-prototype-section
+  "Return `sections` with the named section's :name replaced."
+  [sections section-id name]
+  (mapv #(if (= (:id %) section-id)
+           (assoc % :name name)
+           %)
+        (or sections [])))
+
+(defn remove-prototype-section
+  "Return `sections` without the section of `section-id`."
+  [sections section-id]
+  (filterv #(not= (:id %) section-id) (or sections [])))
+
+(defn add-frame-to-prototype-section
+  "Add `frame-id` to a section's :frame-ids (idempotent)."
+  [sections section-id frame-id]
+  (mapv #(if (= (:id %) section-id)
+           (let [fids (vec (:frame-ids % []))]
+             (if (some #(= % frame-id) fids)
+               %
+               (assoc % :frame-ids (conj fids frame-id))))
+           %)
+        (or sections [])))
+
+(defn remove-frame-from-prototype-section
+  "Remove `frame-id` from a section's :frame-ids."
+  [sections section-id frame-id]
+  (mapv #(if (= (:id %) section-id)
+           (assoc % :frame-ids (filterv #(not= % frame-id) (:frame-ids % [])))
+           %)
+        (or sections [])))
+
+(defn frame-in-prototype-section?
+  "True when `frame-id` is grouped under any prototype section."
+  [sections frame-id]
+  (some #(some (fn [fid] (= fid frame-id)) (:frame-ids % []))
+        (or sections [])))

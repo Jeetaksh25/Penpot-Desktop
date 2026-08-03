@@ -32,6 +32,21 @@
    [:fill-color {:optional true} types.color/schema:hex-color]
    [:fill-color-gradient {:optional true} types.color/schema:gradient]
    [:fill-image {:optional true} types.color/schema:image]
+   ;; Figma-parity shader fill (gap #64). A procedural WebGPU shader used
+   ;; as the fill paint (mesh gradients, clouds, nebula, fractal noise,
+   ;; water caustics, patterns, gradient maps). :shader-preset is one of
+   ;; a small set of hardcoded preset names (clouds / halftone / noise);
+   ;; :shader-params is an opaque map of preset parameters. All optional
+   ;; and mutually exclusive with the other fill-color keys (see
+   ;; valid-fill-attrs). The WebGPU shader pipeline is a massive lift →
+   ;; renderer DEFERRED; this slot + shader_row.cljs preset picker are a
+   ;; thin scaffold (no real shader). The value round-trips on the fill
+   ;; via the vector fills path (the binary fills optimization path
+   ;; drops it, same as the other Figma-parity image fields).
+   [:shader-fill {:optional true}
+    [:map {:title "ShaderFill" :closed true}
+     [:shader-preset [::sm/one-of #{:clouds :halftone :noise}]]
+     [:shader-params {:optional true} [:map-of :keyword ::sm/any]]]]
    ;; Figma-parity pattern fill (gap #25). References another canvas
    ;; object by id and tiles its rendered output. :pattern-tiling is one
    ;; of :rectangular / :horizontal-hex / :vertical-hex; :pattern-scale /
@@ -77,7 +92,7 @@
 (def valid-fill-attrs
   "A set used for proper check if color should contain only one of the
   attrs listed in this set."
-  #{:fill-image :fill-color :fill-color-gradient :fill-pattern})
+  #{:fill-image :fill-color :fill-color-gradient :fill-pattern :shader-fill})
 
 (defn has-valid-fill-attrs?
   "Check if color has correct color attrs"

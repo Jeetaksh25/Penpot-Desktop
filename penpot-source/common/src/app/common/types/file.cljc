@@ -34,6 +34,9 @@
    ;; Figma-parity reusable styles (gap #32). Imported for the optional
    ;; style-collection schemas added to schema:data below.
    [app.common.types.styles :as ctsty]
+   ;; Figma-parity brush tool + custom brushes (gap #52). Imported for
+   ;; the optional :brushes asset collection added to schema:data below.
+   [app.common.types.shape.brush :as ctsbr]
    [app.common.uuid :as uuid]
    [clojure.set :as set]
    [cuerdas.core :as str]))
@@ -88,6 +91,13 @@
    [:colors {:optional true} schema:colors]
    [:components {:optional true} schema:components]
    [:typographies {:optional true} schema:typographies]
+   ;; Figma-parity custom brushes (gap #52). Optional map-of brush-id ->
+   ;; brush definition (see shape/brush.cljc schema:brush). Absent = no
+   ;; custom brushes = today's behavior. Mirrors schema:colors so the
+   ;; asset plumbing (add / rename / delete / absorb) can ride the
+   ;; existing file-data rpc path. The brush tool + renderer path-following
+   ;; stamping are deferred; the definitions round-trip on the file.
+   [:brushes {:optional true} ctsbr/schema:brushes]
    ;; Figma-parity reusable styles (gap #32). Optional style collections —
    ;; absent = no styles = existing behavior. Each mirrors schema:colors.
    [:effect-styles {:optional true} ctsty/schema:effect-styles]

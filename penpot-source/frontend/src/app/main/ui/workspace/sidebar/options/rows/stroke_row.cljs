@@ -68,6 +68,8 @@
            on-stroke-side-change
            ;; Figma-parity per-stroke blend mode (gap #9).
            on-blend-mode-change
+           ;; Figma-parity dynamic strokes (gap #54).
+           on-stroke-variation-change
            on-toggle-visibility
            disable-drag
            on-focus
@@ -277,6 +279,62 @@
          (fn [value]
            (when (some? on-blend-mode-change)
              (on-blend-mode-change index (keyword value)))))
+
+        ;; Figma-parity dynamic strokes (gap #54). Optional :variation map
+        ;; on the stroke (wiggle/noise amplitude + frequency + seed).
+        ;; Absent = a plain uniform stroke = today's rendering. The whole
+        ;; block renders only when the parent wires on-stroke-variation-change
+        ;; (stroke.cljs does); the renderer per-segment jitter is deferred.
+        variation           (:variation stroke)
+        variation-type      (or (:type variation) :wiggle)
+        variation-amplitude (:amplitude variation 0)
+        variation-frequency (:frequency variation 1)
+        variation-seed      (:seed variation 0)
+        variation-enabled?  (some? variation)
+
+        on-toggle-variation
+        (mf/use-fn
+         (mf/deps index on-stroke-variation-change variation)
+         (fn []
+           (when (some? on-stroke-variation-change)
+             (on-stroke-variation-change
+              index
+              (if variation-enabled?
+                nil
+                {:type :wiggle :amplitude 1 :frequency 1 :seed 0})))))
+
+        on-variation-type-change
+        (mf/use-fn
+         (mf/deps index on-stroke-variation-change)
+         (fn [value]
+           (when (some? on-stroke-variation-change)
+             (on-stroke-variation-change
+              index (assoc (or variation {:amplitude 0 :frequency 1 :seed 0})
+                           :type (keyword value))))))
+
+        on-variation-amplitude-change
+        (mf/use-fn
+         (mf/deps index on-stroke-variation-change variation)
+         (fn [v]
+           (when (some? on-stroke-variation-change)
+             (on-stroke-variation-change
+              index (assoc (or variation {}) :amplitude v)))))
+
+        on-variation-frequency-change
+        (mf/use-fn
+         (mf/deps index on-stroke-variation-change variation)
+         (fn [v]
+           (when (some? on-stroke-variation-change)
+             (on-stroke-variation-change
+              index (assoc (or variation {}) :frequency v)))))
+
+        on-variation-seed-change
+        (mf/use-fn
+         (mf/deps index on-stroke-variation-change variation)
+         (fn [v]
+           (when (some? on-stroke-variation-change)
+             (on-stroke-variation-change
+              index (assoc (or variation {}) :seed v)))))
 
         ;; Figma-parity per-side stroke widths (rect/frame).
         stroke-width-mode  (or (:stroke-width-mode stroke) :uniform)
@@ -512,6 +570,55 @@
                                     :property (tr "workspace.options.stroke.miter-limit")
                                     :value stroke-miter-limit}])]
 
+     ;; Figma-parity dynamic strokes (gap #54). A toggle + amplitude /
+     ;; frequency / seed controls, rendered only when the parent wires
+     ;; on-stroke-variation-change (stroke.cljs does) so legacy callers
+     ;; see nothing. Absent :variation = a plain uniform stroke = today's
+     ;; rendering; the renderer per-segment jitter is deferred.
+     (when (some? on-stroke-variation-change)
+       [:div {:class (stl/css :stroke-caps-options)
+              :data-testid "stroke.variation-options"}
+        [:> icon-button* {:variant (if variation-enabled? "secondary" "ghost")
+                          :aria-label (tr "workspace.options.stroke.variation.toggle")
+                          :on-click on-toggle-variation
+                          :disabled hidden?
+                          :icon i/stroke-size}]
+        (when variation-enabled?
+          [:> select* {:default-selected (d/name variation-type)
+                       :options [{:value "wiggle" :label (tr "workspace.options.stroke.variation.wiggle")}
+                                 {:value "noise"  :label (tr "workspace.options.stroke.variation.noise")}]
+                       :disabled hidden?
+                       :on-change on-variation-type-change}])
+        (when variation-enabled?
+          [:> numeric-input-wrapper* {:on-change on-variation-amplitude-change
+                                       :text-icon "AMP"
+                                       :min 0
+                                       :on-focus on-focus
+                                       :on-blur on-blur
+                                       :attr :variation-amplitude
+                                       :class (stl/css :numeric-input-wrapper)
+                                       :property (tr "workspace.options.stroke.variation.amplitude")
+                                       :value variation-amplitude}])
+        (when variation-enabled?
+          [:> numeric-input-wrapper* {:on-change on-variation-frequency-change
+                                       :text-icon "FREQ"
+                                       :min 0
+                                       :on-focus on-focus
+                                       :on-blur on-blur
+                                       :attr :variation-frequency
+                                       :class (stl/css :numeric-input-wrapper)
+                                       :property (tr "workspace.options.stroke.variation.frequency")
+                                       :value variation-frequency}])
+        (when variation-enabled?
+          [:> numeric-input-wrapper* {:on-change on-variation-seed-change
+                                       :text-icon "SEED"
+                                       :min 0
+                                       :on-focus on-focus
+                                       :on-blur on-blur
+                                       :attr :variation-seed
+                                       :class (stl/css :numeric-input-wrapper)
+                                       :property (tr "workspace.options.stroke.variation.seed")
+                                       :value variation-seed}])])
      ;; Figma-parity per-stroke blend mode (gap #9). Rendered only when the
      ;; menu wires on-blend-mode-change (stroke.cljs); absent = no control.
      (when (some? on-blend-mode-change)

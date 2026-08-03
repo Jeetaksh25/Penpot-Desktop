@@ -187,6 +187,20 @@
    ;; compositing change, no build to verify); the field round-trips.
    [:blend-mode {:optional true}
     [::sm/one-of blend-modes]]
+   ;; Figma-parity dynamic strokes (gap #54). Optional variation map applied
+   ;; to the stroke outline for a hand-drawn feel. :type is :wiggle or
+   ;; :noise; :amplitude (0..N px) is the max outline displacement;
+   ;; :frequency (> 0) is the wiggle/noise spatial frequency along the
+   ;; path; :seed is a deterministic noise seed. All optional; absent =
+   ;; a plain uniform stroke (byte-identical with today). The renderer
+   ;; per-segment jitter is deferred (significant outline work, no build
+   ;; to verify); the value round-trips on the stroke via change-stroke-attrs.
+   [:variation {:optional true}
+    [:map {:title "StrokeVariation" :closed true}
+     [:type {:optional true} [::sm/one-of #{:wiggle :noise}]]
+     [:amplitude {:optional true} ::sm/safe-number]
+     [:frequency {:optional true} ::sm/safe-number]
+     [:seed {:optional true} ::sm/int]]]
    [:hidden {:optional true} :boolean]])
 
 (def stroke-attrs
@@ -291,6 +305,38 @@
    [:glass {:optional true} [:vector ::sm/any]]
    [:noise {:optional true} [:vector ::sm/any]]
    [:texture {:optional true} [:vector ::sm/any]]
+   ;; Figma-parity stacked layer blurs (gap #74). An OPAQUE vector of
+   ;; additional blur maps stacked on top of the existing single :blur /
+   ;; :background-blur. Absent :blurs = single-blur behavior unchanged
+   ;; (byte-identical with today); when present the renderer applies the
+   ;; stack in order (multi-blur compositing is deferred — significant
+   ;; GPU work, no build to verify; the values round-trip on the shape
+   ;; via dwsh/update-shapes). Kept opaque so the dedicated stack schema
+   ;; can live in shape/blur.cljc without editing this file.
+   [:blurs {:optional true} [:vector ::sm/any]]
+   ;; Figma-parity shader effects (gap #64). An OPAQUE vector of
+   ;; shader-effect maps (bloom / chromatic-metal / dither / halftone /
+   ;; hatching / lens-distortion / warp / pixelate ...). Absent = no
+   ;; shader effect = today's render (byte-identical). The WebGPU shader
+   ;; pipeline is a massive lift → renderer DEFERRED; this slot +
+   ;; shader_row.cljs preset picker are a thin scaffold. Kept opaque so
+   ;; the effect schema can be defined in a NEW file without editing
+   ;; this one.
+   [:shader-effect {:optional true} [:vector ::sm/any]]
+   ;; Figma-parity 3D transforms (gap #66). Optional 3D transform params:
+   ;; :rotation-x / :rotation-y / :rotation-z are degrees;
+   ;; :perspective is the CSS-style perspective distance (px). All
+   ;; optional; all absent = a flat 2D shape = today's behavior
+   ;; (byte-identical). The renderer 3D matrix projection (SVG fallback:
+   ;; CSS transform3d) is deferred (large renderer lift, no build to
+   ;; verify); the values round-trip on the shape via dwsh/update-shapes
+   ;; and transform_3d_row.cljs exposes the controls.
+   [:transform-3d {:optional true}
+    [:map {:title "Transform3D" :closed true}
+     [:rotation-x {:optional true} ::sm/safe-number]
+     [:rotation-y {:optional true} ::sm/safe-number]
+     [:rotation-z {:optional true} ::sm/safe-number]
+     [:perspective {:optional true} ::sm/safe-number]]]
    [:grow-type {:optional true}
     [::sm/one-of grow-types]]
    [:applied-tokens {:optional true} cto/schema:applied-tokens]
@@ -573,7 +619,10 @@
     :plugin-data
     ;; Figma-parity advanced effects (gaps #61/#62/#63): opaque effect
     ;; vectors owned by group V, consumed by group E2. Round-trip safe.
-    :glass :noise :texture})
+    :glass :noise :texture
+    ;; Figma-parity stacked blurs (#74), shader effects (#64) and 3D
+    ;; transforms (#66). All optional + opaque/round-trip safe.
+    :blurs :shader-effect :transform-3d})
 
 (def ^:private allowed-shape-geom-attrs #{:x :y :width :height})
 (def ^:private allowed-shape-base-attrs #{:id :name :type :selrect :points :transform

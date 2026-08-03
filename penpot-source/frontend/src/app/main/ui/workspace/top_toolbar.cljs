@@ -82,6 +82,11 @@
     :star    (tr "workspace.toolbar.star"    (sc/get-tooltip :draw-star))
     :note    (tr "workspace.toolbar.note"    (sc/get-tooltip :draw-note))
     :lasso   (tr "workspace.toolbar.lasso"   (sc/get-tooltip :lasso))
+    ;; Figma-parity brush tool (gap #52). A path-following stroke tool. The
+    ;; actual renderer path-following + scatter is DEFERRED; the toolbar
+    ;; entry toggles a :brush-mode layout flag (lasso-style, no shape
+    ;; creation) so selecting it is a safe no-op until the renderer lands.
+    :brush   (tr "workspace.toolbar.brush"   (sc/get-tooltip :brush))
     :debug   "Debugging tool"
     (name tool)))
 
@@ -354,6 +359,20 @@
                      (dwdc/clear-drawing)
                      (dw/toggle-layout-flag :lasso-mode))))
 
+        on-toggle-brush
+        (mf/use-fn
+         (fn []
+           ;; Figma-parity brush tool (gap #52). Like the lasso, the brush is
+           ;; not routed through select-for-drawing (an unknown :brush type
+           ;; would fall to box/handle-drawing and create a :multiple shape).
+           ;; Instead it toggles a :brush-mode layout flag that the future
+           ;; path-following renderer (DEFERRED) will consume. Safe no-op
+           ;; until then.
+           (st/emit! :interrupt
+                     (dw/clear-edition-mode)
+                     (dwdc/clear-drawing)
+                     (dw/toggle-layout-flag :brush-mode))))
+
         on-toggle-toolbar
         (mf/use-fn
          (fn [event]
@@ -454,6 +473,19 @@
                            :icon i/path
                            :on-click on-toggle-lasso
                            :data-tool "lasso"}]]
+
+        ;; Figma-parity brush tool (gap #52). Toggles the :brush-mode layout
+        ;; flag; the path-following renderer is DEFERRED so the press is a
+        ;; safe no-op. Uses i/curve as a placeholder glyph until a dedicated
+        ;; brush icon asset is added.
+        [:li {:class (stl/css :toolbar-option)}
+         [:> icon-button* {:variant "ghost"
+                           :tooltip-placement "bottom"
+                           :aria-pressed (contains? layout :brush-mode)
+                           :aria-label (tool-label :brush)
+                           :icon i/curve
+                           :on-click on-toggle-brush
+                           :data-tool "brush"}]]
 
         (when separator?
           [:div {:class (stl/css :toolbar-separator)}])

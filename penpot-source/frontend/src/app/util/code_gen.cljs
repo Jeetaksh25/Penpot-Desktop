@@ -12,6 +12,7 @@
    [app.util.code-gen.frameworks.flutter :as flutter]
    [app.util.code-gen.frameworks.react :as react]
    [app.util.code-gen.frameworks.react-native :as react-native]
+   [app.util.code-gen.frameworks.swift :as swift]
    [app.util.code-gen.frameworks.tailwind :as tailwind]
    [app.util.code-gen.frameworks.winui3-xml :as winui3-xml]
    [app.util.code-gen.markup-html :as html]
@@ -60,7 +61,7 @@
 
 (def framework-types
   "Set of markup-type strings that are handled as UI-framework code export."
-  #{"react" "nextjs" "react-native" "android-xml" "winui3-xml" "flutter" "tailwind"})
+  #{"react" "nextjs" "react-native" "android-xml" "winui3-xml" "flutter" "tailwind" "swift"})
 
 (defn framework?
   "True when `type` is one of the UI-framework code export targets (i.e. not
@@ -78,7 +79,8 @@
    "android-xml"  {:extension "xml"  :mtype "application/xml"    :label "Android XML"}
    "winui3-xml"   {:extension "xaml" :mtype "application/xaml+xml" :label "WinUI 3 XAML"}
    "flutter"      {:extension "dart" :mtype "text/x-dart"       :label "Flutter"}
-   "tailwind"     {:extension "jsx"  :mtype "text/jsx"          :label "Tailwind CSS"}})
+   "tailwind"     {:extension "jsx"  :mtype "text/jsx"          :label "Tailwind CSS"}
+   "swift"        {:extension "swift" :mtype "text/swift"        :label "SwiftUI"}})
 
 (defn framework-extension [type] (:extension (framework-meta (str type)) "txt"))
 (defn framework-mtype [type] (:mtype (framework-meta (str type)) "text/plain"))
@@ -96,6 +98,7 @@
       "winui3-xml"   (winui3-xml/generate objects shapes)
       "flutter"      (flutter/generate objects shapes)
       "tailwind"     (tailwind/generate objects shapes)
+      "swift"        (swift/generate objects shapes)
       "")))
 
 ;; ---------------------------------------------------------------------------
@@ -148,6 +151,7 @@
        "winui3-xml"   (winui3-xml/generate-project objects shapes opts)
        "flutter"      (flutter/generate-project objects shapes opts)
        "tailwind"     (tailwind/generate-project objects shapes opts)
+       "swift"        (swift/generate-project objects shapes opts)
        (empty-project type)))))
 
 (defn download-framework-code!

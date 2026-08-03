@@ -159,6 +159,77 @@
     prompt
     (dm/str "[Reference URL: " url "]\n\n" (or prompt ""))))
 
+;; ── AI tool helpers (Figma #71) ─────────────────────────────────────────────
+;;
+;; "Rename with AI" + "AI text generation" reuse the existing llm_generate
+;; plumbing (no Rust changes). A crafted prompt is sent through the same
+;; `invoke-generate` path used for design generation; the result is a
+;; DesignSpec JS object, so the tool helpers do a best-effort extraction of
+;; a short plain-text answer (a layer name / placeholder copy) from it.
+;; Faithful rename/text-gen needs a plain-text response mode in the backend
+;; (an `llm_text` command returning a string, not a DesignSpec); that Rust
+;; addition is DEFERRED under the no-build constraint. The UI + prompt
+;; crafting + invoke + best-effort apply are wired so the feature is usable
+;; today and complete the moment the backend gains a text response mode.
+
+(defn rename-prompt
+  "Craft the prompt for suggesting a short, descriptive name for `shape`."
+  [shape]
+  (let [type (name (or (:type shape) :shape))
+        name (or (:name shape) "(unnamed)")]
+    (dm/str
+     "Suggest a single short, descriptive layer name (max 4 words, no quotes, "
+     "no punctuation) for a design layer of type \"" type "\" currently named \""
+     name "\". Reply with only the name.")))
+
+(defn text-gen-prompt
+  "Craft the prompt for generating placeholder copy for a text layer whose
+   current content/label is `label`."
+  [label]
+  (dm/str
+   "Generate a single short line of realistic placeholder copy for a UI text "
+   "element labeled \"" (or label "(empty)") "\". Reply with only the copy, "
+   "no quotes, no explanation."))
+
+(defn build-tool-request
+  "Assemble a minimal llm_generate request for a plain-prompt tool call
+   (no files, new-board target). Reuses `build-request` so the wire format
+   matches the design-generation path exactly."
+  [prompt]
+  (build-request {:prompt  prompt
+                  :files  []
+                  :options {:target     "new-board"
+                            :quality    "auto"
+                            :use-memory false}}))
+
+(defn- first-text-in
+  "Depth-first search for the first non-empty string under :text/:content
+   or a node :name in a keywordized spec map. Returns nil when none found."
+  [node]
+  (when (map? node)
+    (or (when (string? (:text node)) (str/trim (:text node)))
+        (when (string? (:content node)) (str/trim (:content node)))
+        (some first-text-in (seq (:children node)))
+        (some first-text-in (seq (:shapes node)))
+        (some first-text-in (seq (:frames node)))
+        (some first-text-in (seq (:nodes node))))))
+
+(defn extract-text-from-spec
+  "Best-effort extraction of a short plain-text answer from a DesignSpec
+   result (the JS object returned by `llm_generate`). Returns a trimmed
+   string or nil. Tries a top-level :text/:name, then descends into the
+   spec's node tree. The result is collapsed to a single line so it can be
+   used as a layer name or inserted as a one-line text content."
+  [result-js]
+  (let [spec (js->clj result-js :keywordize-keys true)
+        raw  (or (when (string? (:text spec)) (str/trim (:text spec)))
+                 (when (string? (:name spec)) (str/trim (:name spec)))
+                 (first-text-in spec))]
+    (some-> raw
+            (str/replace #"\s+" " ")
+            str/trim
+            not-empty)))
+
 ;; ── Potok state events ───────────────────────────────────────────────────────
 ;;
 ;; The AI bar reads :ai-busy / :ai-preview / :ai-error from :workspace-local

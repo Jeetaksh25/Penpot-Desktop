@@ -16,6 +16,7 @@
    [app.main.store :as st]
    [app.main.ui.components.context-menu-a11y :refer [context-menu*]]
    [app.main.ui.components.search-bar :refer [search-bar*]]
+   [app.main.ui.components.title-bar :refer [title-bar*]]
    [app.main.ui.context :as ctx]
    [app.main.ui.ds.buttons.icon-button :refer [icon-button*]]
    [app.main.ui.icons :as deprecated-icon]
@@ -73,6 +74,71 @@
 ;; leaking across files or persisting across reloads.
 (defonce ^:private session-filters*
   (atom {}))
+
+;; Figma #70: visual + semantic asset search scaffold.
+;;
+;; A flat cross-library search panel. Today it falls back to plain substring
+;; matching over component names — the same heuristic a future embedding-based
+;; semantic search would replace. The embedding storage + similarity query
+;; needs Rust (src-tauri embeddings, out of scope under the no-build
+;; constraint) and is DEFERRED; this UI is the scaffold the semantic results
+;; will populate. Purely additive: a new collapsible section above the
+;; libraries, never modifies the existing assets-toolbox* search-bar flow.
+(mf/defc visual-search*
+  {::mf/private true}
+  [{:keys [file-id]}]
+  (let [open* (mf/use-state false)
+        open? (deref open*)
+        term* (mf/use-state "")
+        term  (deref term*)
+        libs  (mf/deref refs/libraries)
+
+        ;; Flat component index across every loaded library (local + linked).
+        ;; Each hit carries enough to locate it in the sectioned view below.
+        results
+        (mf/with-memo [libs term file-id]
+          (let [needle (str/lower term)]
+            (->> (vals libs)
+                 (mapcat (fn [file]
+                           (let [file-name (:name file)
+                                 comps     (ctkl/components (:data file))]
+                             (keep (fn [c]
+                                     (let [cname (:name c)]
+                                       (when (and (string? cname)
+                                                  (or (str/empty? needle)
+                                                      (str/includes? (str/lower cname) needle)))
+                                         {:id        (:id c)
+                                          :name      cname
+                                          :file-id   (:id file)
+                                          :file-name file-name})))
+                                   comps))))
+                 (sort-by #(str/lower (:name %)))
+                 (into []))))
+
+        toggle-open (mf/use-fn #(swap! open* not))
+        on-term     (mf/use-fn (fn [e] (reset! term* (.. e -target -value))))]
+
+    [:div {:class (stl/css :visual-search)}
+     [:> title-bar* {:collapsable  true
+                     :collapsed    (not open?)
+                     :on-collapsed toggle-open
+                     :title        (tr "workspace.assets.visual-search")
+                     :class        (stl/css :title-bar)}]
+     (when open?
+       [:div {:class (stl/css :content)}
+        [:> search-bar* {:on-change on-term
+                         :value term
+                         :placeholder (tr "workspace.assets.visual-search-placeholder")}]
+        ;; DEFERRED: embedding-based semantic visual search needs Rust.
+        [:div {:class (stl/css :visual-search-hint)}
+         (tr "workspace.assets.visual-search-hint")]
+        (when (seq results)
+          [:div {:class (stl/css :visual-search-results)}
+           (for [r results]
+             [:div {:key (str (:file-id r) "-" (:id r))
+                    :class (stl/css :visual-search-result)}
+              [:span {:class (stl/css :visual-search-result-name)} (:name r)]
+              [:span {:class (stl/css :visual-search-result-file)} (:file-name r)]])])])]))
 
 (mf/defc assets-toolbox*
   {::mf/wrap [mf/memo]}
@@ -226,6 +292,9 @@
                          :aria-label (tr "workspace.assets.sort")
                          :on-click toggle-ordering
                          :icon (if reverse-sort? "asc-sort" "desc-sort")}]]]
+
+     ;; Figma #70: visual + semantic asset search scaffold (additive).
+     [:> visual-search* {:file-id file-id}]
 
      [:& (mf/provider cmm/assets-filters) {:value filters}
       [:& (mf/provider cmm/assets-toggle-ordering) {:value toggle-ordering}

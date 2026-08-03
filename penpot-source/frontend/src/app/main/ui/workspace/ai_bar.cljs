@@ -27,6 +27,7 @@
   `stl/css` needs)."
   (:require
    [cuerdas.core :as str]
+   [app.main.data.workspace :as dw]
    [app.main.data.workspace.ai-gen :as ai]
    [app.main.data.workspace.design-gen :as dg]
    [app.main.refs :as refs]
@@ -158,12 +159,24 @@
         stage*        (mf/use-state nil)
         show-settings* (mf/use-state false)
         file-input*   (mf/use-ref nil)
+        ;; Figma #71: AI rename + text-gen tool state. Local (not potok) so
+        ;; it never interferes with the design-generation busy/preview flags.
+        tool-busy*   (mf/use-state false)
+        tool-error*  (mf/use-state nil)
+        tool-result* (mf/use-state nil)
 
         busy          (mf/deref refs/ai-busy)
         preview       (mf/deref refs/ai-preview)
         error*        (mf/deref refs/ai-error)
         selected      (mf/deref refs/selected-shapes)
         has-sel?      (boolean (seq selected))
+        ;; Figma #71: lookup the first selected shape for rename/text-gen.
+        ;; `selected` is an ordered-set of ids; objects maps id -> shape.
+        objects       (mf/deref refs/workspace-page-objects)
+        first-sel     (first selected)
+        first-shape   (when first-sel (get objects first-sel))
+        single-text?  (and (= (count selected) 1)
+                           (= (:type first-shape) :text))
 
         prompt        (deref prompt*)
         url           (deref url*)
@@ -261,7 +274,70 @@
          (mf/deps on-generate)
          (fn []
            (st/emit! (ai/clear-ai-preview))
-           (on-generate)))]
+           (on-generate)))
+
+        ;; Figma #71: "Rename with AI". Sends a crafted rename prompt through
+        ;; the existing llm_generate plumbing, best-effort extracts a short
+        ;; name from the DesignSpec response, and applies it to the first
+        ;; selected shape via dw/rename-shape-or-variant. Faithful plain-text
+        ;; response (an llm_text backend command) is DEFERRED.
+        on-rename-with-ai
+        (mf/use-fn
+         (mf/deps first-sel first-shape)
+         (fn []
+           (if-not (and first-sel first-shape)
+             (reset! tool-error* (tr "workspace.ai.bar.tool-select-shape"))
+             (do
+               (reset! tool-busy* true)
+               (reset! tool-error* nil)
+               (reset! tool-result* nil)
+               (-> (ai/invoke-generate (ai/build-tool-request (ai/rename-prompt first-shape)))
+                   (p/then
+                    (fn [result]
+                      (let [name (ai/extract-text-from-spec result)]
+                        (reset! tool-busy* false)
+                        (if (and (string? name) (not (str/empty? name)))
+                          (do (st/emit! (dw/rename-shape-or-variant first-sel name))
+                              (reset! tool-result* (tr "workspace.ai.bar.tool-renamed")))
+                          (reset! tool-error* (tr "workspace.ai.bar.tool-no-result"))))))
+                   (p/catch
+                    (fn [e]
+                      (reset! tool-busy* false)
+                      (reset! tool-error* (str e)))))))))
+
+        ;; Figma #71: "Generate text". Crafts a placeholder-copy prompt from
+        ;; the selected text layer's current content, invokes llm_generate,
+        ;; and on a successful extraction copies the copy to the clipboard
+        ;; and surfaces it as a toast for the user to paste into the layer.
+        ;; Direct application to the text layer's content is DEFERRED (needs
+        ;; the text edit pipeline + a plain-text LLM response mode).
+        on-generate-text
+        (mf/use-fn
+         (mf/deps first-shape)
+         (fn []
+           (if-not first-shape
+             (reset! tool-error* (tr "workspace.ai.bar.tool-select-shape"))
+             (do
+               (reset! tool-busy* true)
+               (reset! tool-error* nil)
+               (reset! tool-result* nil)
+               (let [label (or (:content first-shape)
+                               (:name first-shape)
+                               "")]
+                 (-> (ai/invoke-generate (ai/build-tool-request (ai/text-gen-prompt label)))
+                     (p/then
+                      (fn [result]
+                        (let [copy (ai/extract-text-from-spec result)]
+                          (reset! tool-busy* false)
+                          (if (and (string? copy) (not (str/empty? copy)))
+                            (do (some-> js/navigator .-clipboard (.writeText copy))
+                                (reset! tool-result*
+                                        (tr "workspace.ai.bar.tool-text-copied" copy)))
+                            (reset! tool-error* (tr "workspace.ai.bar.tool-no-result"))))))
+                     (p/catch
+                      (fn [e]
+                        (reset! tool-busy* false)
+                        (reset! tool-error* (str e))))))))))]
 
     ;; Subscribe to backend ai-progress events → local stage text. Empty deps
     ;; so it subscribes once on mount and cleans up on unmount.
@@ -356,11 +432,32 @@
                                                           (empty? attachments))}
            (tr "workspace.ai.bar.generate")])]
 
+       ;; Figma #71: AI tools row — rename layers + generate text. Reuses the
+       ;; existing llm_generate plumbing (see on-rename-with-ai / on-generate-text).
+       ;; Additive: a new row below the controls, never modifies existing rows.
+       [:div.ai-controls
+        [:button.ai-btn.ai-btn-ghost
+         {:on-click on-rename-with-ai
+          :disabled (or busy @tool-busy* (not has-sel?))
+          :title (tr "workspace.ai.bar.tool-rename-tooltip")}
+         (if @tool-busy* (spinner) (tr "workspace.ai.bar.tool-rename"))]
+        [:button.ai-btn.ai-btn-ghost
+         {:on-click on-generate-text
+          :disabled (or busy @tool-busy* (not single-text?))
+          :title (tr "workspace.ai.bar.tool-text-tooltip")}
+         (tr "workspace.ai.bar.tool-generate-text")]
+        [:div.ai-grow]]
+
        ;; stage + error
        (when (or stage busy)
          [:div.ai-stage (spinner) (or stage (tr "workspace.ai.bar.working"))])
        (when error*
          [:div.ai-err error*])
+       ;; Figma #71: tool result / error surface (local state, additive).
+       (when @tool-result*
+         [:div.ai-stage @tool-result*])
+       (when @tool-error*
+         [:div.ai-err @tool-error*])
 
        ;; hidden file input
        [:input {:type "file" :accept "image/*" :multiple true

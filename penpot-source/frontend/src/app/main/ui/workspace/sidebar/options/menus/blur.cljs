@@ -52,6 +52,20 @@
      :value 4
      :hidden false}))
 
+;; Figma-parity stacked layer blurs (gap #74). A stack entry mirrors the
+;; single-blur map shape (so the existing blur-menu-content* can be reused
+;; to edit each entry). The :blurs vector on the shape is opaque
+;; ([:vector ::sm/any] in shape.cljc); absent :blurs = single-blur
+;; behavior unchanged. Renderer multi-blur compositing is deferred.
+(defn create-stack-blur
+  "Create a new stack blur entry (a layer-blur by default)."
+  []
+  (let [id (uuid/next)]
+    {:id id
+     :type :layer-blur
+     :value 4
+     :hidden false}))
+
 (mf/defc blur-menu-content*
   [{:keys [blur-key value change-fn blur-values]}]
   (let [render-wasm?        (features/use-feature "render-wasm/v1")
@@ -361,7 +375,50 @@
              (= 0 (count blur-values))
              (change! #(assoc % :blur (create-blur :layer-blur))))
            :else
-           blur-values))]
+           blur-values))
+
+        ;; Figma-parity stacked layer blurs (gap #74). The :blurs vector on
+        ;; the shape is opaque (see shape.cljc). These handlers add / remove
+        ;; / reorder / edit entries in that vector via dwsh/update-shapes.
+        ;; Rendered ONLY when (seq :blurs) is true; absent :blurs = the
+        ;; single-blur UI above is the whole UI (byte-identical). Renderer
+        ;; multi-blur compositing is deferred (significant GPU work).
+        stack-blurs (seq (:blurs values))
+
+        handle-add-stack-blur
+        (mf/use-fn
+         (mf/deps change!)
+         (fn []
+           (change! #(update % :blurs (fn [b] (conj (vec b) (create-stack-blur)))))))
+
+        handle-remove-stack-blur
+        (mf/use-fn
+         (mf/deps change!)
+         (fn [index]
+           (change! #(update % :blurs (fn [b] (vec (keep-indexed (fn [i x] (when (not= i index) x)) b)))))))
+
+        handle-reorder-stack-blur
+        (mf/use-fn
+         (mf/deps change!)
+         (fn [from to]
+           (change! #(update % :blurs (fn [b]
+                                        (let [b (vec b)
+                                              item (nth b from)
+                                              b (vec (keep-indexed (fn [i x] (when (not= i from) x)) b))
+                                              b (into (subvec b 0 to) (conj (subvec b to) item))]
+                                          b))))))
+
+        handle-toggle-stack-blur-visibility
+        (mf/use-fn
+         (mf/deps change!)
+         (fn [index]
+           (change! #(update-in % [:blurs index :hidden] (fn [v] (not (boolean v)))))))
+
+        handle-change-stack-blur-value
+        (mf/use-fn
+         (mf/deps change!)
+         (fn [index value]
+           (change! #(assoc-in % [:blurs index :value] value))))]
 
     [:section {:class (stl/css :element-set)
                :hidden (not open?)
@@ -416,4 +473,58 @@
               :blur-key key
               :value value
               :blur-values blur-values
-              :change-fn change!}]))])]))
+              :change-fn change!}]))])
+     ;; Figma-parity stacked layer blurs (gap #74). Stack manager UI
+     ;; (add / remove / reorder / edit) for the opaque :blurs vector on
+     ;; the shape. Renders ONLY when (seq :blurs) is true; absent :blurs =
+     ;; the single-blur UI above is the whole UI (byte-identical). Renderer
+     ;; multi-blur compositing is deferred (significant GPU work).
+     (when (and open? stack-blurs)
+       [:section {:class (stl/css :element-set)
+                  :aria-label (tr "workspace.options.blur-options.stack-title")
+                  :data-testid "blur.stack"}
+        [:div {:class (stl/css :element-title)}
+         [:> title-bar* {:collapsable true
+                         :collapsed false
+                         :title (tr "workspace.options.blur-options.stack-title")
+                         :class (stl/css :long-title)}
+          [:> icon-button* {:variant "ghost"
+                            :aria-label (tr "workspace.options.blur-options.add-stack-blur")
+                            :on-click handle-add-stack-blur
+                            :icon i/add
+                            :tooltip-placement "top-left"
+                            :data-testid "add-stack-blur"}]]]
+        [:div {:class (stl/css :element-set-content)}
+         (for [index (range (count (:blurs values)))]
+           (let [blur (nth (:blurs values) index)
+                 is-hidden (:hidden blur)]
+             [:div {:key (str "stack-blur-" index)
+                    :class (stl/css-case :first-row true :hidden is-hidden)}
+              [:> icon-button* {:variant "ghost"
+                                :aria-label (tr "workspace.options.blur-options.move-stack-blur-up")
+                                :on-click #(handle-reorder-stack-blur index (max 0 (dec index)))
+                                :disabled (= index 0)
+                                :icon i/arrow-up}]
+              [:> icon-button* {:variant "ghost"
+                                :aria-label (tr "workspace.options.blur-options.move-stack-blur-down")
+                                :on-click #(handle-reorder-stack-blur index (min (dec (count (:blurs values))) (inc index)))
+                                :disabled (= index (dec (count (:blurs values))))
+                                :icon i/arrow-down}]
+              [:> numeric-input*
+               {:class (stl/css :numeric-input)
+                :placeholder "--"
+                :min 0
+                :text-icon "value"
+                :on-change #(handle-change-stack-blur-value index %)
+                :name (str "stack-blur-value-" index)
+                :value (:value blur)}]
+              [:div {:class (stl/css :actions)}
+               [:> icon-button* {:variant "ghost"
+                                 :aria-label (tr "workspace.options.blur-options.toggle-blur")
+                                 :on-click #(handle-toggle-stack-blur-visibility index)
+                                 :icon (if is-hidden i/hide i/shown)}]
+               [:> icon-button* {:variant "ghost"
+                                 :aria-label (tr "workspace.options.blur-options.remove-blur")
+                                 :on-click #(handle-remove-stack-blur index)
+                                 :tooltip-placement "top-left"
+                                 :icon i/remove}]]]))]])]))

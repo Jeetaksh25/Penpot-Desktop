@@ -119,6 +119,80 @@
       (let [page (dsh/lookup-page state)]
         (rx/of (update-flow (:id page) flow-id #(assoc % :name name)))))))
 
+;; --- Prototype sections (Figma #72)
+;;
+;; In-session prototype-section edits. The sections live in
+;; :workspace-local :prototype-sections (a vector) so they are fully
+;; additive — no changes pipeline / new change type is touched. The
+;; page-level :prototype-sections field (page.cljc) is the persistence
+;; target; committing it through the changes pipeline is DEFERRED (needs
+;; a new :mod-prototype-section change type in the shared changes.cljc,
+;; high-blast). These events initialize from the page's field on first
+;; edit so an existing page with sections is editable.
+
+(defn- current-prototype-sections
+  "Read the session sections from workspace-local, falling back to the
+   current page's :prototype-sections when the session slot is unset."
+  [state]
+  (or (dm/get-in state [:workspace-local :prototype-sections])
+      (ctp/get-prototype-sections (dsh/lookup-page state))))
+
+(defn add-prototype-section
+  "Create a new prototype section named `name` (defaults to \"Section\")."
+  ([]
+   (add-prototype-section nil))
+  ([name]
+   (ptk/reify ::add-prototype-section
+     ptk/UpdateEvent
+     (update [_ state]
+       (let [sections (current-prototype-sections state)
+             section  (ctp/make-prototype-section name)]
+         (assoc-in state [:workspace-local :prototype-sections]
+                   (ctp/add-prototype-section sections section)))))))
+
+(defn rename-prototype-section
+  [section-id name]
+  (assert (uuid? section-id) "expected valid section-id")
+  (assert (string? name) "expected valid name")
+  (ptk/reify ::rename-prototype-section
+    ptk/UpdateEvent
+    (update [_ state]
+      (let [sections (current-prototype-sections state)]
+        (assoc-in state [:workspace-local :prototype-sections]
+                  (ctp/rename-prototype-section sections section-id name))))))
+
+(defn remove-prototype-section
+  [section-id]
+  (assert (uuid? section-id) "expected valid section-id")
+  (ptk/reify ::remove-prototype-section
+    ptk/UpdateEvent
+    (update [_ state]
+      (let [sections (current-prototype-sections state)]
+        (assoc-in state [:workspace-local :prototype-sections]
+                  (ctp/remove-prototype-section sections section-id))))))
+
+(defn add-frame-to-prototype-section
+  [section-id frame-id]
+  (assert (uuid? section-id) "expected valid section-id")
+  (assert (uuid? frame-id) "expected valid frame-id")
+  (ptk/reify ::add-frame-to-prototype-section
+    ptk/UpdateEvent
+    (update [_ state]
+      (let [sections (current-prototype-sections state)]
+        (assoc-in state [:workspace-local :prototype-sections]
+                  (ctp/add-frame-to-prototype-section sections section-id frame-id))))))
+
+(defn remove-frame-from-prototype-section
+  [section-id frame-id]
+  (assert (uuid? section-id) "expected valid section-id")
+  (assert (uuid? frame-id) "expected valid frame-id")
+  (ptk/reify ::remove-frame-from-prototype-section
+    ptk/UpdateEvent
+    (update [_ state]
+      (let [sections (current-prototype-sections state)]
+        (assoc-in state [:workspace-local :prototype-sections]
+                  (ctp/remove-frame-from-prototype-section sections section-id frame-id))))))
+
 ;; --- Interactions
 
 (defn- connected-frame?

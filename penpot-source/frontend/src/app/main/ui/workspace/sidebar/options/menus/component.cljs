@@ -1194,6 +1194,89 @@
              :component-id component-id
              :property property}])]]])))
 
+;; Figma-parity Dev Mode component playground (gap #77). A guarded
+;; "Playground" section on a single component COPY that lets users
+;; experiment with typed component properties: a one-click "Reset to
+;; defaults" that re-applies every typed property's :default-value to the
+;; instance via the existing set-property-value event (undo-able), plus a
+;; note pointing at the Properties section for per-property editing.
+;;
+;; v1 limit: Figma's playground drives a SEPARATE preview that does not
+;; change the design. A separate preview renderer is high-blast-radius
+;; (needs an isolated render of the component subtree with override
+;; application — ctcp/apply-property-overrides is wired but not yet
+;; integrated into a standalone preview surface), so v1 applies overrides
+;; to the live instance. The reset affordance + section wiring are in
+;; place; the preview-only render is deferred (see component_property.cljc).
+(mf/defc component-playground*
+  {::mf/private true}
+  [{:keys [shape component main-instance?]}]
+  (let [properties (or (:component-properties component) [])
+        values     (or (:component-property-values shape) {})
+
+        open*  (mf/use-state false)
+        open?  (deref open*)
+        toggle (mf/use-fn #(swap! open* not))
+
+        ;; True when at least one override differs from its default — drives
+        ;; the "Reset to defaults" enabled state.
+        any-overridden?
+        (mf/use-memo
+         (mf/deps properties values)
+         #(some (fn [p]
+                  (let [cur (get values (:name p))
+                        dflt (:default-value p)]
+                    (not= cur dflt)))
+                properties))
+
+        reset-to-defaults
+        (mf/use-fn
+         (mf/deps shape properties)
+         (fn []
+           (doseq [p properties]
+             (st/emit! (dwcp/set-property-value
+                        (:id shape) (:name p) (:default-value p))))))
+
+        on-set-value
+        (mf/use-fn
+         (mf/deps shape)
+         (fn [prop-name value]
+           (st/emit! (dwcp/set-property-value
+                      (:id shape) prop-name value))))]
+
+    ;; Render only on a single component COPY (not a main instance) that
+    ;; has at least one typed property. A component without typed
+    ;; properties or a main instance is byte-identical to before.
+    (when (and (not main-instance?) (seq properties))
+      [:div {:class (stl/css :component-typed-properties-section)}
+       [:> title-bar* {:collapsable  true
+                       :collapsed    (not open?)
+                       :on-collapsed toggle
+                       :title        (tr "workspace.options.component.playground")
+                       :class        (stl/css :component-title-bar)
+                       :title-class  (stl/css :component-title-bar-title)}
+        [:span {:class (stl/css :component-title-bar-type)}
+         (tr "workspace.options.component.playground.type")]]
+
+       (when open?
+         [:div {:class (stl/css :component-content)}
+          [:div {:class (stl/css :component-typed-property-list)}
+           (for [property properties]
+             [:> component-typed-property-instance-row*
+              {:key (str (:id property))
+               :shape-id (:id shape)
+               :property property
+               :value (get values (:name property))
+               :on-set-value on-set-value}])]
+          [:div {:class (stl/css :component-playground-actions)}
+           [:> button* {:variant "secondary"
+                        :type "button"
+                        :disabled (not any-overridden?)
+                        :on-click reset-to-defaults}
+            (tr "workspace.options.component.playground.reset")]]
+          [:div {:class (stl/css :component-playground-hint)}
+           (tr "workspace.options.component.playground.hint")]])])))
+
 (mf/defc component-menu*
   [{:keys [shapes is-swap-opened]}]
   (let [current-file-id (mf/use-ctx ctx/current-file-id)
@@ -1373,6 +1456,13 @@
             [:> component-typed-properties* {:shape shape
                                              :component component
                                              :main-instance? main-instance?}])
+
+          ;; Figma #77: Dev Mode component playground (component copy only).
+          ;; Renders only under its own guard inside the component.
+          (when (and (not is-swap-opened) (not multi))
+            [:> component-playground* {:shape shape
+                                       :component component
+                                       :main-instance? main-instance?}])
 
           ;; Figma #40: Code Connect authoring (main instance only).
           ;; Figma #42: exposed nested instances (main instance only).
