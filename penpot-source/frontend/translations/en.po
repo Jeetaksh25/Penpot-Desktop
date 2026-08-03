@@ -11724,6 +11724,18 @@ msgstr "Exposes the canvas to MCP-compatible AI clients on 127.0.0.1."
 msgid "workspace.ai.settings.mcp-port"
 msgstr "MCP port (0 = auto-pick)"
 
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.mcp-started"
+msgstr "MCP server started on port %s"
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.mcp-stopped"
+msgstr "MCP server stopped"
+
+#: src/app/main/ui/workspace/ai_settings.cljs
+msgid "workspace.ai.settings.mcp-start-failed"
+msgstr "MCP server failed to start: %s"
+
 #: src/app/main/ui/workspace/ai_bar.cljs
 msgid "workspace.ai.bar.generate-image"
 msgstr "Generate image"
@@ -11747,6 +11759,14 @@ msgstr "Previous variant"
 #: src/app/main/ui/workspace/ai_bar.cljs
 msgid "workspace.ai.bar.variants-next"
 msgstr "Next variant"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.variants-hint"
+msgstr "Number of alternatives (Auto mode only)"
+
+#: src/app/main/ui/workspace/ai_bar.cljs
+msgid "workspace.ai.bar.variants-label"
+msgstr "Variants"
 
 #: src/app/main/ui/workspace/ai_bar.cljs
 msgid "workspace.ai.bar.review-score"

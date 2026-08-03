@@ -1,11 +1,17 @@
-// Penpot Desktop — MCP server skeleton (Phase 2 / AI Depth).
+// Penpot Desktop — MCP server (Phase 2 / AI Depth) — REAL tool round-trip.
 //
 // A minimal but REAL JSON-RPC 2.0 server framed over a TCP listener, spawned
 // on the tokio runtime. It exposes the 11 MCP tool names the Ovion AI agent
-// will eventually call against the live canvas. The tool bodies are TODO stubs
-// that return a JSON-RPC error `{"code":-32601,"message":"not yet implemented"}`;
-// the surrounding structure (JSON-RPC framing, tool dispatch map, lifecycle) is
-// real and compile-ready.
+// calls against the live canvas. Tool bodies are NO LONGER stubs: a tools/call
+// generates a unique u64 call id, emits a Tauri event `mcp-tool-call` with
+// payload `{id, name, arguments}` to the running frontend via `app.emit`, then
+// awaits a `tokio::sync::oneshot` receiver keyed by that id (30s timeout). The
+// frontend finishes the tool by invoking the `llm_mcp_tool_result` Tauri command
+// (defined in llm.rs), which calls `resolve_pending(id, result)`. On resolve the
+// server returns a spec-shaped MCP tools/call success: an object with key
+// `content` = an array of one object `{type:"text", text: <json string of the
+// result>}` and key `isError` = a bool (true when `result` is an object whose
+// `ok` field === false). On timeout it returns JSON-RPC error code -32000.
 //
 // Lifecycle (driven by the `llm_mcp_*` Tauri commands in llm.rs):
 //   • start(app, port) — bind 127.0.0.1:port (port 0 = auto-pick), spawn the
@@ -22,17 +28,22 @@
 // swap to LSP-style Content-Length headers (the MCP stdio spec) is localized
 // here.
 
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
+use std::time::Duration;
 
 use serde_json::{json, Value};
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpListener;
+use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 
 /// The 11 MCP tools the Ovion AI agent can call against the live canvas. The
-/// bodies are stubs; the names are fixed here so `tools/list` and `tools/call`
-/// dispatch match across start/status.
+/// names are fixed here so `tools/list` and `tools/call` dispatch match across
+/// start/status, and so the frontend's `mcp-tool-call` listener can validate
+/// the requested tool name.
 const TOOL_NAMES: &[&str] = &[
     "get_document_info",
     "get_layer_tree",
@@ -60,6 +71,50 @@ struct McpState {
     port: u16,
 }
 
+/// Monotonic call id for the next tools/call round-trip.
+static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+
+/// Pending tool-call waiters: id -> oneshot sender. Initialized lazily on first
+/// use. `Mutex<Option<HashMap<u64, oneshot::Sender<Value>>>>` is `Sync` because
+/// `oneshot::Sender<Value>` is `Send` and `Mutex<T: Send>` is `Sync` — fine for
+/// a static.
+static PENDING: Mutex<Option<HashMap<u64, oneshot::Sender<Value>>>> = Mutex::new(None);
+
+/// Register a pending tool call and return the receiver that resolves when the
+/// frontend invokes `llm_mcp_tool_result(id, result)`.
+pub fn register_pending(id: u64) -> oneshot::Receiver<Value> {
+    let (tx, rx) = oneshot::channel::<Value>();
+    let mut g = match PENDING.lock() {
+        Ok(g) => g,
+        Err(_) => return rx,
+    };
+    if g.is_none() {
+        *g = Some(HashMap::new());
+    }
+    if let Some(map) = g.as_mut() {
+        map.insert(id, tx);
+    }
+    rx
+}
+
+/// Resolve a pending tool call by id. Returns true if a waiter was found and
+/// the result was delivered. Called from the `llm_mcp_tool_result` Tauri
+/// command in llm.rs.
+pub fn resolve_pending(id: u64, result: Value) -> bool {
+    let mut g = match PENDING.lock() {
+        Ok(g) => g,
+        Err(_) => return false,
+    };
+    let map = match g.as_mut() {
+        Some(m) => m,
+        None => return false,
+    };
+    match map.remove(&id) {
+        Some(tx) => tx.send(result).is_ok(),
+        None => false,
+    }
+}
+
 /// Build a JSON-RPC 2.0 error object.
 fn rpc_error(id: Value, code: i64, message: &str) -> Value {
     json!({
@@ -78,11 +133,97 @@ fn rpc_result(id: Value, result: Value) -> Value {
     })
 }
 
+/// Build the MCP tools/call success result body from the frontend's tool
+/// result. `isError` is true when the result is an object whose `ok` field is
+/// exactly `false` (the CLJS convention for tool failure). The `text` field is
+/// a JSON string of the result so any JSON-shaped value round-trips through the
+/// MCP `content[].text` channel.
+fn tool_result_body(result: &Value) -> Value {
+    let is_error = matches!(result.get("ok"), Some(v) if v == &Value::Bool(false));
+    let text = serde_json::to_string(result).unwrap_or_else(|_| "null".into());
+    json!({
+        "content": [ { "type": "text", "text": text } ],
+        "isError": is_error
+    })
+}
+
+/// One-line descriptions for each of the 11 tools, keyed by tool name.
+fn tool_description(name: &str) -> &'static str {
+    match name {
+        "get_document_info" => "Return metadata about the current document (name, id, page count).",
+        "get_layer_tree" => "Return the full layer tree of the current page as nested nodes.",
+        "get_selection" => "Return the ids, names, and bounds of the currently selected shapes.",
+        "get_screenshot" => "Return a PNG screenshot of the current page (or selection) as base64.",
+        "get_tokens" => "Return the active design tokens (colors, typography, spacing, radii).",
+        "get_components" => "Return the components available in the current document.",
+        "get_libraries" => "Return the shared libraries linked to the current document.",
+        "run_code" => "Execute a named canvas script with arguments and return its result.",
+        "apply_action" => "Apply a named canvas action (mutation) with arguments and return its result.",
+        "design_to_code" => "Export the selection or page to framework code (e.g. react, vue, html).",
+        "code_to_design" => "Import framework code into the canvas as new shapes or an updated selection.",
+        _ => "Ovion canvas tool.",
+    }
+}
+
+/// Build the inputSchema object for a tool.
+fn tool_input_schema(name: &str) -> Value {
+    match name {
+        "run_code" => json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string" },
+                "arguments": { "type": "object" }
+            },
+            "required": ["name"]
+        }),
+        "apply_action" => json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string" },
+                "arguments": { "type": "object" }
+            },
+            "required": ["name"]
+        }),
+        "design_to_code" => json!({
+            "type": "object",
+            "properties": {
+                "framework": { "type": "string" },
+                "scope": { "type": "string", "enum": ["selection", "page"] }
+            }
+        }),
+        "code_to_design" => json!({
+            "type": "object",
+            "properties": {
+                "code": { "type": "string" },
+                "framework": { "type": "string" },
+                "target": { "type": "string", "enum": ["new-board", "update-selection"] }
+            },
+            "required": ["code"]
+        }),
+        // The 7 no-arg tools.
+        _ => json!({ "type": "object", "properties": {} }),
+    }
+}
+
+/// Build the tools/list array of tool descriptors.
+fn tool_list() -> Vec<Value> {
+    TOOL_NAMES
+        .iter()
+        .map(|n| {
+            json!({
+                "name": n,
+                "description": tool_description(n),
+                "inputSchema": tool_input_schema(n)
+            })
+        })
+        .collect()
+}
+
 /// Dispatch one JSON-RPC request to a response Value. `tools/list` returns the
-/// tool descriptors; `tools/call` validates the tool name and returns the
-/// not-yet-implemented error; `initialize` returns minimal MCP capabilities;
-/// anything else returns -32601.
-fn dispatch(req: &Value) -> Value {
+/// tool descriptors; `tools/call` validates the tool name, emits the
+/// `mcp-tool-call` event to the frontend, and awaits the oneshot result;
+/// `initialize` returns minimal MCP capabilities; anything else returns -32601.
+async fn dispatch(app: &AppHandle, req: &Value) -> Value {
     let id = req.get("id").cloned().unwrap_or(Value::Null);
     let method = req.get("method").and_then(|m| m.as_str()).unwrap_or("");
 
@@ -92,28 +233,43 @@ fn dispatch(req: &Value) -> Value {
             json!({
                 "protocolVersion": "2024-11-05",
                 "capabilities": { "tools": {} },
-                "serverInfo": { "name": "ovion-desktop-mcp", "version": "0.1.0" }
+                "serverInfo": { "name": "ovion-desktop-mcp", "version": "0.2.0" }
             }),
         ),
-        "tools/list" => rpc_result(
-            id,
-            json!({
-                "tools": TOOL_NAMES.iter().map(|n| json!({
-                    "name": n,
-                    "description": "not yet implemented"
-                })).collect::<Vec<_>>()
-            }),
-        ),
+        "tools/list" => rpc_result(id, json!({ "tools": tool_list() })),
         "tools/call" => {
             let name = req
                 .get("params")
                 .and_then(|p| p.get("name"))
                 .and_then(|n| n.as_str())
                 .unwrap_or("");
-            if TOOL_NAMES.contains(&name) {
-                rpc_error(id, -32601, "not yet implemented")
-            } else {
-                rpc_error(id, -32601, &format!("unknown tool: {name}"))
+            if !TOOL_NAMES.contains(&name) {
+                return rpc_error(id, -32601, &format!("unknown tool: {name}"));
+            }
+            let arguments = req
+                .get("params")
+                .and_then(|p| p.get("arguments"))
+                .cloned()
+                .unwrap_or_else(|| json!({}));
+            let call_id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+            let rx = register_pending(call_id);
+            let payload = json!({ "id": call_id, "name": name, "arguments": arguments });
+            if app.emit("mcp-tool-call", payload).is_err() {
+                // No frontend listener — drop the pending waiter and fail fast.
+                let _ = resolve_pending(call_id, Value::Null);
+                return rpc_error(id, -32000, "no frontend listener for mcp-tool-call");
+            }
+            match tokio::time::timeout(Duration::from_secs(30), rx).await {
+                Ok(Ok(result)) => rpc_result(id, tool_result_body(&result)),
+                // Sender dropped without sending (frontend vanished) — treat as
+                // a tool error.
+                Ok(Err(_)) => rpc_error(id, -32000, "tool call cancelled by frontend"),
+                Err(_) => {
+                    // Timed out — clean up the pending waiter so it cannot
+                    // resolve after we have already responded.
+                    let _ = resolve_pending(call_id, Value::Null);
+                    rpc_error(id, -32000, "tool execution timed out")
+                }
             }
         }
         // Notifications (id absent) get no response per JSON-RPC spec.
@@ -124,8 +280,9 @@ fn dispatch(req: &Value) -> Value {
 
 /// Handle one accepted TCP connection: read NDJSON lines, dispatch each, write
 /// the response line. A parse failure on a single line yields a JSON-RPC parse
-/// error response rather than dropping the connection.
-async fn handle_connection(mut stream: tokio::net::TcpStream) {
+/// error response rather than dropping the connection. The AppHandle is cloned
+/// per connection so each connection can emit events to the frontend.
+async fn handle_connection(app: AppHandle, mut stream: tokio::net::TcpStream) {
     let (reader, mut writer) = stream.split();
     let mut lines = BufReader::new(reader).lines();
     while let Ok(Some(line)) = lines.next_line().await {
@@ -143,7 +300,7 @@ async fn handle_connection(mut stream: tokio::net::TcpStream) {
                 continue;
             }
         };
-        let resp = dispatch(&req);
+        let resp = dispatch(&app, &req).await;
         if resp.is_null() {
             // Notification — no response.
             continue;
@@ -176,18 +333,16 @@ pub async fn start(app: AppHandle, port: u16) -> Result<(), String> {
         .map(|a| a.port())
         .map_err(|e| format!("could not read bound port: {e}"))?;
 
-    // The app handle is moved into the task so tool bodies (once implemented)
-    // can query the live canvas via Tauri events/commands. Currently unused but
-    // kept in scope to avoid `unused variable` warnings and to document intent.
-    let _app = app;
-
+    // The app handle is moved into the accept loop so each tools/call can emit
+    // the `mcp-tool-call` event to the running frontend and await the
+    // `llm_mcp_tool_result` resolution.
     let handle = tokio::spawn(async move {
         loop {
             // Accept errors (e.g. transient EMFILE) are logged and skipped so a
             // single bad accept never kills the server.
             match listener.accept().await {
                 Ok((stream, _peer)) => {
-                    tokio::spawn(handle_connection(stream));
+                    tokio::spawn(handle_connection(app.clone(), stream));
                 }
                 Err(e) => {
                     eprintln!("[mcp] accept error: {e}");

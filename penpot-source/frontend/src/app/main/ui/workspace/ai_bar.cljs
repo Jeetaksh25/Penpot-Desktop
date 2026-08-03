@@ -445,6 +445,7 @@
         prompt-ref     (mf/use-ref nil)
         pop-ref        (mf/use-ref nil)             ; Screen popover element (for anime entrance)
         variant-idx*   (mf/use-state 0)             ; Phase 2 carousel current variant
+        variants*      (mf/use-state 1)             ; multi-variant count (Auto only; 1 = off)
 
         busy          (mf/deref refs/ai-busy)
         preview       (mf/deref refs/ai-preview)
@@ -467,6 +468,7 @@
         attachments   (deref attachments*)
         stage         (deref stage*)
         variant-idx   (deref variant-idx*)
+        variants      (deref variants*)
 
         ;; The input pill drops from a full pill (999px) to a rounded
         ;; rectangle (~22px) when the prompt grows past one line, mirroring
@@ -526,8 +528,11 @@
 
         on-generate
         (mf/use-fn
-         (mf/deps prompt attachments quality preset target)
+         (mf/deps prompt attachments quality preset target variants)
          (fn []
+           ;; Reset the carousel to the first variant of the new set so a
+           ;; previous position never carries into a fresh generation.
+           (reset! variant-idx* 0)
            ;; URLs are no longer a separate field — the user drops them into
            ;; the prompt and the backend's extract_urls parses them out.
            (if (and (str/empty? prompt) (empty? attachments))
@@ -547,10 +552,12 @@
                                ;; vision scout); "auto" stays on the single-shot spec
                                ;; path whose model is picked by the DeepSeek V4 Flash
                                ;; router in the backend. No visual change to the bar.
-                               (let [ev-opts {:target       target
-                                              :quality      quality
-                                              :frame-preset preset
-                                              :use-memory   true}
+                               (let [ev-opts (cond-> {:target       target
+                                                      :quality      quality
+                                                      :frame-preset preset
+                                                      :use-memory   true}
+                                               (and (= quality "auto") (> variants 1))
+                                               (assoc :variants variants))
                                      event (if (= quality "max")
                                              (ai/run-agent-design
                                               {:prompt prompt :files inputs :options ev-opts})
@@ -635,6 +642,12 @@
         on-var-pick
         (mf/use-fn
          (fn [i] (reset! variant-idx* i)))
+
+        ;; Pick a variant count (Auto mode only). Resetting the carousel to
+        ;; 0 keeps it on the first variant of the new set.
+        on-pick-variant
+        (mf/use-fn
+         (fn [n] (reset! variants* n) (reset! variant-idx* 0)))
 
         open-image
         (mf/use-fn
@@ -797,6 +810,39 @@
                                 :style #js {"animationDelay" (str (* idx 40) "ms")}}
                  [:img {:src (:preview a) :alt (:name a)}]
                  [:span.ai-thumb-x {:on-click #(remove-attachment idx)} lucide-x]]))])]
+
+        ;; variant-count segmented control (Auto mode only). Reuses the
+        ;; screen-option button (ai-screen-opt + is-cur coral selected
+        ;; state) inside a pill wrapper that mirrors the cluster's white
+        ;; surface + coral inset ring via the shared design tokens. Hidden
+        ;; entirely in "max" mode, where run-agent-design is single-spec.
+        (when (= quality "auto")
+          [:div {:role "group"
+                 :aria-label (tr "workspace.ai.bar.variants-label")
+                 :style #js {"display" "inline-flex"
+                             "alignItems" "center"
+                             "gap" "2px"
+                             "flex" "none"
+                             "padding" "4px"
+                             "background" "var(--ai-white)"
+                             "borderRadius" "var(--ai-radius-pill)"
+                             "boxShadow" "var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral)"}}
+           (for [n (range 1 5)]
+             [:button.ai-screen-opt
+              {:type "button"
+               :key n
+               :aria-pressed (str (= variants n))
+               :class (when (= variants n) "is-cur")
+               :on-click #(on-pick-variant n)
+               :on-mouse-enter aim/hov-white-in
+               :on-mouse-leave aim/hov-white-out
+               :on-mouse-down aim/press-white-in
+               :on-mouse-up aim/press-white-out
+               :style #js {"padding" "6px 11px"
+                           "borderRadius" "var(--ai-radius-sm)"
+                           "fontSize" "13px"
+                           "justifyContent" "center"}}
+              (str n)])])
 
         ;; input pill: [prompt textarea | coral send disc]
         [:div.ai-input-pill {:class (when expanded? "is-expanded")}

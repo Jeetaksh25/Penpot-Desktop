@@ -233,6 +233,14 @@
   []
   (p/then (invoke "llm_mcp_status" #js {}) identity))
 
+(defn invoke-mcp-tool-result
+  "Ship a tool result back to the Rust MCP server so it can resolve the
+  oneshot waiting on the tools/call round-trip. `id` is the u64 call id from
+  the mcp-tool-call event payload; `result` is a CLJS map — clj->js turns it
+  into the JS object Rust deserializes into serde_json::Value. Fire-and-forget."
+  [id result]
+  (invoke "llm_mcp_tool_result" #js {:requestId id :result (clj->js result)}))
+
 ;; ── Agent loop IPC wrappers ───────────────────────────────────────────────────
 ;;
 ;; The agent loop is CLJS-driven; Rust (`llm.rs`) is a stateless one-step model

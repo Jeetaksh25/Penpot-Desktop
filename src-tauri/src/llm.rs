@@ -2757,3 +2757,16 @@ pub async fn llm_mcp_start(app: AppHandle, port: u16) -> Result<(), String> {
 pub fn llm_mcp_stop() -> Result<(), String> {
     crate::mcp_server::stop()
 }
+
+/// Resolve a pending MCP tool-call round-trip by id. The CLJS frontend invokes
+/// this once it has finished executing the tool named in the `mcp-tool-call`
+/// event. `result` is any JSON value; it becomes the `content[].text` payload
+/// of the MCP tools/call success response (JSON-stringified), and `isError` is
+/// set when `result` is an object whose `ok` field === false. Tauri v2
+/// auto-camelCases top-level param names, so `request_id` is invoked as
+/// `requestId` from JS.
+#[tauri::command]
+pub async fn llm_mcp_tool_result(request_id: u64, result: serde_json::Value) -> Result<(), String> {
+    crate::mcp_server::resolve_pending(request_id, result);
+    Ok(())
+}

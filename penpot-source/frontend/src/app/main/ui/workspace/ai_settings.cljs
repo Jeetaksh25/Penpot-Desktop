@@ -29,6 +29,7 @@
    [app.main.data.notifications :as ntf]
    [app.main.data.workspace :as dw]
    [app.main.data.workspace.ai-gen :as ai]
+   [app.main.data.workspace.mcp-server :as mcp]
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.workspace.ai-design :as ad]
@@ -240,6 +241,12 @@
           (p/then (fn [res] (reset! cfg* (js->clj res :keywordize-keys true))))
           (p/catch (fn [e] (st/emit! (ntf/error (str e)))))))
 
+    ;; Arm the MCP tool-call listener whenever the settings modal is open.
+    ;; `mcp/start-listener` is idempotent, so re-mounts never double-arm.
+    (mf/with-effect
+      []
+      (mcp/start-listener))
+
     (let [cfg    (deref cfg*)
           saving  (deref saving*)
           upd     (mf/use-fn
@@ -283,6 +290,21 @@
                            (p/then (fn [_]
                                      (reset! saving* false)
                                      (st/emit! (ntf/info (tr "workspace.ai.settings.saved")))
+                                     (if (boolean (:mcp_enabled cfg false))
+                                       (-> (ai/invoke-mcp-start (safe-int (:mcp_port cfg 0) 0))
+                                           (p/then (fn [_]
+                                                     (st/emit! (ntf/info
+                                                                (tr "workspace.ai.settings.mcp-started"
+                                                                    (str (safe-int (:mcp_port cfg 0) 0)))))))
+                                           (p/catch (fn [e]
+                                                     (st/emit! (ntf/error
+                                                                (tr "workspace.ai.settings.mcp-start-failed"
+                                                                    (str e)))))))
+                                       (-> (ai/invoke-mcp-stop)
+                                           (p/then (fn [_]
+                                                     (st/emit! (ntf/info (tr "workspace.ai.settings.mcp-stopped")))))
+                                           (p/catch (fn [_]
+                                                     (st/emit! (ntf/info (tr "workspace.ai.settings.mcp-stopped")))))))
                                      (close)))
                            (p/catch (fn [e]
                                      (reset! saving* false)

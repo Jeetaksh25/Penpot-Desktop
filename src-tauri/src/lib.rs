@@ -771,6 +771,7 @@ pub fn run() {
             llm::llm_mcp_status,
             llm::llm_mcp_start,
             llm::llm_mcp_stop,
+            llm::llm_mcp_tool_result,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
