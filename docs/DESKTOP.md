@@ -1,4 +1,4 @@
-# Oriole Desktop (Offline, Tauri + Native design platform)
+# Ovion Desktop (Offline, Tauri + Native design platform)
 
 This is a Tauri v2 desktop shell around a real ClojureScript frontend and Clojure/JVM backend. All data is stored locally on your PC using PostgreSQL and Redis.
 
@@ -75,7 +75,7 @@ This is a Tauri v2 desktop shell around a real ClojureScript frontend and Clojur
    stop_services.bat
    ```
 
-3. The Oriole Desktop window should open to the native auth screen. Create a demo profile or register to start using it offline.
+3. The Ovion Desktop window should open to the native auth screen. Create a demo profile or register to start using it offline.
 
 ## Helper scripts
 
