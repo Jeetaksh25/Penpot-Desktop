@@ -9,6 +9,7 @@
   (:require
    [app.common.data :as d]
    [app.common.data.macros :as dm]
+   [app.common.files.helpers :as cfh]
    [app.common.geom.point :as gpt]
    [app.common.types.page :as ctp]
    [app.common.uuid :as uuid]
@@ -26,6 +27,7 @@
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
    [app.util.keyboard :as kbd]
+   [clojure.string :as cstr]
    [goog.events :as events]
    [rumext.v2 :as mf]))
 
@@ -671,4 +673,125 @@
                            :easing (easing-str animation)}
                       #(st/emit! (dv/complete-animation)
                                  (dv/close-overlay overlay-id)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; P0.17 SCROLL-DRIVEN ANIMATIONS (web-shippable)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; On each scroll of the #viewer-section container, every shape on the current
+;; frame that carries a :scroll-animate interaction (event-type :while-scrolling)
+;; has its :keyframes props interpolated by scroll progress and applied as inline
+;; style on the matching [data-shape-id] DOM node. The reduced-motion guard is
+;; non-negotiable: when the user prefers reduced motion we apply the final
+;; keyframe instantly and skip the per-scroll interpolation work.
+
+(defn- reduced-motion-preferred?
+  "True when the user agent advertises prefers-reduced-motion: reduce. Nil-safe
+  when matchMedia is unavailable."
+  []
+  (try
+    (let [mq (.matchMedia js/window "(prefers-reduced-motion: reduce)")]
+      (true? (.-matches ^js mq)))
+    (catch :default _ false)))
+
+(defn- clamp
+  [v lo hi]
+  (max lo (min hi v)))
+
+(defn- lerp
+  [a b t]
+  (+ a (* (- b a) t)))
+
+(defn- interpolate-keyframes
+  "Given a vector of keyframes ({:offset 0..1 :props {...}}) and a progress
+  value 0..1, return a props map with linearly interpolated values across the
+  two surrounding keyframes. Nil-safe for empty/missing keyframes."
+  [keyframes progress]
+  (if (empty? keyframes)
+    {}
+    (let [kfs (sort-by :offset keyframes)
+          p   (clamp progress 0 1)
+          first-kf (first kfs)
+          last-kf  (last kfs)]
+      (cond
+        (<= p (:offset first-kf))
+        (:props first-kf)
+
+        (>= p (:offset last-kf))
+        (:props last-kf)
+
+        :else
+        (loop [remaining kfs]
+          (let [a (first remaining)
+                b (second remaining)]
+            (cond
+              (nil? b)               (:props a)
+              (and (>= p (:offset a))
+                   (<= p (:offset b)))
+              (let [span (- (:offset b) (:offset a))
+                    t   (if (zero? span) 0 (/ (- p (:offset a)) span))
+                    pa  (:props a)
+                    pb  (:props b)
+                    prop-keys (set (concat (keys pa) (keys pb)))]
+                (into {}
+                      (for [k prop-keys]
+                        [k (lerp (get pa k 0) (get pb k 0) t)])))
+              :else (recur (next remaining)))))))))
+
+(defn- apply-props-to-node
+  "Apply interpolated keyframe props (translateY / opacity / scale / rotate) to
+  a DOM node as inline style. Transform-contributing props are composed into a
+  single `transform` string. Nil-safe when node is nil."
+  [node props]
+  (when (some? node)
+    (let [translateY (get props :translate-y)
+          scale      (get props :scale)
+          rotate     (get props :rotate)
+          opacity    (get props :opacity)
+          transforms (cond-> []
+                       (some? translateY) (conj (str "translateY(" translateY "px)"))
+                       (some? scale)      (conj (str "scale(" scale ")"))
+                       (some? rotate)     (conj (str "rotate(" rotate "deg)")))]
+      (when (seq transforms)
+        (dom/set-css-property! node "transform" (cstr/join " " transforms)))
+      (when (some? opacity)
+        (dom/set-css-property! node "opacity" (str opacity))))))
+
+(defn apply-scroll-animations
+  "Per-scroll work for the #viewer-section container. Iterates every shape on
+  the current frame that has a :scroll-animate interaction (event-type
+  :while-scrolling), computes scroll progress on the chosen axis, interpolates
+  the keyframes props and applies them as inline style on the matching
+  [data-shape-id] DOM node. When prefers-reduced-motion is set, applies the
+  final keyframe instantly and skips per-scroll interpolation. Nil-safe when
+  the container, frame, or objects are missing."
+  [viewer-section frame objects]
+  (when (and (some? viewer-section) (some? frame) (some? objects))
+    (let [reduced?    (reduced-motion-preferred?)
+          scroll-top  (.-scrollTop ^js viewer-section)
+          scroll-left (.-scrollLeft ^js viewer-section)
+          frame-id    (:id frame)
+          ids         (cons frame-id (cfh/get-children-ids objects frame-id))
+          shapes      (keep #(get objects %) ids)]
+      (doseq [shape shapes
+              :let [interactions (:interactions shape)]
+              interaction interactions
+              :when (= (:action-type interaction) :scroll-animate)]
+        (let [shape-id-str (str (:id shape))
+              node         (dom/query viewer-section
+                                     (str "[data-shape-id='" shape-id-str "']"))
+              axis         (or (:axis interaction) :vertical)
+              range-start  (or (:range-start interaction) 0)
+              range-end    (or (:range-end interaction) range-start)
+              pos          (if (= axis :horizontal) scroll-left scroll-top)
+              span         (- range-end range-start)
+              progress     (if (zero? span) 0 (clamp (/ (- pos range-start) span) 0 1))
+              keyframes    (:keyframes interaction)]
+          (when (some? node)
+            (if reduced?
+              (let [final-props (if (seq keyframes)
+                                  (:props (last (sort-by :offset keyframes)))
+                                  {})]
+                (apply-props-to-node node final-props))
+              (apply-props-to-node node (interpolate-keyframes keyframes progress)))))))))
 

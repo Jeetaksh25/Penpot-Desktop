@@ -11,6 +11,7 @@
    [app.common.files.helpers :as cfh]
    [app.common.types.page :as ctp]
    [app.common.types.shape-tree :as ctt]
+   [app.common.expressions :as cexpr]
    [app.common.types.shape.interactions :as ctsi]
    [app.common.uuid :as uuid]
    [app.main.data.common :as dcm]
@@ -43,14 +44,17 @@
    :after-delay (tr "workspace.options.interaction-after-delay")
    ;; Figma #33: keyboard + input-change triggers.
    :key-down    (tr "workspace.options.interaction-on-key-down")
-   :on-change   (tr "workspace.options.interaction-on-change")})
+   :on-change   (tr "workspace.options.interaction-on-change")
+   ;; C2: reactive + scroll-driven triggers.
+   :variable-changed (tr "workspace.options.interaction-trigger-variable-changed")
+   :while-scrolling  (tr "workspace.options.interaction-while-scrolling")})
 
 (defn- event-type-name
   [interaction]
   (get (event-type-names) (:event-type interaction) "--"))
 
 (defn- action-summary
-  [interaction destination]
+  [interaction destination variable-opts]
   (case (:action-type interaction)
     :navigate       (tr "workspace.options.interaction-navigate-to-dest"
                         (get destination :name (tr "workspace.options.interaction-none")))
@@ -68,6 +72,21 @@
                         (get destination :name (tr "workspace.options.interaction-none")))
     :scroll-to      (tr "workspace.options.interaction-scroll-to-dest"
                         (get destination :name (tr "workspace.options.interaction-none")))
+    ;; C2: variable / conditional / style / error-state / scroll-animate summaries.
+    :set-variable       (let [vid (:variable-id interaction)
+                              opt (when (some? vid)
+                                    (some #(when (= (:value %) (str vid)) %)
+                                          variable-opts))]
+                        (tr "workspace.options.interaction-set-variable-summary"
+                            (or (:label opt)
+                                (tr "workspace.options.interaction-none"))))
+    :set-variable-mode  (tr "workspace.options.interaction-set-variable-summary"
+                            (or (:mode-name interaction) ""))
+    :conditional        (tr "workspace.options.interaction-conditional-summary")
+    :set-style          (tr "workspace.options.interaction-set-style-summary"
+                            (d/name (:property interaction :fill)))
+    :set-error-state    (tr "workspace.options.interaction-set-error-state-summary")
+    :scroll-animate     (tr "workspace.options.interaction-scroll-animate-summary")
     "--"))
 
 (defn- get-frames-options
@@ -175,6 +194,169 @@
                          :right-button-icon-id i/remove
                          :right-button-tooltip (tr "labels.remove")
                          :on-right-button-click remove-flow}]))
+
+;; C2 Prototype Logic Runtime — condition builder helpers. Pure fns that
+;; decompose a :condition expression node (produced by cexpr/build-condition)
+;; into an editable [mode predicates] shape and back. A predicate is a
+;; [op lhs rhs] node; an operand is a reference node (["get" name] / ["prop"
+;; id prop] / ["error-state" id]) or a literal.
+(defn- condition-mode
+  [node]
+  (cond
+    (and (vector? node) (= (first node) "or"))  :any
+    (and (vector? node) (= (first node) "and")) :all
+    :else :all))
+
+(defn- condition-predicates
+  [node]
+  (cond
+    (and (vector? node) (contains? #{"and" "or"} (first node)))
+    (into [] (rest node))
+
+    (vector? node) [node]
+    :else []))
+
+(defn- predicate-parts
+  [node]
+  (if (vector? node)
+    [(get node 0 "==") (get node 1) (get node 2)]
+    ["==" nil nil]))
+
+(defn- operand-info
+  [node]
+  (cond
+    (and (vector? node) (= (first node) "get"))        {:type :variable    :name (second node)}
+    (and (vector? node) (= (first node) "prop"))       {:type :property    :id (second node) :prop (nth node 2 nil)}
+    (and (vector? node) (= (first node) "error-state")){:type :error-state :id (second node)}
+    :else {:type :literal :value node}))
+
+(defn- operand-node
+  [info]
+  (case (:type info)
+    :variable    ["get" (:name info)]
+    :property    ["prop" (:id info) (:prop info)]
+    :error-state ["error-state" (:id info)]
+    (:literal nil) (:value info)))
+
+;; The action-types allowed inside a conditional's then/else action lists.
+(def ^:private effect-action-types
+  [:set-variable :set-style :set-error-state :navigate :open-overlay
+   :close-overlay :scroll-to :open-url])
+
+(defn- effect-action-options
+  []
+  (mapv (fn [v]
+          {:value v
+           :label (tr (str "workspace.options.interaction-"
+                           (case v
+                             :set-variable     "set-variable"
+                             :set-style        "set-style"
+                             :set-error-state  "set-error-state"
+                             :navigate         "navigate-to"
+                             :open-overlay     "open-overlay"
+                             :close-overlay    "close-overlay"
+                             :scroll-to        "scroll-to"
+                             :open-url         "open-url")))})
+        effect-action-types))
+
+;; C2: fx expression dialog. A modal opened by an fx icon-button next to a
+;; value input. Shows a textarea for the [[...]] expression string, a list of
+;; available variables to insert as ${varname}, a live preview of the parsed
+;; node via cexpr/parse-expression, and Save / Clear. Saves via the supplied
+;; on-save callback (which calls the relevant ctsi/set-*-expression).
+(mf/defc fx-dialog*
+  {::mf/private true}
+  [{:keys [initial variables on-save on-close]}]
+  (let [text*     (mf/use-state #(or initial ""))
+        text      (deref text*)
+        node      (mf/with-memo [text]
+                    (cexpr/parse-expression text))
+        rendered  (mf/with-memo [node]
+                    (try (cexpr/format-expression node)
+                         (catch :default _ (str node))))
+
+        handle-change
+        (mf/use-fn
+         (fn [event]
+           (let [value (-> event dom/get-target dom/get-value)]
+             (reset! text* value))))
+
+        handle-insert
+        (mf/use-fn
+         (mf/deps text)
+         (fn [var-name]
+           (reset! text* (str text "${" var-name "}"))))
+
+        handle-save
+        (mf/use-fn
+         (mf/deps text on-save on-close)
+         (fn [_]
+           (on-save text)
+           (on-close)))
+
+        handle-clear
+        (mf/use-fn
+         (mf/deps on-save on-close)
+         (fn [_]
+           (on-save nil)
+           (on-close)))
+
+        handle-backdrop
+        (mf/use-fn
+         (mf/deps on-close)
+         (fn [event]
+           (when (identical? (dom/get-current-target event)
+                              (dom/get-target event))
+             (on-close))))]
+
+    [:div {:class (stl/css :fx-dialog-backdrop)
+           :on-click handle-backdrop}
+     [:div {:class (stl/css :fx-dialog)
+            :role "dialog"
+            :aria-label (tr "workspace.options.interaction-fx-edit")}
+      [:div {:class (stl/css :fx-dialog-header)}
+       [:span {:class (stl/css :fx-dialog-title)}
+        (tr "workspace.options.interaction-fx-edit")]
+       [:> icon-button* {:variant "ghost"
+                         :aria-label (tr "labels.close")
+                         :icon i/close-small
+                         :on-click on-close}]]
+
+      [:div {:class (stl/css :fx-dialog-body)}
+       [:textarea {:class (stl/css :fx-dialog-textarea)
+                   :value text
+                   :placeholder (tr "workspace.options.interaction-fx-placeholder")
+                   :on-change handle-change}]
+
+       [:div {:class (stl/css :fx-dialog-help)}
+        (tr "workspace.options.interaction-fx-help")]
+
+       (when (seq variables)
+         [:div {:class (stl/css :fx-dialog-vars)}
+          [:div {:class (stl/css :fx-dialog-vars-title)}
+           (tr "workspace.options.interaction-fx-variable-ref")]
+          (for [var-name variables]
+            [:button {:key var-name
+                      :type "button"
+                      :class (stl/css :fx-dialog-var-chip)
+                      :on-click #(handle-insert var-name)}
+             (str "${" var-name "}")])])]
+
+      [:div {:class (stl/css :fx-dialog-preview)}
+       [:span {:class (stl/css :fx-dialog-preview-label)}
+        (tr "workspace.options.interaction-fx-insert-variable")]
+       [:code {:class (stl/css :fx-dialog-preview-code)}
+        (or rendered "")]]
+
+      [:div {:class (stl/css :fx-dialog-actions)}
+       [:button {:type "button"
+                 :class (stl/css :fx-dialog-btn :secondary)
+                 :on-click handle-clear}
+        (tr "workspace.options.interaction-fx-clear")]
+       [:button {:type "button"
+                 :class (stl/css :fx-dialog-btn :primary)
+                 :on-click handle-save}
+        (tr "workspace.options.interaction-fx-save")]]]]))
 
 (mf/defc interaction-item*
   [{:keys [index shape interaction update-interaction remove-interaction]}]
@@ -382,6 +564,372 @@
                  value (when-not (str/empty? value) (uuid/parse* value))]
              (update-interaction index #(ctsi/set-change-to-variant % value)))))
 
+        ;; C2: fx dialog state. fx-open* is nil / :variable / :style.
+        fx-open*             (mf/use-state nil)
+        fx-text*             (mf/use-state "")
+
+        ;; C2: set-variable authoring.
+        change-variable-id
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value event
+                 value (when (and (some? value) (not= value ""))
+                         (uuid/parse* value))]
+             (update-interaction index #(ctsi/set-variable-id % value)))))
+
+        change-variable-value
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (-> event dom/get-target dom/get-value)]
+             (update-interaction index #(ctsi/set-variable-value % value)))))
+
+        open-fx-variable
+        (mf/use-fn
+         #(reset! fx-open* :variable))
+
+        ;; C2: set-variable-mode authoring. The collection selector writes
+        ;; :collection-id directly (no dedicated ctsi setter for it).
+        change-mode-name
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (-> event dom/get-target dom/get-value str/trim)]
+             (update-interaction index #(ctsi/set-mode-name % (when-not (str/empty? value) value))))))
+
+        change-collection-id
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (-> event dom/get-target dom/get-value str/trim)
+                 value (when-not (str/empty? value)
+                         (uuid/parse* value))]
+             (update-interaction index #(assoc % :collection-id value)))))
+
+        ;; C2: set-style authoring.
+        change-style-target
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (keyword event)]
+             (update-interaction index #(ctsi/set-style-target % value)))))
+
+        change-style-target-shape-id
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value event
+                 value (when (and (some? value) (not= value ""))
+                         (uuid/parse* value))]
+             (update-interaction index #(ctsi/set-style-target-shape-id % value)))))
+
+        change-style-property
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (keyword event)]
+             (update-interaction index #(ctsi/set-style-property % value)))))
+
+        change-style-value
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (-> event dom/get-target dom/get-value)]
+             (update-interaction index #(ctsi/set-style-value % value)))))
+
+        open-fx-style
+        (mf/use-fn
+         #(reset! fx-open* :style))
+
+        ;; C2: set-error-state authoring.
+        change-error-state-target
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (keyword event)]
+             (update-interaction index #(ctsi/set-error-state-target % value)))))
+
+        change-error-state-target-shape-id
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value event
+                 value (when (and (some? value) (not= value ""))
+                         (uuid/parse* value))]
+             (update-interaction index #(ctsi/set-error-state-target-shape-id % value)))))
+
+        change-error-state-error
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (-> event dom/get-target dom/checked?)]
+             (update-interaction index #(ctsi/set-error-state-error? % value)))))
+
+        ;; C2: scroll-animate authoring.
+        change-scroll-axis
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (keyword event)]
+             (update-interaction index #(ctsi/set-scroll-axis % value)))))
+
+        change-scroll-range-start
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [value]
+           (update-interaction index #(ctsi/set-scroll-range-start % value))))
+
+        change-scroll-range-end
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [value]
+           (update-interaction index #(ctsi/set-scroll-range-end % value))))
+
+        change-scroll-easing
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [event]
+           (let [value (keyword event)]
+             (update-interaction index #(ctsi/set-scroll-easing % value)))))
+
+        add-keyframe
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [_]
+           (update-interaction
+            index
+            #(ctsi/set-scroll-keyframes
+              % (conj (or (:keyframes interaction) [])
+                      {:offset 0.5 :props {}})))))
+
+        remove-keyframe
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [idx]
+           (update-interaction
+            index
+            (fn [i]
+              (let [v (or (:keyframes i) [])
+                    nv (vec (concat (subvec v 0 idx) (subvec v (inc idx))))]
+                (ctsi/set-scroll-keyframes i nv))))))
+
+        update-keyframe-offset
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [idx value]
+           (update-interaction
+            index
+            (fn [i]
+              (let [v (or (:keyframes i) [])]
+                (ctsi/set-scroll-keyframes
+                 i (assoc-in v [idx :offset] value)))))))
+
+        update-keyframe-prop
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [idx prop-key value]
+           (update-interaction
+            index
+            (fn [i]
+              (let [v (or (:keyframes i) [])]
+                (ctsi/set-scroll-keyframes
+                 i (assoc-in v [idx :props prop-key] value)))))))
+
+        ;; C2: fx dialog close + save callbacks.
+        close-fx
+        (mf/use-fn
+         (mf/deps fx-open* fx-text*)
+         (fn [& _]
+           (reset! fx-open* nil)
+           (reset! fx-text* "")))
+
+        save-fx-variable
+        (mf/use-fn
+         (mf/deps index update-interaction close-fx)
+         (fn [text]
+           (update-interaction
+            index
+            #(ctsi/set-variable-expression
+              % (when (and (some? text) (not (str/empty? text)))
+                  (cexpr/parse-expression text))))))
+
+        save-fx-style
+        (mf/use-fn
+         (mf/deps index update-interaction close-fx)
+         (fn [text]
+           (update-interaction
+            index
+            #(ctsi/set-style-expression
+              % (when (and (some? text) (not (str/empty? text)))
+                  (cexpr/parse-expression text))))))
+
+        ;; C2: condition builder local state, decomposed from :condition.
+        cond-mode*           (mf/use-state #(condition-mode (:condition interaction)))
+        cond-preds*          (mf/use-state #(condition-predicates (:condition interaction)))
+
+        write-condition!
+        (mf/use-fn
+         (mf/deps index update-interaction cond-mode* cond-preds*)
+         (fn []
+           (let [mode  @cond-mode*
+                 preds @cond-preds*]
+             (update-interaction
+              index
+              #(ctsi/set-condition % (cexpr/build-condition mode preds))))))
+
+        change-cond-mode
+        (mf/use-fn
+         (mf/deps cond-mode* write-condition!)
+         (fn [event]
+           (let [value (keyword event)]
+             (reset! cond-mode* value)
+             (write-condition!))))
+
+        add-predicate
+        (mf/use-fn
+         (mf/deps cond-preds* write-condition!)
+         (fn [_]
+           (reset! cond-preds* (conj @cond-preds* ["==" "" ""]))
+           (write-condition!)))
+
+        remove-predicate
+        (mf/use-fn
+         (mf/deps cond-preds* write-condition!)
+         (fn [idx]
+           (let [v @cond-preds*
+                 nv (vec (concat (subvec v 0 idx) (subvec v (inc idx))))]
+             (reset! cond-preds* nv)
+             (write-condition!))))
+
+        update-predicate-op
+        (mf/use-fn
+         (mf/deps cond-preds* write-condition!)
+         (fn [idx event]
+           (let [op  (if (string? event) event (str event))
+                 v   @cond-preds*
+                 [_ lhs rhs] (get v idx)
+                 nv (assoc v idx [op lhs rhs])]
+             (reset! cond-preds* nv)
+             (write-condition!))))
+
+        update-predicate-operand
+        (mf/use-fn
+         (mf/deps cond-preds* write-condition!)
+         (fn [idx side info]
+           (let [v     @cond-preds*
+                 [op lhs rhs] (get v idx)
+                 node  (operand-node info)
+                 nv    (assoc v idx
+                             (case side
+                               :lhs [op node rhs]
+                               :rhs [op lhs node]))]
+             (reset! cond-preds* nv)
+             (write-condition!))))
+
+        ;; C2: then / else action list authoring.
+        add-then-action
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [_]
+           (update-interaction
+            index
+            #(ctsi/add-then-action % {:action-type :set-variable
+                                      :event-type (:event-type interaction :click)}))))
+
+        remove-then-action
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [idx]
+           (update-interaction index #(ctsi/remove-then-action % idx))))
+
+        update-then-action
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [idx update-fn]
+           (update-interaction index #(ctsi/update-then-action % idx update-fn))))
+
+        add-else-action
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [_]
+           (update-interaction
+            index
+            #(ctsi/add-else-action % {:action-type :set-variable
+                                      :event-type (:event-type interaction :click)}))))
+
+        remove-else-action
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [idx]
+           (update-interaction index #(ctsi/remove-else-action % idx))))
+
+        update-else-action
+        (mf/use-fn
+         (mf/deps index update-interaction)
+         (fn [idx update-fn]
+           (update-interaction index #(ctsi/update-else-action % idx update-fn))))
+
+        change-then-action-type
+        (mf/use-fn
+         (mf/deps update-then-action)
+         (fn [idx event]
+           (let [value (keyword event)]
+             (update-then-action idx #(ctsi/set-action-type % value)))))
+
+        change-else-action-type
+        (mf/use-fn
+         (mf/deps update-else-action)
+         (fn [idx event]
+           (let [value (keyword event)]
+             (update-else-action idx #(ctsi/set-action-type % value)))))
+
+        change-then-action-destination
+        (mf/use-fn
+         (mf/deps update-then-action)
+         (fn [idx event]
+           (let [value event
+                 value (when (and (some? value) (not= value "")) (uuid/parse* value))]
+             (update-then-action idx #(ctsi/set-destination % value)))))
+
+        change-else-action-destination
+        (mf/use-fn
+         (mf/deps update-else-action)
+         (fn [idx event]
+           (let [value event
+                 value (when (and (some? value) (not= value "")) (uuid/parse* value))]
+             (update-else-action idx #(ctsi/set-destination % value)))))
+
+        change-then-action-variable
+        (mf/use-fn
+         (mf/deps update-then-action)
+         (fn [idx event]
+           (let [value event
+                 value (when (and (some? value) (not= value "")) (uuid/parse* value))]
+             (update-then-action idx #(ctsi/set-variable-id % value)))))
+
+        change-else-action-variable
+        (mf/use-fn
+         (mf/deps update-else-action)
+         (fn [idx event]
+           (let [value event
+                 value (when (and (some? value) (not= value "")) (uuid/parse* value))]
+             (update-else-action idx #(ctsi/set-variable-id % value)))))
+
+        change-then-action-url
+        (mf/use-fn
+         (mf/deps update-then-action)
+         (fn [idx event]
+           (let [value (-> event dom/get-target dom/get-value)]
+             (update-then-action idx #(ctsi/set-url % value)))))
+
+        change-else-action-url
+        (mf/use-fn
+         (mf/deps update-else-action)
+         (fn [idx event]
+           (let [value (-> event dom/get-target dom/get-value)]
+             (update-else-action idx #(ctsi/set-url % value)))))
+
 
         event-type-options   (-> [{:value :click       :label (tr "workspace.options.interaction-on-click")}
                                   ;; Figma #33: re-enabled per parity hint (were commented out).
@@ -391,7 +939,10 @@
                                   {:value :mouse-leave :label (tr "workspace.options.interaction-mouse-leave")}
                                   ;; Figma #33: keyboard + input-change triggers.
                                   {:value :key-down    :label (tr "workspace.options.interaction-on-key-down")}
-                                  {:value :on-change   :label (tr "workspace.options.interaction-on-change")}]
+                                  {:value :on-change   :label (tr "workspace.options.interaction-on-change")}
+                                  ;; C2: reactive + scroll-driven triggers.
+                                  {:value :variable-changed :label (tr "workspace.options.interaction-trigger-variable-changed")}
+                                  {:value :while-scrolling  :label (tr "workspace.options.interaction-while-scrolling")}]
                                  (cond-> (cfh/frame-shape? shape)
                                    (conj {:value :after-delay :label (tr "workspace.options.interaction-after-delay")})))
 
@@ -404,7 +955,14 @@
                              ;; Figma #10/#73: change-to variant, swap overlay, scroll to.
                              {:value :change-to      :label (tr "workspace.options.interaction-change-to")}
                              {:value :swap-overlay  :label (tr "workspace.options.interaction-swap-overlay")}
-                             {:value :scroll-to     :label (tr "workspace.options.interaction-scroll-to")}]
+                             {:value :scroll-to     :label (tr "workspace.options.interaction-scroll-to")}
+                             ;; C2: variable / conditional / style / error-state / scroll-animate.
+                             {:value :set-variable      :label (tr "workspace.options.interaction-set-variable")}
+                             {:value :set-variable-mode :label (tr "workspace.options.interaction-set-variable-mode")}
+                             {:value :conditional       :label (tr "workspace.options.interaction-conditional")}
+                             {:value :set-style         :label (tr "workspace.options.interaction-set-style")}
+                             {:value :set-error-state   :label (tr "workspace.options.interaction-set-error-state")}
+                             {:value :scroll-animate    :label (tr "workspace.options.interaction-scroll-animate")}]
 
         frames-opts         (get-frames-options frames shape)
 
@@ -463,9 +1021,141 @@
                         ;; Figma #34: custom cubic-bezier easing (4 control points).
                         {:icon :easing-ease-in-out :value :custom-bezier :label (tr "workspace.options.interaction-easing-custom-bezier")}]]
 
+        ;; C2: file variables (tokens) for set-variable + condition operands.
+        tokens-map          (mf/deref refs/workspace-all-tokens-map)
+        variable-opts
+        (mf/with-memo [tokens-map]
+          (into [{:value "" :label (tr "workspace.options.interaction-variable-select-placeholder")}]
+                (for [[vname token] tokens-map]
+                  {:value (str (:id token)) :label vname})))
+
+        variable-names
+        (mf/with-memo [tokens-map]
+          (vec (keys tokens-map)))
+
+        ;; C2: every object on the page, for set-style / set-error-state /
+        ;; condition property / error-state target selects.
+        shape-opts
+        (mf/with-memo [objects]
+          (->> objects
+               (filter (fn [[_ s]] (some? (:name s))))
+               (map (fn [[id s]]
+                      {:value (str id) :label (:name s)}))
+               (into [{:value "" :label (tr "workspace.options.interaction-none")}])))
+
+        style-target-opts [{:value :this  :label (tr "workspace.options.interaction-style-target-this")}
+                           {:value :by-id :label (tr "workspace.options.interaction-style-target-by-id")}]
+
+        style-property-opts [{:value :fill            :label (tr "workspace.options.interaction-style-fill")}
+                             {:value :opacity         :label (tr "workspace.options.interaction-style-opacity")}
+                             {:value :border-color    :label (tr "workspace.options.interaction-style-border-color")}
+                             {:value :border-width    :label (tr "workspace.options.interaction-style-border-width")}
+                             {:value :typography-size :label (tr "workspace.options.interaction-style-typography-size")}
+                             {:value :radius          :label (tr "workspace.options.interaction-style-radius")}]
+
+        scroll-axis-opts [{:value :vertical   :label (tr "workspace.options.interaction-scroll-axis-vertical")}
+                          {:value :horizontal :label (tr "workspace.options.interaction-scroll-axis-horizontal")}]
+
+        scroll-prop-opts [{:value :translate-y :label (tr "workspace.options.interaction-scroll-prop-translate-y")}
+                          {:value :opacity     :label (tr "workspace.options.interaction-scroll-prop-opacity")}
+                          {:value :scale       :label (tr "workspace.options.interaction-scroll-prop-scale")}
+                          {:value :rotate      :label (tr "workspace.options.interaction-scroll-prop-rotate")}]
+
+        operand-type-opts [{:value :literal     :label (tr "workspace.options.interaction-condition-value")}
+                           {:value :variable    :label (tr "workspace.options.interaction-condition-variable")}
+                           {:value :property    :label (tr "workspace.options.interaction-condition-property")}
+                           {:value :error-state :label (tr "workspace.options.interaction-condition-error-state")}]
+
+        operator-opts [{:value "==" :label "=="}
+                       {:value "!=" :label "!="}
+                       {:value ">"  :label ">"}
+                       {:value "<"  :label "<"}
+                       {:value ">=" :label ">="}
+                       {:value "<=" :label "<="}]
+
+        effect-options (mf/with-memo [] (effect-action-options))
+
+        ;; C2: render an operand editor for a condition predicate. Plain fn
+        ;; (not a hook) — closes over the stable update-predicate-operand +
+        ;; option lists above.
+        condition-operand-input
+        (fn [idx side info]
+          (case (:type info)
+            :literal
+            [:> input* {:type "text"
+                        :default-value (some-> (:value info) str)
+                        :on-blur #(update-predicate-operand
+                                   idx side
+                                   (assoc info :value (-> % dom/get-target dom/get-value)))}]
+
+            :variable
+            [:& select {:default-value (or (:name info) "")
+                        :options variable-opts
+                        :on-change #(update-predicate-operand idx side (assoc info :name %))}]
+
+            :property
+            [:div {:class (stl/css :condition-operand-prop)}
+             [:& select {:default-value (or (str (:id info)) "")
+                         :options shape-opts
+                         :on-change #(update-predicate-operand
+                                      idx side
+                                      (assoc info :id (when (and (some? %) (not= % ""))
+                                                        (uuid/parse* %))))}]
+             [:> input* {:type "text"
+                         :placeholder "prop"
+                         :default-value (or (str (:prop info)) "")
+                         :on-blur #(update-predicate-operand
+                                    idx side
+                                    (assoc info :prop (-> % dom/get-target dom/get-value)))}]]
+
+            :error-state
+            [:& select {:default-value (or (str (:id info)) "")
+                        :options shape-opts
+                        :on-change #(update-predicate-operand
+                                     idx side
+                                     (assoc info :id (when (and (some? %) (not= % ""))
+                                                       (uuid/parse* %))))}]
+
+            nil))
+
+        ;; C2: render a compact effect-action editor row for a then/else list.
+        effect-action-row
+        (fn [idx action branch]
+          (let [atype    (:action-type action)
+                remove-h (if (= branch :then) remove-then-action remove-else-action)
+                type-h   (if (= branch :then) change-then-action-type change-else-action-type)
+                dest-h   (if (= branch :then) change-then-action-destination change-else-action-destination)
+                var-h    (if (= branch :then) change-then-action-variable change-else-action-variable)
+                url-h    (if (= branch :then) change-then-action-url change-else-action-url)]
+            [:div {:key (str "eff-" (d/name branch) "-" idx)
+                   :class (stl/css :effect-action-row)}
+             [:& select {:default-value atype
+                         :options effect-options
+                         :on-change #(type-h idx %)}]
+             (case atype
+               :set-variable
+               [:& select {:default-value (some-> (:variable-id action) str)
+                           :options variable-opts
+                           :on-change #(var-h idx %)}]
+               (:navigate :open-overlay :scroll-to)
+               [:& select {:default-value (str (:destination action))
+                           :options destination-options
+                           :on-change #(dest-h idx %)
+                           :searchable? true}]
+               :open-url
+               [:> input* {:type "url"
+                           :placeholder "http://example.com"
+                           :default-value (or (:url action) "")
+                           :on-blur #(url-h idx %)}]
+               nil)
+             [:> icon-button* {:variant "ghost"
+                               :aria-label (tr "workspace.options.interaction-remove-action")
+                               :icon i/remove
+                               :on-click #(remove-h idx)}]]))
+
     [:div {:class (stl/css :interaction-item)}
      [:> prototype-pill* {:title (event-type-name interaction)
-                          :description (action-summary interaction destination)
+                          :description (action-summary interaction destination variable-opts)
                           :left-button-icon-id i/hsva
                           :left-button-tooltip (tr "labels.options")
                           :is-left-button-active open-extended?
@@ -578,6 +1268,286 @@
                         :placeholder (tr "workspace.options.interaction-change-to-variant-placeholder")
                         :default-value (some-> (:change-to-variant-id interaction) str)
                         :on-blur change-change-to-variant}]]])
+
+        ;; C2: set-variable action. Variable select + value input + fx button.
+        (when (ctsi/has-set-variable? interaction)
+          [:*
+           [:div {:class (stl/css :interaction-row)}
+            [:div {:class (stl/css :interaction-row-label)}
+             [:div {:class (stl/css :interaction-row-name)}
+              (tr "workspace.options.interaction-condition-variable")]]
+            [:div {:class (stl/css :interaction-row-select)}
+             [:& select {:default-value (some-> (:variable-id interaction) str)
+                         :options variable-opts
+                         :on-change change-variable-id
+                         :searchable? true
+                         :search-placeholder (tr "workspace.options.interaction-variable-select-placeholder")}]]]
+           [:div {:class (stl/css :interaction-row)}
+            [:div {:class (stl/css :interaction-row-label)}
+             [:div {:class (stl/css :interaction-row-name)}
+              (tr "workspace.options.interaction-style-value")]]
+            [:div {:class (stl/css :interaction-row-input)}
+             [:div {:class (stl/css :fx-value-row)}
+              [:> input* {:type "text"
+                          :placeholder (tr "workspace.options.interaction-fx-placeholder")
+                          :default-value (some-> (:value interaction) str)
+                          :on-blur change-variable-value}]
+              [:> icon-button* {:variant "ghost"
+                                :class (stl/css :fx-button)
+                                :aria-label (tr "workspace.options.interaction-fx-edit")
+                                :icon i/effects
+                                :on-click open-fx-variable}]]]]])
+
+        ;; C2: set-variable-mode action. Mode-name input (+ optional collection
+        ;; id text input). No dedicated collections ref is available in the
+        ;; workspace refs, so the collection selector is a plain UUID text input.
+        (when (ctsi/has-set-variable-mode? interaction)
+          [:*
+           [:div {:class (stl/css :interaction-row)}
+            [:div {:class (stl/css :interaction-row-label)}
+             [:div {:class (stl/css :interaction-row-name)}
+              (tr "workspace.options.interaction-set-variable-mode")]]
+            [:div {:class (stl/css :interaction-row-input)}
+             [:> input* {:type "text"
+                         :placeholder "light / dark"
+                         :default-value (or (:mode-name interaction) "")
+                         :on-blur change-mode-name}]]]
+           [:div {:class (stl/css :interaction-row)}
+            [:div {:class (stl/css :interaction-row-label)}
+             [:div {:class (stl/css :interaction-row-name)}
+              (tr "workspace.options.interaction-error-state-target")]]
+            [:div {:class (stl/css :interaction-row-input)}
+             [:> input* {:type "text"
+                         :placeholder (tr "workspace.options.interaction-none")
+                         :default-value (some-> (:collection-id interaction) str)
+                         :on-blur change-collection-id}]]]])
+
+        ;; C2: set-style action. Target + property + value (+ fx).
+        (when (ctsi/has-set-style? interaction)
+          [:*
+           [:div {:class (stl/css :interaction-row)}
+            [:div {:class (stl/css :interaction-row-label)}
+             [:div {:class (stl/css :interaction-row-name)}
+              (tr "workspace.options.interaction-style-target")]]
+            [:div {:class (stl/css :interaction-row-select)}
+             [:& select {:default-value (or (:target interaction) :this)
+                         :options style-target-opts
+                         :on-change change-style-target}]]]
+           (when (= (:target interaction) :by-id)
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-style-target-by-id")]]
+              [:div {:class (stl/css :interaction-row-select)}
+               [:& select {:default-value (some-> (:target-shape-id interaction) str)
+                           :options shape-opts
+                           :on-change change-style-target-shape-id
+                           :searchable? true}]]])
+           [:div {:class (stl/css :interaction-row)}
+            [:div {:class (stl/css :interaction-row-label)}
+             [:div {:class (stl/css :interaction-row-name)}
+              (tr "workspace.options.interaction-style-property")]]
+            [:div {:class (stl/css :interaction-row-select)}
+             [:& select {:default-value (:property interaction :fill)
+                         :options style-property-opts
+                         :on-change change-style-property}]]]
+           [:div {:class (stl/css :interaction-row)}
+            [:div {:class (stl/css :interaction-row-label)}
+             [:div {:class (stl/css :interaction-row-name)}
+              (tr "workspace.options.interaction-style-value")]]
+            [:div {:class (stl/css :interaction-row-input)}
+             [:div {:class (stl/css :fx-value-row)}
+              [:> input* {:type "text"
+                          :placeholder ""
+                          :default-value (some-> (:value interaction) str)
+                          :on-blur change-style-value}]
+              [:> icon-button* {:variant "ghost"
+                                :class (stl/css :fx-button)
+                                :aria-label (tr "workspace.options.interaction-fx-edit")
+                                :icon i/effects
+                                :on-click open-fx-style}]]]]])
+
+        ;; C2: set-error-state action. Target + set/clear toggle.
+        (when (ctsi/has-set-error-state? interaction)
+          [:*
+           [:div {:class (stl/css :interaction-row)}
+            [:div {:class (stl/css :interaction-row-label)}
+             [:div {:class (stl/css :interaction-row-name)}
+              (tr "workspace.options.interaction-error-state-target")]]
+            [:div {:class (stl/css :interaction-row-select)}
+             [:& select {:default-value (or (:target interaction) :this)
+                         :options style-target-opts
+                         :on-change change-error-state-target}]]]
+           (when (= (:target interaction) :by-id)
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-style-target-by-id")]]
+              [:div {:class (stl/css :interaction-row-select)}
+               [:& select {:default-value (some-> (:target-shape-id interaction) str)
+                           :options shape-opts
+                           :on-change change-error-state-target-shape-id
+                           :searchable? true}]]])
+           [:div {:class (stl/css :interaction-row)}
+            [:div {:class (stl/css :interaction-row-checkbox)}
+             [:> checkbox* {:id (str "error-state-" index)
+                            :label (tr "workspace.options.interaction-error-state-set")
+                            :checked (true? (:error? interaction))
+                            :on-change change-error-state-error}]]]])
+
+        ;; C2: scroll-animate action. Axis + range + easing + keyframes.
+        (when (ctsi/has-scroll-animate? interaction)
+          (let [keyframes (or (:keyframes interaction) [])]
+            [:*
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-scroll-axis")]]
+              [:div {:class (stl/css :interaction-row-select)}
+               [:& select {:default-value (or (:axis interaction) :vertical)
+                           :options scroll-axis-opts
+                           :on-change change-scroll-axis}]]]
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-scroll-range-start")]]
+              [:div {:class (stl/css :interaction-row-input)}
+               [:> numeric-input* {:on-change change-scroll-range-start
+                                   :value (:range-start interaction)}]]]
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-scroll-range-end")]]
+              [:div {:class (stl/css :interaction-row-input)}
+               [:> numeric-input* {:on-change change-scroll-range-end
+                                   :value (:range-end interaction)}]]]
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-scroll-easing")]]
+              [:div {:class (stl/css :interaction-row-select)}
+               [:& select {:default-value (or (:easing interaction) :linear)
+                           :options easing-options
+                           :on-change change-scroll-easing}]]]
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-scroll-keyframes")]]
+              [:div {:class (stl/css :interaction-row-input)}
+               [:div {:class (stl/css :keyframes-list)}
+                (for [idx (range (count keyframes))]
+                  (let [kf (get keyframes idx)]
+                    [:div {:key (str "kf-" idx)
+                           :class (stl/css :keyframe-row)}
+                     [:> numeric-input* {:placeholder "0..1"
+                                         :on-change #(update-keyframe-offset idx %)
+                                         :value (:offset kf)}]
+                     (for [prop-opt scroll-prop-opts]
+                       (let [prop-key (:value prop-opt)]
+                         [:> numeric-input* {:key (str "kf-" idx "-" (d/name prop-key))
+                                             :placeholder (:label prop-opt)
+                                             :on-change #(update-keyframe-prop idx prop-key %)
+                                             :value (get (:props kf) prop-key)}]))
+                     [:> icon-button* {:variant "ghost"
+                                       :aria-label (tr "workspace.options.interaction-scroll-remove-keyframe")
+                                       :icon i/remove
+                                       :on-click #(remove-keyframe idx)}]]))
+                [:> icon-button* {:variant "ghost"
+                                  :aria-label (tr "workspace.options.interaction-scroll-add-keyframe")
+                                  :icon i/add
+                                  :on-click add-keyframe}]]]]]))
+
+        ;; C2: conditional action. Condition builder + then/else action lists.
+        (when (ctsi/has-conditional? interaction)
+          (let [then-actions (or (:then-actions interaction) [])
+                else-actions (or (:else-actions interaction) [])]
+            [:*
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-condition")]]
+              [:div {:class (stl/css :interaction-row-select)}
+               [:div {:class (stl/css :condition-mode-toggle)}
+                [:button {:type "button"
+                          :class (stl/css :condition-mode-btn
+                                          (when (= @cond-mode* :all) :active))
+                          :on-click #(change-cond-mode "all")}
+                 (tr "workspace.options.interaction-condition-all")]
+                [:button {:type "button"
+                          :class (stl/css :condition-mode-btn
+                                          (when (= @cond-mode* :any) :active))
+                          :on-click #(change-cond-mode "any")}
+                 (tr "workspace.options.interaction-condition-any")]]]]
+
+             [:div {:class (stl/css :condition-predicates)}
+              (for [idx (range (count @cond-preds*))]
+                (let [pred      (get @cond-preds* idx)
+                      [op lhs rhs] (predicate-parts pred)
+                      lhs-info  (operand-info lhs)
+                      rhs-info  (operand-info rhs)]
+                  [:div {:key (str "pred-" idx)
+                         :class (stl/css :condition-predicate-row)}
+                   [:& select {:default-value (:type lhs-info :literal)
+                               :options operand-type-opts
+                               :on-change #(update-predicate-operand
+                                            idx :lhs
+                                            (assoc lhs-info :type (keyword %)))}]
+                   (condition-operand-input idx :lhs lhs-info)
+                   [:& select {:default-value op
+                               :options operator-opts
+                               :on-change #(update-predicate-op idx %)}]
+                   [:& select {:default-value (:type rhs-info :literal)
+                               :options operand-type-opts
+                               :on-change #(update-predicate-operand
+                                            idx :rhs
+                                            (assoc rhs-info :type (keyword %)))}]
+                   (condition-operand-input idx :rhs rhs-info)
+                   [:> icon-button* {:variant "ghost"
+                                     :aria-label (tr "workspace.options.interaction-condition-remove")
+                                     :icon i/remove
+                                     :on-click #(remove-predicate idx)}]]))
+              [:> icon-button* {:variant "ghost"
+                                :aria-label (tr "workspace.options.interaction-condition-add")
+                                :icon i/add
+                                :on-click add-predicate}]]
+
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-then-actions")]]
+              [:div {:class (stl/css :interaction-row-input)}
+               [:div {:class (stl/css :effect-action-list)}
+                (for [idx (range (count then-actions))]
+                  (effect-action-row idx (get then-actions idx) :then))
+                [:> icon-button* {:variant "ghost"
+                                  :aria-label (tr "workspace.options.interaction-add-then-action")
+                                  :icon i/add
+                                  :on-click add-then-action}]]]]
+
+             [:div {:class (stl/css :interaction-row)}
+              [:div {:class (stl/css :interaction-row-label)}
+               [:div {:class (stl/css :interaction-row-name)}
+                (tr "workspace.options.interaction-else-actions")]]
+              [:div {:class (stl/css :interaction-row-input)}
+               [:div {:class (stl/css :effect-action-list)}
+                (for [idx (range (count else-actions))]
+                  (effect-action-row idx (get else-actions idx) :else))
+                [:> icon-button* {:variant "ghost"
+                                  :aria-label (tr "workspace.options.interaction-add-else-action")
+                                  :icon i/add
+                                  :on-click add-else-action}]]]]]))
+
+        ;; C2: fx expression dialog (rendered above the panel when open).
+        (when-let [fx-target @fx-open*]
+          (let [expr (:expression interaction)
+                initial (if expr
+                          (try (cexpr/format-expression expr)
+                               (catch :default _ (str expr)))
+                          "")]
+            [:> fx-dialog* {:initial initial
+                            :variables variable-names
+                            :on-save (if (= fx-target :variable) save-fx-variable save-fx-style)
+                            :on-close close-fx}]))
 
         (when (ctsi/has-overlay-opts interaction)
           [:*

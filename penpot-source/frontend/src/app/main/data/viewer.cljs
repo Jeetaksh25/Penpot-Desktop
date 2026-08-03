@@ -16,6 +16,7 @@
    [app.common.transit :as t]
    [app.common.types.shape-tree :as ctt]
    [app.common.types.shape.interactions :as ctsi]
+   [app.common.types.tokens-lib :as ctob]
    [app.common.uuid :as uuid]
    [app.config :as cf]
    [app.main.data.comments :as dcmt]
@@ -258,6 +259,23 @@
         ;; Render wasm disabled, we do nothing
         (rx/empty)))))
 
+(defn- extract-variable-seeds
+  "Build the initial :viewer-variables map (token-id -> resolved default-mode
+  value) from the file tokens-lib. Returns an empty map when the file has no
+  tokens-lib or it is not a materialized TokensLib instance (nil-safe)."
+  [file]
+  (let [tokens-lib (some-> file :data :tokens-lib)]
+    (if (and tokens-lib (ctob/tokens-lib? tokens-lib))
+      (->> (ctob/get-all-tokens-map tokens-lib)
+           (vals)
+           (reduce (fn [m token]
+                     (let [tid (:id token)]
+                       (if (uuid? tid)
+                         (assoc m tid (:value token))
+                         m)))
+                   {}))
+      {})))
+
 (defn bundle-fetched
   [{:keys [project file team share-links libraries users permissions thumbnails] :as bundle}]
   (let [pages (->> (dm/get-in file [:data :pages])
@@ -285,7 +303,13 @@
                               :project project
                               :pages pages
                               :thumbnails thumbnails
-                              :file file}))))
+                              :file file})
+              ;; P0.16/P2.09/P2.21 runtime slices: seed variables from the
+              ;; file tokens-lib (default-mode values) and reset the style
+              ;; overrides + error-state sets to empty on every bundle fetch.
+              (assoc :viewer-variables (extract-variable-seeds file))
+              (assoc :viewer-style-overrides {})
+              (assoc :viewer-error-state #{}))))
 
       ptk/WatchEvent
       (watch [_ state _]
@@ -596,6 +620,67 @@
     ptk/UpdateEvent
     (update [_ state]
       (dissoc state :viewer-animations))))
+
+;; --- Runtime Variable / Style / Error-State slices
+;; P0.16 (runtime variables), P2.09 (:set-style), P2.21 (:set-error-state).
+;; Top-level state keys consumed by the viewer dispatch + scroll handlers.
+
+(defn set-variable
+  "Override a runtime variable value (token-id -> value)."
+  [variable-id value]
+  (dm/assert! (uuid? variable-id))
+  (ptk/reify ::set-variable
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:viewer-variables variable-id] value))))
+
+(defn set-style
+  "Set a runtime style override on a shape (shape-id -> property -> value)."
+  [shape-id property value]
+  (dm/assert! (uuid? shape-id))
+  (dm/assert! (keyword? property))
+  (ptk/reify ::set-style
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:viewer-style-overrides shape-id property] value))))
+
+(defn clear-style
+  "Clear all runtime style overrides on a shape."
+  [shape-id]
+  (dm/assert! (uuid? shape-id))
+  (ptk/reify ::clear-style
+    ptk/UpdateEvent
+    (update [_ state]
+      (d/dissoc-in state [:viewer-style-overrides shape-id]))))
+
+(defn set-error-state
+  "Set or clear a shape's error-state flag (membership in the error set)."
+  [shape-id error?]
+  (dm/assert! (uuid? shape-id))
+  (ptk/reify ::set-error-state
+    ptk/UpdateEvent
+    (update [_ state]
+      (let [error? (true? error?)]
+        (update state :viewer-error-state (if error? conj disj) shape-id)))))
+
+(defn seed-variables
+  "Replace the whole :viewer-variables map (token-id -> value)."
+  [token-value-map]
+  (ptk/reify ::seed-variables
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc state :viewer-variables (or token-value-map {})))))
+
+(defn clear-runtime-state
+  "Reset all three runtime slices to empty."
+  []
+  (ptk/reify ::clear-runtime-state
+    ptk/UpdateEvent
+    (update [_ state]
+      (-> state
+          (dissoc :viewer-variables)
+          (dissoc :viewer-style-overrides)
+          (dissoc :viewer-error-state)))))
 
 ;; --- Navigation inside page
 

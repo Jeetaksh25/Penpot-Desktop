@@ -31,6 +31,7 @@
    [app.main.ui.viewer.inspect :as inspect]
    [app.main.ui.viewer.interactions :as interactions]
    [app.main.ui.viewer.login]
+   [app.main.ui.viewer.shapes :as shapes]
    [app.main.ui.viewer.share-link]
    [app.main.ui.viewer.thumbnails :refer [thumbnails-panel*]]
    [app.util.dom :as dom]
@@ -50,6 +51,11 @@
 
 (def current-overlays-ref
   (l/derived :viewer-overlays st/state))
+
+;; P0.16: runtime variable overrides. Watched by the :variable-changed
+;; reactive re-run effect to re-activate matching interactions on change.
+(def viewer-variables-ref
+  (l/derived :viewer-variables st/state))
 
 (defn- calculate-size
   "Calculate the total size we must reserve for the frame, including possible paddings
@@ -297,8 +303,18 @@
         orig-viewport-ref    (mf/use-ref nil)
         current-viewport-ref (mf/use-ref nil)
         viewer-section-ref   (mf/use-ref nil)
+        ;; P0.16: previous viewer-variables snapshot for the :variable-changed
+        ;; reactive re-run diff.
+        prev-vars-ref        (mf/use-ref nil)
+        ;; P0.16: re-run rate limit. Bounds :variable-changed -> :set-variable
+        ;; feedback loops to at most 32 re-activations per 1000ms window; the
+        ;; window resets after a quiet second so later legitimate changes
+        ;; still fire. Prevents a divergent `x = x+1` interaction from
+        ;; freezing the viewer while staying reactive for convergent writes.
+        react-rate-ref       (mf/use-ref nil)
 
         current-animations (mf/deref current-animations-ref)
+        viewer-variables    (mf/deref viewer-variables-ref)
 
         page-id (or page-id (-> file :data :pages first))
 
@@ -538,6 +554,73 @@
        (let [text-nodes (->> text-shapes (mapcat #(txt/node-seq txt/is-text-node? (:content %))))
              fonts (into #{} (keep :font-id) text-nodes)]
          (run! fonts/ensure-loaded! fonts))))
+
+    ;; P0.17: scroll-driven animations. Bind a passive scroll listener on the
+    ;; #viewer-section container; on each scroll, interpolate the :keyframes
+    ;; props of every shape on the current frame that carries a :scroll-animate
+    ;; interaction and apply them as inline style on the [data-shape-id] node.
+    ;; Re-binds when the frame/page changes so the closure always sees the
+    ;; current objects. Disposes the listener on unmount/re-bind.
+    (mf/use-effect
+     (mf/deps frame page)
+     (fn []
+       (let [section (mf/ref-val viewer-section-ref)
+             objects (:objects page)]
+         (when (and (some? section) (some? frame) (some? objects))
+           (let [on-scroll (fn [_]
+                             (interactions/apply-scroll-animations section frame objects))]
+             (.addEventListener ^js section "scroll" on-scroll #js {"passive" true})
+             (fn []
+               (.removeEventListener ^js section "scroll" on-scroll)))))))
+
+    ;; P0.16: :variable-changed reactive re-run. Watch the :viewer-variables
+    ;; slice; on change, diff against the previous snapshot and re-activate every
+    ;; interaction on the current frame whose :event-type is :variable-changed
+    ;; and whose :variable-id filter (if any) matches a changed id. Bounded and
+    ;; nil-safe; the activate-interaction recursion depth-guard caps cascades.
+    (mf/use-effect
+     (mf/deps viewer-variables)
+     (fn []
+       (let [prev (mf/ref-val prev-vars-ref)
+             curr viewer-variables]
+         (when (and (map? prev) (map? curr) (some? frame) (some? page))
+           (let [objects     (:objects page)
+                 changed-ids (vec
+                              (for [k (set (concat (keys prev) (keys curr)))
+                                    :let [pv (get prev k)
+                                          cv (get curr k)]
+                                    :when (not= pv cv)]
+                                k))]
+             (when (seq changed-ids)
+               (let [frame-id     (:id frame)
+                     ids          (cons frame-id (cfh/get-children-ids objects frame-id))
+                     frame-shapes (keep #(get objects %) ids)
+                     changed-set  (set changed-ids)
+                     overlays     (mf/deref current-overlays-ref)
+                     rate         (or (mf/ref-val react-rate-ref)
+                                      {:count 0 :since 0})
+                     now          (js/Date.now)
+                     rate         (if (or (zero? (:since rate))
+                                         (> (- now (:since rate)) 1000))
+                                    {:count 0 :since now}
+                                    rate)
+                     capped?      (>= (:count rate) 32)]
+                 ;; Bounded re-activation: at most 32 per 1000ms window. A
+                 ;; divergent :variable-changed -> :set-variable cycle (e.g.
+                 ;; x = x+1) is capped instead of freezing the viewer; a
+                 ;; convergent cycle stops earlier via the idempotent write
+                 ;; in shapes.cljs :set-variable. After a quiet second the
+                 ;; window resets so later legitimate changes still fire.
+                 (mf/set-ref-val! react-rate-ref (update rate :count inc))
+                 (when-not capped?
+                   (doseq [shape frame-shapes
+                           interaction (:interactions shape)
+                           :when (and (= (:event-type interaction) :variable-changed)
+                                      (or (nil? (:variable-id interaction))
+                                          (contains? changed-set (:variable-id interaction))))]
+                     (shapes/activate-interaction
+                      interaction shape frame (gpt/point 0 0) objects overlays)))))))
+         (mf/set-ref-val! prev-vars-ref curr))))
 
     [:div#viewer-layout
      {:class (stl/css-case

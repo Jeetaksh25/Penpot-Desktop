@@ -232,3 +232,220 @@
     grid-area: bottomright;
   }
 }
+
+// C2 Prototype Logic Runtime — coral accent for the fx button + Condition
+// Builder highlights. Pinned to the user's warm coral palette so the AI
+// surfaces and the interaction panel read as one system.
+:root {
+  --color-coral-accent: #f28b82;
+}
+
+.fx-value-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xxs);
+  inline-size: 100%;
+}
+
+.fx-button {
+  color: var(--color-coral-accent);
+  flex-shrink: 0;
+}
+
+// ---- fx expression dialog ----
+.fx-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-modal, 1000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.fx-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-s);
+  inline-size: $sz-352;
+  max-inline-size: calc(100vw - var(--sp-l) * 2);
+  max-block-size: calc(100vh - var(--sp-l) * 2);
+  overflow: auto;
+  padding: var(--sp-s);
+  border-radius: $br-8;
+  background-color: var(--color-background-primary);
+  box-shadow: var(--shadow-modal);
+}
+
+.fx-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fx-dialog-title {
+  @include t.use-typography("body-small");
+  font-weight: 600;
+  color: var(--color-foreground-primary);
+}
+
+.fx-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xs);
+}
+
+.fx-dialog-textarea {
+  @include t.use-typography("code-font");
+  resize: vertical;
+  min-block-size: $sz-96;
+  padding: var(--sp-xs);
+  border-radius: $br-4;
+  border: $b-1 solid var(--color-border-weak);
+  background-color: var(--color-background-secondary);
+  color: var(--color-foreground-primary);
+}
+
+.fx-dialog-help {
+  @include t.use-typography("body-small");
+  color: var(--color-foreground-secondary);
+}
+
+.fx-dialog-vars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-xxs);
+  align-items: center;
+}
+
+.fx-dialog-vars-title {
+  @include t.use-typography("body-small");
+  color: var(--color-foreground-secondary);
+  inline-size: 100%;
+}
+
+.fx-dialog-var-chip {
+  @include t.use-typography("body-small");
+  padding: 0 var(--sp-xxs);
+  border-radius: $br-4;
+  border: $b-1 solid var(--color-coral-accent);
+  color: var(--color-coral-accent);
+  background: none;
+  cursor: pointer;
+}
+
+.fx-dialog-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xxs);
+  padding: var(--sp-xs);
+  border-radius: $br-4;
+  background-color: var(--color-background-tertiary);
+}
+
+.fx-dialog-preview-label {
+  @include t.use-typography("body-small");
+  color: var(--color-foreground-secondary);
+}
+
+.fx-dialog-preview-code {
+  @include t.use-typography("code-font");
+  color: var(--color-foreground-primary);
+  word-break: break-all;
+}
+
+.fx-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-xs);
+}
+
+.fx-dialog-btn {
+  @include t.use-typography("body-small");
+  padding: 0 var(--sp-s);
+  block-size: $sz-32;
+  border-radius: $br-4;
+  cursor: pointer;
+
+  &.primary {
+    background-color: var(--color-coral-accent);
+    color: var(--color-background-primary);
+    border: none;
+  }
+
+  &.secondary {
+    background-color: var(--color-background-secondary);
+    color: var(--color-foreground-primary);
+    border: $b-1 solid var(--color-border-weak);
+  }
+}
+
+// ---- Condition Builder ----
+.condition-mode-toggle {
+  display: inline-flex;
+  border-radius: $br-4;
+  overflow: hidden;
+  border: $b-1 solid var(--color-border-weak);
+}
+
+.condition-mode-btn {
+  @include t.use-typography("body-small");
+  padding: 0 var(--sp-s);
+  block-size: $sz-32;
+  border: none;
+  background-color: var(--color-background-secondary);
+  color: var(--color-foreground-secondary);
+  cursor: pointer;
+
+  &.active {
+    background-color: var(--color-coral-accent);
+    color: var(--color-background-primary);
+  }
+}
+
+.condition-predicates {
+  grid-column: 1 / span 8;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xxs);
+}
+
+.condition-predicate-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-xxs);
+}
+
+.condition-operand-prop {
+  display: flex;
+  gap: var(--sp-xxs);
+  align-items: center;
+}
+
+// ---- then / else action lists ----
+.effect-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xxs);
+}
+
+.effect-action-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xxs);
+}
+
+// ---- scroll-animate keyframes ----
+.keyframes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xxs);
+}
+
+.keyframe-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-xxs);
+}

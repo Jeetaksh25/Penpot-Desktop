@@ -42,7 +42,14 @@
     :after-delay
     ;; Figma #33: keyboard + input-change triggers.
     :key-down
-    :on-change})
+    :on-change
+    ;; P0.16: reactive trigger — fires when a runtime variable changes. An
+    ;; interaction of this type may carry a :variable-id filter (when nil the
+    ;; interaction fires on any variable change).
+    :variable-changed
+    ;; P0.17: continuous scroll-driven trigger (web-shippable). Applied by the
+    ;; viewer scroll handler, not a discrete user gesture.
+    :while-scrolling})
 
 (def action-types
   #{:navigate
@@ -62,7 +69,17 @@
     ;; dispatch is high blast-radius and is DEFERRED (see feature notes).
     :set-variable
     :set-variable-mode
-    :conditional})
+    :conditional
+    ;; P2.09: mutate a shape runtime style property (fill/opacity/border/
+    ;; typography-size/radius). Resolved at trigger time and applied as a
+    ;; viewer style override (web-shippable, additive).
+    :set-style
+    ;; P2.21: set/clear a shape error-state flag, consumed by the
+    ;; is-in-error-state expression predicate and form error-state UI.
+    :set-error-state
+    ;; P0.17: continuous scroll-driven keyframe animation binding. Applied
+    ;; by the viewer scroll handler on the #viewer-section container.
+    :scroll-animate})
 
 (def overlay-positioning-types
   #{:manual
@@ -320,6 +337,46 @@
    [:then-actions {:optional true} [:vector ::sm/any]]
    [:else-actions {:optional true} [:vector ::sm/any]]])
 
+;; P2.09: set-style mutates a shape runtime style property. :target is :this
+;; (the interaction's own shape) or :by-id (use :target-shape-id). :property
+;; is the style field to override; :value is a literal and/or :expression is
+;; evaluated at trigger time (expression wins when present).
+(def schema:set-style-interaction
+  [:map {:title "SetStyleInteraction"}
+   [:action-type [:= :set-style]]
+   [:event-type [::sm/one-of event-types]]
+   [:target {:optional true} [:maybe [::sm/one-of #{:this :by-id}]]]
+   [:target-shape-id {:optional true} [:maybe ::sm/uuid]]
+   [:property {:optional true} [:maybe [::sm/one-of #{:fill :opacity :border-color :border-width
+                                                      :typography-size :radius}]]]
+   [:value {:optional true} ::sm/any]
+   [:expression {:optional true} cexpr/schema:expression]])
+
+;; P2.21: set-error-state sets or clears a shape error-state flag. :error?
+;; true sets the flag, false/nil clears it. Consumed by the ["error-state" id]
+;; expression reference and form error-state UI.
+(def schema:set-error-state-interaction
+  [:map {:title "SetErrorStateInteraction"}
+   [:action-type [:= :set-error-state]]
+   [:event-type [::sm/one-of event-types]]
+   [:target {:optional true} [:maybe [::sm/one-of #{:this :by-id}]]]
+   [:target-shape-id {:optional true} [:maybe ::sm/uuid]]
+   [:error? {:optional true} [:maybe :boolean]]])
+
+;; P0.17: scroll-animate binds a continuous scroll-driven keyframe animation
+;; to a shape. :axis selects the scroll axis; progress is computed from
+;; :range-start..:range-end; :keyframes is a vector of {:offset 0..1
+;; :props {...}}; :easing is applied to the progress value.
+(def schema:scroll-animate-interaction
+  [:map {:title "ScrollAnimateInteraction"}
+   [:action-type [:= :scroll-animate]]
+   [:event-type [:= :while-scrolling]]
+   [:axis {:optional true} [:maybe [::sm/one-of #{:vertical :horizontal}]]]
+   [:range-start {:optional true} [:maybe ::sm/safe-number]]
+   [:range-end {:optional true} [:maybe ::sm/safe-number]]
+   [:keyframes {:optional true} [:maybe [:vector [:map [:offset ::sm/safe-number] [:props ::sm/any]]]]]
+   [:easing {:optional true} [:maybe [::sm/one-of easing-types]]]])
+
 (def schema:interaction
   [:schema {:title "Interaction"
             :gen/gen (sg/one-of (sg/generator schema:navigate-interaction)
@@ -330,7 +387,15 @@
                                 (sg/generator schema:open-url-interaction)
                                 (sg/generator schema:change-to-interaction)
                                 (sg/generator schema:swap-overlay-interaction)
-                                (sg/generator schema:scroll-to-interaction))}
+                                (sg/generator schema:scroll-to-interaction)
+                                ;; Figma #30: variable actions.
+                                (sg/generator schema:set-variable-interaction)
+                                (sg/generator schema:set-variable-mode-interaction)
+                                (sg/generator schema:conditional-interaction)
+                                ;; P0.16/P0.17/P2.09/P2.21: runtime logic actions.
+                                (sg/generator schema:set-style-interaction)
+                                (sg/generator schema:set-error-state-interaction)
+                                (sg/generator schema:scroll-animate-interaction))}
    [:and
     schema:generic-interaction-attrs
     [:multi {:dispatch :action-type :title "InteractionAttrs"}
@@ -347,7 +412,12 @@
      ;; viewer does not yet evaluate/dispatch them (deferred runtime).
      [:set-variable schema:set-variable-interaction]
      [:set-variable-mode schema:set-variable-mode-interaction]
-     [:conditional schema:conditional-interaction]]]])
+     [:conditional schema:conditional-interaction]
+     ;; P2.09/P2.21/P0.17: runtime logic actions. Dispatch entries for the
+     ;; new action types; viewer dispatch is additive (deferred runtime).
+     [:set-style schema:set-style-interaction]
+     [:set-error-state schema:set-error-state-interaction]
+     [:scroll-animate schema:scroll-animate-interaction]]]])
 
 (def check-interaction
   (sm/check-fn schema:interaction))
@@ -477,7 +547,38 @@
                    :action-type action-type
                    :condition (get interaction :condition)
                    :then-actions (get interaction :then-actions)
-                   :else-actions (get interaction :else-actions))))]
+                   :else-actions (get interaction :else-actions))
+
+            ;; P2.09: set-style carries the target + property + value/expr
+            ;; so toggling the action type keeps authored state.
+            :set-style
+            (assoc interaction
+                   :action-type action-type
+                   :target (get interaction :target)
+                   :target-shape-id (get interaction :target-shape-id)
+                   :property (get interaction :property)
+                   :value (get interaction :value)
+                   :expression (get interaction :expression))
+
+            ;; P2.21: set-error-state carries the target + error? flag.
+            :set-error-state
+            (assoc interaction
+                   :action-type action-type
+                   :target (get interaction :target)
+                   :target-shape-id (get interaction :target-shape-id)
+                   :error? (get interaction :error?))
+
+            ;; P0.17: scroll-animate carries the scroll range + keyframes +
+            ;; easing. These never carry an animation, so the cond-> below
+            ;; strips :animation.
+            :scroll-animate
+            (assoc interaction
+                   :action-type action-type
+                   :axis (get interaction :axis)
+                   :range-start (get interaction :range-start)
+                   :range-end (get interaction :range-end)
+                   :keyframes (get interaction :keyframes)
+                   :easing (get interaction :easing))))]
 
     (cond-> new-interaction
       (not (allowed-animation? action-type
@@ -706,6 +807,219 @@
           "expected compatible interaction map with conditional action")
 
   (assoc interaction :else-actions else-actions))
+
+;; P0.06: then/else action list editor helpers for the Condition Builder.
+;; Each appends/removes/updates a single entry inside a :conditional's
+;; :then-actions / :else-actions vector. Pure, mirror the existing set-*
+;; style (assert check-interaction + the has-conditional? predicate).
+(defn add-then-action
+  [interaction action]
+  (assert (check-interaction interaction))
+  (assert (has-conditional? interaction)
+          "expected compatible interaction map with conditional action")
+  (update interaction :then-actions (fnil conj []) action))
+
+(defn remove-then-action
+  [interaction idx]
+  (assert (check-interaction interaction))
+  (assert (has-conditional? interaction)
+          "expected compatible interaction map with conditional action")
+  (let [actions (or (:then-actions interaction) [])]
+    (assoc interaction :then-actions
+           (into (subvec actions 0 idx)
+                 (subvec actions (inc idx))))))
+
+(defn update-then-action
+  [interaction idx update-fn]
+  (assert (check-interaction interaction))
+  (assert (has-conditional? interaction)
+          "expected compatible interaction map with conditional action")
+  (update-in interaction [:then-actions idx] update-fn))
+
+(defn add-else-action
+  [interaction action]
+  (assert (check-interaction interaction))
+  (assert (has-conditional? interaction)
+          "expected compatible interaction map with conditional action")
+  (update interaction :else-actions (fnil conj []) action))
+
+(defn remove-else-action
+  [interaction idx]
+  (assert (check-interaction interaction))
+  (assert (has-conditional? interaction)
+          "expected compatible interaction map with conditional action")
+  (let [actions (or (:else-actions interaction) [])]
+    (assoc interaction :else-actions
+           (into (subvec actions 0 idx)
+                 (subvec actions (inc idx))))))
+
+(defn update-else-action
+  [interaction idx update-fn]
+  (assert (check-interaction interaction))
+  (assert (has-conditional? interaction)
+          "expected compatible interaction map with conditional action")
+  (update-in interaction [:else-actions idx] update-fn))
+
+;; P2.09: set-style action predicates + setters. :target is :this or :by-id;
+;; when :by-id, :target-shape-id holds the target shape. :property is the
+;; style field; :value is a literal and/or :expression is an fx expression
+;; (expression wins when present).
+(defn has-set-style?
+  [interaction]
+  (= (:action-type interaction) :set-style))
+
+(defn set-style-target
+  [interaction target]
+
+  (assert (check-interaction interaction))
+  (assert (contains? #{:this :by-id} target)
+          "expected :this or :by-id for `target`")
+  (assert (has-set-style? interaction)
+          "expected compatible interaction map with set-style action")
+
+  (assoc interaction :target target))
+
+(defn set-style-target-shape-id
+  [interaction target-shape-id]
+
+  (assert (check-interaction interaction))
+  (assert (or (nil? target-shape-id) (uuid? target-shape-id))
+          "expected a uuid (or nil) for `target-shape-id`")
+  (assert (has-set-style? interaction)
+          "expected compatible interaction map with set-style action")
+
+  (assoc interaction :target-shape-id target-shape-id))
+
+(defn set-style-property
+  [interaction property]
+
+  (assert (check-interaction interaction))
+  (assert (contains? #{:fill :opacity :border-color :border-width
+                       :typography-size :radius} property)
+          "expected a valid style property")
+  (assert (has-set-style? interaction)
+          "expected compatible interaction map with set-style action")
+
+  (assoc interaction :property property))
+
+(defn set-style-value
+  [interaction value]
+
+  (assert (check-interaction interaction))
+  (assert (has-set-style? interaction)
+          "expected compatible interaction map with set-style action")
+
+  (assoc interaction :value value))
+
+(defn set-style-expression
+  [interaction expression]
+
+  (assert (check-interaction interaction))
+  (assert (has-set-style? interaction)
+          "expected compatible interaction map with set-style action")
+
+  (assoc interaction :expression expression))
+
+;; P2.21: set-error-state action predicates + setters. :error? true sets the
+;; flag, false/nil clears it.
+(defn has-set-error-state?
+  [interaction]
+  (= (:action-type interaction) :set-error-state))
+
+(defn set-error-state-target
+  [interaction target]
+
+  (assert (check-interaction interaction))
+  (assert (contains? #{:this :by-id} target)
+          "expected :this or :by-id for `target`")
+  (assert (has-set-error-state? interaction)
+          "expected compatible interaction map with set-error-state action")
+
+  (assoc interaction :target target))
+
+(defn set-error-state-target-shape-id
+  [interaction target-shape-id]
+
+  (assert (check-interaction interaction))
+  (assert (or (nil? target-shape-id) (uuid? target-shape-id))
+          "expected a uuid (or nil) for `target-shape-id`")
+  (assert (has-set-error-state? interaction)
+          "expected compatible interaction map with set-error-state action")
+
+  (assoc interaction :target-shape-id target-shape-id))
+
+(defn set-error-state-error?
+  [interaction error?]
+
+  (assert (check-interaction interaction))
+  (assert (boolean? error?)
+          "expected a boolean for `error?`")
+  (assert (has-set-error-state? interaction)
+          "expected compatible interaction map with set-error-state action")
+
+  (assoc interaction :error? error?))
+
+;; P0.17: scroll-animate action predicates + setters. :axis is :vertical or
+;; :horizontal; :range-start/:range-end bound the scroll progress; :keyframes
+;; is a vector of {:offset 0..1 :props ...}; :easing is applied to progress.
+(defn has-scroll-animate?
+  [interaction]
+  (= (:action-type interaction) :scroll-animate))
+
+(defn set-scroll-axis
+  [interaction axis]
+
+  (assert (check-interaction interaction))
+  (assert (contains? #{:vertical :horizontal} axis)
+          "expected :vertical or :horizontal for `axis`")
+  (assert (has-scroll-animate? interaction)
+          "expected compatible interaction map with scroll-animate action")
+
+  (assoc interaction :axis axis))
+
+(defn set-scroll-range-start
+  [interaction range-start]
+
+  (assert (check-interaction interaction))
+  (assert (sm/valid-safe-number? range-start)
+          "expected a safe number for `range-start`")
+  (assert (has-scroll-animate? interaction)
+          "expected compatible interaction map with scroll-animate action")
+
+  (assoc interaction :range-start range-start))
+
+(defn set-scroll-range-end
+  [interaction range-end]
+
+  (assert (check-interaction interaction))
+  (assert (sm/valid-safe-number? range-end)
+          "expected a safe number for `range-end`")
+  (assert (has-scroll-animate? interaction)
+          "expected compatible interaction map with scroll-animate action")
+
+  (assoc interaction :range-end range-end))
+
+(defn set-scroll-keyframes
+  [interaction keyframes]
+
+  (assert (check-interaction interaction))
+  (assert (vector? keyframes)
+          "expected a vector for `keyframes`")
+  (assert (has-scroll-animate? interaction)
+          "expected compatible interaction map with scroll-animate action")
+
+  (assoc interaction :keyframes keyframes))
+
+(defn set-scroll-easing
+  [interaction easing]
+
+  (assert (check-interaction interaction))
+  (assert (contains? easing-types easing)
+          "expected valid easing")
+  (assert (has-scroll-animate? interaction)
+          "expected compatible interaction map with scroll-animate action")
+
+  (assoc interaction :easing easing))
 
 ;; Figma #34: cubic-bezier control points, only meaningful when :easing
 ;; is :custom-bezier. Stored in the animation map alongside :easing.
