@@ -4,8 +4,6 @@
 
 **Ovion Desktop** brings the full power of an open-source design platform to your Windows PC, with no internet required. All data stays local — PostgreSQL, Redis, and the entire JVM backend run on your machine.
 
-![Build Status](https://github.com/Jeetaksh25/Penpot-Desktop/actions/workflows/build.yml/badge.svg)
-
 ---
 
 ## ✨ Features
