@@ -25,7 +25,7 @@ msgstr "Periksa surel Anda"
 msgid "auth.check-your-email"
 msgstr ""
 "Periksa surel Anda dan klik pada tautan tersebut untuk memverifikasi dan "
-"mulai menggunakan Oriole."
+"mulai menggunakan Ovion."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -70,7 +70,7 @@ msgstr "Masuk"
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
 msgstr ""
-"Oriole adalah peralatan desain bebas & bersumber terbuka untuk kolaborasi "
+"Ovion adalah peralatan desain bebas & bersumber terbuka untuk kolaborasi "
 "Desain dan Kode"
 
 #: src/app/main/ui/auth/login.cljs:230
@@ -163,7 +163,7 @@ msgstr "Buat akun baru"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"Dengan akun Oriole gratis, Anda dapat membuat tim tanpa batas dan "
+"Dengan akun Ovion gratis, Anda dapat membuat tim tanpa batas dan "
 "berkolaborasi dengan desainer dan pengembang lain pada proyek sebanyak yang "
 "Anda inginkan. "
 
@@ -215,7 +215,7 @@ msgstr "Terbitkan"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Semua pengguna Oriole"
+msgstr "Semua pengguna Ovion"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -291,7 +291,7 @@ msgstr "Pengelolaan tim"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Oriole dimaksud untuk tim. Undang anggota untuk bekerja bersama pada "
+"Ovion dimaksud untuk tim. Undang anggota untuk bekerja bersama pada "
 "berbagai proyek dan berkas"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -302,7 +302,7 @@ msgstr "Bersekutu!"
 #, unused
 msgid "dasboard.tutorial-hero.info"
 msgstr ""
-"Pelajari dasarnya di Oriole sambil bersenang-senang dengan tutorial "
+"Pelajari dasarnya di Ovion sambil bersenang-senang dengan tutorial "
 "langsung ini."
 
 #: src/app/main/ui/dashboard/projects.cljs
@@ -318,7 +318,7 @@ msgstr "Tutorial Langsung"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Lihat sekitar Oriole dan ketahui fitur utamanya."
+msgstr "Lihat sekitar Ovion dan ketahui fitur utamanya."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -356,7 +356,7 @@ msgstr "Sematkan versi ini"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Oriole Anda"
+msgstr "Ovion Anda"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -364,7 +364,7 @@ msgstr "Hapus tim"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Unduh berkas Oriole (.penpot)"
+msgstr "Unduh berkas Ovion (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -449,7 +449,7 @@ msgstr "Mulai membuat hal-hal yang hebat"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "Unduh %s berkas Oriole (.penpot)"
+msgstr "Unduh %s berkas Ovion (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -461,7 +461,7 @@ msgstr "Ekspor sebagai PDF"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Ekspor %s berkas Oriole"
+msgstr "Ekspor %s berkas Ovion"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -479,7 +479,7 @@ msgstr ""
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Info bagaimana menetapkan pengeksporan di Oriole."
+msgstr "Info bagaimana menetapkan pengeksporan di Ovion."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -540,8 +540,8 @@ msgstr ""
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
 "Anda seharusnya hanya mengunggah fon yang Anda miliki atau memiliki izin "
-"untuk menggunakannya dalam Oriole. Ketahui lebih lanjut dalam bagian Hak "
-"konten (Content rights) dari [Ketentuan Layanan Oriole](%s). Anda mungkin "
+"untuk menggunakannya dalam Ovion. Ketahui lebih lanjut dalam bagian Hak "
+"konten (Content rights) dari [Ketentuan Layanan Ovion](%s). Anda mungkin "
 "juga ingin membaca tentang [lisensi fon](https://www.typography.com/faq)."
 
 #: src/app/main/ui/dashboard/fonts.cljs:231
@@ -561,7 +561,7 @@ msgstr ""
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "Impor berkas Oriole"
+msgstr "Impor berkas Ovion"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
@@ -952,7 +952,7 @@ msgstr "Tanpa batasan kreativitas"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1326
 msgid "dashboard.upgrade-plan.penpot-free"
-msgstr "Oriole Gratis"
+msgstr "Ovion Gratis"
 
 #: src/app/main/ui/dashboard/team.cljs:1338
 msgid "dashboard.webhooks.active"
@@ -983,7 +983,7 @@ msgid "dashboard.webhooks.description"
 msgstr ""
 "Kaitan web (webhook) adalah cara yang sederhana untuk memperbolehkan situs "
 "web dan aplikasi lain untuk diberi tahu ketika beberapa peristiwa terjadi "
-"di Oriole. Kami mengirim permintaan POST untuk setiap URL yang Anda "
+"di Ovion. Kami mengirim permintaan POST untuk setiap URL yang Anda "
 "sediakan."
 
 #: src/app/main/ui/dashboard/team.cljs:1485
@@ -1012,7 +1012,7 @@ msgstr "Nama Anda"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "Oriole Anda"
+msgstr "Ovion Anda"
 
 #: src/app/main/ui/alert.cljs:36
 msgid "ds.alert-ok"
@@ -1106,7 +1106,7 @@ msgstr "Surel “%s” telah dilaporkan sebagai spam atau lompatan permanen."
 msgid "errors.feature-mismatch"
 msgstr ""
 "Sepertinya Anda membuka berkas yang memiliki fitur '%s' aktif tetapi "
-"frontend Oriole Anda tidak mendukungnya atau menonaktifkannya."
+"frontend Ovion Anda tidak mendukungnya atau menonaktifkannya."
 
 #: src/app/main/errors.cljs:395, src/app/main/errors.cljs:409
 msgid "errors.feature-not-supported"
@@ -1367,7 +1367,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "Komunitas Oriole"
+msgstr "Komunitas Ovion"
 
 #: src/app/main/ui/settings/feedback.cljs:105
 msgid "feedback.subject"
@@ -1619,7 +1619,7 @@ msgstr "Properti varian"
 msgid "inspect.empty.help"
 msgstr ""
 "Jika Anda ingin mengetahui lebih lanjut tentang inspeksi desain kunjungi "
-"pusat bantuan Oriole"
+"pusat bantuan Ovion"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:233
 msgid "inspect.empty.select"
@@ -1795,7 +1795,7 @@ msgstr "Lanjutkan dengan"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "Anda dapat melanjutkan dengan sebuah akun Oriole"
+msgstr "Anda dapat melanjutkan dengan sebuah akun Ovion"
 
 #: src/app/main/ui/components/copy_button.cljs:41
 msgid "labels.copy"
@@ -2414,7 +2414,7 @@ msgstr "Prototipe Interaktif"
 
 #: src/app/main/ui/ds/product/loader.cljs:33
 msgid "loader.tips.07.message"
-msgstr "Oriole menggunakan SVG dan CSS untuk pengembangan tanpa hambatan."
+msgstr "Ovion menggunakan SVG dan CSS untuk pengembangan tanpa hambatan."
 
 #: src/app/main/ui/ds/product/loader.cljs:32
 msgid "loader.tips.07.title"
@@ -2440,7 +2440,7 @@ msgstr "Mode Gelap & Terang"
 
 #: src/app/main/ui/ds/product/loader.cljs:39
 msgid "loader.tips.10.message"
-msgstr "Tingkatkan Oriole dengan plugin dari komunitas untuk fungsi tambahan."
+msgstr "Tingkatkan Ovion dengan plugin dari komunitas untuk fungsi tambahan."
 
 #: src/app/main/ui/ds/product/loader.cljs:38
 msgid "loader.tips.10.title"
@@ -2945,7 +2945,7 @@ msgstr "Daftar secara gratis"
 
 #: src/app/main/ui/static.cljs:175
 msgid "not-found.login.start-using"
-msgstr "Dan mulai menggunakan Oriole dalam hitungan detik!"
+msgstr "Dan mulai menggunakan Ovion dalam hitungan detik!"
 
 #: src/app/main/ui/static.cljs:75
 msgid "not-found.made-with-love"
@@ -2989,7 +2989,7 @@ msgstr "Anda tidak memiliki akses ke berkas ini."
 
 #: src/app/main/ui/static.cljs:62, src/app/main/ui/static.cljs:265, src/app/main/ui/static.cljs:271, src/app/main/ui/static.cljs:277, src/app/main/ui/static.cljs:283, src/app/main/ui/static.cljs:292, src/app/main/ui/static.cljs:301
 msgid "not-found.no-permission.go-dashboard"
-msgstr "Pergi ke Oriole Anda"
+msgstr "Pergi ke Ovion Anda"
 
 #: src/app/main/ui/static.cljs:289, src/app/main/ui/static.cljs:298
 msgid "not-found.no-permission.if-approves"
@@ -2997,7 +2997,7 @@ msgstr "Jika pemilik mengizinkan, Anda akan diundang ke tim."
 
 #: src/app/main/ui/static.cljs:527, src/app/main/ui/static.cljs:540
 msgid "not-found.no-permission.penpot-file"
-msgstr "Berkas Oriole"
+msgstr "Berkas Ovion"
 
 #: src/app/main/ui/static.cljs:264, src/app/main/ui/static.cljs:296
 msgid "not-found.no-permission.project"
@@ -3051,13 +3051,13 @@ msgstr "Surel verifikasi dikirim ke %s. Periksa surel Anda!"
 msgid "onboarding-v2.before-start.desc1"
 msgstr ""
 "Anda seharusnya tahu bahwa ada banyak sumber daya yang tersedia untuk "
-"membantu Anda memulai dengan Oriole, seperti Panduan Pengguna dan saluran "
+"membantu Anda memulai dengan Ovion, seperti Panduan Pengguna dan saluran "
 "YouTube kami."
 
 #, unused
 msgid "onboarding-v2.before-start.desc2"
 msgstr ""
-"Info detail cara menggunakan Oriole. Dari pembuatan prototipe sampai "
+"Info detail cara menggunakan Ovion. Dari pembuatan prototipe sampai "
 "mengelola atau membagikan desain."
 
 #, unused
@@ -3082,13 +3082,13 @@ msgstr "Sebelum Anda mulai"
 #, unused
 msgid "onboarding-v2.newsletter.desc"
 msgstr ""
-"Berlangganan ke buletin Oriole untuk tetap terkini dengan kemajuan "
+"Berlangganan ke buletin Ovion untuk tetap terkini dengan kemajuan "
 "pengembangan dan berita produk."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:88
 #, unused
 msgid "onboarding-v2.newsletter.news"
-msgstr "Kirimkan saya berita tentang Oriole (pos blog, tutorial video, siaran...)."
+msgstr "Kirimkan saya berita tentang Ovion (pos blog, tutorial video, siaran...)."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:96
 #, unused
@@ -3110,15 +3110,15 @@ msgstr "Kirimkan saya pembaruan produk (fitur baru, rilis, perbaikan...)."
 #, unused
 msgid "onboarding-v2.welcome.desc1"
 msgstr ""
-"Oriole itu Sumber Terbuka dan dibuat oleh Kaleidos beserta komunitasnya, di "
+"Ovion itu Sumber Terbuka dan dibuat oleh Kaleidos beserta komunitasnya, di "
 "mana banyak orang sudah membantu sesama. Siapa pun dapat berkontribusi "
 "dengan:"
 
 #, unused
 msgid "onboarding-v2.welcome.desc2"
 msgstr ""
-"Sebuah ruang umum untuk belajar, berbagi, dan berdiskusi tentang Oriole, "
-"masa sekarang dan masa depan dengan seluruh Komunitas dan tim inti Oriole."
+"Sebuah ruang umum untuk belajar, berbagi, dan berdiskusi tentang Ovion, "
+"masa sekarang dan masa depan dengan seluruh Komunitas dan tim inti Ovion."
 
 #, unused
 msgid "onboarding-v2.welcome.desc2.title"
@@ -3136,7 +3136,7 @@ msgstr "Panduan berkontribusi"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:248
 msgid "onboarding-v2.welcome.title"
-msgstr "Selamat datang di Oriole!"
+msgstr "Selamat datang di Ovion!"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:254
 #, unused
@@ -3220,7 +3220,7 @@ msgstr "Kebijakan Privasi kami."
 #: src/app/main/ui/onboarding/newsletter.cljs:65
 #, unused
 msgid "onboarding.newsletter.title"
-msgstr "Ingin menerima berita Oriole?"
+msgstr "Ingin menerima berita Ovion?"
 
 #: src/app/main/ui/onboarding/questions.cljs:104
 msgid "onboarding.questions.lets-get-started"
@@ -3239,7 +3239,7 @@ msgstr "Masih eksplorasi"
 #: src/app/main/ui/onboarding/questions.cljs:245
 #, unused
 msgid "onboarding.questions.reasons.fit"
-msgstr "Melihat apakah Oriole baik untuk tim saya"
+msgstr "Melihat apakah Ovion baik untuk tim saya"
 
 #: src/app/main/ui/onboarding/questions.cljs:251
 #, unused
@@ -3283,17 +3283,17 @@ msgstr "Kerangka Kerja"
 
 #: src/app/main/ui/onboarding/questions.cljs:114
 msgid "onboarding.questions.step1.question1"
-msgstr "Untuk apa Anda akan menggunakan Oriole?"
+msgstr "Untuk apa Anda akan menggunakan Ovion?"
 
 #: src/app/main/ui/onboarding/questions.cljs:272
 #, unused
 msgid "onboarding.questions.step1.question2"
-msgstr "Apa yang membawa Anda ke Oriole hari ini?"
+msgstr "Apa yang membawa Anda ke Ovion hari ini?"
 
 #: src/app/main/ui/onboarding/questions.cljs:110
 msgid "onboarding.questions.step1.subtitle"
 msgstr ""
-"Beri tahu kami sedikit tentang Anda untuk membantu kami membuat Oriole "
+"Beri tahu kami sedikit tentang Anda untuk membantu kami membuat Ovion "
 "berfungsi bagi Anda. Jawaban Anda akan membantu kami memprioritaskan fitur "
 "baru dan mengarahkan Anda ke arah yang tepat untuk memulai."
 
@@ -3330,7 +3330,7 @@ msgstr "Di mana Anda ingin mulai?"
 #: src/app/main/ui/onboarding/questions.cljs:428
 #, unused
 msgid "onboarding.questions.step5.title"
-msgstr "Dari mana Anda mendengar tentang Oriole?"
+msgstr "Dari mana Anda mendengar tentang Ovion?"
 
 #: src/app/main/ui/onboarding/questions.cljs:233
 #, unused
@@ -3381,7 +3381,7 @@ msgstr "Buat sebuah tim"
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
 msgstr ""
-"Sebuah tim memungkinkan Anda berkolaborasi dengan pengguna Oriole lain "
+"Sebuah tim memungkinkan Anda berkolaborasi dengan pengguna Ovion lain "
 "bekerja dalam berkas dan proyek yang sama."
 
 #: src/app/main/ui/onboarding/team_choice.cljs:57
@@ -3418,7 +3418,7 @@ msgstr "Mulai mendesain"
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Oriole"
+msgstr "Ovion"
 
 #: src/app/main/ui/auth/recovery.cljs:88
 msgid "profile.recovery.go-to-login"
@@ -4087,75 +4087,75 @@ msgstr "Zum ke terpilih"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Oriole"
+msgstr "%s - Ovion"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "Penyedia Fon - %s - Oriole"
+msgstr "Penyedia Fon - %s - Ovion"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "Fon - %s - Oriole"
+msgstr "Fon - %s - Ovion"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "Proyek - %s - Oriole"
+msgstr "Proyek - %s - Ovion"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "Cari - %s - Oriole"
+msgstr "Cari - %s - Ovion"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
-msgstr "Pustaka Terbagi - %s - Oriole"
+msgstr "Pustaka Terbagi - %s - Ovion"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Oriole - Kebebasan Desain untuk Tim"
+msgstr "Ovion - Kebebasan Desain untuk Tim"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "Berikan masukan - Oriole"
+msgstr "Berikan masukan - Ovion"
 
 #: src/app/main/ui/settings/notifications.cljs:45
 msgid "title.settings.notifications"
-msgstr "Notifikasi - Oriole"
+msgstr "Notifikasi - Ovion"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "Pengaturan - Oriole"
+msgstr "Pengaturan - Ovion"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "Kata sandi - Oriole"
+msgstr "Kata sandi - Ovion"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "Profil - Oriole"
+msgstr "Profil - Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "Undangan - %s - Oriole"
+msgstr "Undangan - %s - Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "Anggota - %s - Oriole"
+msgstr "Anggota - %s - Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "Pengaturan - %s - Oriole"
+msgstr "Pengaturan - %s - Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "Kaitan Web - %s - Oriole"
+msgstr "Kaitan Web - %s - Ovion"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s - Mode penampilan - Oriole"
+msgstr "%s - Mode penampilan - Ovion"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Oriole"
+msgstr "%s - Ovion"
 
 #: src/app/main/ui.cljs:138
 #, unused

@@ -78,8 +78,10 @@
   }
 }
 
-// The theme toggle sits a little to the LEFT of the minimize button, with a
-// visible gap between it and the window-control cluster (per request).
+// The settings gear + theme toggle sit a little to the LEFT of the minimize
+// button, with a visible gap between each of them and the window-control
+// cluster (per request). Both share the same compact width + trailing gap.
+.titlebar-settings-toggle,
 .titlebar-theme-toggle {
   inline-size: px2rem(36);
   margin-inline-end: px2rem(8);

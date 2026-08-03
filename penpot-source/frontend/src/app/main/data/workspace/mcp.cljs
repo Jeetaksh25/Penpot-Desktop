@@ -30,10 +30,10 @@
 (def ^:private
   default-manifest
   {:code "plugin.js"
-   :name "Penpot MCP Plugin"
+   :name "Ovion MCP Plugin"
    :version 2
    :plugin-id preg/mcp-plugin-id
-   :description "This plugin enables interaction with the Penpot MCP server"
+   :description "This plugin enables interaction with the Ovion MCP server"
    :allow-background true
    :permissions
    #{"library:read" "library:write"

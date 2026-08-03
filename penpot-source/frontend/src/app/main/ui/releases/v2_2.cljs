@@ -22,25 +22,25 @@
         [:img {:src "images/features/2.0-intro-image.png"
                :class (stl/css :start-image)
                :border "0"
-               :alt "A graphic illustration with Penpot style"}]
+               :alt "A graphic illustration with Ovion style"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What's new in Penpot? "]
+           "What's new in Ovion? "]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
 
          [:div {:class (stl/css :features-block)}
           [:p {:class (stl/css :feature-content)}
-           "This Penpot 2.2 release focuses on internal changes that are laying out the ground for the upcoming plugin system and substantial performance improvements."]
+           "This Ovion 2.2 release focuses on internal changes that are laying out the ground for the upcoming plugin system and substantial performance improvements."]
 
           [:p  {:class (stl/css :feature-content)}
-           "This version also adds full JSON API interoperability and the brand-new Penpot’s Storybook!"]
+           "This version also adds full JSON API interoperability and the brand-new Ovion’s Storybook!"]
 
           [:p  {:class (stl/css :feature-content)}
-           "Self-hosted Penpot installations will benefit from better file data storage and Penpot admins can now use the improved automatic snapshotting process when recovering old files."]
+           "Self-hosted Ovion installations will benefit from better file data storage and Ovion admins can now use the improved automatic snapshotting process when recovering old files."]
 
           [:p  {:class (stl/css :feature-content)}
            "Thanks again to our awesome community for their amazing contributions to this release!"]]

@@ -20,7 +20,7 @@ msgstr "¿Ya tienes una cuenta?"
 msgid "auth.check-your-email"
 msgstr ""
 "Revise su correo electrónico y haga clic en el enlace para verificar y "
-"comenzar a usar Oriole."
+"comenzar a usar Ovion."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -171,7 +171,7 @@ msgstr "Publicar"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Todos los usuarios de Oriole"
+msgstr "Todos los usuarios de Ovion"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -248,7 +248,7 @@ msgstr "Gestión de equipos"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Oriole está destinado a equipos. Invite a miembros a trabajar juntos en "
+"Ovion está destinado a equipos. Invite a miembros a trabajar juntos en "
 "proyectos y archivos"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -259,7 +259,7 @@ msgstr "¡En equipo!"
 #, unused
 msgid "dasboard.tutorial-hero.info"
 msgstr ""
-"Aprenda los conceptos básicos en Oriole mientras se divierte con este "
+"Aprenda los conceptos básicos en Ovion mientras se divierte con este "
 "tutorial práctico."
 
 #: src/app/main/ui/dashboard/projects.cljs
@@ -275,7 +275,7 @@ msgstr "Tutorial práctico"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Date un paseo por Oriole y conoce sus principales características."
+msgstr "Date un paseo por Ovion y conoce sus principales características."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -305,7 +305,7 @@ msgstr "Crear nuevo equipo"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Tu Oriole"
+msgstr "Tu Ovion"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -313,7 +313,7 @@ msgstr "Eliminar equipo"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Descargar el archivo Oriole (.penpot)"
+msgstr "Descargar el archivo Ovion (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -330,7 +330,7 @@ msgstr "Duplicar %s archivos"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "Descargar %s archivos Oriole (.penpot)"
+msgstr "Descargar %s archivos Ovion (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -342,7 +342,7 @@ msgstr "Exportar como PDF"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Exportar %s archivos de Oriole"
+msgstr "Exportar %s archivos de Ovion"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -360,7 +360,7 @@ msgstr ""
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Información sobre cómo configurar las exportaciones en Oriole."
+msgstr "Información sobre cómo configurar las exportaciones en Ovion."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"

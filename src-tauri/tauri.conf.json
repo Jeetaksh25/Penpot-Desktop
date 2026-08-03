@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/JonasKruckenberg/tauri/next/core/tauri-config-schema/schema.json",
-  "productName": "Oriole Desktop",
+  "productName": "Ovion Desktop",
   "version": "1.0.30",
-  "identifier": "com.oriole.desktop",
+  "identifier": "com.ovion.desktop",
   "build": {
     "beforeDevCommand": "npm run serve:penpot",
     "devUrl": "http://localhost:1420",
@@ -47,7 +47,7 @@
           "English"
         ],
         "displayLanguageSelector": false,
-        "startMenuFolder": "Oriole Desktop",
+        "startMenuFolder": "Ovion Desktop",
         "template": null
       }
     }

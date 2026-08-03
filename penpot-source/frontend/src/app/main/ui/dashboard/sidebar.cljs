@@ -831,7 +831,7 @@
       [:div {:class (stl/css :selected-org)}
        [:span {:class (stl/css :org-penpot-icon)}
         [:> raw-svg* {:id penpot-logo-icon}]]
-       "Oriole"
+       "Ovion"
        [:> button* {:variant "ghost"
                     :type "button"
                     :class (stl/css :create-org)

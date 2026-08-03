@@ -23,19 +23,19 @@
         [:img {:src "images/features/2.4-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "A graphic illustration with Penpot style"}]
+               :alt "A graphic illustration with Ovion style"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
 
          [:div {:class (stl/css :features-block)}
           [:span {:class (stl/css :feature-title)}
-           "At Penpot we are at full speed!"]
+           "At Ovion we are at full speed!"]
 
           [:p  {:class (stl/css :feature-content)}
            "With the release of the long-awaited Plugins System still fresh, this 2.4 brings improvements in a wide range of areas that will serve a variety of use cases."]

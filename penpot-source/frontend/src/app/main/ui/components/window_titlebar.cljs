@@ -8,9 +8,11 @@
   (:require-macros [app.main.style :as stl])
   (:require
    ["@tauri-apps/api/window" :refer [getCurrentWindow]]
-   ["lucide-react" :refer [Minus Moon Square Sun X]]
+   ["lucide-react" :refer [Minus Moon Settings Square Sun X]]
+   [app.main.data.modal :as modal]
    [app.main.data.profile :as dp]
    [app.main.store :as st]
+   [app.util.i18n :as i18n :refer [tr]]
    [rumext.v2 :as mf]))
 
 ;; The Tauri webview window handle. This ns is only loaded inside the
@@ -56,10 +58,17 @@
      ;; attribute, so clicking them never starts a drag.
      [:div {:class (stl/css :titlebar-drag)
             :data-tauri-drag-region "true"}
-      [:span {:class (stl/css :titlebar-title)} "Oriole Desktop"]]
+      [:span {:class (stl/css :titlebar-title)} "Ovion Desktop"]]
 
-     ;; Right: theme toggle, then a gap, then the window controls.
+     ;; Right: settings gear, theme toggle, then a gap, then the window controls.
      [:div {:class (stl/css :titlebar-controls)}
+      [:button {:class (stl/css :titlebar-btn :titlebar-settings-toggle)
+                :type "button"
+                :aria-label (tr "titlebar.settings")
+                :title (tr "titlebar.settings")
+                :on-click #(st/emit! (modal/show {:type :ai-settings}))}
+       [:> Settings {:size 16 :color "currentColor"}]]
+
       [:button {:class (stl/css :titlebar-btn :titlebar-theme-toggle)
                 :type "button"
                 :aria-label (if is-light "Switch to dark theme" "Switch to light theme")

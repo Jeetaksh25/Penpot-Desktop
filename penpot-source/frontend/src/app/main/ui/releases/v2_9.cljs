@@ -22,19 +22,19 @@
         [:img {:src "images/features/2.9-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot 2.9 is here!"}]
+               :alt "Ovion 2.9 is here!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
 
          [:div {:class (stl/css :features-block)}
           [:span {:class (stl/css :feature-title)}
-           "Penpot 2.9 is out!"]
+           "Ovion 2.9 is out!"]
 
           [:p  {:class (stl/css :feature-content)}
            "We're keeping the momentum going with another exciting round of improvements and features!"]

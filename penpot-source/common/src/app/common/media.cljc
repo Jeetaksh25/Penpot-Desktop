@@ -64,6 +64,7 @@
     "image/webp"               ".webp"
     "application/zip"          ".zip"
     "application/penpot"       ".penpot"
+    "application/ovion"        ".ovion"
     "application/pdf"          ".pdf"
     "text/plain"               ".txt"
     "font/woff"                ".woff"

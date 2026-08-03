@@ -162,7 +162,7 @@ export async function fromNavigator(options) {
   const clipboard = navigator.clipboard;
   if (!clipboard || typeof clipboard.read !== "function") {
     throw new Error(
-      "Clipboard API is unavailable. This usually happens when the page is served over plain HTTP; serve Penpot over HTTPS to enable paste-from-clipboard."
+      "Clipboard API is unavailable. This usually happens when the page is served over plain HTTP; serve Ovion over HTTPS to enable paste-from-clipboard."
     );
   }
   const items = await clipboard.read();

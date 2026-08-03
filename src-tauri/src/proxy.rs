@@ -71,7 +71,7 @@ const BACKEND_PORT: u16 = 3449;
 
 const LOCAL_EMAIL: &str = "penpot@localdesktop.com";
 const LOCAL_PASSWORD: &str = "penpot-local";
-const LOCAL_FULLNAME: &str = "Oriole Desktop";
+const LOCAL_FULLNAME: &str = "Ovion Desktop";
 const SESSION_COOKIE_NAME: &str = "auth-token";
 
 /// Global session cookie set by auto-login. Every proxied request gets this

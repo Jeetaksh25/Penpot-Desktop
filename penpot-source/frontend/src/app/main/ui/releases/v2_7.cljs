@@ -22,19 +22,19 @@
         [:img {:src "images/features/2.7-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Design Tokens make their debut in Penpot!"}]
+               :alt "Design Tokens make their debut in Ovion!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
 
          [:div {:class (stl/css :features-block)}
           [:span {:class (stl/css :feature-title)}
-           "Penpot 2.7 is out!"]
+           "Ovion 2.7 is out!"]
 
           [:p  {:class (stl/css :feature-content)}
            "After the huge excitement around our last release. The first-ever native Design Tokens support in a design tool (yay!), we’re keeping the momentum going with a fresh batch of new features and improvements."]
@@ -65,7 +65,7 @@
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "It hasn’t been long since we launched Design Tokens in Penpot (the first native Design Tokens support in a design tool!), and we’re already rolling out the first set of improvements."]
+           "It hasn’t been long since we launched Design Tokens in Ovion (the first native Design Tokens support in a design tool!), and we’re already rolling out the first set of improvements."]
 
           [:p {:class (stl/css :feature-content)}
            "The highlight: you can now duplicate token sets directly from a menu item. A huge time-saver, especially when working from existing sets. We’ve also made it easier to create themes by letting you select their set right away, and we’ve polished some info indicators to make everything a bit clearer. Plus, we’ve fixed a bunch of early-stage bugs to keep things running smoothly."]]
@@ -95,7 +95,7 @@
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "From now on, both editors and viewers can create Share Prototype links. Sharing prototypes is key for better team collaboration, no matter the role. It’s a common need, team members often have to share presentations without risking any accidental changes to the designs, which means they don’t necessarily need editing permissions. In the future, Penpot will introduce more fine-grained control over these permissions."]
+           "From now on, both editors and viewers can create Share Prototype links. Sharing prototypes is key for better team collaboration, no matter the role. It’s a common need, team members often have to share presentations without risking any accidental changes to the designs, which means they don’t necessarily need editing permissions. In the future, Ovion will introduce more fine-grained control over these permissions."]
 
           [:p {:class (stl/css :feature-content)}
            "This update gives editors and viewers the same ability to configure, create, copy, and delete sharing links. A capability that, until now, was limited to owners and admins."]]
@@ -125,7 +125,7 @@
          [:div {:class (stl/css :feature)}
 
           [:p {:class (stl/css :feature-content)}
-           "Penpot works perfectly for solo projects, but it’s always more fun with a team. That’s why we’ve updated the initial state of the invitations area. Instead of starting blank, it now offers clearer guidance to help you invite your first team members."]
+           "Ovion works perfectly for solo projects, but it’s always more fun with a team. That’s why we’ve updated the initial state of the invitations area. Instead of starting blank, it now offers clearer guidance to help you invite your first team members."]
 
           [:p {:class (stl/css :feature-content)}
            "This improvement in design and UX writing comes from community member Prithvi Tharun (credit where it’s due!) Not all open source contributions are about code, and this is a fantastic example of how design and writing make a real difference too."]]

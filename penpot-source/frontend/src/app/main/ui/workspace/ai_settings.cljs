@@ -17,6 +17,7 @@
   is blank), so the masked-key fields can stay empty unless the user enters a
   new one."
   (:require
+   [app.main.data.modal :as modal]
    [app.main.data.notifications :as ntf]
    [app.main.data.workspace.ai-gen :as ai]
    [app.main.refs :as refs]
@@ -25,34 +26,50 @@
    [promesa.core :as p]
    [rumext.v2 :as mf]))
 
+;; Injected <style> block. Colors use the peach-theme CSS custom properties
+;; emitted by ds/colors.scss + design-tokens.scss (defined on body.light /
+;; body.default), so the modal re-themes with the rest of the app in both
+;; light and dark. No SCSS pipeline dependency — this is raw CSS string.
 (def ^:private settings-css
   "
-.ais-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 210;
-  display: flex; align-items: center; justify-content: center; padding: 24px; }
-.ais-modal { background: #fff; border-radius: 16px; width: min(560px, 100%);
-  max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
-  box-shadow: 0 24px 70px rgba(15,23,42,0.4); }
-.ais-head { padding: 16px 20px; border-bottom: 1px solid #eef2f7;
+.ais-overlay { position: fixed; inset: 0; background: var(--color-overlay-default);
+  z-index: 210; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.ais-modal { background: var(--color-background-primary); border-radius: 16px;
+  width: min(560px, 100%); max-height: 88vh; display: flex; flex-direction: column;
+  overflow: hidden; box-shadow: 0 24px 70px var(--color-shadow-dark);
+  border: 1px solid var(--color-background-quaternary); }
+.ais-head { padding: 16px 20px; border-bottom: 1px solid var(--color-background-quaternary);
   display: flex; align-items: center; justify-content: space-between; }
-.ais-title { font-size: 15px; font-weight: 700; color: #0f172a; }
+.ais-title { font-size: 15px; font-weight: 700; color: var(--color-foreground-primary); }
 .ais-body { padding: 18px 20px; overflow: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; }
-.ais-foot { padding: 14px 20px; border-top: 1px solid #eef2f7; display: flex; gap: 10px; justify-content: space-between; }
+.ais-foot { padding: 14px 20px; border-top: 1px solid var(--color-background-quaternary);
+  display: flex; gap: 10px; justify-content: space-between; }
 .ais-field { display: flex; flex-direction: column; gap: 5px; }
-.ais-label { font-size: 12px; font-weight: 600; color: #475569; }
-.ais-hint { font-size: 11px; color: #94a3b8; }
-.ais-input { border: 1px solid rgba(15,23,42,0.12); border-radius: 9px; padding: 8px 10px;
-  font-size: 13px; color: #0f172a; background: #fff; outline: none; }
-.ais-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+.ais-label { font-size: 12px; font-weight: 600; color: var(--color-foreground-secondary); }
+.ais-hint { font-size: 11px; color: var(--color-foreground-secondary); }
+.ais-input { border: 1px solid var(--input-border-color-rest, var(--color-background-quaternary));
+  border-radius: 9px; padding: 8px 10px; font-size: 13px;
+  color: var(--color-foreground-primary); background: var(--input-background-color-rest, var(--color-background-tertiary));
+  outline: none; }
+.ais-input:focus { border-color: var(--color-accent-primary);
+  box-shadow: 0 0 0 3px var(--color-accent-select); }
 .ais-row { display: flex; gap: 10px; }
 .ais-row > * { flex: 1 1 0; }
 .ais-section { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-  color: #94a3b8; margin-top: 6px; }
+  color: var(--color-foreground-secondary); margin-top: 6px; }
 .ais-btn { border: none; border-radius: 10px; padding: 9px 16px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
-.ais-btn-primary { background: #4f46e5; color: #fff; }
-.ais-btn-primary:hover { background: #4338ca; }
-.ais-btn-ghost { background: transparent; color: #64748b; border: 1px solid rgba(15,23,42,0.12); }
-.ais-btn-ghost:hover { background: #f8fafc; }
-.ais-x { border: none; background: transparent; color: #94a3b8; font-size: 20px; cursor: pointer; line-height: 1; }
+.ais-btn-primary { background: var(--color-accent-primary); color: var(--color-background-secondary); }
+.ais-btn-primary:hover { background: var(--color-accent-tertiary); }
+.ais-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.ais-btn-ghost { background: transparent; color: var(--color-foreground-secondary);
+  border: 1px solid var(--color-background-quaternary); }
+.ais-btn-ghost:hover { background: var(--color-background-tertiary); }
+.ais-x { border: none; background: transparent; color: var(--color-foreground-secondary);
+  font-size: 20px; cursor: pointer; line-height: 1; }
+.ais-x:hover { color: var(--color-foreground-primary); }
+.ais-note { font-size: 11px; color: var(--color-foreground-secondary);
+  background: var(--color-background-tertiary); border: 1px solid var(--color-background-quaternary);
+  border-radius: 8px; padding: 8px 10px; line-height: 1.4; }
 ")
 
 (defn- safe-int
@@ -87,12 +104,22 @@
       type          (assoc :type type))]
    (when hint [:span.ais-hint hint])])
 
+;; Registered as a modal so any surface (titlebar gear, AI bar gear) can open
+;; it via `(st/emit! (modal/show {:type :ai-settings}))`. When opened through
+;; the modal system `on-close` is nil and the close actions emit `modal/hide`;
+;; the optional `on-close` prop is still honored for inline callers.
 (mf/defc ai-settings*
+  {::mf/register modal/components
+   ::mf/register-as :ai-settings}
   [{:keys [on-close]}]
   (let [cfg*   (mf/use-state nil)   ; the LlmConfigView as CLJS (keyword keys)
         saving* (mf/use-state false)
         file    (mf/deref refs/file)
-        file-id (some-> file :id str)]
+        file-id (some-> file :id str)
+        close   (mf/use-fn
+                 (fn []
+                   (when (fn? on-close) (on-close))
+                   (st/emit! (modal/hide))))]
 
     ;; Load config once on mount.
     (mf/with-effect
@@ -110,7 +137,7 @@
                          (reset! cfg* (assoc (deref cfg*) k
                                              (if (contains? #{:memory_enabled} k)
                                                (.. e -target -checked)
-                                               v))))))
+                                               v)))))))
           save    (mf/use-fn
                    (mf/deps cfg)
                    (fn []
@@ -127,6 +154,8 @@
                                    :ollama_kimi_model       (:ollama_kimi_model cfg "")
                                    :firecrawl_api_key       (:firecrawl_api_key cfg "")
                                    :firecrawl_base          (:firecrawl_base cfg "")
+                                   :ovion_cloud_endpoint   (:ovion_cloud_endpoint cfg "")
+                                   :ovion_cloud_token       (:ovion_cloud_token cfg "")
                                    :timeout_secs            (safe-int (:timeout_secs cfg 240) 240)
                                    :memory_enabled          (boolean (:memory_enabled cfg true))
                                    :memory_max_turns        (safe-int (:memory_max_turns cfg 6) 6)}]
@@ -134,7 +163,7 @@
                            (p/then (fn [_]
                                      (reset! saving* false)
                                      (st/emit! (ntf/info (tr "workspace.ai.settings.saved")))
-                                     (when on-close (on-close))))
+                                     (close)))
                            (p/catch (fn [e]
                                      (reset! saving* false)
                                      (st/emit! (ntf/error (str e)))))))))
@@ -146,12 +175,12 @@
                                      (st/emit! (ntf/info (tr "workspace.ai.settings.memory-cleared")))))
                            (p/catch (fn [e] (st/emit! (ntf/error (str e))))))))]
 
-      [:div.ais-overlay {:on-click on-close}
+      [:div.ais-overlay {:on-click close}
        [:div.ais-modal {:on-click #(.stopPropagation %)}
         [:style {:dangerouslySetInnerHTML #js {:__html settings-css}}]
         [:div.ais-head
          [:span.ais-title (tr "workspace.ai.settings.title")]
-         [:button.ais-x {:on-click on-close} "×"]]
+         [:button.ais-x {:on-click close} "×"]]
         [:div.ais-body
          (if (nil? cfg)
            [:span.ais-hint (tr "workspace.ai.settings.loading")]
@@ -163,13 +192,29 @@
               [:select.ais-input {:value (:provider cfg "deepinfra")
                                   :on-change (upd :provider)}
                [:option {:value "deepinfra"} "DeepInfra"]
-               [:option {:value "ollama"} "Ollama"]]]
+               [:option {:value "ollama"} "Ollama"]
+               [:option {:value "ovion-cloud"} (tr "workspace.ai.settings.provider-ovion-cloud")]]]
              [:div.ais-field
               [:span.ais-label (tr "workspace.ai.settings.mode")]
               [:select.ais-input {:value (:mode cfg "auto")
                                   :on-change (upd :mode)}
                [:option {:value "max"} (tr "workspace.ai.bar.mode-max")]
                [:option {:value "auto"} (tr "workspace.ai.bar.mode-auto")]]]]
+
+            ;; Ovion Cloud (subscription, "coming soon"). Rendered only while
+            ;; the Ovion Cloud provider is selected, so the BYO DeepInfra/Ollama
+            ;; sections below stay fully working and unchanged.
+            (when (= (:provider cfg) "ovion-cloud")
+              [:div.ais-section (tr "workspace.ai.settings.section-ovion-cloud")]
+              (field {:label     (tr "workspace.ai.settings.ovion-cloud-endpoint")
+                      :value     (:ovion_cloud_endpoint cfg)
+                      :on-change (upd :ovion_cloud_endpoint)})
+              (field {:label     (tr "workspace.ai.settings.ovion-cloud-token")
+                      :type      "password"
+                      :placeholder (when (:ovion_cloud_token_set cfg)
+                                     (tr "workspace.ai.settings.key-set"))
+                      :on-change (upd :ovion_cloud_token)})
+              [:span.ais-note (tr "workspace.ai.settings.ovion-cloud-note")])
 
             [:div.ais-section (tr "workspace.ai.settings.section-deepinfra")]
             (field {:label     (tr "workspace.ai.settings.deepinfra-glm")
@@ -228,13 +273,13 @@
                     :type "number"
                     :value (:timeout_secs cfg 240)
                     :on-change (upd :timeout_secs)})
-            ]])]
+            ])]
 
         [:div.ais-foot
          [:button.ais-btn.ais-btn-ghost {:on-click clear-mem}
           (tr "workspace.ai.settings.clear-memory")]
          [:div {:style #js {"display" "flex" "gap" "10px"}}
-          [:button.ais-btn.ais-btn-ghost {:on-click on-close :disabled saving}
+          [:button.ais-btn.ais-btn-ghost {:on-click close :disabled saving}
            (tr "workspace.ai.settings.cancel")]
           [:button.ais-btn.ais-btn-primary {:on-click save :disabled (or saving (nil? cfg))}
            (tr "workspace.ai.settings.save")]]]])]))

@@ -290,7 +290,7 @@
 
 (defn- rn-readme [comp-name]
   (dm/fmt
-   "# %\n\nGenerated with Penpot Desktop (React Native).\n\n## Run\n\n```bash\nnpm install\nnpx react-native run-android   # or: run-ios\n```\n\nThe component lives in `%.jsx`. Register it in your app entry:\n\n```js\nimport { AppRegistry } from \"react-native\";\nimport % from \"./%.jsx\";\nAppRegistry.registerComponent(\"%\", () => %);\n```\n\nAll children are absolutely positioned relative to the selection's bounding\nbox (React Native supports `position: \"absolute\"`).\n"
+   "# %\n\nGenerated with Ovion Desktop (React Native).\n\n## Run\n\n```bash\nnpm install\nnpx react-native run-android   # or: run-ios\n```\n\nThe component lives in `%.jsx`. Register it in your app entry:\n\n```js\nimport { AppRegistry } from \"react-native\";\nimport % from \"./%.jsx\";\nAppRegistry.registerComponent(\"%\", () => %);\n```\n\nAll children are absolutely positioned relative to the selection's bounding\nbox (React Native supports `position: \"absolute\"`).\n"
    comp-name comp-name comp-name comp-name (fc/kebab-name comp-name) comp-name))
 
 (defn generate-project

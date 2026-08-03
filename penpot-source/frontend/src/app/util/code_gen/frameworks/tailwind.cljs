@@ -313,7 +313,7 @@
 
 (defn- tailwind-readme [comp-name]
   (dm/fmt
-   "# %\n\nGenerated with Penpot Desktop (React + Vite + Tailwind CSS).\n\n## Run\n\n```bash\nnpm install\nnpm run dev\n```\n\nThe component lives in `src/%.jsx`, styled with Tailwind v3+ JIT arbitrary\nvalues (no `tailwind.config` entries required). Positions are absolute.\n"
+   "# %\n\nGenerated with Ovion Desktop (React + Vite + Tailwind CSS).\n\n## Run\n\n```bash\nnpm install\nnpm run dev\n```\n\nThe component lives in `src/%.jsx`, styled with Tailwind v3+ JIT arbitrary\nvalues (no `tailwind.config` entries required). Positions are absolute.\n"
    comp-name comp-name))
 
 (defn generate-project
@@ -341,7 +341,7 @@
      :uses-masked-view? false}))
 
 (defn- next-layout-jsx []
-  "import \"./globals.css\";\n\nexport const metadata = {\n  title: \"Penpot Export\",\n  description: \"Generated with Penpot Desktop\",\n};\n\nexport default function RootLayout({ children }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}\n")
+  "import \"./globals.css\";\n\nexport const metadata = {\n  title: \"Ovion Export\",\n  description: \"Generated with Ovion Desktop\",\n};\n\nexport default function RootLayout({ children }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}\n")
 
 (defn- next-config []
   "/** @type {import('next').NextConfig} */\nexport default {};\n")
@@ -355,7 +355,7 @@
    (fc/kebab-name comp-name)))
 
 (defn- next-readme []
-  "# Penpot Export (Next.js + Tailwind)\n\nGenerated with Penpot Desktop.\n\n## Run\n\n```bash\nnpm install\nnpm run dev\n```\n\nThe page lives in `app/page.jsx` (App Router, `'use client'`), styled with\nTailwind v3+ JIT arbitrary values. `app/globals.css` holds the @tailwind\ndirectives and (when present) the bundled @font-face.\n")
+  "# Ovion Export (Next.js + Tailwind)\n\nGenerated with Ovion Desktop.\n\n## Run\n\n```bash\nnpm install\nnpm run dev\n```\n\nThe page lives in `app/page.jsx` (App Router, `'use client'`), styled with\nTailwind v3+ JIT arbitrary values. `app/globals.css` holds the @tailwind\ndirectives and (when present) the bundled @font-face.\n")
 
 (defn generate-nextjs-project
   "Multi-file Next.js (App Router) + Tailwind project. The `:primary` file\n(`app/page.jsx`) is the single-string `generate-nextjs` output. The\nscaffold adds the root layout, globals.css (with @tailwind + @font-face),\npackage.json, configs, .gitignore and README."

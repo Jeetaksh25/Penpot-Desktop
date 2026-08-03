@@ -734,7 +734,7 @@
                          :price-value "$25"
                          :price-period (tr "subscription.settings.organization-member-month")
                          :benefits-title (tr "subscription.settings.benefits.all-unlimited-benefits")
-                         :benefits ["Crea organizaciones y añade personas, que usarán Oriole con las reglas que configures."
+                         :benefits ["Crea organizaciones y añade personas, que usarán Ovion con las reglas que configures."
                                     "Acceso exclusivo a la Admin Console"
                                     "Lorem ipsum"]
                          :cta-text (if nitrate-license (tr "subscription.settings.subscribe") "Try 14 days for free")

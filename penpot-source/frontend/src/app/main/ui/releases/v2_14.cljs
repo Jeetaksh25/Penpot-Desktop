@@ -22,12 +22,12 @@
         [:img {:src "images/features/2.14-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot 2.14 is here!"}]
+               :alt "Ovion 2.14 is here!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
@@ -37,7 +37,7 @@
            "Design tokens, but friendlier (and a bit faster, too)"]
 
           [:p  {:class (stl/css :feature-content)}
-           "This release keeps pushing Penpot’s design system foundations forward, with a big focus on design tokens. We’re making long token names easier to navigate, opening up tokens in the plugins API, and tackling one of the trickiest moments in token workflows: renaming (without breaking everything)."]
+           "This release keeps pushing Ovion’s design system foundations forward, with a big focus on design tokens. We’re making long token names easier to navigate, opening up tokens in the plugins API, and tackling one of the trickiest moments in token workflows: renaming (without breaking everything)."]
 
           [:p  {:class (stl/css :feature-content)}
            "On top of that, you’ll find a handful of quality-of-life improvements and some performance work in the sidebar to keep things feeling smooth as your files grow. Let’s dive in."]
@@ -68,7 +68,7 @@
            "Token names are rarely short and sweet. Most of the time they carry a lot of meaning (type, state, property, variant… and more), which is great for consistency, but not so great for browsing. In 2.14 we’re introducing token groups, a new way to navigate dotted token paths as nested, collapsible sections."]
 
           [:p {:class (stl/css :feature-content)}
-           "Token segments before the final name are displayed as groups, and only the last segment stays as a pill (so you keep the familiar token “chip” where it matters). If you unfold a path, it stays open while you move around the app (it resets only when the page reloads). And when you create a new token, Penpot automatically unfolds the path needed to reveal it (even if it overrides a previously opened one)."]
+           "Token segments before the final name are displayed as groups, and only the last segment stays as a pill (so you keep the familiar token “chip” where it matters). If you unfold a path, it stays open while you move around the app (it resets only when the page reloads). And when you create a new token, Ovion automatically unfolds the path needed to reveal it (even if it overrides a previously opened one)."]
 
           [:p {:class (stl/css :feature-content)}
            "One extra detail: if you edit the path and change group segments, the token is moved to its new group (creating it if needed), and empty groups are automatically cleaned up."]]
@@ -98,7 +98,7 @@
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "Design tokens are now available in the Penpot plugins API. That means plugins (and external tools built around Penpot, like AI clients or Penpot MCP) can finally work with tokens programmatically and automate token workflows that used to be purely manual."]
+           "Design tokens are now available in the Ovion plugins API. That means plugins (and external tools built around Ovion, like AI clients or Ovion MCP) can finally work with tokens programmatically and automate token workflows that used to be purely manual."]
 
           [:p {:class (stl/css :feature-content)}
            "If you’ve been waiting to generate tokens, sync them, or manipulate them from your own tools, this is the missing piece. And yes, this one has been requested a lot."]]

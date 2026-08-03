@@ -27,12 +27,12 @@
   `stl/css` needs)."
   (:require
    [cuerdas.core :as str]
+   [app.main.data.modal :as modal]
    [app.main.data.workspace :as dw]
    [app.main.data.workspace.ai-gen :as ai]
    [app.main.data.workspace.design-gen :as dg]
    [app.main.refs :as refs]
    [app.main.store :as st]
-   [app.main.ui.workspace.ai-settings :refer [ai-settings*]]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
    [promesa.core :as p]
@@ -157,7 +157,6 @@
         update-sel?*  (mf/use-state true)          ; region-update toggle
         attachments*  (mf/use-state [])            ; [{:file :name :preview}]
         stage*        (mf/use-state nil)
-        show-settings* (mf/use-state false)
         file-input*   (mf/use-ref nil)
         ;; Figma #71: AI rename + text-gen tool state. Local (not potok) so
         ;; it never interferes with the design-generation busy/preview flags.
@@ -185,7 +184,6 @@
         update-sel?   (deref update-sel?*)
         attachments   (deref attachments*)
         stage         (deref stage*)
-        show-settings (deref show-settings*)
 
         ;; Effective target: region update only when something is selected AND
         ;; the user hasn't disabled it. Otherwise "new-board" — the backend's
@@ -357,7 +355,7 @@
                         :else (reset! stage* (str d))))))]
         (fn [] (-> unp
                    (p/then (fn [u] (when (fn? u) (u))))
-                   (p/catch (fn [_] nil)))))
+                   (p/catch (fn [_] nil))))))
 
     ;; On error the backend returns Err BEFORE emitting the "done" progress
     ;; event, so the stage* set by "generating"/"finalizing" would never clear
@@ -370,9 +368,6 @@
     ;; modals position against the workspace :section / viewport, not this div.
     [:div {:style #js {"display" "contents"}}
      (style-block)
-
-     (when show-settings
-       [:> ai-settings* {:on-close #(reset! show-settings* false)}])
 
      [:div.ai-root
       [:div.ai-bar
@@ -421,7 +416,7 @@
            [:input {:type "checkbox" :checked update-sel? :on-change on-toggle-sel}]
            (tr "workspace.ai.bar.update-selection")])
         [:div.ai-grow]
-        [:button.ai-icon-btn {:on-click #(reset! show-settings* true)
+        [:button.ai-icon-btn {:on-click #(st/emit! (modal/show {:type :ai-settings}))
                               :title (tr "workspace.ai.bar.settings")} "⚙"]
         (if busy
           [:button.ai-btn.ai-btn-ghost {:on-click on-cancel}

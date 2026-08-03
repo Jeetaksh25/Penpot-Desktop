@@ -674,7 +674,7 @@ fn boot_backend(handle: tauri::AppHandle) {
             if let Some(state) = handle.try_state::<BackendState>() {
                 let _ = state.jvm.lock().map(|mut g| *g = Some(child));
             }
-            set_boot_status(&handle, "Starting Oriole backend…");
+            set_boot_status(&handle, "Starting Ovion backend…");
             match wait_for_port("Backend", BACKEND_PORT, BACKEND_HEALTH_TIMEOUT) {
                 Ok(()) => {
                     eprintln!(
@@ -800,7 +800,7 @@ pub fn run() {
                     .unwrap(),
             );
             let main_window = tauri::WebviewWindowBuilder::new(&handle, "main", loading_url)
-                .title("Oriole Desktop")
+                .title("Ovion Desktop")
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(900.0, 600.0)
                 // Borderless window — the OS titlebar is replaced by the

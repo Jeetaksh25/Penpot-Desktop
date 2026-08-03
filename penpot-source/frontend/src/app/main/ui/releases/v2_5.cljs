@@ -23,19 +23,19 @@
         [:img {:src "images/features/2.5-slide-0.png"
                :class (stl/css :start-image)
                :border "0"
-               :alt "A graphic illustration with Penpot style"}]
+               :alt "A graphic illustration with Ovion style"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
 
          [:div {:class (stl/css :features-block)}
           [:span {:class (stl/css :feature-title)}
-           "We’re thrilled to introduce Penpot 2.5"]
+           "We’re thrilled to introduce Ovion 2.5"]
 
           [:p  {:class (stl/css :feature-content)}
            "Packed with powerful new features and little big details. This release brings multi-step gradients, along with comment notifications, making it easier than ever to communicate with your team members. Now you also can easily copy/paste groups of styles between layers and share direct links to specific boards, among other new capabilities considered true gems for designers and team collaboration."]
@@ -99,7 +99,7 @@
            "No more lost comments! You can now tag teammates in comments, and they’ll get a notification so they never miss direct feedback. Plus, now you can filter mentions—just select 'Only your mentions' to quickly find discussions that matter to you."]
 
           [:p {:class (stl/css :feature-content)}
-           "We’ve also added a new section in your profile where you can customize your notifications, choosing what to receive on your dashboard and via email. On top of that, comments got a UI refresh, making everything clearer and better organized. And this is just the first batch of improvements—expect even more comment-related upgrades in the next Penpot release."]]
+           "We’ve also added a new section in your profile where you can customize your notifications, choosing what to receive on your dashboard and via email. On top of that, comments got a UI refresh, making everything clearer and better organized. And this is just the first batch of improvements—expect even more comment-related upgrades in the next Ovion release."]]
 
          [:div {:class (stl/css :navigation)}
           [:> c/navigation-bullets*
@@ -159,7 +159,7 @@
            "Links to specific boards"]]
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "In a single Penpot file, it's common to have multiple individual screens or designs spread across different boards. Now, you can generate direct links to each board, making it easy to share them with team members or include direct links in documentation."]
+           "In a single Ovion file, it's common to have multiple individual screens or designs spread across different boards. Now, you can generate direct links to each board, making it easy to share them with team members or include direct links in documentation."]
           [:p {:class (stl/css :feature-content)}
            "No more navigating through the design workspace of a file to find a specific screen—just send a link and take your team straight to the intended board."]]
 

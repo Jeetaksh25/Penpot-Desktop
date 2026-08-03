@@ -269,14 +269,14 @@
   (or (some-> (seq roots) first fc/component-name) "ExportedWidget"))
 
 (defn- pubspec-yaml []
-  "name: penpot_export\ndescription: Generated with Penpot Desktop.\npublish_to: 'none'\nversion: 1.0.0+1\n\nenvironment:\n  sdk: ^3.5.0\n\ndependencies:\n  flutter:\n    sdk: flutter\n  flutter_svg: ^2.0.10\n\nflutter:\n  uses-material-design: true\n")
+  "name: penpot_export\ndescription: Generated with Ovion Desktop.\npublish_to: 'none'\nversion: 1.0.0+1\n\nenvironment:\n  sdk: ^3.5.0\n\ndependencies:\n  flutter:\n    sdk: flutter\n  flutter_svg: ^2.0.10\n\nflutter:\n  uses-material-design: true\n")
 
 (defn- analysis-options []
   "include: package:flutter_lints/flutter.yaml\n")
 
 (defn- flutter-readme [comp-name]
   (dm/fmt
-   "# %\n\nGenerated with Penpot Desktop (Flutter).\n\n## Run\n\n```bash\nflutter pub get\nflutter run\n```\n\nThe widget lives in `lib/%.dart` — a `StatelessWidget` using a `Stack`\nwith `Positioned` children for absolute layout.\n"
+   "# %\n\nGenerated with Ovion Desktop (Flutter).\n\n## Run\n\n```bash\nflutter pub get\nflutter run\n```\n\nThe widget lives in `lib/%.dart` — a `StatelessWidget` using a `Stack`\nwith `Positioned` children for absolute layout.\n"
    comp-name (fc/snake-name comp-name)))
 
 (defn generate-project

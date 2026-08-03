@@ -2178,7 +2178,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "penpot-desktop"
+name = "ovion-desktop"
 version = "1.0.26"
 dependencies = [
  "rusqlite",

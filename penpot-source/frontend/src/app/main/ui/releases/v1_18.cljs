@@ -25,7 +25,7 @@
          [:span.release "Version " version]
          [:div.modal-content
           [:p "On this 1.18 release we make Flex Layout even more powerful with smart spacing, absolute position and z-index management."]
-          [:p "We also continued implementing accessibility improvements to make Penpot more inclusive and published stability and performance enhancements."]]
+          [:p "We also continued implementing accessibility improvements to make Ovion more inclusive and published stability and performance enhancements."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]
         [:img.deco {:src "images/deco-left.png" :border "0"}]
@@ -80,7 +80,7 @@
           [:h2 "More on Flex layout: z-index"]]
          [:div.modal-content
           [:p "With the new z-index option you can decide the order of overlapping elements while maintaining the layers order."]
-          [:p "This is another capability that brings Penpot Flex layout even closer to the power of CSS standards."]]
+          [:p "This is another capability that brings Ovion Flex layout even closer to the power of CSS standards."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]
           [:> c/navigation-bullets*

@@ -24,7 +24,7 @@
           [:h2 "What's new?"]]
          [:span.release "Alpha version " version]
          [:div.modal-content
-          [:p "Penpot continues growing with new features that improve performance, user experience and visual design."]
+          [:p "Ovion continues growing with new features that improve performance, user experience and visual design."]
           [:p "We are happy to show you a sneak peek of the most important stuff that the Alpha 1.9 version brings."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]
@@ -79,7 +79,7 @@
          [:div.modal-title
           [:h2 "Boolean operations"]]
          [:div.modal-content
-          [:p "Now in Penpot you can combine shapes in different ways. There are five options: Union, difference, intersection, exclusion and flatten."]
+          [:p "Now in Ovion you can combine shapes in different ways. There are five options: Union, difference, intersection, exclusion and flatten."]
           [:p "Using boolean operations will lead to countless graphic possibilities for your designs."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]
@@ -98,7 +98,7 @@
          [:div.modal-title
           [:h2 "Libraries & templates"]]
          [:div.modal-content
-          [:p "We’ve created a new space on Penpot where you can share your libraries and templates and download the ones you like.   Material Design, Cocomaterial or Penpot’s Design System are among them (and a lot more to come!)."]
+          [:p "We’ve created a new space on Ovion where you can share your libraries and templates and download the ones you like.   Material Design, Cocomaterial or Ovion’s Design System are among them (and a lot more to come!)."]
           [:p [:a {:alt "Explore libraries & templates" :target "_blank" :href "https://penpot.app/libraries-templates"} "Explore libraries & templates"]]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click finish} "Start!"]

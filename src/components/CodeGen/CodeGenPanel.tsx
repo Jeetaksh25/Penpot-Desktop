@@ -251,7 +251,7 @@ function generateCodeLocal(doc: { width: number; height: number; elements: Desig
     code += `export default ${options.componentName};\n`;
   } else if (options.framework === 'winui3') {
     code += `<UserControl\n`;
-    code += `  x:Class="PenpotDesign.${options.componentName}"\n`;
+    code += `  x:Class="OvionDesign.${options.componentName}"\n`;
     code += `  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"\n`;
     code += `  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">\n\n`;
     code += `  <Canvas Width="${doc.width}" Height="${doc.height}" Background="#FFFFFF">\n\n`;

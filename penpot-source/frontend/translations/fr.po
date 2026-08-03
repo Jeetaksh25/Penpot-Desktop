@@ -25,7 +25,7 @@ msgstr "Vérifiez vos emails"
 msgid "auth.check-your-email"
 msgstr ""
 "Vérifiez votre e-mail et cliquez sur le lien pour vérifier et commencer à "
-"utiliser Oriole."
+"utiliser Ovion."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -70,7 +70,7 @@ msgstr "Connexion"
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
 msgstr ""
-"Oriole est l'outil de design libre et Open Source pour la collaboration "
+"Ovion est l'outil de design libre et Open Source pour la collaboration "
 "entre Design et Développement"
 
 #: src/app/main/ui/auth/login.cljs:230
@@ -163,7 +163,7 @@ msgstr "Créer un compte"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"Avec un compte gratuit Oriole, vous pouvez créer un nombre illimité "
+"Avec un compte gratuit Ovion, vous pouvez créer un nombre illimité "
 "d'équipes et collaborer avec d'autres designer et développeurs sur autant "
 "de projets que vous le souhaitez. "
 
@@ -223,7 +223,7 @@ msgstr "Publier"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Tous les utilisateurs de Oriole"
+msgstr "Tous les utilisateurs de Ovion"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -300,7 +300,7 @@ msgstr "Gestion de l'équipe"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Oriole est conçu pour les équipes. Invitez les membres pour collaborer sur "
+"Ovion est conçu pour les équipes. Invitez les membres pour collaborer sur "
 "des projets et des fichiers"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -310,7 +310,7 @@ msgstr "Faites une équipe  !"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "Apprenez les bases de Oriole en vous amusant avec ce tutoriel pratique."
+msgstr "Apprenez les bases de Ovion en vous amusant avec ce tutoriel pratique."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -325,7 +325,7 @@ msgstr "Tutoriel pratique"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Explorez Oriole et découvrir ses fonctionnalités."
+msgstr "Explorez Ovion et découvrir ses fonctionnalités."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -379,7 +379,7 @@ msgstr "Sauvegarder cette version"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Votre Oriole"
+msgstr "Votre Ovion"
 
 #: src/app/main/ui/dashboard/deleted.cljs:265
 msgid "dashboard.delete-all-forever-confirmation.description"
@@ -432,7 +432,7 @@ msgstr "Sera supprimé %s"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Télécharger le fichier Oriole (.penpot)"
+msgstr "Télécharger le fichier Ovion (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -543,7 +543,7 @@ msgstr ""
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "Télécharger %s fichiers Oriole (.penpot)"
+msgstr "Télécharger %s fichiers Ovion (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -573,7 +573,7 @@ msgstr ""
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Information sur la configuration de l'exportation dans Oriole."
+msgstr "Information sur la configuration de l'exportation dans Ovion."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -649,9 +649,9 @@ msgstr ""
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
 "Ne téléchargez que des polices que vous possédez ou dont la licence vous "
-"permet de les utiliser dans Oriole. Vous trouverez plus d'informations dans "
+"permet de les utiliser dans Ovion. Vous trouverez plus d'informations dans "
 "la section Propriété des Contenus des [conditions générales d'utilisation "
-"de Oriole](%s). Vous pouvez également vous renseigner sur les [licences de "
+"de Ovion](%s). Vous pouvez également vous renseigner sur les [licences de "
 "polices](https://www.typography.com/faq)."
 
 #: src/app/main/ui/dashboard/fonts.cljs:231
@@ -1019,11 +1019,11 @@ msgstr "Sélectionnez un thème"
 
 #: src/app/main/ui/settings/options.cljs:76
 msgid "dashboard.select-ui-theme.dark"
-msgstr "Thème sombre Oriole (par défaut)"
+msgstr "Thème sombre Ovion (par défaut)"
 
 #: src/app/main/ui/settings/options.cljs:77
 msgid "dashboard.select-ui-theme.light"
-msgstr "Thème clair Oriole"
+msgstr "Thème clair Ovion"
 
 #: src/app/main/ui/settings/options.cljs:78
 msgid "dashboard.select-ui-theme.system"
@@ -1189,7 +1189,7 @@ msgstr "Aucune limite à la créativité"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1326
 msgid "dashboard.upgrade-plan.penpot-free"
-msgstr "Oriole Gratuit"
+msgstr "Ovion Gratuit"
 
 #: src/app/main/ui/dashboard/team.cljs:1338
 msgid "dashboard.webhooks.active"
@@ -1222,7 +1222,7 @@ msgid "dashboard.webhooks.description"
 msgstr ""
 "Les webhooks sont une manière simple de permettre à d'autres site web et "
 "aux applications d'être notifiés quand certains évènements se produisent "
-"dans Oriole. Nous enverrons une requête POST à toutes les URLs que vous "
+"dans Ovion. Nous enverrons une requête POST à toutes les URLs que vous "
 "avez indiquées."
 
 #: src/app/main/ui/dashboard/team.cljs:1485
@@ -1251,7 +1251,7 @@ msgstr "Votre nom complet"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "Votre Oriole"
+msgstr "Votre Ovion"
 
 #: src/app/main/ui/alert.cljs:36
 msgid "ds.alert-ok"
@@ -1333,7 +1333,7 @@ msgstr "Une erreur s'est produite avec le commentaire"
 msgid "errors.deprecated"
 msgstr ""
 "Désolé, il s'agit d'un ancien fichier qui utilise un type de ressource "
-"Oriole obsolète. Vous ne pouvez pas l'ouvrir."
+"Ovion obsolète. Vous ne pouvez pas l'ouvrir."
 
 #: src/app/main/errors.cljs:417
 msgid "errors.deprecated.contact.after"
@@ -1341,7 +1341,7 @@ msgstr "afin que nous puissions vous aider."
 
 #: src/app/main/errors.cljs:415
 msgid "errors.deprecated.contact.before"
-msgstr "Même si Oriole ne prend plus en charge ce type de ressource, vous pouvez"
+msgstr "Même si Ovion ne prend plus en charge ce type de ressource, vous pouvez"
 
 #: src/app/main/errors.cljs:416
 msgid "errors.deprecated.contact.text"
@@ -1385,7 +1385,7 @@ msgstr "L'e-mail « %s » a été signalé comme spam ou a été rejeté."
 msgid "errors.feature-mismatch"
 msgstr ""
 "Vous semblez ouvrir un fichier pour lequel la fonctionnalité « %s » "
-"activée, mais votre interface Oriole ne la prend pas en charge ou l'a "
+"activée, mais votre interface Ovion ne la prend pas en charge ou l'a "
 "désactivée."
 
 #: src/app/main/errors.cljs:395, src/app/main/errors.cljs:409
@@ -1766,7 +1766,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "Communauté Oriole"
+msgstr "Communauté Ovion"
 
 #: src/app/main/ui/settings/feedback.cljs:143
 msgid "feedback.other-ways-contact"
@@ -2078,7 +2078,7 @@ msgstr "Sélectionner un espace de couleur"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:235
 msgid "inspect.empty.help"
-msgstr "Pour en savoir plus sur l'inspection, visitez le centre d'aide de Oriole"
+msgstr "Pour en savoir plus sur l'inspection, visitez le centre d'aide de Ovion"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:239
 msgid "inspect.empty.more"
@@ -2198,7 +2198,7 @@ msgstr "Raccourcis"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1395
 msgid "labels.about-penpot"
-msgstr "À propos de Oriole"
+msgstr "À propos de Ovion"
 
 #: src/app/main/data/common.cljs:90, src/app/main/data/team.cljs:163, src/app/main/data/team.cljs:584, src/app/main/ui/dashboard/import.cljs:556
 msgid "labels.accept"
@@ -2330,7 +2330,7 @@ msgstr "Continuer avec"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "Vous pouvez continuer avec un compte Oriole"
+msgstr "Vous pouvez continuer avec un compte Ovion"
 
 #: src/app/main/ui/components/copy_button.cljs:41
 msgid "labels.copy"
@@ -2714,11 +2714,11 @@ msgstr "En attente"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1215
 msgid "labels.penpot-changelog"
-msgstr "Journal des modifications de Oriole"
+msgstr "Journal des modifications de Ovion"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1143
 msgid "labels.penpot-hub"
-msgstr "Oriole hub"
+msgstr "Ovion hub"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:1091
 msgid "labels.pinned-projects"
@@ -3092,7 +3092,7 @@ msgstr "Prototypes interactifs"
 
 #: src/app/main/ui/ds/product/loader.cljs:33
 msgid "loader.tips.07.message"
-msgstr "Oriole utilise le SVG et CSS pour fluidifier le développement."
+msgstr "Ovion utilise le SVG et CSS pour fluidifier le développement."
 
 #: src/app/main/ui/ds/product/loader.cljs:32
 msgid "loader.tips.07.title"
@@ -3119,7 +3119,7 @@ msgstr "Mode sombre et clair"
 #: src/app/main/ui/ds/product/loader.cljs:39
 msgid "loader.tips.10.message"
 msgstr ""
-"Personnalisez Oriole avec des extensions produites par la communauté pour "
+"Personnalisez Ovion avec des extensions produites par la communauté pour "
 "plus de fonctionnalités."
 
 #: src/app/main/ui/ds/product/loader.cljs:38
@@ -3623,7 +3623,7 @@ msgstr "Erreur 404"
 #: src/app/main/ui/static.cljs:160
 msgid "not-found.login.free"
 msgstr ""
-"Oriole est un outil de design libre et Open Source pour la collaboration "
+"Ovion est un outil de design libre et Open Source pour la collaboration "
 "entre le design et le code"
 
 #: src/app/main/ui/auth/recovery_request.cljs:114
@@ -3642,7 +3642,7 @@ msgstr "S'inscrire gratuitement"
 
 #: src/app/main/ui/static.cljs:175
 msgid "not-found.login.start-using"
-msgstr "Et utilisez Oriole dans les secondes qui suivent !"
+msgstr "Et utilisez Ovion dans les secondes qui suivent !"
 
 #: src/app/main/ui/static.cljs:75
 msgid "not-found.made-with-love"
@@ -3688,7 +3688,7 @@ msgstr "Vous n'avez pas accès à ce fichier."
 
 #: src/app/main/ui/static.cljs:62, src/app/main/ui/static.cljs:265, src/app/main/ui/static.cljs:271, src/app/main/ui/static.cljs:277, src/app/main/ui/static.cljs:283, src/app/main/ui/static.cljs:292, src/app/main/ui/static.cljs:301
 msgid "not-found.no-permission.go-dashboard"
-msgstr "Aller à votre Oriole"
+msgstr "Aller à votre Ovion"
 
 #: src/app/main/ui/static.cljs:289, src/app/main/ui/static.cljs:298
 msgid "not-found.no-permission.if-approves"
@@ -3696,7 +3696,7 @@ msgstr "Si le propriétaire l'accepte, vous allez être invités dans l'équipe.
 
 #: src/app/main/ui/static.cljs:527, src/app/main/ui/static.cljs:540
 msgid "not-found.no-permission.penpot-file"
-msgstr "Fichier Oriole"
+msgstr "Fichier Ovion"
 
 #: src/app/main/ui/static.cljs:264, src/app/main/ui/static.cljs:296
 msgid "not-found.no-permission.project"
@@ -3754,13 +3754,13 @@ msgstr "E‑mail de vérification envoyé à %s. Vérifiez votre e‑mail !"
 msgid "onboarding-v2.before-start.desc1"
 msgstr ""
 "Sachez qu’il existe de nombreuses ressources disponibles pour vous aider à "
-"commencer avec Oriole, comme le Guide de l’utilisateur et notre chaîne "
+"commencer avec Ovion, comme le Guide de l’utilisateur et notre chaîne "
 "Youtube."
 
 #, unused
 msgid "onboarding-v2.before-start.desc2"
 msgstr ""
-"De l'information détaillée sur Oriole. De prototypage à l’organisation et "
+"De l'information détaillée sur Ovion. De prototypage à l’organisation et "
 "le partage des designs."
 
 #, unused
@@ -3785,14 +3785,14 @@ msgstr "Avant de commencer"
 #, unused
 msgid "onboarding-v2.newsletter.desc"
 msgstr ""
-"Abonnez-vous à la newsletter de Oriole pour être tenu informé du "
+"Abonnez-vous à la newsletter de Ovion pour être tenu informé du "
 "développement du produit et de notre actualité."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:88
 #, unused
 msgid "onboarding-v2.newsletter.news"
 msgstr ""
-"Envoyez-moi des nouvelles de Oriole (articles de blog, tutoriels vidéo, "
+"Envoyez-moi des nouvelles de Ovion (articles de blog, tutoriels vidéo, "
 "streamings...)."
 
 #: src/app/main/ui/onboarding/newsletter.cljs:96
@@ -3817,16 +3817,16 @@ msgstr ""
 #, unused
 msgid "onboarding-v2.welcome.desc1"
 msgstr ""
-"Oriole est un logiciel Open Source créé par Kaleidos et la communauté, où "
+"Ovion est un logiciel Open Source créé par Kaleidos et la communauté, où "
 "de nombreuses personnes s’entraident déjà. Tout le monde peut collaborer en "
 ":"
 
 #, unused
 msgid "onboarding-v2.welcome.desc2"
 msgstr ""
-"Un espace public pour apprendre, partager et échanger autour de Oriole, de "
+"Un espace public pour apprendre, partager et échanger autour de Ovion, de "
 "son présent et de son avenir avec l'ensemble de la communauté et l'équipe "
-"centrale de Oriole."
+"centrale de Ovion."
 
 #, unused
 msgid "onboarding-v2.welcome.desc2.title"
@@ -3845,7 +3845,7 @@ msgstr "Guide du contributeur"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:248
 msgid "onboarding-v2.welcome.title"
-msgstr "Bienvenue sur Oriole !"
+msgstr "Bienvenue sur Ovion !"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:254
 #, unused
@@ -3927,7 +3927,7 @@ msgstr "Politique de confidentialité."
 #: src/app/main/ui/onboarding/newsletter.cljs:65
 #, unused
 msgid "onboarding.newsletter.title"
-msgstr "Vous souhaitez recevoir les actualités de Oriole ?"
+msgstr "Vous souhaitez recevoir les actualités de Ovion ?"
 
 #: src/app/main/ui/onboarding/questions.cljs:104
 msgid "onboarding.questions.lets-get-started"
@@ -3946,7 +3946,7 @@ msgstr "Juste explorer"
 #: src/app/main/ui/onboarding/questions.cljs:245
 #, unused
 msgid "onboarding.questions.reasons.fit"
-msgstr "Découvrir si Oriole est bien pour mon équipe"
+msgstr "Découvrir si Ovion est bien pour mon équipe"
 
 #: src/app/main/ui/onboarding/questions.cljs:251
 #, unused
@@ -3990,18 +3990,18 @@ msgstr "Faire du wireframe"
 
 #: src/app/main/ui/onboarding/questions.cljs:114
 msgid "onboarding.questions.step1.question1"
-msgstr "Pour quoi utiliserez-vous Oriole ?"
+msgstr "Pour quoi utiliserez-vous Ovion ?"
 
 #: src/app/main/ui/onboarding/questions.cljs:272
 #, unused
 msgid "onboarding.questions.step1.question2"
-msgstr "Qu'est-ce qui vous amène sur Oriole aujourd'hui ?"
+msgstr "Qu'est-ce qui vous amène sur Ovion aujourd'hui ?"
 
 #: src/app/main/ui/onboarding/questions.cljs:110
 msgid "onboarding.questions.step1.subtitle"
 msgstr ""
 "Laissez nous vous connaitre un peu pour nous aider à faire fonctionner "
-"Oriole pour vous. Vos questions nous aiderons à prioriser les nouvelles "
+"Ovion pour vous. Vos questions nous aiderons à prioriser les nouvelles "
 "fonctionnalités et vous diriger dans la bonne direction pour commencer."
 
 #: src/app/main/ui/onboarding/questions.cljs:107
@@ -4037,7 +4037,7 @@ msgstr "Par où souhaitez-vous commencer ?"
 #: src/app/main/ui/onboarding/questions.cljs:428
 #, unused
 msgid "onboarding.questions.step5.title"
-msgstr "Comment avez-vous entendu parlé de Oriole ?"
+msgstr "Comment avez-vous entendu parlé de Ovion ?"
 
 #: src/app/main/ui/onboarding/questions.cljs:233
 #, unused
@@ -4088,7 +4088,7 @@ msgstr "Créer une équipe"
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
 msgstr ""
-"Une équipe vous permet de collaborer avec d'autres utilisateurs de Oriole "
+"Une équipe vous permet de collaborer avec d'autres utilisateurs de Ovion "
 "travaillant sur les mêmes fichiers et projets."
 
 #: src/app/main/ui/onboarding/team_choice.cljs:57
@@ -4125,7 +4125,7 @@ msgstr "Commencer à concevoir"
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Oriole"
+msgstr "Ovion"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/token_typography_row.cljs:42, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:101, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:108
 msgid "options.deleted-token"
@@ -5029,7 +5029,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/subscription.cljs:662
 msgid "subscription.settings.member-since"
-msgstr "Membre Oriole depuis %s"
+msgstr "Membre Ovion depuis %s"
 
 #: src/app/main/ui/settings/subscription.cljs:685, src/app/main/ui/settings/subscription.cljs:699, src/app/main/ui/settings/subscription.cljs:715, src/app/main/ui/settings/subscription.cljs:731
 msgid "subscription.settings.more-information"
@@ -5037,7 +5037,7 @@ msgstr "Plus d'informations"
 
 #: src/app/main/ui/settings/subscription.cljs:665
 msgid "subscription.settings.other-plans"
-msgstr "Autres abonnements Oriole"
+msgstr "Autres abonnements Ovion"
 
 #: src/app/main/ui/settings/subscription.cljs:669, src/app/main/ui/settings/subscription.cljs:692
 msgid "subscription.settings.price-editor-month"
@@ -5095,7 +5095,7 @@ msgstr "Profitez bien de votre abonnement !"
 
 #: src/app/main/ui/settings/subscription.cljs:373
 msgid "subscription.settings.success.dialog.thanks"
-msgstr "Merci d'avoir choisi l'abonnement Oriole %s !"
+msgstr "Merci d'avoir choisi l'abonnement Ovion %s !"
 
 #: src/app/main/ui/settings/subscription.cljs:370
 msgid "subscription.settings.success.dialog.title"
@@ -5165,75 +5165,75 @@ msgstr[1] "%s invitations sélectionnées"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s – Oriole"
+msgstr "%s – Ovion"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "Fournisseurs de polices – %s – Oriole"
+msgstr "Fournisseurs de polices – %s – Ovion"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "Polices – %s – Oriole"
+msgstr "Polices – %s – Ovion"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "Projets – %s – Oriole"
+msgstr "Projets – %s – Ovion"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "Rechercher – %s – Oriole"
+msgstr "Rechercher – %s – Ovion"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
-msgstr "Bibliothèques partagées – %s – Oriole"
+msgstr "Bibliothèques partagées – %s – Ovion"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Oriole – Liberté de conception pour les équipes"
+msgstr "Ovion – Liberté de conception pour les équipes"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "Donnez votre avis – Oriole"
+msgstr "Donnez votre avis – Ovion"
 
 #: src/app/main/ui/settings/notifications.cljs:45
 msgid "title.settings.notifications"
-msgstr "Notifications – Oriole"
+msgstr "Notifications – Ovion"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "Paramètres – Oriole"
+msgstr "Paramètres – Ovion"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "Mot de passe – Oriole"
+msgstr "Mot de passe – Ovion"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "Profil – Oriole"
+msgstr "Profil – Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "Invitations – %s – Oriole"
+msgstr "Invitations – %s – Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "Membres – %s – Oriole"
+msgstr "Membres – %s – Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "Paramètres – %s – Oriole"
+msgstr "Paramètres – %s – Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "Webhooks – %s – Oriole"
+msgstr "Webhooks – %s – Ovion"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s – Mode spectateur – Oriole"
+msgstr "%s – Mode spectateur – Ovion"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s – Oriole"
+msgstr "%s – Ovion"
 
 #: src/app/main/ui/ds/controls/utilities/token_field.cljs:106, src/app/main/ui/workspace/sidebar/options/menus/token_typography_row.cljs:67, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:141
 msgid "token-actions.detach-token"
@@ -6175,7 +6175,7 @@ msgstr "Essayez d'utiliser la structure suivante :"
 msgid "workspace.options.component.variants-help-modal.intro"
 msgstr ""
 "Pour conserver les modifications lorsque vous passez d'une variante à une "
-"autre, Oriole connecte les calques qui :"
+"autre, Ovion connecte les calques qui :"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/variants_help_modal.cljs:91
 msgid "workspace.options.component.variants-help-modal.outro"

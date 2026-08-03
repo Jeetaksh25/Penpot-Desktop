@@ -259,7 +259,7 @@
 
 (defn- react-readme [comp-name]
   (dm/fmt
-   "# %\n\nGenerated with Penpot Desktop (React + Vite).\n\n## Run\n\n```bash\nnpm install\nnpm run dev\n```\n\nThe component lives in `src/%.jsx`. All children are absolutely positioned\nrelative to the selection's bounding box, so the layout matches the Penpot\ncanvas 1:1.\n"
+   "# %\n\nGenerated with Ovion Desktop (React + Vite).\n\n## Run\n\n```bash\nnpm install\nnpm run dev\n```\n\nThe component lives in `src/%.jsx`. All children are absolutely positioned\nrelative to the selection's bounding box, so the layout matches the Penpot\ncanvas 1:1.\n"
    comp-name comp-name))
 
 (defn generate-project

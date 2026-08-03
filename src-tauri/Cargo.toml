@@ -1,8 +1,8 @@
 [package]
-name = "oriole-desktop"
+name = "ovion-desktop"
 version = "1.0.30"
 description = "A powerful design and code generation tool"
-authors = ["Oriole Desktop"]
+authors = ["Ovion Desktop"]
 edition = "2021"
 
 [lib]

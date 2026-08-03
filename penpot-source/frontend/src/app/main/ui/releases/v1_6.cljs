@@ -24,7 +24,7 @@
           [:h2 "What's new?"]]
          [:span.release "Alpha version " version]
          [:div.modal-content
-          [:p "Penpot continues growing with new features that improve performance, user experience and visual design."]
+          [:p "Ovion continues growing with new features that improve performance, user experience and visual design."]
           [:p "We are happy to show you a sneak peek of the most important stuff that the Alpha 1.6.0 version brings."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]
@@ -41,7 +41,7 @@
          [:div.modal-title
           [:h2 "Upload/use custom fonts"]]
          [:div.modal-content
-          [:p "From now on you can upload fonts to a Penpot team and use them across its files. This is one of the most requested features since our first release (we listen!)"]
+          [:p "From now on you can upload fonts to a Ovion team and use them across its files. This is one of the most requested features since our first release (we listen!)"]
           [:p "We hope you enjoy having more typography options and our brand new font selector."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]
@@ -79,7 +79,7 @@
          [:div.modal-title
           [:h2 "Performance improvements"]]
          [:div.modal-content
-          [:p "Penpot brings important improvements handling large files. The performance in managing files in the dashboard has also been improved."]
+          [:p "Ovion brings important improvements handling large files. The performance in managing files in the dashboard has also been improved."]
           [:p "You should have the feeling that files and layers show up a bit faster :)"]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]

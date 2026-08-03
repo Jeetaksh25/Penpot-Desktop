@@ -38,24 +38,33 @@
   (mf/use-fn
    (mf/deps project-id on-finish-import)
    (fn [entries]
-     (let [entries (->> entries
-                        (mapv (fn [file]
-                                {:name (.-name file)
-                                 :uri  (wapi/create-uri file)}))
-                        (not-empty))]
-       (when entries
-         (st/emit! (modal/show
-                    {:type :import
-                     :project-id project-id
-                     :entries entries
-                     :on-finish-import on-finish-import})))))))
+     ;; .figma files are accepted by the picker but no Figma importer
+     ;; exists yet; surface a clear "coming soon" notice and drop them
+     ;; from the batch instead of attempting to parse them.
+     (let [[figma-files other-files]
+           ((juxt filter remove)
+            #(str/ends-with? (str/lower (.-name %)) ".figma")
+            entries)]
+       (when (seq figma-files)
+         (st/emit! (ntf/error (tr "dashboard.import.figma-coming-soon"))))
+       (let [entries (->> other-files
+                          (mapv (fn [file]
+                                  {:name (.-name file)
+                                   :uri  (wapi/create-uri file)}))
+                          (not-empty)))]
+         (when entries
+           (st/emit! (modal/show
+                      {:type :import
+                       :project-id project-id
+                       :entries entries
+                       :on-finish-import on-finish-import})))))))
 
 (mf/defc import-form*
   {::mf/forward-ref true}
   [{:keys [project-id on-finish-import]} external-ref]
   (let [on-file-selected (use-import-file project-id on-finish-import)]
     [:form.import-file {:aria-hidden "true"}
-     [:& file-uploader {:accept ".penpot,.zip"
+     [:& file-uploader {:accept ".ovion,.penpot,.zip,.figma"
                         :multi true
                         :ref external-ref
                         :on-selected on-file-selected}]]))

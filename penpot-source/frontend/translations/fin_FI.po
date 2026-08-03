@@ -20,7 +20,7 @@ msgstr "Onko sinulla jo käyttäjä?"
 msgid "auth.check-your-email"
 msgstr ""
 "Tarkista sähköpostisi ja paina vahvistuslinkkiä käyttääksesi "
-"Oriole-ohjelmaa."
+"Ovion-ohjelmaa."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -158,7 +158,7 @@ msgstr "Julkaise"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Kaikki Oriolein käyttäjät"
+msgstr "Kaikki Ovionin käyttäjät"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -235,7 +235,7 @@ msgstr "Ryhmän hallinta"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Oriole on tarkoitettu ryhmille. Kutsu jäseniä työstääksenne projekteja "
+"Ovion on tarkoitettu ryhmille. Kutsu jäseniä työstääksenne projekteja "
 "yhdessä"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -246,7 +246,7 @@ msgstr "Ryhmäydy!"
 #, unused
 msgid "dasboard.tutorial-hero.info"
 msgstr ""
-"Opettele Oriolein perusteet pitämällä hauskaa tämän opastuskierroksen "
+"Opettele Ovionin perusteet pitämällä hauskaa tämän opastuskierroksen "
 "kanssa."
 
 #: src/app/main/ui/dashboard/projects.cljs
@@ -262,7 +262,7 @@ msgstr "Käytännön opastus"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Ota opastuskierros Oriolein erilaisista toiminnoista"
+msgstr "Ota opastuskierros Ovionin erilaisista toiminnoista"
 
 #: src/app/main/ui/auth/recovery.cljs:32
 msgid "errors.invalid-recovery-token"

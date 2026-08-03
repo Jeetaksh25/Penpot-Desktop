@@ -24,7 +24,7 @@
           [:h2 "What's new?"]]
          [:span.release "Beta version " version]
          [:div.modal-content
-          [:p "Penpot continues growing with new features that improve performance, user experience and visual design."]
+          [:p "Ovion continues growing with new features that improve performance, user experience and visual design."]
           [:p "We are happy to show you a sneak peek of the most important stuff that the Beta 1.12 version brings."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]
@@ -60,7 +60,7 @@
          [:div.modal-title
           [:h2 "Guides"]]
          [:div.modal-content
-          [:p "One of our most requested features! It’s hard to believe how far Penpot has come without guides, but they are here at last."]
+          [:p "One of our most requested features! It’s hard to believe how far Ovion has come without guides, but they are here at last."]
           [:p "And they don’t come alone, but with some nice improvements to the rulers."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]

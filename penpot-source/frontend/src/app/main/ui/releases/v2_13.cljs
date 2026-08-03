@@ -22,12 +22,12 @@
         [:img {:src "images/features/2.13-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot 2.13 is here!"}]
+               :alt "Ovion 2.13 is here!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
@@ -37,7 +37,7 @@
            "The first release of the year, and we’re just getting started 🚀"]
 
           [:p  {:class (stl/css :feature-content)}
-           "This is our first release of the year, and it sets the tone for what’s coming next. We’re kicking off an exciting year where we’ll take Penpot to a whole new level, with improved performance, stronger design system foundations, long-requested features, and new capabilities that unlock better workflows for teams."]
+           "This is our first release of the year, and it sets the tone for what’s coming next. We’re kicking off an exciting year where we’ll take Ovion to a whole new level, with improved performance, stronger design system foundations, long-requested features, and new capabilities that unlock better workflows for teams."]
 
           [:p  {:class (stl/css :feature-content)}
            "This release brings two highlights the community has been asking for, along with solid improvements under the hood to keep everything fast and smooth."]
@@ -68,7 +68,7 @@
            "Deleting a file no longer means it’s gone forever. Introducing The Trash, a dedicated space in the dashboard where deleted files and projects live before being permanently removed."]
 
           [:p {:class (stl/css :feature-content)}
-           "From here, you can recover content deleted by mistake or clean things up for good when you’re sure you don’t need them anymore. The Trash works for both files and projects, and items are automatically removed after a period of time depending on your Penpot plan."]
+           "From here, you can recover content deleted by mistake or clean things up for good when you’re sure you don’t need them anymore. The Trash works for both files and projects, and items are automatically removed after a period of time depending on your Ovion plan."]
 
           [:p {:class (stl/css :feature-content)}
            "Highly requested, long overdue, and now officially here."]]
@@ -98,7 +98,7 @@
          [:div {:class (stl/css :feature)}
 
           [:p {:class (stl/css :feature-content)}
-           "With Shadow tokens, we’re introducing our second composite token, right after Typography tokens. This is a big step forward for design systems in Penpot."]
+           "With Shadow tokens, we’re introducing our second composite token, right after Typography tokens. This is a big step forward for design systems in Ovion."]
 
           [:p {:class (stl/css :feature-content)}
            "Until now, shadows couldn’t be defined as reusable styles the way colors could before color tokens existed. Shadow tokens change that. You can now create reusable, consistent shadows, made of one or multiple layers, fully tokenized and ready to scale across your designs."]

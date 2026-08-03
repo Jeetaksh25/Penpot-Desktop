@@ -1,6 +1,6 @@
-// Icon generator for Oriole Desktop.
+// Icon generator for Ovion Desktop.
 // Renders every Tauri app icon size from the brand PNG logo
-// (data/assets/penpot-light.png — the master Oriole logo placed there by the
+// (data/assets/penpot-light.png — the master Ovion logo placed there by the
 // rebrand). The logo is fitted with `contain` on a transparent background so
 // the brand mark is preserved as-is at every size.
 //
@@ -19,7 +19,7 @@ const ROOT = path.resolve(__dirname, "..");
 const OUT_DIR = path.join(ROOT, "src-tauri", "icons");
 
 // ── Source logo ───────────────────────────────────────────────────────────
-// The master brand logo (Oriole) as a PNG. fit:"contain" preserves its aspect
+// The master brand logo (Ovion) as a PNG. fit:"contain" preserves its aspect
 // and content; a transparent background keeps the logo as designed. To put the
 // logo on a filled rounded-square tile instead, set FIT background to a solid
 // colour (e.g. { r:29, g:31, b:38, alpha:1 }) — left transparent by default so
@@ -111,7 +111,7 @@ async function main() {
   }
 
   // Build icon.ico from the branding so the Windows .exe and the NSIS
-  // installer both show the real Oriole icon instead of the default Tauri one.
+  // installer both show the real Ovion icon instead of the default Tauri one.
   const icoEntries = [];
   for (const size of ICO_SIZES) {
     icoEntries.push({ size, png: await renderPng(sharp, size) });

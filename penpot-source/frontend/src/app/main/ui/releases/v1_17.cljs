@@ -24,7 +24,7 @@
           [:h2 "What's new?"]]
          [:span.release "Version " version]
          [:div.modal-content
-          [:p "This is the first release in which Penpot is no longer Beta (hooray!) and it comes with very special features, starring the long awaited Flex Layout."]
+          [:p "This is the first release in which Ovion is no longer Beta (hooray!) and it comes with very special features, starring the long awaited Flex Layout."]
           [:p "On this 1.17 release, you’ll also be able to inspect the code and properties of your designs right from the workspace and to manage webhooks. We’ve also implemented a lot of accessibility improvements."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]
@@ -42,7 +42,7 @@
           [:h2 "Flex-Layout"]]
          [:div.modal-content
           [:p "The Flex Layout allows you to automatically adapt your designs. Resize, fit, and fill content and containers without the need to do it manually."]
-          [:p "Penpot brings a layout system like no other. As described by one of our beta testers: 'I love the fact that Penpot is following the CSS FlexBox, which is making UI Design a step closer to the logic and behavior behind how things will be actually built after design.'"]]
+          [:p "Ovion brings a layout system like no other. As described by one of our beta testers: 'I love the fact that Ovion is following the CSS FlexBox, which is making UI Design a step closer to the logic and behavior behind how things will be actually built after design.'"]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]
           [:> c/navigation-bullets*
@@ -79,7 +79,7 @@
          [:div.modal-title
           [:h2 "Webhooks"]]
          [:div.modal-content
-          [:p "Webhooks allow other websites and apps to be notified when certain events happen at Penpot, ensuring to create integrations with other services."]
+          [:p "Webhooks allow other websites and apps to be notified when certain events happen at Ovion, ensuring to create integrations with other services."]
           [:p "While we are still working on a plugin system, this is a great and simple way to create integrations with other services."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]
@@ -98,7 +98,7 @@
          [:div.modal-title
           [:h2 "Accessibility improvements"]]
          [:div.modal-content
-          [:p "We're working to ensure that people with visual or physical impairments can use Penpot in the same conditions."]
+          [:p "We're working to ensure that people with visual or physical impairments can use Ovion in the same conditions."]
           [:p "This release comes with improvements on color contrasts, alt texts, semantic labels, focusable items and keyboard navigation at login and dashboard, but more will come."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click finish} "Start!"]

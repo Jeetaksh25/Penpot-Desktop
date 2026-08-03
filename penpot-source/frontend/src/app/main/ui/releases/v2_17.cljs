@@ -22,12 +22,12 @@
         [:img {:src "images/features/2.17-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot 2.17 is here!"}]
+               :alt "Ovion 2.17 is here!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
@@ -66,7 +66,7 @@
            "WebGL rendering keeps maturing. The prototype viewer now runs on the same engine, guides render in WebGL, and a wave of fixes makes heavy files more dependable."]
 
           [:p {:class (stl/css :feature-content)}
-           "It is still beta and off by default, but we genuinely encourage you to turn it on from user settings: it is already a better, faster path and it is where Penpot is heading. And if you spot anything odd, give us a shout: all your feedback is hugely welcome."]]
+           "It is still beta and off by default, but we genuinely encourage you to turn it on from user settings: it is already a better, faster path and it is where Ovion is heading. And if you spot anything odd, give us a shout: all your feedback is hugely welcome."]]
 
          [:div {:class (stl/css :navigation)}
           [:> c/navigation-bullets*
@@ -123,7 +123,7 @@
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "MCP feels more at home in Penpot. A status button gives you single-tab connection control, your API key is visible on the Integrations page, and sync between the server and plugins is much more reliable."]
+           "MCP feels more at home in Ovion. A status button gives you single-tab connection control, your API key is visible on the Integrations page, and sync between the server and plugins is much more reliable."]
 
           [:p {:class (stl/css :feature-content)}
            "Self-hosters get better multi-instance support and clearer proxy examples. If you connect AI to your files, this release is worth revisiting."]]

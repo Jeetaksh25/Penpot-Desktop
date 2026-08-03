@@ -28,7 +28,7 @@
          [:div.modal-content
           [:p
            "On this 1.19 release, we bring Access Tokens, which "
-           "will enable Penpot to connect with other services, "
+           "will enable Ovion to connect with other services, "
            "another gateway to community creativity!"]
           [:p
            "We’ve also published performance improvements and tons "
@@ -54,9 +54,9 @@
           [:h2 "Community code contributions"]]
          [:div.modal-content
           [:p
-           "By far, this is the Penpot release that has the most "
+           "By far, this is the Ovion release that has the most "
            "code contributions. We cannot emphasize enough how happy "
-           "we are to see how Penpot is more and more  a product of "
+           "we are to see how Ovion is more and more  a product of "
            "the community."]
           [:p
            "Let’s give kudos to "
@@ -69,7 +69,7 @@
            [:a {:href "https://github.com/ondrejkonec" :target "_blank" :rel "noopener noreferrer"} "@ondrejkonec"]
            " and "
            [:a {:href "https://github.com/ryanbreen" :target "_blank" :rel "noopener noreferrer"} "@ryanbreen"]
-           " in particular and the Penpot community as a whole!"]]
+           " in particular and the Ovion community as a whole!"]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]
           [:> c/navigation-bullets*
@@ -92,11 +92,11 @@
           [:p
            "Personal access tokens function like an alternative to "
            "our login/password authentication system and can be used "
-           "to allow an application to access the internal Penpot API."]
+           "to allow an application to access the internal Ovion API."]
           [:p
            "This opens up a wide range of possibilities in terms of "
            "integrations and is an important step on the critical path "
-           "to the Penpot’s plugins system."]]
+           "to the Ovion’s plugins system."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click finish} "Start!"]
           [:> c/navigation-bullets*

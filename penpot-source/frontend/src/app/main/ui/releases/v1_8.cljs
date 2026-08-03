@@ -24,7 +24,7 @@
           [:h2 "What's new?"]]
          [:span.release "Alpha version " version]
          [:div.modal-content
-          [:p "Penpot continues growing with new features that improve performance, user experience and visual design."]
+          [:p "Ovion continues growing with new features that improve performance, user experience and visual design."]
           [:p "We are happy to show you a sneak peek of the most important stuff that the Alpha 1.8 version brings."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]
@@ -98,7 +98,7 @@
          [:div.modal-title
           [:h2 "Export artboards PDF"]]
          [:div.modal-content
-          [:p "If you have a presentation made at Penpot you might want to create a document that can be shared with anyone, regardless of having a Penpot account, or just to be able to use your presentation offline (essential for talks and classes)."]
+          [:p "If you have a presentation made at Ovion you might want to create a document that can be shared with anyone, regardless of having a Ovion account, or just to be able to use your presentation offline (essential for talks and classes)."]
           [:p "Now you can easily export all the artboards of a page to a single pdf file."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click finish} "Start!"]

@@ -22,12 +22,12 @@
         [:img {:src "images/features/2.12-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot 2.12 is here!"}]
+               :alt "Ovion 2.12 is here!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]

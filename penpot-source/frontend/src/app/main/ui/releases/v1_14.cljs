@@ -24,7 +24,7 @@
           [:h2 "What's new?"]]
          [:span.release "Beta version " version]
          [:div.modal-content
-          [:p "Penpot continues to grow with new features that improve performance, user experience and visual design."]
+          [:p "Ovion continues to grow with new features that improve performance, user experience and visual design."]
           [:p "We are happy to show you a sneak peek of the most important stuff that the Beta 1.14 version brings."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]

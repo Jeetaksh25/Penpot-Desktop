@@ -24,7 +24,7 @@
           [:h2 "What's new?"]]
          [:span.release "Alpha version " version]
          [:div.modal-content
-          [:p "Penpot continues growing with new features that improve performance, user experience and visual design."]
+          [:p "Ovion continues growing with new features that improve performance, user experience and visual design."]
           [:p "We are happy to show you a sneak peek of the most important stuff that the Alpha 1.4.0 version brings."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]
@@ -60,7 +60,7 @@
          [:div.modal-title
           [:h2 "New files/projects management"]]
          [:div.modal-content
-          [:p "Penpot now allows to duplicate and move files and projects."]
+          [:p "Ovion now allows to duplicate and move files and projects."]
           [:p "Also, now you have an easy way to manage files and projects between teams."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]
@@ -79,7 +79,7 @@
          [:div.modal-title
           [:h2 "RTL support is now available!"]]
          [:div.modal-content
-          [:p "Diversity and inclusion is one major Penpot concern and that's why we love to give support to RTL languages, unlike in most of design tools."]
+          [:p "Diversity and inclusion is one major Ovion concern and that's why we love to give support to RTL languages, unlike in most of design tools."]
           [:p "If you write in arabic, hebrew or other RTL language text direction will be automatically detected in text layers."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]

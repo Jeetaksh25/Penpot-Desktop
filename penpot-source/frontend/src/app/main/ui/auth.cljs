@@ -46,7 +46,7 @@
                     :auth-section true
                     :register is-register)}
      [:h1 {:class (stl/css :logo-container)}
-      [:a {:href "#/" :title "Oriole" :class (stl/css :logo-btn)} deprecated-icon/logo]]
+      [:a {:href "#/" :title "Ovion" :class (stl/css :logo-btn)} deprecated-icon/logo]]
      [:div {:class (stl/css :login-illustration)}
       [:img {:src "images/registration-illustration.png"}]]
 

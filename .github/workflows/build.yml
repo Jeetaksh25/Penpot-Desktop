@@ -1,4 +1,4 @@
-# Penpot Desktop — Windows Installer Build
+# Ovion Desktop — Windows Installer Build
 #
 # Triggers:
 #   - Push a tag like v1.0.0, v1.1.0, etc. to produce a release installer.
@@ -295,7 +295,7 @@ jobs:
 
       # ── Artifacts ─────────────────────────────────────────────────────────
       # Ship ONLY the NSIS setup exe (the actual installer). The previous
-      # `target/release/*.exe` glob also captured the raw penpot-desktop.exe
+      # `target/release/*.exe` glob also captured the raw ovion-desktop.exe
       # app binary, which users mistook for the installer — running it just
       # created a data folder with no window (the bundled resources live
       # elsewhere). The proper installer is bundle/nsis/*-setup.exe.
@@ -303,7 +303,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Penpot-Desktop-Installer
+          name: Ovion-Desktop-Installer
           path: src-tauri/target/release/bundle/nsis/*-setup.exe
           compression-level: 0
           retention-days: 30
@@ -311,7 +311,7 @@ jobs:
       - name: Upload bundle artifact (debug)
         uses: actions/upload-artifact@v4
         with:
-          name: Penpot-Desktop-MSBundle
+          name: Ovion-Desktop-MSBundle
           path: src-tauri/target/release/bundle/
           retention-days: 7
 
@@ -321,11 +321,11 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          name: Penpot Desktop ${{ github.ref_name }}
+          name: Ovion Desktop ${{ github.ref_name }}
           body: |
-            ## Penpot Desktop ${{ github.ref_name }}
+            ## Ovion Desktop ${{ github.ref_name }}
 
-            Windows installer for Penpot Desktop — a fully offline, native
+            Windows installer for Ovion Desktop — a fully offline, native
             design tool powered by the real Penpot ClojureScript frontend and
             Clojure/JVM backend.
 
@@ -338,7 +338,7 @@ jobs:
             - Minimal JRE for Java 23 (bundled via jlink)
 
             ### Installation
-            Download `Penpot Desktop_*_x64-setup.exe` and run it. No
+            Download `Ovion Desktop_*_x64-setup.exe` and run it. No
             prerequisites required — PostgreSQL, Redis, and Java JRE are all
             bundled. This is the NSIS installer (Start Menu + Desktop
             shortcuts, uninstaller); it is NOT the raw app binary.

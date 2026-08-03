@@ -22,25 +22,25 @@
         [:img {:src "images/features/2.15-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot 2.15 is here!"}]
+               :alt "Ovion 2.15 is here!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
 
          [:div {:class (stl/css :features-block)}
           [:span {:class (stl/css :feature-title)}
-           "One major feature: the Penpot MCP Server, with infinite workflow possibilities"]
+           "One major feature: the Ovion MCP Server, with infinite workflow possibilities"]
 
           [:p  {:class (stl/css :feature-content)}
-           "This release marks a major MCP milestone: Penpot MCP moves from an early technical setup to an accessible in-app experience via hosted remote setup. Whether you already know MCP or are new to it, it's now zero-friction to connect your AI client and turn prompts into real actions on real design data."]
+           "This release marks a major MCP milestone: Ovion MCP moves from an early technical setup to an accessible in-app experience via hosted remote setup. Whether you already know MCP or are new to it, it's now zero-friction to connect your AI client and turn prompts into real actions on real design data."]
 
           [:p  {:class (stl/css :feature-content)}
-           "With 2.15, we are opening the door to truly multi-directional workflows between design and code, while staying faithful to Penpot values: openness, freedom of choice, and respect for your data."]
+           "With 2.15, we are opening the door to truly multi-directional workflows between design and code, while staying faithful to Ovion values: openness, freedom of choice, and respect for your data."]
 
           [:p  {:class (stl/css :feature-content)}
            "Let’s dive in!"]]
@@ -56,16 +56,16 @@
         [:img {:src "images/features/2.15-mcp-01.gif"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot MCP Server: AI connected to real design context"}]
+               :alt "Ovion MCP Server: AI connected to real design context"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "Penpot MCP Server: AI connected to real design context"]]
+           "Ovion MCP Server: AI connected to real design context"]]
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "Penpot MCP Server is the bridge between your AI client and your Penpot file. You describe what you need in natural language, your agent picks the right operation, and MCP translates that into real actions through Penpot APIs."]
+           "Ovion MCP Server is the bridge between your AI client and your Ovion file. You describe what you need in natural language, your agent picks the right operation, and MCP translates that into real actions through Ovion APIs."]
 
           [:p {:class (stl/css :feature-content)}
            "This is not a generic 'describe and generate' flow. It is context-aware work with components, tokens, pages, layers, and structure. In short: design expressed as code, now usable through your preferred AI assistant."]
@@ -139,10 +139,10 @@
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "With MCP, you connect Penpot to the AI client and model you already trust. Cursor, Claude, VS Code, Codex, or another MCP-compatible setup: the workflow adapts to your stack, not the other way around."]
+           "With MCP, you connect Ovion to the AI client and model you already trust. Cursor, Claude, VS Code, Codex, or another MCP-compatible setup: the workflow adapts to your stack, not the other way around."]
 
           [:p {:class (stl/css :feature-content)}
-           "You can run it hosted for a faster setup, or locally when you need tighter infrastructure control. The same applies to data boundaries: Penpot provides the bridge to your design context, while your team decides how and where AI runs."]
+           "You can run it hosted for a faster setup, or locally when you need tighter infrastructure control. The same applies to data boundaries: Ovion provides the bridge to your design context, while your team decides how and where AI runs."]
 
           [:p {:class (stl/css :feature-content)}
            "In practice, this means teams can automate design and code workflows without giving up tool freedom, deployment control, or ownership of their process.

@@ -234,9 +234,10 @@
                  (some? project-id)
                  (some? team-id))
         (if can-edit?
-          (let [valid-url?    (str/ends-with? template ".penpot")
+          (let [valid-url?    (or (str/ends-with? template ".penpot")
+                                   (str/ends-with? template ".ovion"))
 
-                ;; Backwards compatibility, ideally the template should be only the .penpot file name, not the full url
+                ;; Backwards compatibility, ideally the template should be only the .penpot/.ovion file name, not the full url
                 template-name (if (str/starts-with? template "http")
                                 (subs template (count cf/templates-uri))
                                 template)

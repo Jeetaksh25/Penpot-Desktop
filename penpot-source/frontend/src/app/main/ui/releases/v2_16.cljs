@@ -22,12 +22,12 @@
         [:img {:src "images/features/2.16-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot 2.16 is here!"}]
+               :alt "Ovion 2.16 is here!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
@@ -38,7 +38,7 @@
            "2.16 brings design tokens into the Design sidebar next to the numbers you already tune for layout, so choosing and checking tokens stays in the same flow. It also introduces an optional WebGL path (beta) for a faster canvas when files grow heavy, plus a wide layer of fixes and polish so the app simply feels more dependable from session to session."]
 
           [:p  {:class (stl/css :feature-content)}
-           "This cycle ships on the order of fifty enhancements and sixty bug fixes, so the day-to-day gain is less about one headline and more about many small wins adding up. A large share of that work came from community contributors; we highlight a few names on a later slide, and we are grateful to everyone who helped move Penpot forward."]
+           "This cycle ships on the order of fifty enhancements and sixty bug fixes, so the day-to-day gain is less about one headline and more about many small wins adding up. A large share of that work came from community contributors; we highlight a few names on a later slide, and we are grateful to everyone who helped move Ovion forward."]
 
           [:p  {:class (stl/css :feature-content)}
            "Let’s dive in!"]]
@@ -123,10 +123,10 @@
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "This release carried an unusually broad set of improvements with a community byline—not one or two patches at the edge, but a visible wave of quality-of-life work from people shipping Penpot alongside their own projects."]
+           "This release carried an unusually broad set of improvements with a community byline—not one or two patches at the edge, but a visible wave of quality-of-life work from people shipping Ovion alongside their own projects."]
 
           [:p {:class (stl/css :feature-content)}
-           "That mix keeps the product grounded in how files actually behave in the wild, and we are glad to share the credit. In the long run, this is about ideas in motion: fresh workflows, clever affordances, and “why has nobody fixed this yet?” moments that expand what Penpot is."]]
+           "That mix keeps the product grounded in how files actually behave in the wild, and we are glad to share the credit. In the long run, this is about ideas in motion: fresh workflows, clever affordances, and “why has nobody fixed this yet?” moments that expand what Ovion is."]]
 
          [:div {:class (stl/css :navigation)}
           [:> c/navigation-bullets*

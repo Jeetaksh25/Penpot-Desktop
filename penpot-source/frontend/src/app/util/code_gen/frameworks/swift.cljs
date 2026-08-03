@@ -255,7 +255,7 @@
 (defn- swift-readme [comp-name]
   (dm/str
    "# " comp-name "\n\n"
-   "Generated with Penpot Desktop (SwiftUI).\n\n"
+   "Generated with Ovion Desktop (SwiftUI).\n\n"
    "## Use\n\n"
    "The view lives in `" (fc/snake-name comp-name) ".swift` — a `View` struct using a `ZStack` with\n"
    "`.frame` + `.position` for absolute layout. Drop the file into an Xcode project (iOS 15+ for `AsyncImage`).\n\n"

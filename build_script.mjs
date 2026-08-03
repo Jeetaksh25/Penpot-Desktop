@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// build_script.mjs — Penpot Desktop release automation
+// build_script.mjs — Ovion Desktop release automation
 //
 // Usage:
 //   node build_script.mjs
@@ -118,7 +118,7 @@ async function checkRemote() {
 
 async function main() {
   console.log("╔══════════════════════════════════════════════╗");
-  console.log("║     Penpot Desktop — Release Builder         ║");
+  console.log("║     Ovion Desktop — Release Builder          ║");
   console.log("╚══════════════════════════════════════════════╝\n");
 
   const pkgJson = JSON.parse(readFile("package.json"));
@@ -173,7 +173,7 @@ async function main() {
   }
 
   try {
-    exec(`git tag -a "v${newVersion}" -m "Penpot Desktop v${newVersion}"`);
+    exec(`git tag -a "v${newVersion}" -m "Ovion Desktop v${newVersion}"`);
   } catch {
     console.log(`  Tag v${newVersion} already exists — skipping.`);
   }

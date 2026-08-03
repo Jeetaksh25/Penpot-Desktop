@@ -1,8 +1,8 @@
-# Oriole Desktop 🎨
+# Ovion Desktop 🎨
 
 > A fully offline, native desktop design tool — powered by a real ClojureScript frontend and Clojure/JVM backend, packaged as a Windows installer via [Tauri v2](https://v2.tauri.app/).
 
-**Oriole Desktop** brings the full power of an open-source design platform to your Windows PC, with no internet required. All data stays local — PostgreSQL, Redis, and the entire JVM backend run on your machine.
+**Ovion Desktop** brings the full power of an open-source design platform to your Windows PC, with no internet required. All data stays local — PostgreSQL, Redis, and the entire JVM backend run on your machine.
 
 ![Build Status](https://github.com/Jeetaksh25/Penpot-Desktop/actions/workflows/build.yml/badge.svg)
 
@@ -99,7 +99,7 @@ Every tag push (`v*`) triggers [GitHub Actions](.github/workflows/build.yml) to:
 ## 📁 Project structure
 
 ```
-Oriole-Desktop/
+Ovion-Desktop/
 ├── src/                          # React/TypeScript UI shell (placeholder)
 ├── src-tauri/                    # Tauri v2 Rust backend
 │   ├── src/lib.rs                # Service lifecycle (Postgres, Redis, JVM)
@@ -134,4 +134,4 @@ Oriole-Desktop/
 
 This project builds on an MPL-2.0 open-source design platform, with desktop-specific additions.
 
-Oriole Desktop — © 2026
+Ovion Desktop — © 2026

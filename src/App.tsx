@@ -25,7 +25,7 @@ function App() {
                 </linearGradient>
               </defs>
             </svg>
-            <span className="app-title">Penpot Desktop</span>
+            <span className="app-title">Ovion Desktop</span>
           </div>
           <span className="app-subtitle">Design & Code</span>
         </div>

@@ -179,7 +179,7 @@
           (rx/merge-map
            (fn [data]
              (->> (import-blob-via-upload (:uri data)
-                                          {:name       (str/replace (:name data) #".penpot$" "")
+                                          {:name       (str/replace (:name data) #".(ovion|penpot)$" "")
                                            :version    1
                                            :project-id project-id})
                   (rx/tap (fn [event]

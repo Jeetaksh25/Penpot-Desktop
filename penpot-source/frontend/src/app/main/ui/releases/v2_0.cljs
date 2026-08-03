@@ -23,12 +23,12 @@
         [:img {:src "images/features/2.0-intro-image.png"
                :class (stl/css :start-image)
                :border "0"
-               :alt "A graphic illustration with Penpot style"}]
+               :alt "A graphic illustration with Ovion style"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "Welcome to Penpot 2.0! "]
+           "Welcome to Ovion 2.0! "]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
@@ -42,7 +42,7 @@
           [:p  {:class (stl/css :feature-content)}
            [:spam {:class (stl/css :feature-title)}
             "Sleeker UI: "]
-           "We’ve polished Penpot to make your experience smoother and more enjoyable."]
+           "We’ve polished Ovion to make your experience smoother and more enjoyable."]
 
           [:p  {:class (stl/css :feature-content)}
            [:spam {:class (stl/css :feature-title)}
@@ -67,7 +67,7 @@
         [:img {:src "images/features/2.0-css-grid.gif"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot's CSS Grid Layout"}]
+               :alt "Ovion's CSS Grid Layout"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
@@ -77,7 +77,7 @@
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
            "The much-awaited Grid Layout introduces 2-dimensional"
-           " layout capabilities to Penpot, allowing for the creation"
+           " layout capabilities to Ovion, allowing for the creation"
            " of adaptive layouts by leveraging the power of CSS properties."]
 
           [:p {:class (stl/css :feature-content)}
@@ -88,7 +88,7 @@
 
           [:p {:class (stl/css :feature-content)}
            "Designers will learn CSS basics while working, "
-           "and as always with Penpot, developers can pick"
+           "and as always with Ovion, developers can pick"
            " up the design as code to take it from there."]]
 
          [:div {:class (stl/css :navigation)}
@@ -107,7 +107,7 @@
         [:img {:src "images/features/2.0-new-ui.gif"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot's UI Makeover"}]
+               :alt "Ovion's UI Makeover"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
@@ -116,10 +116,10 @@
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "We've completely overhauled Penpot's user interface. "
+           "We've completely overhauled Ovion's user interface. "
            "The improvements in consistency, the introduction of "
            "new microinteractions, and attention to countless details"
-           " will significantly enhance the productivity and enjoyment of using Penpot."]
+           " will significantly enhance the productivity and enjoyment of using Ovion."]
           [:p {:class (stl/css :feature-content)}
            "Furthermore, we’ve made several accessibility improvements, "
            "with better color contrast, keyboard navigation,"
@@ -141,7 +141,7 @@
         [:img {:src "images/features/2.0-components.gif"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot's new components system"}]
+               :alt "Ovion's new components system"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
@@ -149,7 +149,7 @@
            "New Components System"]]
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "The new Penpot components system improves"
+           "The new Ovion components system improves"
            " control over instances, including their "
            "inheritances and properties overrides. "
            "Main components are now accessible as design"
@@ -176,7 +176,7 @@
         [:img {:src "images/features/2.0-html.gif"
                :class (stl/css :start-image)
                :border "0"
-               :alt " Penpot's  HTML code generator"}]
+               :alt " Ovion's  HTML code generator"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}

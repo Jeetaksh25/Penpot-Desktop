@@ -22,12 +22,12 @@
         [:img {:src "images/features/2.11-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot 2.11 is here!"}]
+               :alt "Ovion 2.11 is here!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
@@ -40,7 +40,7 @@
            "This release brings one of our most anticipated design system upgrades yet: Typography tokens."]
 
           [:p  {:class (stl/css :feature-content)}
-           "But that’s not all. Variants get a nice boost with multi-switching, new creation shortcuts, and draggable property reordering. Invitations are now easier to manage and the user menu has been reorganized. Now showing your current Penpot version and direct access to release info."]
+           "But that’s not all. Variants get a nice boost with multi-switching, new creation shortcuts, and draggable property reordering. Invitations are now easier to manage and the user menu has been reorganized. Now showing your current Ovion version and direct access to release info."]
 
           [:p  {:class (stl/css :feature-content)}
            "And as always, you’ll notice performance improvements throughout. Faster, smoother, and just a bit more magical every time."]
@@ -71,7 +71,7 @@
            "Imagine having just one token to manage all your typography. With the new Typography token, you can create presets that bundle all your text styles (font, weight, size, line height, spacing, and more) into a single reusable definition. Just one clean, flexible token to keep your type consistent across your designs."]
 
           [:p {:class (stl/css :feature-content)}
-           "The Typography token also marks a big step forward for Penpot: it’s our first composite token! Composite tokens are special because they can hold multiple properties within one token. Shadow token will be the next composite token coming your way."]]
+           "The Typography token also marks a big step forward for Ovion: it’s our first composite token! Composite tokens are special because they can hold multiple properties within one token. Shadow token will be the next composite token coming your way."]]
 
          [:div {:class (stl/css :navigation)}
           [:> c/navigation-bullets*
@@ -175,7 +175,7 @@
            "The user menu got a well-deserved cleanup. Options are now grouped into clear sections like Help & Learning and Community & Contributions, making navigation faster and easier."]
 
           [:p {:class (stl/css :feature-content)}
-           "You’ll also notice a handy new detail: the menu now shows your current Penpot version and gives you quick access to changelog information. This is especially useful for self-hosted setups that want to stay in sync with the latest updates. Simple, organized, and more informative."]]
+           "You’ll also notice a handy new detail: the menu now shows your current Ovion version and gives you quick access to changelog information. This is especially useful for self-hosted setups that want to stay in sync with the latest updates. Simple, organized, and more informative."]]
 
          [:div {:class (stl/css :navigation)}
 

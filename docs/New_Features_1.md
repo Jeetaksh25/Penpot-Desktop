@@ -1,6 +1,6 @@
 # New Features Added — Figma Parity Effort
 
-All 78 Figma-parity gaps implemented in the Oriole desktop fork (Penpot v2 + Tauri).
+All 78 Figma-parity gaps implemented in the Ovion desktop fork (Penpot v2 + Tauri).
 75 are fully added (DONE-v1, renderers completed in the final pass); 3 are scope-deferred
 (backend/multiplayer/rust — out of scope for the single-user offline desktop build) and marked **(scope-deferred)**.
 

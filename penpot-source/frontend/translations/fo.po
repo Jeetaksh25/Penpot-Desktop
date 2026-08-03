@@ -25,7 +25,7 @@ msgstr "Kanna tín teldupost"
 msgid "auth.check-your-email"
 msgstr ""
 "Kanna tín teldupost og trýst á leinkina fyri at vátta og byrja at nýta "
-"Oriole."
+"Ovion."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -70,7 +70,7 @@ msgstr "Rita inn"
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
 msgstr ""
-"Oriole er eitt ókeypis formgevingstól við opnari keldukotu, at nýta til "
+"Ovion er eitt ókeypis formgevingstól við opnari keldukotu, at nýta til "
 "Formgávu og Forritanar samstarv"
 
 #: src/app/main/ui/auth/login.cljs:230
@@ -165,7 +165,7 @@ msgstr "Stovna konto"
 #, unused
 msgid "auth.register-tagline"
 msgstr ""
-"Við einari ókeypis Oriole konto, kanst tú upprætta óavmarkaðar bólkar og "
+"Við einari ókeypis Ovion konto, kanst tú upprætta óavmarkaðar bólkar og "
 "samstarva við aðrar sniðgevar og forritara á so nógvum projektum, ið tygum "
 "lystur. "
 
@@ -193,7 +193,7 @@ msgstr "Gev út"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "Allir Oriole brúkarar"
+msgstr "Allir Ovion brúkarar"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -269,7 +269,7 @@ msgstr "Toymisleiðsla"
 
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
-msgstr "Oriole er fyri toymum. Bjóða limum at arbeiða saman á verkætlanir og fílur"
+msgstr "Ovion er fyri toymum. Bjóða limum at arbeiða saman á verkætlanir og fílur"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
 msgid "dasboard.team-hero.title"
@@ -279,7 +279,7 @@ msgstr "Toyma upp!"
 #, unused
 msgid "dasboard.tutorial-hero.info"
 msgstr ""
-"Lær alt tað grundleggjandi í Oriole, meðan tú stuttleikar tær við hesari "
+"Lær alt tað grundleggjandi í Ovion, meðan tú stuttleikar tær við hesari "
 "lær-og-ger leiðbeiningini."
 
 #: src/app/main/ui/dashboard/projects.cljs
@@ -295,7 +295,7 @@ msgstr "Lær-við-at-gera leiðbeining"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.walkthrough-hero.info"
-msgstr "Kom ein túr gjøgnum Oriole og lær høvuðsfunkurnar at kenna."
+msgstr "Kom ein túr gjøgnum Ovion og lær høvuðsfunkurnar at kenna."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -320,7 +320,7 @@ msgstr "Stovna nýtt toymi"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Títt Oriole"
+msgstr "Títt Ovion"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -328,7 +328,7 @@ msgstr "Strika toymi"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "Heinta Oriole fílu (.penpot)"
+msgstr "Heinta Ovion fílu (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -345,7 +345,7 @@ msgstr "Tvítak %s fílur"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "Heinta %s Oriole fílur (.penpot)"
+msgstr "Heinta %s Ovion fílur (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -357,7 +357,7 @@ msgstr "Útflyt til PDF"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "Útflyt Oriole %s fílur"
+msgstr "Útflyt Ovion %s fílur"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -369,7 +369,7 @@ msgstr "Útflyt"
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "Upplýsingar um hvussu tú setur útflytingar í Oriole."
+msgstr "Upplýsingar um hvussu tú setur útflytingar í Ovion."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -404,7 +404,7 @@ msgstr "Legg øll afturat"
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "Innflyt Oriole fílur"
+msgstr "Innflyt Ovion fílur"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
@@ -710,11 +710,11 @@ msgstr "Strika \"%s\" sum Deilt Savn"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Oriole"
+msgstr "%s - Ovion"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "Vangamynd - Oriole"
+msgstr "Vangamynd - Ovion"
 
 #: src/app/main/ui/workspace/main_menu.cljs:1022
 msgid "workspace.header.menu.option.file"

@@ -24,7 +24,7 @@ msgstr "ایمیل خود را مرور کنید"
 #, unused
 msgid "auth.check-your-email"
 msgstr ""
-"ایمیل خود را بررسی کنید و برای تأیید و شروع استفاده از Oriole روی لینک کلیک "
+"ایمیل خود را بررسی کنید و برای تأیید و شروع استفاده از Ovion روی لینک کلیک "
 "کنید."
 
 #: src/app/main/ui/auth/recovery.cljs:67
@@ -70,7 +70,7 @@ msgstr "ورود"
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
 msgstr ""
-"Oriole یک ابزار طراحی و همکاری در کد نویسی است که رایگان و کد آن متن باز "
+"Ovion یک ابزار طراحی و همکاری در کد نویسی است که رایگان و کد آن متن باز "
 "است."
 
 #: src/app/main/ui/auth/login.cljs:230
@@ -283,7 +283,7 @@ msgstr "مدیریت تیم"
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
 msgstr ""
-"Oriole برای تیم‌ها در نظر گرفته شده است. از اعضا دعوت کنید تا روی پروژه‌ها "
+"Ovion برای تیم‌ها در نظر گرفته شده است. از اعضا دعوت کنید تا روی پروژه‌ها "
 "و فایل‌ها با هم کار کنند"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
@@ -293,7 +293,7 @@ msgstr "تیم ایجاد کن!"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "در عین حالی که با این آموزش سرگرم می‌شوید، اصول اولیه را در Oriole بیاموزید."
+msgstr "در عین حالی که با این آموزش سرگرم می‌شوید، اصول اولیه را در Ovion بیاموزید."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -342,7 +342,7 @@ msgstr "ایجاد تیم جدید"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Oriole شما"
+msgstr "Ovion شما"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -459,7 +459,7 @@ msgstr ""
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
 "شما فقط باید فونت‌هایی را که مالک آنها هستید یا مجوز استفاده از آنها را در "
-"Oriole دارید آپلود کنید. در بخش حقوق محتوا [شرایط خدمات Oriole] (%s) "
+"Ovion دارید آپلود کنید. در بخش حقوق محتوا [شرایط خدمات Ovion] (%s) "
 "اطلاعات بیشتری کسب کنید. همچنین ممکن است بخواهید درباره [مجوز فونت] "
 "(https://www.typography.com/faq) مطالعه کنید."
 
@@ -883,7 +883,7 @@ msgstr ""
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "انجمن Oriole"
+msgstr "انجمن Ovion"
 
 #: src/app/main/ui/settings/feedback.cljs:105
 msgid "feedback.subject"
@@ -1223,7 +1223,7 @@ msgstr "ادامه دادن با"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "شما می‌توانید با یک حساب Oriole ادامه دهید"
+msgstr "شما می‌توانید با یک حساب Ovion ادامه دهید"
 
 #: src/app/main/ui/workspace/sidebar/assets/groups.cljs:186, src/app/main/ui/workspace/sidebar/options/menus/component.cljs:203
 msgid "labels.create"
@@ -1849,7 +1849,7 @@ msgstr "پروفایل با موفقیت ذخیره شد!"
 #, unused
 msgid "onboarding-v2.before-start.desc2"
 msgstr ""
-"اطلاعات دقیق در مورد نحوه استفاده از Oriole. از نمونه‌سازی تا سازماندهی یا "
+"اطلاعات دقیق در مورد نحوه استفاده از Ovion. از نمونه‌سازی تا سازماندهی یا "
 "به اشتراک‌گذاری طرح‌ها."
 
 #, unused
@@ -1864,7 +1864,7 @@ msgstr "پس از نامگذاری تیم خود، می‌توانید افرا�
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Oriole"
+msgstr "Ovion"
 
 #: src/app/main/ui/workspace/sidebar/options/menus/token_typography_row.cljs:42, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:101, src/app/main/ui/workspace/sidebar/options/rows/color_row.cljs:108
 msgid "options.deleted-token"
@@ -2016,19 +2016,19 @@ msgstr "توزیع به صورت عمودی"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Oriole"
+msgstr "%s - Ovion"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "فونت‌ها - %s - Oriole"
+msgstr "فونت‌ها - %s - Ovion"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "پروژه‌ها - %s - Oriole"
+msgstr "پروژه‌ها - %s - Ovion"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "جستجو - %s - Oriole"
+msgstr "جستجو - %s - Ovion"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
@@ -2036,19 +2036,19 @@ msgstr "کتابخانه‌های مشترک - %s - پن‌پات"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Oriole - طراحی آزاد برای تیم‌ها"
+msgstr "Ovion - طراحی آزاد برای تیم‌ها"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "بازخورد بدهید - Oriole"
+msgstr "بازخورد بدهید - Ovion"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "تنظیمات - Oriole"
+msgstr "تنظیمات - Ovion"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "رمزعبور - Oriole"
+msgstr "رمزعبور - Ovion"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
@@ -2056,7 +2056,7 @@ msgstr "پروفایل - پن‌پات"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "دعوت‌نامه‌ها - %s - Oriole"
+msgstr "دعوت‌نامه‌ها - %s - Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
@@ -2072,7 +2072,7 @@ msgstr "%s - حالت مشاهده - پن‌پات"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Oriole"
+msgstr "%s - Ovion"
 
 #: src/app/main/ui.cljs:138
 #, unused

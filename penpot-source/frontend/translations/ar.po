@@ -19,7 +19,7 @@ msgstr "هل لديك حساب؟"
 #: src/app/main/ui/auth/register.cljs:277
 #, unused
 msgid "auth.check-your-email"
-msgstr "تحقق من بريدك الإلكتروني وانقر على الرابط للتحقق والبدء في استخدام Oriole."
+msgstr "تحقق من بريدك الإلكتروني وانقر على الرابط للتحقق والبدء في استخدام Ovion."
 
 #: src/app/main/ui/auth/recovery.cljs:67
 msgid "auth.confirm-password"
@@ -61,7 +61,7 @@ msgstr "لِج"
 
 #: src/app/main/ui/auth/login.cljs:273
 msgid "auth.login-tagline"
-msgstr "Oriole هو أداة تصميم مجانية ومفتوحة المصدر للتعاون بين التصميم والبرمجة"
+msgstr "Ovion هو أداة تصميم مجانية ومفتوحة المصدر للتعاون بين التصميم والبرمجة"
 
 #: src/app/main/ui/auth/login.cljs:230
 msgid "auth.login-with-github-submit"
@@ -172,7 +172,7 @@ msgstr "انشر"
 
 #: src/app/main/ui/viewer/share_link.cljs:305, src/app/main/ui/viewer/share_link.cljs:315
 msgid "common.share-link.all-users"
-msgstr "جميع مستخدمي Oriole"
+msgstr "جميع مستخدمي Ovion"
 
 #: src/app/main/ui/viewer/share_link.cljs:199
 msgid "common.share-link.confirm-deletion-link-description"
@@ -250,7 +250,7 @@ msgstr "إدارة الفريق"
 
 #: src/app/main/ui/dashboard/projects.cljs:89
 msgid "dasboard.team-hero.text"
-msgstr "Oriole صُمّم للفِرق. أدعُ زملاءك للعمل سوياَ على المشاريع والملفات"
+msgstr "Ovion صُمّم للفِرق. أدعُ زملاءك للعمل سوياَ على المشاريع والملفات"
 
 #: src/app/main/ui/dashboard/projects.cljs:87
 msgid "dasboard.team-hero.title"
@@ -259,7 +259,7 @@ msgstr "إعمل فريق!"
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
 msgid "dasboard.tutorial-hero.info"
-msgstr "تعلم أساسيات برنامج Oriole بينما تستمع بتجربته في هذه الدورة التعليمية."
+msgstr "تعلم أساسيات برنامج Ovion بينما تستمع بتجربته في هذه الدورة التعليمية."
 
 #: src/app/main/ui/dashboard/projects.cljs
 #, unused
@@ -304,7 +304,7 @@ msgstr "أنشئ فريق جديد"
 
 #: src/app/main/ui/components/context_menu_a11y.cljs:300, src/app/main/ui/dashboard/sidebar.cljs:882
 msgid "dashboard.default-team-name"
-msgstr "Oriole الخاص بك"
+msgstr "Ovion الخاص بك"
 
 #: src/app/main/ui/dashboard/sidebar.cljs:588, src/app/main/ui/dashboard/team_form.cljs:153
 msgid "dashboard.delete-team"
@@ -312,7 +312,7 @@ msgstr "حذف الفريق"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:329, src/app/main/ui/workspace/main_menu.cljs:732
 msgid "dashboard.download-binary-file"
-msgstr "تنزيل ملف Oriole (.penpot)"
+msgstr "تنزيل ملف Ovion (.penpot)"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:321, src/app/main/ui/workspace/main_menu.cljs:712
 #, unused
@@ -333,7 +333,7 @@ msgstr "أنشئ ملف جديد"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:281
 msgid "dashboard.export-binary-multi"
-msgstr "تنزيل ملفات ٪s Oriole (.penpot)"
+msgstr "تنزيل ملفات ٪s Ovion (.penpot)"
 
 #: src/app/main/ui/workspace/main_menu.cljs:740
 msgid "dashboard.export-frames"
@@ -345,7 +345,7 @@ msgstr "صدّر ك PDF"
 
 #, unused
 msgid "dashboard.export-multi"
-msgstr "صدّر ملفات Oriole %s"
+msgstr "صدّر ملفات Ovion %s"
 
 #: src/app/main/ui/exports/assets.cljs:108
 msgid "dashboard.export-multiple.selected"
@@ -363,7 +363,7 @@ msgstr ""
 
 #: src/app/main/ui/exports/assets.cljs:183
 msgid "dashboard.export-shapes.how-to-link"
-msgstr "معلومات عن كيفية إعداد التصديرات في Oriole."
+msgstr "معلومات عن كيفية إعداد التصديرات في Ovion."
 
 #: src/app/main/ui/exports/assets.cljs:178
 msgid "dashboard.export-shapes.no-elements"
@@ -419,8 +419,8 @@ msgstr ""
 #, markdown
 msgid "dashboard.fonts.hero-text2"
 msgstr ""
-"يجب عليك فقط تحميل الخطوط التي تمتلكها أو لديك ترخيص لاستخدامها في Oriole. "
-"اكتشف المزيد في قسم حقوق المحتوى في [شروط خدمة Oriole](%s). قد ترغب أيضًا "
+"يجب عليك فقط تحميل الخطوط التي تمتلكها أو لديك ترخيص لاستخدامها في Ovion. "
+"اكتشف المزيد في قسم حقوق المحتوى في [شروط خدمة Ovion](%s). قد ترغب أيضًا "
 "في القراءة عن [ترخيص الخطوط](https://www.typography.com/faq).."
 
 #: src/app/main/ui/dashboard/fonts.cljs:231
@@ -439,7 +439,7 @@ msgstr ""
 
 #: src/app/main/ui/dashboard/import.cljs:463, src/app/main/ui/dashboard/project_menu.cljs:109
 msgid "dashboard.import"
-msgstr "استورد ملفات Oriole"
+msgstr "استورد ملفات Ovion"
 
 #: src/app/main/ui/dashboard/import.cljs:290, src/app/worker/import.cljs:138, src/app/worker/import.cljs:141
 msgid "dashboard.import.analyze-error"
@@ -713,7 +713,7 @@ msgstr "اسمك"
 
 #: src/app/main/ui/dashboard/file_menu.cljs:40, src/app/main/ui/dashboard/fonts.cljs:46, src/app/main/ui/dashboard/libraries.cljs:55, src/app/main/ui/dashboard/projects.cljs:352, src/app/main/ui/dashboard/search.cljs:47, src/app/main/ui/dashboard/sidebar.cljs:411, src/app/main/ui/dashboard/team.cljs:616, src/app/main/ui/dashboard/team.cljs:1191, src/app/main/ui/dashboard/team.cljs:1471, src/app/main/ui/dashboard/team.cljs:1577
 msgid "dashboard.your-penpot"
-msgstr "Oriole الخاص بك"
+msgstr "Ovion الخاص بك"
 
 #: src/app/main/ui/alert.cljs:36
 msgid "ds.alert-ok"
@@ -922,7 +922,7 @@ msgstr "يسعدنا وجودك هنا. إذا كنت بحاجة إلى مساع
 
 #: src/app/main/ui/settings/feedback.cljs:149
 msgid "feedback.discourse-title"
-msgstr "مجتمع Oriole"
+msgstr "مجتمع Ovion"
 
 #: src/app/main/ui/settings/feedback.cljs:105
 msgid "feedback.subject"
@@ -1157,7 +1157,7 @@ msgstr "الأحرف الكبيرة"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:235
 msgid "inspect.empty.help"
-msgstr "إذا كنت تريد معرفة المزيد عن فحص التصميم ، فتفضل بزيارة مركز مساعدة لOriole"
+msgstr "إذا كنت تريد معرفة المزيد عن فحص التصميم ، فتفضل بزيارة مركز مساعدة لOvion"
 
 #: src/app/main/ui/inspect/right_sidebar.cljs:136
 msgid "inspect.multiple-selected"
@@ -1280,7 +1280,7 @@ msgstr "تابع مع"
 
 #: src/app/main/ui/viewer/login.cljs:69
 msgid "labels.continue-with-penpot"
-msgstr "يمكنك المتابعة مع حساب Oriole"
+msgstr "يمكنك المتابعة مع حساب Ovion"
 
 #: src/app/main/ui/workspace/sidebar/assets/groups.cljs:186, src/app/main/ui/workspace/sidebar/options/menus/component.cljs:203
 msgid "labels.create"
@@ -1948,12 +1948,12 @@ msgstr "أُرسل رسالة التحقق إلى %s. راجع بريدك الا
 msgid "onboarding-v2.before-start.desc1"
 msgstr ""
 "يجب أن تعلم أن هناك الكثير من الموارد المتاحة لمساعدتك في بدء استخدام "
-"Oriole ، مثل دليل المستخدم وقناة Youtube الخاصة بنا."
+"Ovion ، مثل دليل المستخدم وقناة Youtube الخاصة بنا."
 
 #, unused
 msgid "onboarding-v2.before-start.desc2"
 msgstr ""
-"معلومات مفصلة حول كيفية استخدام Oriole. من النماذج الأولية إلى تنظيم أو "
+"معلومات مفصلة حول كيفية استخدام Ovion. من النماذج الأولية إلى تنظيم أو "
 "مشاركة التصاميم."
 
 #, unused
@@ -1975,14 +1975,14 @@ msgstr "قبل ان تبدا"
 #, unused
 msgid "onboarding-v2.welcome.desc1"
 msgstr ""
-"Oriole هو برنامج مفتوح المصدر وهو من صنع Kaleidos وكذلك المجتمع، حيث يساعد "
+"Ovion هو برنامج مفتوح المصدر وهو من صنع Kaleidos وكذلك المجتمع، حيث يساعد "
 "الكثير من الناس بعضهم البعض بالفعل. يمكن للجميع التعاون من خلال:"
 
 #, unused
 msgid "onboarding-v2.welcome.desc2"
 msgstr ""
-"مساحة عامة للتعلم والمشاركة والمناقشة حول Oriole وحاضرها ومستقبلها مع "
-"المجتمع بأكمله وفريق Oriole الأساسي."
+"مساحة عامة للتعلم والمشاركة والمناقشة حول Ovion وحاضرها ومستقبلها مع "
+"المجتمع بأكمله وفريق Ovion الأساسي."
 
 #, unused
 msgid "onboarding-v2.welcome.desc2.title"
@@ -2000,7 +2000,7 @@ msgstr "دليل المساهمة"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:248
 msgid "onboarding-v2.welcome.title"
-msgstr "مرحبًا بك في Oriole!"
+msgstr "مرحبًا بك في Ovion!"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:193
 msgid "onboarding.choice.team-up.create-team-desc"
@@ -2039,7 +2039,7 @@ msgstr "سياسة الخصوصية."
 #: src/app/main/ui/onboarding/newsletter.cljs:65
 #, unused
 msgid "onboarding.newsletter.title"
-msgstr "هل تريد تلقي أخبار Oriole؟"
+msgstr "هل تريد تلقي أخبار Ovion؟"
 
 #: src/app/main/ui/onboarding/team_choice.cljs:182
 msgid "onboarding.team-modal.create-team"
@@ -2048,7 +2048,7 @@ msgstr "أنشئ فريقًا"
 #: src/app/main/ui/onboarding/team_choice.cljs:53
 msgid "onboarding.team-modal.create-team-desc"
 msgstr ""
-"يسمح لك الفريق بالتعاون مع مستخدمي Oriole الآخرين الذين يعملون في نفس "
+"يسمح لك الفريق بالتعاون مع مستخدمي Ovion الآخرين الذين يعملون في نفس "
 "الملفات والمشاريع."
 
 #: src/app/main/ui/onboarding/team_choice.cljs:57
@@ -2081,7 +2081,7 @@ msgstr "ابدأ التصميم"
 
 #, unused
 msgid "onboarding.welcome.alt"
-msgstr "Oriole"
+msgstr "Ovion"
 
 #: src/app/main/ui/auth/recovery.cljs:88
 msgid "profile.recovery.go-to-login"
@@ -2531,71 +2531,71 @@ msgstr "كبر المحدد"
 
 #: src/app/main/ui/dashboard/files.cljs:179
 msgid "title.dashboard.files"
-msgstr "%s - Oriole"
+msgstr "%s - Ovion"
 
 #: src/app/main/ui/dashboard/fonts.cljs:50
 msgid "title.dashboard.font-providers"
-msgstr "مزودي الخط - %s - Oriole"
+msgstr "مزودي الخط - %s - Ovion"
 
 #: src/app/main/ui/dashboard/fonts.cljs:49
 msgid "title.dashboard.fonts"
-msgstr "الخطوط - %s - Oriole"
+msgstr "الخطوط - %s - Ovion"
 
 #: src/app/main/ui/dashboard/projects.cljs:354
 msgid "title.dashboard.projects"
-msgstr "المشاريع - %s - Oriole"
+msgstr "المشاريع - %s - Ovion"
 
 #: src/app/main/ui/dashboard/search.cljs:49
 msgid "title.dashboard.search"
-msgstr "البحث - %s - Oriole"
+msgstr "البحث - %s - Ovion"
 
 #: src/app/main/ui/dashboard/libraries.cljs:57
 msgid "title.dashboard.shared-libraries"
-msgstr "المكاتب المشتركة - %s - Oriole"
+msgstr "المكاتب المشتركة - %s - Ovion"
 
 #: src/app/main/ui/auth/verify_token.cljs:82, src/app/main/ui/auth.cljs:39
 msgid "title.default"
-msgstr "Oriole - صمّم حرية للفرق"
+msgstr "Ovion - صمّم حرية للفرق"
 
 #: src/app/main/ui/settings/feedback.cljs:161
 msgid "title.settings.feedback"
-msgstr "أرسل انطباعك - Oriole"
+msgstr "أرسل انطباعك - Ovion"
 
 #: src/app/main/ui/settings/options.cljs:123
 msgid "title.settings.options"
-msgstr "إعدادات - Oriole"
+msgstr "إعدادات - Ovion"
 
 #: src/app/main/ui/settings/password.cljs:105
 msgid "title.settings.password"
-msgstr "كلمة السر - Oriole"
+msgstr "كلمة السر - Ovion"
 
 #: src/app/main/ui/settings/profile.cljs:144
 msgid "title.settings.profile"
-msgstr "ملف التعريف - Oriole"
+msgstr "ملف التعريف - Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:1189
 msgid "title.team-invitations"
-msgstr "الدعوات - %s - Oriole"
+msgstr "الدعوات - %s - Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:614
 msgid "title.team-members"
-msgstr "الأعضاء - %s - Oriole"
+msgstr "الأعضاء - %s - Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:1575
 msgid "title.team-settings"
-msgstr "إعدادات - %s - Oriole"
+msgstr "إعدادات - %s - Ovion"
 
 #: src/app/main/ui/dashboard/team.cljs:1469
 msgid "title.team-webhooks"
-msgstr "خطافات الويب - %s - Oriole"
+msgstr "خطافات الويب - %s - Ovion"
 
 #: src/app/main/ui/viewer.cljs:422
 msgid "title.viewer"
-msgstr "%s - وضع العرض - Oriole"
+msgstr "%s - وضع العرض - Ovion"
 
 #: src/app/main/ui/workspace.cljs:239
 msgid "title.workspace"
-msgstr "%s - Oriole"
+msgstr "%s - Ovion"
 
 #: src/app/main/ui.cljs:138
 #, unused

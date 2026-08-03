@@ -24,7 +24,7 @@
           [:h2 "What's new?"]]
          [:span.release "Alpha version " version]
          [:div.modal-content
-          [:p "Penpot continues growing with new features that improve performance, user experience and visual design."]
+          [:p "Ovion continues growing with new features that improve performance, user experience and visual design."]
           [:p "We are happy to show you a sneak peek of the most important stuff that the Alpha 1.7 version brings."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]
@@ -39,10 +39,10 @@
          [:img {:src "images/features/export.gif" :border "0" :alt "Export & Import"}]]
         [:div.modal-right
          [:div.modal-title
-          [:h2 "Export and import Penpot files"]]
+          [:h2 "Export and import Ovion files"]]
          [:div.modal-content
           [:p [:strong "Export files from the dashboard to your computer and import them from your computer to your projects."]
-           " This means that Penpot users can freely save and share Penpot files."]
+           " This means that Ovion users can freely save and share Ovion files."]
           [:p "Exported files linked to shared libraries provide
           different ways to export their assets. Choose the one that
           suits you better!"]]
@@ -86,7 +86,7 @@
           [:h2 "Library assets management"]]
          [:div.modal-content
           [:p [:strong "Collapse/expand groups"] " at any nesting level, so you don’t have to manage their visibility individually."]
-          [:p "Penpot " [:strong "remembers the last library state"] ", so you don’t have to collapse a group you want hidden every time."]
+          [:p "Ovion " [:strong "remembers the last library state"] ", so you don’t have to collapse a group you want hidden every time."]
           [:p "Easily " [:strong "rename and ungroup"] " asset groups."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]

@@ -22,19 +22,19 @@
         [:img {:src "images/features/2.8-slide-0.jpg"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Penpot 2.8 is here!"}]
+               :alt "Ovion 2.8 is here!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
 
          [:div {:class (stl/css :features-block)}
           [:span {:class (stl/css :feature-title)}
-           "Penpot 2.8 is out!"]
+           "Ovion 2.8 is out!"]
 
           [:p  {:class (stl/css :feature-content)}
            "Keeping the momentum from our last releases, we're moving forward with a fresh batch of features and improvements."]
@@ -113,7 +113,7 @@
            "It is now possible to perform multi-file token import. This is perfect for handling more complex setups like separate JSON files for themes or metadata. The same goes for exporting. Now you can export tokens choosing between single or multi-file (check your team preference!), being able to preview both options before you decide."]
 
           [:p {:class (stl/css :feature-content)}
-           "This is just one more step in the evolution of Design Tokens in Penpot. And there's more to come: typography tokens are already in the works!"]]
+           "This is just one more step in the evolution of Design Tokens in Ovion. And there's more to come: typography tokens are already in the works!"]]
 
          [:div {:class (stl/css :navigation)}
           [:> c/navigation-bullets*
@@ -140,13 +140,13 @@
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "We know Penpot works perfectly for solo projects, but it’s always more fun and productive to work as a team. That's why we have made significant optimizations to the onboarding process to make your team mates getting started easier and faster."]
+           "We know Ovion works perfectly for solo projects, but it’s always more fun and productive to work as a team. That's why we have made significant optimizations to the onboarding process to make your team mates getting started easier and faster."]
 
           [:p {:class (stl/css :feature-content)}
            "- We have reduced the number of onboarding steps so new users can start designing sooner. Only essential data will be collected to help you set up your profile more efficiently."]
 
           [:p {:class (stl/css :feature-content)}
-           "- We have integrated AI-powered help, which is trained on Penpot documentation, directly into the design workspace. Get assistance without switching context, so you can stay in the flow."]]
+           "- We have integrated AI-powered help, which is trained on Ovion documentation, directly into the design workspace. Get assistance without switching context, so you can stay in the flow."]]
 
          [:div {:class (stl/css :navigation)}
           [:> c/navigation-bullets*
@@ -176,7 +176,7 @@
            "We are putting a special focus on performance. This time, we've made improvements around handling paths, which typically make up icons and illustrations."]
 
           [:p {:class (stl/css :feature-content)}
-           "We have carried out a refactoring of how Penpot deals with path data. This translates into perceptible performance improvements in SVG-heavily loaded files. This means that, in files with a significant presence of SVG icons and illustrations you can expect:"]
+           "We have carried out a refactoring of how Ovion deals with path data. This translates into perceptible performance improvements in SVG-heavily loaded files. This means that, in files with a significant presence of SVG icons and illustrations you can expect:"]
           [:p {:class (stl/css :feature-content)}
            "- Faster import/export."]
           [:p {:class (stl/css :feature-content)}

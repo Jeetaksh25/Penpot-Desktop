@@ -208,7 +208,7 @@
 
 (defn- winui-readme [comp-name]
   (dm/fmt
-   "# %\n\nGenerated with Penpot Desktop (WinUI 3 / Windows App SDK).\n\n## Use\n\nPlace `%.xaml` and `%.xaml.cs` in a WinUI 3 project (unpackaged or\nMSIX) under the `PenpotExport` namespace. The layout uses a root\n`Canvas` with `Canvas.Left` / `Canvas.Top` for absolute positioning.\n\nRemote images load via `Image Source` (WinUI supports http(s) URIs).\n"
+   "# %\n\nGenerated with Ovion Desktop (WinUI 3 / Windows App SDK).\n\n## Use\n\nPlace `%.xaml` and `%.xaml.cs` in a WinUI 3 project (unpackaged or\nMSIX) under the `PenpotExport` namespace. The layout uses a root\n`Canvas` with `Canvas.Left` / `Canvas.Top` for absolute positioning.\n\nRemote images load via `Image Source` (WinUI supports http(s) URIs).\n"
    comp-name comp-name comp-name))
 
 (defn generate-project

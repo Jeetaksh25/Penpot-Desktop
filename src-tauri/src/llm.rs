@@ -39,6 +39,10 @@
 //
 //   • DeepInfra — production. OpenAI-compatible chat-completions; serves both
 //     GLM and Kimi model slugs (configurable). Bearer auth.
+//   • Ovion Cloud — subscription transport (OpenAI-compatible, same GLM/Kimi
+//     model slugs as DeepInfra, served from `ovion_cloud_endpoint`). Bearer auth
+//     with the Ovion Cloud subscription token. Behaves identically to DeepInfra
+//     for everything except the URL + key.
 //   • Ollama — local testing (`{ollama_url}/api/chat`, `images:[b64,…]` for
 //     multimodal). No key required (an optional key is sent as Bearer for
 //     hosted Ollama-compatible gateways and ignored by local Ollama).
@@ -51,10 +55,11 @@
 // On first run (no `llm.json`), config is seeded from a `.env.local` file in
 // the current working directory (dev) so the keys the developer already
 // placed there are used automatically: OLLAMA_KEY, DEEPINFRA_KEY,
-// FIRECRAWL_API_KEY, OLLAMA_URL, OLLAMA_GLM_MODEL, OLLAMA_KIMI_MODEL,
-// DEEPINFRA_GLM_MODEL, DEEPINFRA_KIMI_MODEL, AI_PROVIDER, AI_MODE. In a
-// packaged install `.env.local` is absent, so the user configures via the
-// Settings panel (`llm_set_config`), which writes `llm.json`.
+// FIRECRAWL_API_KEY, OVION_CLOUD_TOKEN, OLLAMA_URL, OLLAMA_GLM_MODEL,
+// OLLAMA_KIMI_MODEL, DEEPINFRA_GLM_MODEL, DEEPINFRA_KIMI_MODEL,
+// OVION_CLOUD_ENDPOINT, AI_PROVIDER, AI_MODE. In a packaged install
+// `.env.local` is absent, so the user configures via the Settings panel
+// (`llm_set_config`), which writes `llm.json`.
 //
 // ── URL reference (the AI "sees" the site) ───────────────────────────────────
 //
@@ -131,6 +136,14 @@ pub struct LlmConfig {
     #[serde(default = "default_firecrawl_base")]
     pub firecrawl_base: String,
 
+    // ── Ovion Cloud (subscription transport; OpenAI-compatible, same models as
+    //    DeepInfra, served via the Ovion Cloud endpoint) ──
+    #[serde(default = "default_ovion_cloud_endpoint")]
+    pub ovion_cloud_endpoint: String,
+
+    #[serde(default)]
+    pub ovion_cloud_token: String,
+
     /// Per-request timeout in seconds.
     #[serde(default = "default_timeout")]
     pub timeout_secs: u64,
@@ -152,6 +165,7 @@ fn default_ollama_url() -> String { "http://127.0.0.1:11434".into() }
 fn default_ollama_glm() -> String { "glm4".into() }
 fn default_ollama_kimi() -> String { "kimi-k2.7".into() }
 fn default_firecrawl_base() -> String { "https://api.firecrawl.dev".into() }
+fn default_ovion_cloud_endpoint() -> String { "https://api.ovion.app/v1".into() }
 fn default_timeout() -> u64 { 240 }
 fn default_memory_enabled() -> bool { true }
 fn default_memory_turns() -> usize { 6 }
@@ -171,6 +185,8 @@ impl Default for LlmConfig {
             ollama_kimi_model: default_ollama_kimi(),
             firecrawl_api_key: String::new(),
             firecrawl_base: default_firecrawl_base(),
+            ovion_cloud_endpoint: default_ovion_cloud_endpoint(),
+            ovion_cloud_token: String::new(),
             timeout_secs: default_timeout(),
             memory_enabled: default_memory_enabled(),
             memory_max_turns: default_memory_turns(),
@@ -195,6 +211,8 @@ struct LlmConfigView {
     ollama_api_key_set: bool,
     firecrawl_api_key_set: bool,
     firecrawl_base: String,
+    ovion_cloud_endpoint: String,
+    ovion_cloud_token_set: bool,
     timeout_secs: u64,
     memory_enabled: bool,
     memory_max_turns: usize,
@@ -295,6 +313,7 @@ fn seed_from_env_file() -> Option<LlmConfig> {
     if let Some(v) = env.get("DEEPINFRA_KEY") { cfg.deepinfra_api_key = v.clone(); }
     if let Some(v) = env.get("OLLAMA_KEY") { cfg.ollama_api_key = v.clone(); }
     if let Some(v) = env.get("FIRECRAWL_API_KEY") { cfg.firecrawl_api_key = v.clone(); }
+    if let Some(v) = env.get("OVION_CLOUD_TOKEN") { cfg.ovion_cloud_token = v.clone(); }
 
     if let Some(v) = env.get("OLLAMA_URL") { if !v.is_empty() { cfg.ollama_url = v.clone(); } }
     if let Some(v) = env.get("DEEPINFRA_BASE") { if !v.is_empty() { cfg.deepinfra_base = v.clone(); } }
@@ -302,10 +321,11 @@ fn seed_from_env_file() -> Option<LlmConfig> {
     if let Some(v) = env.get("DEEPINFRA_KIMI_MODEL") { if !v.is_empty() { cfg.deepinfra_kimi_model = v.clone(); } }
     if let Some(v) = env.get("OLLAMA_GLM_MODEL") { if !v.is_empty() { cfg.ollama_glm_model = v.clone(); } }
     if let Some(v) = env.get("OLLAMA_KIMI_MODEL") { if !v.is_empty() { cfg.ollama_kimi_model = v.clone(); } }
+    if let Some(v) = env.get("OVION_CLOUD_ENDPOINT") { if !v.is_empty() { cfg.ovion_cloud_endpoint = v.clone(); } }
 
     if let Some(v) = env.get("AI_PROVIDER") {
         match v.as_str() {
-            "ollama" | "deepinfra" => cfg.provider = v.clone(),
+            "ollama" | "deepinfra" | "ovion-cloud" => cfg.provider = v.clone(),
             _ => {}
         }
     } else {
@@ -889,7 +909,7 @@ const ANTI_SLOP_RULES: &str = r#"ANTI-SLOP RULES (non-negotiable — this is wha
 - Every interactive element that should do something gets an interaction. Group related screens into flows with a starting frame.
 - Prefer fewer, larger, well-spaced elements over dense clutter. Whitespace is a feature."#;
 
-const DRAW_SYSTEM_PROMPT: &str = r#"You are the design-generation engine inside an Oriole-based desktop design studio. You output a single JSON object (a DesignSpec) describing an Oriole design AND, when interaction is requested, a runnable prototype. Return ONLY valid JSON — no markdown, no prose, no code fences.
+const DRAW_SYSTEM_PROMPT: &str = r#"You are the design-generation engine inside an Ovion-based desktop design studio. You output a single JSON object (a DesignSpec) describing an Ovion design AND, when interaction is requested, a runnable prototype. Return ONLY valid JSON — no markdown, no prose, no code fences.
 
 DESIGN-LANGUAGE FIRST. Before drawing, decide the design language:
 1. If a "Design-language brief" is provided, FOLLOW IT EXACTLY (palette, type scale, spacing, radius, component style, motion, density).
@@ -916,7 +936,7 @@ Rules:
 
 Output ONLY the JSON object. Nothing else."#;
 
-const SCOUT_PROMPT: &str = r#"You are a senior design-systems analyst. You are given reference visuals (screenshots/images of a website or app) and/or a design request. Extract a concrete DESIGN-LANGUAGE BRIEF that another model will use to produce an Oriole design that faithfully follows the reference's design language. Return ONLY JSON:
+const SCOUT_PROMPT: &str = r#"You are a senior design-systems analyst. You are given reference visuals (screenshots/images of a website or app) and/or a design request. Extract a concrete DESIGN-LANGUAGE BRIEF that another model will use to produce an Ovion design that faithfully follows the reference's design language. Return ONLY JSON:
 {
   "design_language": "the named system(s) the reference follows — e.g. Material 3, Apple HIG, Fluent 2, Linear, Vercel/Geist, Stripe, Notion, Atlassian, Tailwind UI, Bootstrap. If unsure, name the closest REAL production design language.",
   "rationale": "1-2 sentences why",
@@ -936,7 +956,7 @@ Rules:
 - Keep it REAL: emulate how actual production apps using this language look, not a generic AI template.
 - Output ONLY the JSON."#;
 
-const COMBINED_PROMPT_AUTO: &str = r#"You are the design engine inside an Oriole-based desktop design studio. You can SEE the attached reference images (screenshots/website imagery). First, internally analyze the reference visuals and extract the design language (palette, typography scale, spacing, radius, component style, motion, density). Then produce an Oriole DesignSpec JSON that follows that design language for the user's request. Return ONLY the final DesignSpec JSON — no markdown, no prose, no fences.
+const COMBINED_PROMPT_AUTO: &str = r#"You are the design engine inside an Ovion-based desktop design studio. You can SEE the attached reference images (screenshots/website imagery). First, internally analyze the reference visuals and extract the design language (palette, typography scale, spacing, radius, component style, motion, density). Then produce an Ovion DesignSpec JSON that follows that design language for the user's request. Return ONLY the final DesignSpec JSON — no markdown, no prose, no fences.
 
 {DESIGN_SPEC_SHAPE}
 
@@ -1072,6 +1092,55 @@ async fn call_deepinfra(
         .ok_or_else(|| "DeepInfra returned no choices".into())
 }
 
+async fn call_ovion_cloud(
+    cfg: &LlmConfig,
+    model: &str,
+    system: &str,
+    user_text: &str,
+    images: &[ImageInput],
+) -> Result<String, String> {
+    let key = cfg.ovion_cloud_token.trim();
+    if key.is_empty() {
+        return Err("Ovion Cloud provider selected but no subscription token is configured. (Coming soon — for now use your own DeepInfra or Ollama key in Settings.)".into());
+    }
+    let url = format!("{}/chat/completions", cfg.ovion_cloud_endpoint.trim_end_matches('/'));
+    let body = serde_json::json!({
+        "model": model,
+        "messages": deepinfra_messages(system, user_text, images),
+        "response_format": {"type": "json_object"},
+        "temperature": 0.7,
+    });
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(cfg.timeout_secs))
+        .build()
+        .map_err(|e| format!("http client build failed: {e}"))?;
+    let resp = client
+        .post(&url)
+        .bearer_auth(key)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Ovion Cloud request failed: {e}"))?;
+    let status = resp.status();
+    let text = resp.text().await.map_err(|e| format!("Ovion Cloud read failed: {e}"))?;
+    if !status.is_success() {
+        let snippet: String = text.chars().take(500).collect();
+        return Err(format!("Ovion Cloud error {status} (model {model}): {snippet}"));
+    }
+    let parsed: OpenAiResponse = serde_json::from_str(&text).map_err(|e| {
+        format!(
+            "Ovion Cloud response parse failed: {e} (body: {})",
+            text.chars().take(300).collect::<String>()
+        )
+    })?;
+    parsed
+        .choices
+        .into_iter()
+        .next()
+        .map(|c| c.message.content)
+        .ok_or_else(|| "Ovion Cloud returned no choices".into())
+}
+
 async fn call_ollama(
     cfg: &LlmConfig,
     model: &str,
@@ -1126,6 +1195,7 @@ async fn call_provider(
     images: &[ImageInput],
 ) -> Result<String, String> {
     match cfg.provider.as_str() {
+        "ovion-cloud" => call_ovion_cloud(cfg, model, system, user_text, images).await,
         "ollama" => call_ollama(cfg, model, system, user_text, images).await,
         _ => call_deepinfra(cfg, model, system, user_text, images).await,
     }
@@ -1134,6 +1204,7 @@ async fn call_provider(
 fn glm_model(cfg: &LlmConfig) -> String {
     match cfg.provider.as_str() {
         "ollama" => cfg.ollama_glm_model.clone(),
+        "ovion-cloud" => cfg.deepinfra_glm_model.clone(),
         _ => cfg.deepinfra_glm_model.clone(),
     }
 }
@@ -1141,6 +1212,7 @@ fn glm_model(cfg: &LlmConfig) -> String {
 fn kimi_model(cfg: &LlmConfig) -> String {
     match cfg.provider.as_str() {
         "ollama" => cfg.ollama_kimi_model.clone(),
+        "ovion-cloud" => cfg.deepinfra_kimi_model.clone(),
         _ => cfg.deepinfra_kimi_model.clone(),
     }
 }
@@ -1276,6 +1348,8 @@ pub fn llm_get_config(app: AppHandle) -> LlmConfigView {
         ollama_api_key_set: !cfg.ollama_api_key.trim().is_empty(),
         firecrawl_api_key_set: !cfg.firecrawl_api_key.trim().is_empty(),
         firecrawl_base: cfg.firecrawl_base,
+        ovion_cloud_endpoint: cfg.ovion_cloud_endpoint,
+        ovion_cloud_token_set: !cfg.ovion_cloud_token.trim().is_empty(),
         timeout_secs: cfg.timeout_secs,
         memory_enabled: cfg.memory_enabled,
         memory_max_turns: cfg.memory_max_turns,
@@ -1285,8 +1359,8 @@ pub fn llm_get_config(app: AppHandle) -> LlmConfigView {
 #[tauri::command]
 pub fn llm_set_config(app: AppHandle, mut config: LlmConfig) -> Result<(), String> {
     // Validate provider/mode.
-    if !matches!(config.provider.as_str(), "deepinfra" | "ollama") {
-        return Err("provider must be 'deepinfra' or 'ollama'".into());
+    if !matches!(config.provider.as_str(), "deepinfra" | "ollama" | "ovion-cloud") {
+        return Err("provider must be 'deepinfra', 'ollama' or 'ovion-cloud'".into());
     }
     if !matches!(config.mode.as_str(), "max" | "auto") {
         return Err("mode must be 'max' or 'auto'".into());
@@ -1303,6 +1377,9 @@ pub fn llm_set_config(app: AppHandle, mut config: LlmConfig) -> Result<(), Strin
     }
     if config.firecrawl_api_key.trim().is_empty() {
         config.firecrawl_api_key = prev.firecrawl_api_key;
+    }
+    if config.ovion_cloud_token.trim().is_empty() {
+        config.ovion_cloud_token = prev.ovion_cloud_token;
     }
     save_config(&app, &config)
 }

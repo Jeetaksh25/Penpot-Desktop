@@ -291,7 +291,7 @@
 
 (defn- android-readme [comp-name]
   (dm/fmt
-   "# %\n\nGenerated with Penpot Desktop (Android layout XML).\n\n## Use\n\nThe layout lives in `res/layout/%.xml`. Drop the `res/` tree and\n`AndroidManifest.xml` into an Android Studio project (or merge into an\nexisting module) and adjust `AndroidManifest.xml`'s `.MainActivity`.\n\nKnown limitations: corner radius / gradients / borders on containers and\ncomplex SVG shapes need a drawable resource (VectorDrawable / custom) —\nsee the inline comments. Remote images need a loader such as Coil/Glide.\n"
+   "# %\n\nGenerated with Ovion Desktop (Android layout XML).\n\n## Use\n\nThe layout lives in `res/layout/%.xml`. Drop the `res/` tree and\n`AndroidManifest.xml` into an Android Studio project (or merge into an\nexisting module) and adjust `AndroidManifest.xml`'s `.MainActivity`.\n\nKnown limitations: corner radius / gradients / borders on containers and\ncomplex SVG shapes need a drawable resource (VectorDrawable / custom) —\nsee the inline comments. Remote images need a loader such as Coil/Glide.\n"
    comp-name (fc/snake-name comp-name)))
 
 (defn generate-project

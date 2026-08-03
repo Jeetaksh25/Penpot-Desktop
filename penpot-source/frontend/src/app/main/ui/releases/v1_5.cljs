@@ -24,7 +24,7 @@
           [:h2 "What's new?"]]
          [:span.release "Alpha version " version]
          [:div.modal-content
-          [:p "Penpot continues growing with new features that improve performance, user experience and visual design."]
+          [:p "Ovion continues growing with new features that improve performance, user experience and visual design."]
           [:p "We are happy to show you a sneak peek of the most important stuff that the Alpha 1.5.0 version brings."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]]]
@@ -60,7 +60,7 @@
          [:div.modal-title
           [:h2 "New libraries organization"]]
          [:div.modal-content
-          [:p "Penpot now allows to group, multiselect and bulk edition of assets (components and graphics)."]
+          [:p "Ovion now allows to group, multiselect and bulk edition of assets (components and graphics)."]
           [:p "It is time to have all the libraries well organized and work more efficiently."]]
          [:div.modal-navigation
           [:button.btn-secondary {:on-click next} "Continue"]

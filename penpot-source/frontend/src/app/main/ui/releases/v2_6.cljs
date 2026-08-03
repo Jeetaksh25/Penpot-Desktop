@@ -22,22 +22,22 @@
         [:img {:src "images/features/2.6-slide-0.png"
                :class (stl/css :start-image)
                :border "0"
-               :alt "Design Tokens make their debut in Penpot!"}]
+               :alt "Design Tokens make their debut in Ovion!"}]
 
         [:div {:class (stl/css :modal-content)}
          [:div {:class (stl/css :modal-header)}
           [:h1 {:class (stl/css :modal-title)}
-           "What’s new in Penpot?"]
+           "What’s new in Ovion?"]
 
           [:div {:class (stl/css :version-tag)}
            (dm/str "Version " version)]]
 
          [:div {:class (stl/css :features-block)}
           [:span {:class (stl/css :feature-title)}
-           "Design Tokens make their debut in Penpot!"]
+           "Design Tokens make their debut in Ovion!"]
 
           [:p  {:class (stl/css :feature-content)}
-           "Penpot is the first design tool to integrate native design
+           "Ovion is the first design tool to integrate native design
            tokens—a single source of truth to improve efficiency and
            collaboration between product design and development."]
 
@@ -108,15 +108,15 @@
 
          [:div {:class (stl/css :feature)}
           [:p {:class (stl/css :feature-content)}
-           "Penpot adopts the W3C Design Tokens Community Group (DTCG)
+           "Ovion adopts the W3C Design Tokens Community Group (DTCG)
            standard, ensuring maximum compatibility with a wide range
            of tools and technologies."]
 
           [:p {:class (stl/css :feature-content)}
-           "With Penpot’s standardized design tokens format, you can
+           "With Ovion’s standardized design tokens format, you can
            easily reuse and sync tokens across different platforms,
            workflows, and disciplines. Import your existing tokens
-           into Penpot—or export them for use anywhere else. Seamless
+           into Ovion—or export them for use anywhere else. Seamless
            interoperability by design through Open Source."]]
 
          [:div {:class (stl/css :navigation)}

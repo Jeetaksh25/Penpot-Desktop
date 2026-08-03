@@ -1,4 +1,4 @@
-; NSIS installer hooks for Penpot Desktop.
+; NSIS installer hooks for Ovion Desktop.
 ;
 ; Wired into Tauri's installer.nsi via bundle.windows.nsis.installerHooks in
 ; tauri.conf.json. Tauri's default template already provides: a license page
@@ -20,7 +20,7 @@
   ; ── Desktop shortcut ───────────────────────────────────────────────────
   ; Uses the exe's embedded icon (the real Penpot icon set via bundle.icon),
   ; so no separate icon file is needed.
-  CreateShortcut "$DESKTOP\Oriole Desktop.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
+  CreateShortcut "$DESKTOP\Ovion Desktop.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
   DetailPrint "Created desktop shortcut."
 
   ; ── Install-time PostgreSQL initdb ─────────────────────────────────────
