@@ -145,6 +145,22 @@
   [config]
   (invoke "llm_set_config" #js {:config (clj->js config)}))
 
+(defn ai-usable?
+  "Given a keywordized `llm_get_config` view (with `*_set` presence flags + the
+   active `:provider`), return true if the AI can actually run on the current
+   provider. DeepInfra / Ovion Cloud need a configured key/token; local Ollama
+   does not (it is keyless, so it is always considered usable — a missing/offline
+   Ollama server surfaces as a normal runtime error, not a 'no key' guard). Used
+   by the AI bar so a user with no key is sent to Settings instead of firing a
+   request that will simply 401."
+  [cfg]
+  (case (:provider cfg)
+    "ollama"      true
+    "ovion-cloud" (boolean (:ovion_cloud_token_set cfg))
+    "deepinfra"   (boolean (:deepinfra_api_key_set cfg))
+    ;; Unknown provider defaults to the DeepInfra key requirement.
+    (boolean (:deepinfra_api_key_set cfg))))
+
 ;; ── Agent loop IPC wrappers ───────────────────────────────────────────────────
 ;;
 ;; The agent loop is CLJS-driven; Rust (`llm.rs`) is a stateless one-step model

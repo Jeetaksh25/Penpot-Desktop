@@ -470,22 +470,36 @@
            ;; the prompt and the backend's extract_urls parses them out.
            (if (and (str/empty? prompt) (empty? attachments))
              (st/emit! (ai/set-ai-error (tr "workspace.ai.bar.need-prompt")))
-             (-> (ai/files->inputs (mapv :file attachments))
+             ;; First, make sure the active provider actually has a key (or is
+             ;; keyless local Ollama). If not, send the user to AI Settings to
+             ;; enter one instead of firing a request that will only 401.
+             (-> (ai/invoke-get-config)
                  (p/then
-                  (fn [inputs]
-                    ;; "max" routes to the native agent loop (tool-calling +
-                    ;; vision scout); anything else stays on the byte-identical
-                    ;; single-shot spec path. No visual change to the bar.
-                    (let [ev-opts {:target       target
-                                   :quality      quality
-                                   :frame-preset preset
-                                   :use-memory   true}
-                          event (if (= quality "max")
-                                  (ai/run-agent-design
-                                   {:prompt prompt :files inputs :options ev-opts})
-                                  (ai/generate-design
-                                   {:prompt prompt :files inputs :options ev-opts}))]
-                      (st/emit! (ai/set-ai-error nil) event))))
+                  (fn [cfg-js]
+                    (let [cfg (js->clj cfg-js :keywordize-keys true)]
+                      (if (ai/ai-usable? cfg)
+                        (-> (ai/files->inputs (mapv :file attachments))
+                            (p/then
+                             (fn [inputs]
+                               ;; "max" routes to the native agent loop (tool-calling +
+                               ;; vision scout); "auto" stays on the single-shot spec
+                               ;; path whose model is picked by the DeepSeek V4 Flash
+                               ;; router in the backend. No visual change to the bar.
+                               (let [ev-opts {:target       target
+                                              :quality      quality
+                                              :frame-preset preset
+                                              :use-memory   true}
+                                     event (if (= quality "max")
+                                             (ai/run-agent-design
+                                              {:prompt prompt :files inputs :options ev-opts})
+                                             (ai/generate-design
+                                              {:prompt prompt :files inputs :options ev-opts}))]
+                                 (st/emit! (ai/set-ai-error nil) event))))
+                            (p/catch
+                             (fn [e] (st/emit! (ai/set-ai-error (str e))))))
+                        ;; No key for the active provider → open Settings.
+                        (st/emit! (modal/show {:type :ai-settings})
+                                  (ai/set-ai-error (tr "workspace.ai.bar.need-key")))))))
                  (p/catch
                   (fn [e] (st/emit! (ai/set-ai-error (str e)))))))))
 
@@ -527,6 +541,7 @@
                         (= s "starting") (reset! stage* (tr "workspace.ai.bar.stage-starting"))
                         (= s "fetching-url") (reset! stage* (tr "workspace.ai.bar.stage-fetching"))
                         (= s "scouting")  (reset! stage* (tr "workspace.ai.bar.stage-scouting"))
+                        (= s "routing")   (reset! stage* (tr "workspace.ai.bar.stage-routing"))
                         (= s "generating") (reset! stage* (tr "workspace.ai.bar.stage-generating"))
                         (= s "finalizing") (reset! stage* (tr "workspace.ai.bar.stage-finalizing"))
                         (= s "tool-thinking") (reset! stage* (tr "workspace.ai.bar.stage-thinking"))

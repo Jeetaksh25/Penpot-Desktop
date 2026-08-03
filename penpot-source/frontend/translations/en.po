@@ -10256,6 +10256,9 @@ msgstr "Working…"
 msgid "workspace.ai.bar.need-prompt"
 msgstr "Add a prompt or attach an image first."
 
+msgid "workspace.ai.bar.need-key"
+msgstr "Add an API key in AI Settings to use AI."
+
 msgid "workspace.ai.bar.invalid-spec"
 msgstr "The AI returned an invalid design — try rephrasing the prompt."
 
@@ -10276,6 +10279,9 @@ msgstr "Generating the design…"
 
 msgid "workspace.ai.bar.stage-finalizing"
 msgstr "Finalizing…"
+
+msgid "workspace.ai.bar.stage-routing"
+msgstr "Selecting the best model…"
 
 msgid "workspace.ai.bar.stage-thinking"
 msgstr "Thinking…"
@@ -10355,6 +10361,9 @@ msgstr "GLM model slug (drawing)"
 msgid "workspace.ai.settings.deepinfra-kimi"
 msgstr "Kimi model slug (vision)"
 
+msgid "workspace.ai.settings.deepinfra-router"
+msgstr "Auto router model slug (selects GLM/Kimi in Auto mode)"
+
 msgid "workspace.ai.settings.deepinfra-key"
 msgstr "DeepInfra API key"
 
@@ -10369,6 +10378,9 @@ msgstr "GLM model slug (drawing)"
 
 msgid "workspace.ai.settings.ollama-kimi"
 msgstr "Kimi model slug (vision)"
+
+msgid "workspace.ai.settings.ollama-router"
+msgstr "Auto router model slug (selects GLM/Kimi in Auto mode)"
 
 msgid "workspace.ai.settings.ollama-key"
 msgstr "Ollama API key (optional)"

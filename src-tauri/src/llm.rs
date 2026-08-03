@@ -56,7 +56,8 @@
 // the current working directory (dev) so the keys the developer already
 // placed there are used automatically: OLLAMA_KEY, DEEPINFRA_KEY,
 // FIRECRAWL_API_KEY, OVION_CLOUD_TOKEN, OLLAMA_URL, OLLAMA_GLM_MODEL,
-// OLLAMA_KIMI_MODEL, DEEPINFRA_GLM_MODEL, DEEPINFRA_KIMI_MODEL,
+// OLLAMA_KIMI_MODEL, OLLAMA_ROUTER_MODEL, DEEPINFRA_GLM_MODEL,
+// DEEPINFRA_KIMI_MODEL, DEEPINFRA_ROUTER_MODEL,
 // OVION_CLOUD_ENDPOINT, AI_PROVIDER, AI_MODE. In a packaged install
 // `.env.local` is absent, so the user configures via the Settings panel
 // (`llm_set_config`), which writes `llm.json`.
@@ -114,6 +115,13 @@ pub struct LlmConfig {
     #[serde(default = "default_deepinfra_kimi")]
     pub deepinfra_kimi_model: String,
 
+    /// Router slug on DeepInfra — the cheap, fast model that decides (in Auto
+    /// mode) whether the GLM "drawing" model or the Kimi "vision" model handles
+    /// a given prompt, and rewrites the prompt for the chosen model. Defaults to
+    /// a DeepSeek V4 Flash slug; editable in Settings.
+    #[serde(default = "default_deepinfra_router")]
+    pub deepinfra_router_model: String,
+
     // ── Ollama (local testing transport) ──
     #[serde(default = "default_ollama_url")]
     pub ollama_url: String,
@@ -128,6 +136,13 @@ pub struct LlmConfig {
 
     #[serde(default = "default_ollama_kimi")]
     pub ollama_kimi_model: String,
+
+    /// Router slug on Ollama (the Auto-mode model-selection model). Local
+    /// Ollama may not have a DeepSeek image; a small instruct model is a sane
+    /// default. The router falls back to the keyword heuristic if this model is
+    /// missing or errors, so a wrong slug never breaks generation.
+    #[serde(default = "default_ollama_router")]
+    pub ollama_router_model: String,
 
     // ── Firecrawl (optional, URL → rendered screenshot) ──
     #[serde(default)]
@@ -161,9 +176,11 @@ fn default_mode() -> String { "auto".into() }
 fn default_deepinfra_base() -> String { "https://api.deepinfra.com/v1/openai".into() }
 fn default_deepinfra_glm() -> String { "zai-org/GLM-5.2".into() }
 fn default_deepinfra_kimi() -> String { "moonshotai/Kimi-K2.7-Code".into() }
+fn default_deepinfra_router() -> String { "deepseek-ai/DeepSeek-V4-Flash".into() }
 fn default_ollama_url() -> String { "http://127.0.0.1:11434".into() }
 fn default_ollama_glm() -> String { "glm4".into() }
 fn default_ollama_kimi() -> String { "kimi-k2.7".into() }
+fn default_ollama_router() -> String { "qwen2.5:7b-instruct".into() }
 fn default_firecrawl_base() -> String { "https://api.firecrawl.dev".into() }
 fn default_ovion_cloud_endpoint() -> String { "https://api.ovion.app/v1".into() }
 fn default_timeout() -> u64 { 240 }
@@ -179,10 +196,12 @@ impl Default for LlmConfig {
             deepinfra_base: default_deepinfra_base(),
             deepinfra_glm_model: default_deepinfra_glm(),
             deepinfra_kimi_model: default_deepinfra_kimi(),
+            deepinfra_router_model: default_deepinfra_router(),
             ollama_url: default_ollama_url(),
             ollama_api_key: String::new(),
             ollama_glm_model: default_ollama_glm(),
             ollama_kimi_model: default_ollama_kimi(),
+            ollama_router_model: default_ollama_router(),
             firecrawl_api_key: String::new(),
             firecrawl_base: default_firecrawl_base(),
             ovion_cloud_endpoint: default_ovion_cloud_endpoint(),
@@ -204,10 +223,12 @@ struct LlmConfigView {
     deepinfra_base: String,
     deepinfra_glm_model: String,
     deepinfra_kimi_model: String,
+    deepinfra_router_model: String,
     deepinfra_api_key_set: bool,
     ollama_url: String,
     ollama_glm_model: String,
     ollama_kimi_model: String,
+    ollama_router_model: String,
     ollama_api_key_set: bool,
     firecrawl_api_key_set: bool,
     firecrawl_base: String,
@@ -319,8 +340,10 @@ fn seed_from_env_file() -> Option<LlmConfig> {
     if let Some(v) = env.get("DEEPINFRA_BASE") { if !v.is_empty() { cfg.deepinfra_base = v.clone(); } }
     if let Some(v) = env.get("DEEPINFRA_GLM_MODEL") { if !v.is_empty() { cfg.deepinfra_glm_model = v.clone(); } }
     if let Some(v) = env.get("DEEPINFRA_KIMI_MODEL") { if !v.is_empty() { cfg.deepinfra_kimi_model = v.clone(); } }
+    if let Some(v) = env.get("DEEPINFRA_ROUTER_MODEL") { if !v.is_empty() { cfg.deepinfra_router_model = v.clone(); } }
     if let Some(v) = env.get("OLLAMA_GLM_MODEL") { if !v.is_empty() { cfg.ollama_glm_model = v.clone(); } }
     if let Some(v) = env.get("OLLAMA_KIMI_MODEL") { if !v.is_empty() { cfg.ollama_kimi_model = v.clone(); } }
+    if let Some(v) = env.get("OLLAMA_ROUTER_MODEL") { if !v.is_empty() { cfg.ollama_router_model = v.clone(); } }
     if let Some(v) = env.get("OVION_CLOUD_ENDPOINT") { if !v.is_empty() { cfg.ovion_cloud_endpoint = v.clone(); } }
 
     if let Some(v) = env.get("AI_PROVIDER") {
@@ -856,7 +879,7 @@ fn parse_data_uri(uri: &str) -> Option<(String, String)> {
 // its JSON parses cleanly into F3's Malli schema. Keeping the canonical schema
 // in CLJS means one source of truth; these prompts are a faithful prose mirror.
 
-const DESIGN_SPEC_SHAPE: &str = r#"DesignSpec JSON shape:
+const DESIGN_SPEC_SHAPE: &str = r##"DesignSpec JSON shape:
 {
   "target": "current-page" | "new-page" | "new-board" | "update-selection",
   "frames": [
@@ -895,7 +918,7 @@ const DESIGN_SPEC_SHAPE: &str = r#"DesignSpec JSON shape:
     }
   ],
   "flows": [ {"id": "flow1", "name": "Main", "starting-frame": "f1"} ]
-}"#;
+}"##;
 
 const ANTI_SLOP_RULES: &str = r#"ANTI-SLOP RULES (non-negotiable — this is what separates real design from AI slop):
 - DO NOT default to purple/indigo gradients, generic glassmorphism, or centered "hero with two buttons" templates unless the brief explicitly calls for them.
@@ -936,7 +959,7 @@ Rules:
 
 Output ONLY the JSON object. Nothing else."#;
 
-const SCOUT_PROMPT: &str = r#"You are a senior design-systems analyst. You are given reference visuals (screenshots/images of a website or app) and/or a design request. Extract a concrete DESIGN-LANGUAGE BRIEF that another model will use to produce an Ovion design that faithfully follows the reference's design language. Return ONLY JSON:
+const SCOUT_PROMPT: &str = r##"You are a senior design-systems analyst. You are given reference visuals (screenshots/images of a website or app) and/or a design request. Extract a concrete DESIGN-LANGUAGE BRIEF that another model will use to produce an Ovion design that faithfully follows the reference's design language. Return ONLY JSON:
 {
   "design_language": "the named system(s) the reference follows — e.g. Material 3, Apple HIG, Fluent 2, Linear, Vercel/Geist, Stripe, Notion, Atlassian, Tailwind UI, Bootstrap. If unsure, name the closest REAL production design language.",
   "rationale": "1-2 sentences why",
@@ -954,7 +977,7 @@ Rules:
 - Ground EVERY value in the reference visuals when provided; otherwise infer from the named real production design language. Do NOT invent generic values.
 - All colors must be valid hex with AA-contrast for text on background.
 - Keep it REAL: emulate how actual production apps using this language look, not a generic AI template.
-- Output ONLY the JSON."#;
+- Output ONLY the JSON."##;
 
 const COMBINED_PROMPT_AUTO: &str = r#"You are the design engine inside an Ovion-based desktop design studio. You can SEE the attached reference images (screenshots/website imagery). First, internally analyze the reference visuals and extract the design language (palette, typography scale, spacing, radius, component style, motion, density). Then produce an Ovion DesignSpec JSON that follows that design language for the user's request. Return ONLY the final DesignSpec JSON — no markdown, no prose, no fences.
 
@@ -975,6 +998,44 @@ Rules:
 Follow the reference's real design language exactly. Honor the requested frame size for the primary frame.
 
 Output ONLY the JSON object."#;
+
+// ── Auto-mode smart router (DeepSeek V4 Flash) ───────────────────────────────
+//
+// In Auto mode this prompt drives the cheap, fast router model. It reads the
+// user's raw prompt (+ whether images are attached + a short memory hint) and
+// returns a strict JSON decision: which of the two drawing models should handle
+// the request, and a rewritten prompt tuned for that model. The router never
+// draws anything — it only routes + rewrites. Max mode bypasses the router
+// entirely (GLM always, except images which go to Kimi).
+//
+// Routing rules the prompt encodes:
+//   • Images attached → ALWAYS "kimi" (the GLM drawing model is text-only and
+//     cannot see images). The router is told this hard constraint.
+//   • Complex / complete design audit / multi-screen / dashboard / admin /
+//     data-heavy / prototype / interactive flow / long prompt → "glm" (best
+//     structured-JSON drawing).
+//   • Simple / single-screen / landing / hero / card / component / marketing /
+//     short prompt → "kimi" (cheaper, plenty for simple asks). Auto leans Kimi.
+// The rewritten "prompt" field compacts simple prompts (strip redundancy, keep
+// intent — saves tokens) or expands vague ones (add clarifying structure for the
+// chosen model). On ANY router failure (network, bad slug, bad JSON) the backend
+// falls back to the keyword `score_complexity` heuristic + the original prompt,
+// so a missing/misconfigured router model never breaks generation.
+const ROUTER_SYSTEM_PROMPT: &str = r#"You are the Auto-mode model router inside the Ovion design studio. Two drawing models serve you:
+
+- "glm": the structured-drawing model. Text-only (it CANNOT see images). Best at complex, multi-screen, data-dense, interactive, or long-prompt designs: dashboards, admin panels, analytics tables, e-commerce checkout flows, multi-screen app prototypes, full design audits, anything with conditional logic or many components.
+- "kimi": the vision-capable, cost-efficient model. Best at simple, single-screen, or marketing-style asks: a landing hero, a card, a single component, a pricing section, a short prompt. It is also the ONLY option when images/screenshots are attached, because glm cannot see images.
+
+Your job:
+1. Decide which model ("glm" or "kimi") should DRAW the user's request.
+2. Rewrite the user's prompt for that model: COMPACT it when the request is simple (remove redundancy, keep full intent, keep any concrete specs like colors/sizes/copy) to save tokens; EXPAND it when the request is vague (add the clarifying structure the chosen model needs — but never invent requirements the user did not give).
+
+HARD CONSTRAINT: if images are attached, you MUST return model "kimi" (glm is text-only).
+
+Return ONLY a JSON object, no prose, no fences:
+{"model":"glm"|"kimi","prompt":"<the rewritten prompt for that model>","reason":"<<=12 words>"}
+
+The "prompt" field is the full rewritten prompt string the chosen model will receive — make it self-contained (do not reference this routing step). Preserve every concrete detail the user gave (frame sizes, copy, colors, counts, brand names, URLs). If the user's prompt is already optimal, return it lightly trimmed, never empty."#;
 
 fn build_prompt(template: &str) -> String {
     template
@@ -1596,6 +1657,18 @@ fn kimi_model(cfg: &LlmConfig) -> String {
     }
 }
 
+/// The Auto-mode router model slug for the active provider. This is the cheap,
+/// fast "model-selector" model (DeepSeek V4 Flash on DeepInfra / Ovion Cloud, a
+/// small local instruct model on Ollama). It never draws — it only decides
+/// GLM-vs-Kimi and rewrites the prompt.
+fn router_model(cfg: &LlmConfig) -> String {
+    match cfg.provider.as_str() {
+        "ollama" => cfg.ollama_router_model.clone(),
+        "ovion-cloud" => cfg.deepinfra_router_model.clone(),
+        _ => cfg.deepinfra_router_model.clone(),
+    }
+}
+
 /// Pull the JSON object out of the model's text response. The system prompt
 /// asks for JSON only, but models occasionally wrap it in ```json fences or
 /// trailing prose. We find the first balanced `{ … }` run.
@@ -1678,6 +1751,92 @@ fn score_complexity(prompt: &str) -> u32 {
     score
 }
 
+// ── Smart router (Auto-mode model selection) ─────────────────────────────────
+
+/// Parsed decision from the router model. `reason` is ignored at runtime but
+/// kept for debugging/logging.
+#[derive(Debug, Deserialize)]
+struct RouteDecision {
+    model: String,
+    #[serde(default)]
+    prompt: String,
+    #[serde(default)]
+    reason: String,
+}
+
+/// Keyword-heuristic fallback used when the router model is unavailable (no
+/// key, bad slug, network error, unparseable JSON). Mirrors the pre-router Auto
+/// behavior so generation never regresses if the router is missing.
+fn heuristic_route(prompt: &str, has_vision: bool) -> (String, String) {
+    let model = if has_vision {
+        "kimi"
+    } else if score_complexity(prompt) >= 3 {
+        "glm"
+    } else {
+        "kimi"
+    };
+    (model.to_string(), prompt.to_string())
+}
+
+/// Run the Auto-mode router. Returns `(model, base_prompt)` where `model` is
+/// "glm" or "kimi" and `base_prompt` is the router-rewritten user prompt (or
+/// the original on fallback). `has_vision` forces "kimi" regardless of the
+/// router's pick (glm cannot see images). Never returns an Err — any failure
+/// falls back to `heuristic_route` so the caller can always dispatch.
+async fn route_request(
+    app: &AppHandle,
+    cfg: &LlmConfig,
+    user_prompt: &str,
+    has_vision: bool,
+    transcript: &str,
+) -> (String, String) {
+    emit_progress(app, "routing", "selecting model");
+
+    // Keep the router cheap: cap the user payload it has to read.
+    let mut user = format!(
+        "User prompt:\n{user_prompt}\n\nImages attached: {has_vision}\n\nRecent conversation memory (for continuity; may be empty):\n{transcript}"
+    );
+    if user.chars().count() > 6000 {
+        user = user.chars().take(6000).collect::<String>() + "\n…[truncated]";
+    }
+
+    let raw = match call_provider(cfg, &router_model(cfg), ROUTER_SYSTEM_PROMPT, &user, &[]).await {
+        Ok(r) => r,
+        Err(_) => {
+            emit_progress(app, "routing", "heuristic");
+            return heuristic_route(user_prompt, has_vision);
+        }
+    };
+    // Honor a cancel that arrived during the router call.
+    if check_aborted().is_err() {
+        return heuristic_route(user_prompt, has_vision);
+    }
+
+    let v = extract_json(&raw).unwrap_or(serde_json::Value::Null);
+    match serde_json::from_value::<RouteDecision>(v) {
+        Ok(d) => {
+            let mut model = d.model.trim().to_lowercase();
+            if model != "glm" && model != "kimi" {
+                model = "kimi".to_string();
+            }
+            if has_vision {
+                model = "kimi".to_string();
+            }
+            let base = if d.prompt.trim().is_empty() {
+                user_prompt.to_string()
+            } else {
+                d.prompt
+            };
+            emit_progress(app, "routing", &format!("routed:{model}"));
+            (model, base)
+        }
+        Err(_) => {
+            emit_progress(app, "routing", "heuristic");
+            heuristic_route(user_prompt, has_vision)
+        }
+    }
+}
+
 /// Frame preset → (width, height, label) for the prompt + frontend fallback.
 fn preset_dims(preset: &str) -> Option<(f64, f64, &'static str)> {
     match preset {
@@ -1720,10 +1879,12 @@ pub fn llm_get_config(app: AppHandle) -> LlmConfigView {
         deepinfra_base: cfg.deepinfra_base,
         deepinfra_glm_model: cfg.deepinfra_glm_model,
         deepinfra_kimi_model: cfg.deepinfra_kimi_model,
+        deepinfra_router_model: cfg.deepinfra_router_model,
         deepinfra_api_key_set: !cfg.deepinfra_api_key.trim().is_empty(),
         ollama_url: cfg.ollama_url,
         ollama_glm_model: cfg.ollama_glm_model,
         ollama_kimi_model: cfg.ollama_kimi_model,
+        ollama_router_model: cfg.ollama_router_model,
         ollama_api_key_set: !cfg.ollama_api_key.trim().is_empty(),
         firecrawl_api_key_set: !cfg.firecrawl_api_key.trim().is_empty(),
         firecrawl_base: cfg.firecrawl_base,
@@ -1918,8 +2079,42 @@ pub async fn llm_generate(
 
     // ── User-attached files → images (vision) or text ──
     let mut images: Vec<ImageInput> = url_images;
+
+    // ── Conversation memory (loaded early so the Auto router can see it) ──
+    let use_mem = request.options.use_memory.unwrap_or(cfg.memory_enabled);
+    let file_id = request
+        .options
+        .file_id
+        .clone()
+        .unwrap_or_else(|| "default".to_string());
+    let mem = if use_mem { load_memory(&app, &file_id) } else { MemoryFile::default() };
+    let transcript = memory_transcript(&mem, cfg.memory_max_turns);
+
+    // Does this request carry vision input (URL screenshots and/or image
+    // attachments)? Computed before the file loop so the Auto router can run
+    // with it; the actual `images` vec is finalized by the file loop below.
+    let has_vision = !images.is_empty()
+        || request.files.iter().any(|f| {
+            let m = if f.mime.is_empty() { guess_mime(&f.name) } else { f.mime.clone() };
+            m.starts_with("image/")
+        });
+
+    // ── Auto-mode smart router (Max bypasses it: GLM always) ──
+    // The router (DeepSeek V4 Flash) picks GLM-vs-Kimi and rewrites the prompt.
+    // `route_model` is None for Max (the Max branch below chooses GLM/Kimi
+    // itself). `base_prompt` replaces the raw user prompt as the seed of
+    // prompt_text; URL context, file text, selection + memory are appended
+    // after it exactly as before.
+    let (route_model, base_prompt) = if is_max {
+        (None, request.prompt.clone())
+    } else {
+        let (m, p) = route_request(&app, &cfg, &request.prompt, has_vision, &transcript).await;
+        (Some(m), p)
+    };
+    check_aborted()?;
+
     let mut prompt_text = String::new();
-    prompt_text.push_str(&request.prompt);
+    prompt_text.push_str(&base_prompt);
 
     if !url_context.is_empty() {
         prompt_text.push_str(
@@ -1995,11 +2190,8 @@ pub async fn llm_generate(
         }
     }
 
-    // ── Conversation memory ──
-    let use_mem = request.options.use_memory.unwrap_or(cfg.memory_enabled);
-    let file_id = request.options.file_id.clone().unwrap_or_else(|| "default".to_string());
-    let mem = if use_mem { load_memory(&app, &file_id) } else { MemoryFile::default() };
-    let transcript = memory_transcript(&mem, cfg.memory_max_turns);
+    // ── Conversation memory (transcript appended; mem/use_mem/file_id were
+    //    loaded early so the Auto router could see them) ──
     if !transcript.is_empty() {
         prompt_text.push_str("\n\n");
         prompt_text.push_str(&transcript);
@@ -2008,8 +2200,8 @@ pub async fn llm_generate(
     check_aborted()?;
 
     // ── Pipeline: dual-model orchestration ──
-    let has_vision = !images.is_empty();
-    let complexity = score_complexity(&request.prompt);
+    // `has_vision`, `route_model` and `base_prompt` were resolved above. Max =
+    // GLM always (Kimi scouts when there is vision); Auto = router-decided.
 
     let draw_sys = build_prompt(DRAW_SYSTEM_PROMPT);
     let combined_sys = build_prompt(COMBINED_PROMPT_AUTO);
@@ -2033,14 +2225,21 @@ pub async fn llm_generate(
             call_provider(&cfg, &glm_model(&cfg), &draw_sys, &prompt_text, &[]).await?
         }
     } else {
-        // Auto: Kimi single-shot when there is vision; GLM only for complex asks.
-        if has_vision {
+        // Auto: the smart router already decided `route_model` (forced to "kimi"
+        // when there is vision, since GLM is text-only). GLM draws complex asks;
+        // Kimi draws simple ones (and any vision request) — Auto leans Kimi.
+        let chosen = route_model.as_deref().unwrap_or("kimi");
+        if chosen == "glm" {
+            // Router picked GLM (complex/audit/multi-screen). GLM is text-only,
+            // so pass no images even if some were attached (the router only
+            // returns "glm" when has_vision is false, so images is empty here,
+            // but be defensive).
+            emit_progress(&app, "generating", "GLM (router)");
+            call_provider(&cfg, &glm_model(&cfg), &draw_sys, &prompt_text, &[]).await?
+        } else if has_vision {
             emit_progress(&app, "generating", "Kimi (vision + design)");
             let user = format!("User request:\n{prompt_text}");
             call_provider(&cfg, &kimi_model(&cfg), &combined_sys, &user, &images).await?
-        } else if complexity >= 3 {
-            emit_progress(&app, "generating", "GLM (complex)");
-            call_provider(&cfg, &glm_model(&cfg), &draw_sys, &prompt_text, &[]).await?
         } else {
             emit_progress(&app, "generating", "Kimi");
             call_provider(&cfg, &kimi_model(&cfg), &draw_sys, &prompt_text, &[]).await?
