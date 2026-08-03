@@ -88,12 +88,12 @@ Sorted P0 → P1 → P2.
 
 #### P0.01 AI image editing: one-click background removal, image upscaling, segmentation/isolation (on selected canvas images)
 
-- **State:** 🔴 missing  ·  **Sources:** Sketch, Pixso, Lunacy
+- **State:** ✅ done (C1 f3755b9)  ·  **Sources:** Sketch, Pixso, Lunacy
 - **Detail / build direction:** Figma_Parity #41 is SCOPE-DEFERRED-v1 — needs a segmentation/inpainting/outpainting model in a Rust module blocked by the no-.rs/no-build constraint; no such model in llm.rs. Recommended: wire a segmentation model (e.g. U2Net/BiRefNet via DeepInfra, consistent with the existing DeepInfra provider in llm.rs) as a new Tauri command remove_background(image_bytes) -> PNG mask; add an Upscale command via a super-resolution endpoint. Surface as right-panel actions on selected image shapes (sidebar/options/menus/image.cljs) with real-time preview. Keeps images local via the existing reqwest path; no on-device ML required.
 
 #### P0.02 AI text-to-image generation (synthesize banner/illustration/icon/people assets on canvas from a prompt)
 
-- **State:** 🔴 missing  ·  **Sources:** Pixso, Lunacy, Uizard
+- **State:** ✅ done (C1 f3755b9)  ·  **Sources:** Pixso, Lunacy, Uizard
 - **Detail / build direction:** Recon: 'No text-to-image model wired... no t2i model in llm.rs'; create_shape accepts image fills only from user-supplied base64 attachments. Recommended: add a generate_image(prompt, size) Tauri command in llm.rs calling a DeepInfra/Ovion-cloud image model (e.g. FLUX/SDXL), returning base64 PNG; extend ai_tools.cljs create_shape to accept a generated-image fill source; add an 'AI Image' entry in the AI bar / assets panel with a prompt + size dialog and a prompt library. Augment with a people-avatar generator (attribute controls) once the base path lands.
 
 #### P0.03 AI text-to-site: generate a publishable multi-page website (navigation, copy, SEO, CMS bindings, responsive) from a prompt, not just design layers
@@ -118,7 +118,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.07 Design-system-constrained AI generation + authorable brand guidelines (AI output reuses team tokens/variables/classes/library components and obeys written brand rules)
 
-- **State:** 🔴 missing  ·  **Sources:** Pixso, UXPin, Webflow, Uizard
+- **State:** ✅ done (C1 f3755b9)  ·  **Sources:** Pixso, UXPin, Webflow, Uizard
 - **Detail / build direction:** generate-design/run-agent-design (ai_gen.cljs) applies a free-form DesignSpec via design_gen.apply-design-spec; ai_tools set_fill/set_typography/set_radius take literal values with no token/class/library awareness, and llm.rs LlmConfig carries no design-system-guidelines field. Recommended: (1) Add a 'Design System Guidelines' plain-text field to LlmConfig and an editor in ai_settings.cljs, injected into the system prompt so the LLM obeys written brand rules (UXPin Forge model). (2) Add a constraint layer in design_gen.cljs that, before emitting a frame, resolves color literals to the nearest global variable token, snaps spacing to the active spacing-grid, and reuses an existing library component when the DesignSpec's element tag matches one (Pixso model). (3) Surface a 'tokens/components created vs reused' accounting in the AI bar after generation. This is the top AI-fidelity gap and the cheapest high-impact win since the tokens system already exists.
 
 #### P0.08 Face arrangement computation (Divide-style region splitting) as the geometric basis for region selection
@@ -133,7 +133,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.10 Local MCP server exposing the design surface to external AI agents (run_code/design_to_code/code_to_design, get_node/layer/variables/variants/screenshot, create_instance, apply_design)
 
-- **State:** 🔴 missing  ·  **Sources:** Sketch, Pixso, Lunacy, Webflow, Google Stitch
+- **State:** ✅ done (C1 f3755b9)  ·  **Sources:** Sketch, Pixso, Lunacy, Webflow, Google Stitch
 - **Detail / build direction:** Ovion has only an MCP CLIENT namespace (app/main/data/workspace/mcp.cljs) connecting OUT to Penpot cloud — dead code on offline desktop since no dashboard provisions :mcp-enabled or access tokens. No MCP SERVER exists in src-tauri. Recommended: implement a localhost MCP server in a new Tauri command module (or a small Axum/reqwest sidecar) exposing tools that read the active Ovion document — get_document_info, get_layer_tree, get_selection, get_screenshot (reuse the export raster pipeline), get_tokens/variables, get_components, get_libraries — plus a run_code/apply_action tool mapped onto the existing ai_tools.cljs registry (create_component/set_fill/add_flex_layout etc.) and a design_to_code tool reusing app/util/code_gen/frameworks. Add a reverse code_to_design (HTML->shapes) reusing Feature 4's URL-clone extract path. Gate behind an AI > MCP toggle in ai_settings.cljs. This single capability closes five tools' headline gap and unlocks compose-with-Cursor/Claude-Code workflows.
 
 #### P0.11 Managed hosting / one-click publish (CDN, SSL, HTTP/3, edge cache, staging, version rollback, performance analytics)
@@ -143,7 +143,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.12 Multi-variant / non-destructive alternative AI generation (N distinct UIs per prompt side-by-side; create-variant-alongside preserving original)
 
-- **State:** 🔴 missing  ·  **Sources:** Google Stitch, Uizard, UXPin
+- **State:** ✅ done (C1 f3755b9)  ·  **Sources:** Google Stitch, Uizard, UXPin
 - **Detail / build direction:** ai_gen.cljs generate-design builds a single DesignSpec; on-regenerate clears and re-fires one replacement; the agent loop mutates in place. Recommended: (1) add a variants=N parameter to generate-design that fires N DesignSpecs and renders them in a side-by-side carousel in the AI bar preview (Stitch/Uizard model); (2) add a non-destructive 'Create Alternative' action that emits a sibling variant (component variant or offset-pasted frame) preserving the original (UXPin Forge model). Reuse Penpot's combine-as-variants for the component case. Pure frontend + prompt change, unblocked.
 
 #### P0.13 Real HTML/CSS DOM-editor authoring (canvas = real code, authorable class system, semantic element choice, real-time CSS)
@@ -186,12 +186,12 @@ Sorted P0 → P1 → P2.
 
 #### P1.01 AI Design Specs (automated handoff documentation generation from the design)
 
-- **State:** 🔴 missing  ·  **Sources:** Pixso
+- **State:** ✅ done (C1 f3755b9)  ·  **Sources:** Pixso
 - **Detail / build direction:** Ovion's inspect panel shows code + measurements but generates no spec document. Recommended: add a generate_spec_doc(page|selection) action that walks the shape tree and emits a structured handoff doc (markdown/HTML: colors used, typography, spacing, components, measurements) via the LLM or a deterministic template. Export from the inspect panel. Low-risk, high-value for handoff.
 
 #### P1.02 AI Design System / Theme generation from a seed color, image, or URL into a reusable tokens library
 
-- **State:** 🔴 missing  ·  **Sources:** Pixso, Uizard
+- **State:** ✅ done (C1 f3755b9)  ·  **Sources:** Pixso, Uizard
 - **Detail / build direction:** No 'pick a theme color / image / URL -> AI generates full color/typography/effects/spacing system' action; tokens are manually authored. Recommended: add a generate_design_system(prompt|image|url) Tauri command in llm.rs that returns a tokens JSON (palette, type scale, radii, spacing, shadows) and writes it into workspace/tokens via the existing token import path; support applying the theme to an entire project (Uizard style-transfer). Reuse Feature 4's URL fetch for URL->theme extraction. Pure LLM + tokens integration, unblocked.
 
 #### P1.03 AI Smart Layout (one-click right-click 'Smart Layout' that auto-structures existing selected layers into auto-layout)
@@ -201,7 +201,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.04 AI UX Review / Design Review (heuristic critique of selected UI: clarity, hierarchy, consistency, accessibility, with a score)
 
-- **State:** 🔴 missing  ·  **Sources:** UXPin, Uizard
+- **State:** ✅ done (C1 f3755b9)  ·  **Sources:** UXPin, Uizard
 - **Detail / build direction:** All AI actions are generative; no review/critique/score action in ai_tools.cljs or ai_bar.cljs; llm.rs has no review prompt. Recommended: add a review_design(selection) Tauri command that sends a screenshot + shape metadata to the LLM with a critique prompt returning a structured score + feedback (clarity/hierarchy/consistency/a11y); surface as a 'UX Review' action in the AI bar that opens a results panel without mutating the canvas. Reuses the export screenshot pipeline. Cheap, high-value.
 
 #### P1.05 AI auto-generation of logical next screens / interactive Play prototype flows from click targets
@@ -236,7 +236,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.11 DESIGN.md / design-system extraction from any URL into a reusable tokens library
 
-- **State:** 🟡 half-done  ·  **Sources:** Google Stitch
+- **State:** ✅ done (C1 f3755b9)  ·  **Sources:** Google Stitch
 - **Detail / build direction:** Feature 4 URL-clone clones a page's visual content as a one-off board; the tokens system exists but nothing ingests a URL and distills colors/fonts/radii into a persistent reusable library. Recommended: add an extract_design_system(url) action (reusing Feature 4's fetch + the Kimi vision model) that returns a tokens JSON and writes it into workspace/tokens as a named, reusable library. Distinct from one-off clone — produces a portable system. Unblocked.
 
 #### P1.12 Data-bound Repeaters (dataset -> repeated widgets, filter match any/all/smart, sort, floating data editor)
