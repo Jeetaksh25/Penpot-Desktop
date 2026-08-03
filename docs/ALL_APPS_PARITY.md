@@ -113,7 +113,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.06 Conditional logic in prototypes (Condition Builder, if/else-if case dispatch, Satisfy-All/Any predicates)
 
-- **State:** ⚠️ not-working  ·  **Sources:** Axure, UXPin
+- **State:** ✅ done (C2 3e9d82d)  ·  **Sources:** Axure, UXPin
 - **Detail / build direction:** interactions.cljc DECLARES a :conditional action type but the comment says 'SCHEMA ONLY — viewer expression evaluation + conditional dispatch is DEFERRED'; viewer/shapes.cljs dispatch has no :conditional branch; no Condition Builder UI exists in interactions.cljs. Recommended: (1) implement an expression evaluator in a new common/types/interactions/expr.cljc (math/string/widget-prop/variable refs — see fx gap); (2) add a :conditional branch to viewer/shapes.cljs that evaluates the condition and dispatches then/else actions; (3) build a Condition Builder panel in sidebar/options/menus/interactions.cljs with if/else-if cases, AND/OR rows, and predicates (equals/contains/starts-with/regex/is-empty/is-error-state). This is Axure's signature capability and unblocks realistic form-validation/multi-step prototypes. Pure CLJC + frontend, unblocked by no-build.
 
 #### P0.07 Design-system-constrained AI generation + authorable brand guidelines (AI output reuses team tokens/variables/classes/library components and obeys written brand rules)
@@ -163,12 +163,12 @@ Sorted P0 → P1 → P2.
 
 #### P0.16 Runtime-evaluated prototype variables (set-variable action, variable-driven values, Variable Changed reactive event)
 
-- **State:** ⚠️ not-working  ·  **Sources:** Axure, UXPin
+- **State:** ✅ done (C2 3e9d82d)  ·  **Sources:** Axure, UXPin
 - **Detail / build direction:** Schema declares :set-variable / :set-variable-mode but the SCHEMA-ONLY/DEFERRED comment applies and the viewer dispatch has no :set-variable branch; Ovion's tokens are authoring-time, not runtime state; no Variable Changed event in event-types. Recommended: model runtime prototype variables (distinct from design tokens) in workspace/tokens with a runtime store in the viewer; add :set-variable dispatch in viewer/shapes.cljs; add a :variable-changed event type to interactions.cljc and wire it as a reactive trigger. Pair with the expression evaluator (fx gap) and Condition Builder. Pure frontend, unblocked.
 
 #### P0.17 Scroll-driven animations and scroll transforms (scroll-into-view, while-scrolling, parallax, keyframe timeline) that are web-shippable
 
-- **State:** 🔴 missing  ·  **Sources:** Framer, Webflow
+- **State:** ✅ done (C2 3e9d82d)  ·  **Sources:** Framer, Webflow
 - **Detail / build direction:** interactions.cljs triggers are click/hover/key-down/on-change/after-delay + state-driven; no scroll-position trigger, no keyframe timeline, no parallax, and interactions do not export to a shipped site. Recommended: add :scroll-into-view and :while-scrolling trigger types to interactions.cljc plus a scroll-transform action (animate any style From->To across scroll) and a visual keyframe timeline editor in the interactions panel. For design-prototype preview, implement scroll handling in the viewer; for web-shippable output, emit GSAP/Motion snippets alongside the markup export. Stage the prototype-preview half first (unblocked), the export half with hosting.
 
 #### P0.18 Shape Builder Alt/Option erase-mode (click/drag to delete faces and edges interactively on an N-path arrangement)
@@ -361,7 +361,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.36 fx math/expression editor (`[[expression]]` syntax) + Expressions engine breadth (date/regex/browser/prototype functions)
 
-- **State:** 🔴 missing  ·  **Sources:** Axure, UXPin
+- **State:** ✅ done (C2 3e9d82d)  ·  **Sources:** Axure, UXPin
 - **Detail / build direction:** No expression evaluator in the viewer; interactions.cljc L19 defers 'expressions'; no fx dialog. Recommended: implement an expression evaluator in common/types/interactions/expr.cljc supporting math, string, widget-property refs, variables, date, and regex; add an fx button in the interactions panel opening an Edit Value dialog with bracket-expression syntax. Prerequisite for the Condition Builder and runtime variables. Pure CLJC, unblocked.
 
 
@@ -409,7 +409,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.09 Apply Style Action (dynamically mutate widget style at runtime via interaction)
 
-- **State:** 🔴 missing  ·  **Sources:** Axure
+- **State:** ✅ done (C2 3e9d82d)  ·  **Sources:** Axure
 - **Detail / build direction:** Ovion's runtime action-types have no set-style/set-fill action; the AI agent has set_fill etc. but those are authoring-time. Recommended: add a :set-style action type + viewer dispatch to mutate fill/typography/border at runtime from an interaction. Pairs with runtime variables + expressions. Schema + viewer, unblocked.
 
 #### P2.10 Boolean 'Add' operation (combine open paths without a boolean, for stroke/open-path compositing)
@@ -469,7 +469,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.21 Form error-state system (Error style effects, Set Error State action, error-state-triggered interactions)
 
-- **State:** 🔴 missing  ·  **Sources:** Axure
+- **State:** ✅ done (C2 3e9d82d)  ·  **Sources:** Axure
 - **Detail / build direction:** No error-state concept in the interaction schema or form widgets. Recommended: add an error-state model to form widgets + a :set-error-state action + an 'is in error state' condition predicate. Pairs with the Condition Builder. Schema + frontend, unblocked.
 
 #### P2.22 Full Command Bar (Cmd+K) indexing all commands + S-to-insert-component + Cmd+Opt+R swap
