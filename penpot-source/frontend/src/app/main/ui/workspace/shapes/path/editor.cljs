@@ -8,11 +8,18 @@
   (:require
    [app.common.data :as d]
    [app.common.data.macros :as dm]
+   [app.common.files.changes-builder :as pcb]
    [app.common.geom.point :as gpt]
    [app.common.math :as mth]
    [app.common.types.path :as path]
+   [app.common.types.path.arrangement :as arrangement]
+   [app.common.types.path.bool :as bool]
    [app.common.types.path.helpers :as path.helpers]
+   [app.common.types.path.subpath :as subpath]
+   [app.main.data.changes :as dch]
+   [app.main.data.helpers :as dsh]
    [app.main.data.workspace.path :as drp]
+   [app.main.data.workspace.selection :as dws]
    [app.main.snap :as snap]
    [app.main.store :as st]
    [app.main.streams :as ms]
@@ -21,8 +28,10 @@
    [app.util.dom :as dom]
    [app.util.i18n :refer [tr]]
    [app.util.keyboard :as kbd]
+   [beicon.v2.core :as rx]
    [clojure.set :refer [map-invert]]
    [goog.events :as events]
+   [potok.v2.core :as ptk]
    [rumext.v2 :as mf]))
 
 (def point-radius 5)
@@ -41,6 +50,14 @@
 (def black-color "var(--app-black)")
 (def white-color "var(--app-white)")
 (def gray-color "var(--df-secondary)")
+
+;; Figma-parity Shape Builder (#28) / Paint Bucket (#29). Coral is the
+;; Ovion AI accent (matches var(--ai-coral) / #f28b82 used by the AI
+;; surfaces); used for the face hover-fill, the drag union outline and
+;; the erase indicator. No CSS transitions are applied — the highlight
+;; and outline are pure state (re-render on hover/drag), so there is no
+;; motion to guard against prefers-reduced-motion.
+(def coral-color "#f28b82")
 
 (mf/defc path-point*
   {::mf/private true}
@@ -263,6 +280,77 @@
             (recur (inc i) i inside))
           inside)))))
 
+;; ---------------------------------------------------------------------------
+;; Figma-parity Shape Builder (#28) + Paint Bucket (#29)
+;; ---------------------------------------------------------------------------
+;;
+;; The path editor edits ONE shape. Shape Builder / Paint Bucket operate
+;; on the SUB-PATHS of that one edited (compound) path: every sub-path is
+;; fed to `arrangement/compute-arrangement` as a separate input shape so
+;; crossing/overlapping sub-paths produce a planar subdivision of FACES.
+;; The user then hovers a face (coral highlight), clicks to ISOLATE it
+;; (Divide-equivalent), drags across faces to UNITE them
+;; (`bool/calculate-content :union`), or holds Alt and clicks to ERASE a
+;; face/edge (union of the remaining faces). Paint Bucket clicks a face
+;; to replace the content with that filled closed region.
+;;
+;; All geometry is computed from the pure CLJC arrangement engine; the
+;; commit goes through a LOCAL ptk/reify WatchEvent (defined here, not in
+;; data/workspace/*) that reuses pcb/dch/dws exactly like
+;; data/workspace/bool.cljs.
+
+(defn- content->arrangement-shapes
+  "Splits a path `content` into a vector of `{:id idx :content subpath-data}`
+  maps — one per sub-path — the input format `arrangement/compute-arrangement`
+  expects. Each sub-path's `:data` is a plain vector of command maps."
+  [content]
+  (let [subs (subpath/get-subpaths content)]
+    (into []
+          (map-indexed
+           (fn [idx sp]
+             {:id idx :content (:data sp)}))
+          subs)))
+
+(defn- build-arrangement
+  "Builds the planar arrangement for `content` (or nil when the content
+  has no sub-paths). Open sub-paths are treated as closed regions
+  (`:open-as-closed true`) so filled open paths still subdivide the
+  plane — matching how Penpot renders them."
+  [content]
+  (let [shapes (content->arrangement-shapes content)]
+    (when (seq shapes)
+      (arrangement/compute-arrangement shapes :open-as-closed true))))
+
+(defn- bounded-faces
+  "Returns the bounded faces of an arrangement (excluding the unbounded
+  outer face)."
+  [arr]
+  (filterv :bounded? (:faces arr)))
+
+(defn- commit-shape-content
+  "LOCAL WatchEvent (Figma-parity #28/#29). Replaces the edited path
+  shape's content with `new-content` (a PathData or plain content
+  vector) and re-selects the shape so path-edit mode continues. Mirrors
+  the commit pattern in data/workspace/bool.cljs (pcb/empty-changes ->
+  pcb/with-objects -> pcb/update-shapes -> dch/commit-changes +
+  dws/select-shapes) but is defined here so no shared data file is
+  touched."
+  [shape-id new-content]
+  (ptk/reify ::commit-shape-builder-content
+    ptk/WatchEvent
+    (watch [it state _]
+      (let [page-id (:current-page-id state)
+            objects (dsh/lookup-page-objects state page-id)]
+        (when (some? (get objects shape-id))
+          (let [changes
+                (-> (pcb/empty-changes it page-id)
+                    (pcb/with-objects objects)
+                    (pcb/update-shapes [shape-id]
+                                       (fn [shape]
+                                         (path/update-geometry shape new-content))))]
+            (rx/of (dch/commit-changes changes)
+                   (dws/select-shapes (d/ordered-set shape-id)))))))))
+
 (mf/defc path-preview*
   {::mf/private true}
   [{:keys [zoom segment from]}]
@@ -396,6 +484,39 @@
         lasso-points (mf/use-state nil)
         lasso-mode? (= edit-mode :vector-lasso)
 
+        ;; Figma-parity Shape Builder (#28) + Paint Bucket (#29). The
+        ;; arrangement is the planar subdivision of the edited path's
+        ;; sub-paths; it is recomputed whenever the committed content
+        ;; changes (base-content is the store-backed content, so it
+        ;; updates after every commit-shape-content). hover-hit holds the
+        ;; current point-in-face result; drag-faces accumulates the face
+        ;; ids touched during a press-drag; dragging? marks an in-flight
+        ;; unite drag; alt-held? tracks the Alt/Option modifier so the
+        ;; erase cursor + indicator can render. last-pos is a ref (no
+        ;; re-render) keeping the latest cursor position in content
+        ;; coordinates for the pointer-down handler.
+        builder-or-bucket?
+        (or (= edit-mode :shape-builder)
+            (= edit-mode :paint-bucket))
+
+        builder-arr
+        (mf/with-memo [base-content builder-or-bucket?]
+          (when builder-or-bucket?
+            (build-arrangement base-content)))
+
+        face-content-map
+        (mf/with-memo [builder-arr]
+          (when (some? builder-arr)
+            (into {}
+                  (map (fn [r] [(:face-id r) (:content r)]))
+                  (arrangement/divide-into-faces builder-arr))))
+
+        hover-hit  (mf/use-state nil)
+        drag-faces (mf/use-state nil)
+        dragging?  (mf/use-state nil)
+        alt-held?  (mf/use-state false)
+        last-pos   (mf/use-ref nil)
+
         ;; Figma-parity variable-width width handles (#53). Computed only
         ;; when a non-empty segment-widths map is present; nil otherwise
         ;; (the render guard below skips the whole group).
@@ -433,6 +554,99 @@
                        (apply st/emit! events)))))
                (reset! lasso-points nil)))))]
 
+        ;; Figma-parity Shape Builder (#28) + Paint Bucket (#29).
+        ;; pointer-down dispatches by mode + modifier:
+        ;;   paint-bucket + face  -> fill (commit the face's closed content)
+        ;;   shape-builder + alt  -> erase the clicked face / edge
+        ;;   shape-builder + face -> start a unite drag
+        on-builder-pointer-down
+        (mf/use-fn
+         (mf/deps edit-mode builder-arr face-content-map shape zoom)
+         (fn [event]
+           (when builder-or-bucket?
+             (when (dom/left-mouse? event)
+               (dom/stop-propagation event)
+               (dom/prevent-default event)
+               (let [pos  (mf/ref-val last-pos)
+                     hit  (if (some? builder-arr)
+                            (arrangement/point-in-face builder-arr pos)
+                            {:type :outside})
+                     sid  (:id shape)
+                     bounded (bounded-faces builder-arr)]
+                 (cond
+                   ;; Paint Bucket — click a face to fill it: replace the
+                   ;; edited content with that face's closed region.
+                   (and (= edit-mode :paint-bucket)
+                        (= :face (:type hit)))
+                   (let [fc (get face-content-map (:id (:face hit)))]
+                     (when fc
+                       (st/emit! (commit-shape-content sid (path/content fc)))))
+
+                   ;; Shape Builder + Alt + face — erase: union of every
+                   ;; other bounded face.
+                   (and (= edit-mode :shape-builder)
+                        (kbd/alt? event)
+                        (= :face (:type hit)))
+                   (let [erase-id (:id (:face hit))
+                         kept     (remove #(= (:id %) erase-id) bounded)
+                         kept-c   (keep #(get face-content-map (:id %)) kept)]
+                     (st/emit!
+                      (commit-shape-content
+                       sid
+                       (path/content
+                        (if (seq kept-c)
+                          (bool/calculate-content :union kept-c)
+                          [])))))
+
+                   ;; Shape Builder + Alt + edge — erase: remove every
+                   ;; face that borders the clicked edge.
+                   (and (= edit-mode :shape-builder)
+                        (kbd/alt? event)
+                        (= :edge (:type hit)))
+                   (let [edge-id (:id (:edge hit))
+                         kept    (remove #(contains? (set (:edges %)) edge-id) bounded)
+                         kept-c   (keep #(get face-content-map (:id %)) kept)]
+                     (st/emit!
+                      (commit-shape-content
+                       sid
+                       (path/content
+                        (if (seq kept-c)
+                          (bool/calculate-content :union kept-c)
+                          [])))))
+
+                   ;; Shape Builder — start a unite drag on a face.
+                   (and (= edit-mode :shape-builder)
+                        (= :face (:type hit)))
+                   (do
+                     (reset! dragging? true)
+                     (reset! drag-faces #{(:id (:face hit))}))
+
+                   :else nil))))))
+
+        ;; pointer-up finalises a Shape Builder drag: a single touched
+        ;; face isolates (Divide); multiple touched faces unite.
+        on-builder-pointer-up
+        (mf/use-fn
+         (mf/deps edit-mode builder-arr face-content-map shape zoom)
+         (fn [_]
+           (when (= edit-mode :shape-builder)
+             (let [dfaces @drag-faces]
+               (reset! dragging? false)
+               (reset! drag-faces nil)
+               (when (seq dfaces)
+                 (let [contents (keep #(get face-content-map %) dfaces)]
+                   (cond
+                     (= (count contents) 1)
+                     (st/emit! (commit-shape-content
+                                (:id shape)
+                                (path/content (first contents))))
+                     (> (count contents) 1)
+                     (st/emit! (commit-shape-content
+                                (:id shape)
+                                (path/content
+                                 (bool/calculate-content :union contents))))
+                     :else nil)))))))
+
     (mf/with-layout-effect [edit-mode]
       (let [key (events/listen (dom/get-root) "dblclick"
                                #(when (= edit-mode :move)
@@ -468,14 +682,63 @@
           #(events/unlistenByKey key))
         (constantly nil)))
 
+    ;; Figma-parity Shape Builder (#28) / Paint Bucket (#29). Track the
+    ;; Alt/Option modifier at document level so the erase cursor + edge
+    ;; indicator can render while Alt is held (without a pointer event).
+    (mf/with-layout-effect [builder-or-bucket?]
+      (if builder-or-bucket?
+        (let [kd (events/listen js/document "keydown"
+                                (fn [e] (when (kbd/alt? e) (reset! alt-held? true))))
+              ku (events/listen js/document "keyup"
+                                (fn [e] (when (= (.-key e) "Alt")
+                                          (reset! alt-held? false))))]
+          #(do (events/unlistenByKey kd)
+               (events/unlistenByKey ku)))
+        (constantly nil)))
+
+    ;; Figma-parity Shape Builder (#28). Finish a unite drag on pointer-up
+    ;; anywhere (so dragging outside the editor still completes). Armed
+    ;; only while Shape Builder / Paint Bucket is active.
+    (mf/with-layout-effect [builder-or-bucket? on-builder-pointer-up]
+      (if builder-or-bucket?
+        (let [key (events/listen (dom/get-root) "pointerup" on-builder-pointer-up)]
+          #(events/unlistenByKey key))
+        (constantly nil)))
+
+    ;; Figma-parity Shape Builder (#28) / Paint Bucket (#29). Track the
+    ;; cursor against the arrangement: update the hover highlight, keep
+    ;; last-pos current for the pointer-down handler, and accumulate
+    ;; touched faces during a unite drag.
+    (hooks/use-stream
+     ms/mouse-position
+     (mf/deps builder-arr edit-mode zoom)
+     (fn [position]
+       (mf/set-ref-val! last-pos position)
+       (when (and builder-or-bucket? (some? builder-arr))
+         (let [hit (arrangement/point-in-face builder-arr position)]
+           (reset! hover-hit hit)
+           (when (and @dragging? (= :face (:type hit)))
+             (swap! drag-faces conj (:id (:face hit))))))))
+
     [:g.path-editor {:ref editor-ref
-                     ;; Figma-parity vector lasso (#57): start the lasso
-                     ;; capture on pointer-down only in lasso mode.
-                     :on-pointer-down (when lasso-mode? on-lasso-pointer-down)}
+                     ;; Pointer-down dispatch: vector lasso (#57) starts a
+                     ;; freehand capture; Shape Builder / Paint Bucket
+                     ;; (#28/#29) commit/erase/start-drag; otherwise nil so
+                     ;; node handlers (path-point*) receive the event.
+                     :on-pointer-down (cond
+                                        lasso-mode?        on-lasso-pointer-down
+                                        builder-or-bucket? on-builder-pointer-down
+                                        :else nil)}
+     ;; The base path outline. In Shape Builder / Paint Bucket mode the
+     ;; path is given `pointer-events: all` so the whole shape interior
+     ;; (not just the stroke) captures clicks — the group's
+     ;; :on-pointer-down then fires for every face hit. With fill none
+     ;; the default would let interior clicks pass straight through.
      [:path {:d (.toString content)
-             :style {:fill "none"
-                     :stroke accent-color
-                     :strokeWidth (/ 1 zoom)}}]
+             :style (cond-> {:fill "none"
+                             :stroke accent-color
+                             :strokeWidth (/ 1 zoom)}
+                      builder-or-bucket? (assoc :pointer-events "all"))}]
 
      ;; Figma-parity variable-width stroke width handles (#53). Rendered
      ;; only when a non-empty per-node segment-widths map is present in the
@@ -510,29 +773,92 @@
                           :strokeWidth (/ 1 zoom)
                           :stroke-dasharray (/ 4 zoom)}}]]))
 
-     ;; Figma-parity vector-network tools (gaps #28/#29). The
-     ;; :shape-builder and :paint-bucket edit-modes are REGISTERED here
-     ;; (selectable from the path secondary toolbar / shortcuts) but their
-     ;; interactive geometry is DEFERRED:
-     ;;   #28 — drag merge/extract/subtract via the boolean engine
-     ;;         (app.common.types.path.bool) is not yet wired.
-     ;;   #29 — enclosed-region (graph-cycle on path nodes/segments)
-     ;;         detection and filled sub-path creation is not yet wired.
-     ;; This guarded badge is the only visual surface; it renders solely
-     ;; under one of the new modes (opt-in), so the editor is
-     ;; byte-identical when edit-mode is :draw or :move.
-     (when (or (= edit-mode :shape-builder)
-               (= edit-mode :paint-bucket))
-       [:g.path-mode-badge {:pointer-events "none"}
-        [:text {:x (-> content first path.helpers/segment->point :x)
-                :y (- (-> content first path.helpers/segment->point :y)
-                      (/ 14 zoom))
-                :style {:fill secondary-color
-                        :font-size (/ 11 zoom)
-                        :font-weight 600}}
-         (if (= edit-mode :shape-builder)
-           (tr "workspace.path.mode.shape-builder")
-           (tr "workspace.path.mode.paint-bucket"))]])
+     ;; Figma-parity Shape Builder (#28) + Paint Bucket (#29). Interactive
+     ;; planar-arrangement overlay. Renders ONLY under one of these modes
+     ;; (opt-in), so the editor is byte-identical in :draw / :move / lasso
+     ;; modes. The overlay is pointer-events none — gestures are handled by
+     ;; the root path-editor group's :on-pointer-down + the global
+     ;; pointer-up / mouse-position listeners above. No CSS transitions:
+     ;; the hover fill and drag outline are pure state re-renders, so there
+     ;; is no motion to gate on prefers-reduced-motion.
+     (when builder-or-bucket?
+       (let [hit          @hover-hit
+             hovered-face (when (= :face (:type hit)) (:face hit))
+             hovered-edge (when (= :edge (:type hit)) (:edge hit))
+             erase?       (and (= edit-mode :shape-builder) @alt-held?)
+             badge-pos    (-> content first path.helpers/segment->point)
+             ;; Live union outline while a drag is in progress.
+             drag-outline
+             (when (and @dragging? (seq @drag-faces))
+               (let [dcontents (keep #(get face-content-map %) @drag-faces)]
+                 (when (seq dcontents)
+                   (path/content
+                    (if (= (count dcontents) 1)
+                      (first dcontents)
+                      (bool/calculate-content :union dcontents))))))]
+         [:g.path-builder-overlay {:pointer-events "none"}
+          ;; Mode badge (top-left of the path).
+          [:text {:x (:x badge-pos)
+                  :y (- (:y badge-pos) (/ 14 zoom))
+                  :style {:fill (if erase? coral-color secondary-color)
+                          :font-size (/ 11 zoom)
+                          :font-weight 600}}
+           (str (if (= edit-mode :shape-builder)
+                  (tr "workspace.path.mode.shape-builder")
+                  (tr "workspace.path.mode.paint-bucket"))
+                (when erase? " · erase"))]
+
+          ;; Hovered face highlight — coral translucent fill. In erase
+          ;; mode the fill is more transparent and a stronger outline is
+          ;; drawn to signal deletion.
+          (when (and hovered-face
+                     (not @dragging?)
+                     (some? (get face-content-map (:id hovered-face))))
+            (let [fc (get face-content-map (:id hovered-face))]
+              [:path {:d (.toString (path/content fc))
+                      :style {:fill coral-color
+                              :fill-opacity (if erase? 0.12 0.28)
+                              :stroke coral-color
+                              :strokeWidth (/ (if erase? 1.5 1) zoom)
+                              :stroke-dasharray (when erase? (/ 4 zoom))}}]))
+
+          ;; Drag union-in-progress outline — coral dashed stroke +
+          ;; faint fill over the united faces.
+          (when (some? drag-outline)
+            [:path {:d (.toString drag-outline)
+                    :style {:fill coral-color
+                            :fill-opacity 0.15
+                            :stroke coral-color
+                            :strokeWidth (/ 1.5 zoom)
+                            :stroke-dasharray (/ 4 zoom)}}])
+
+          ;; Hovered edge indicator (Shape Builder only). A coral dashed
+          ;; stroke along the edge; thicker + dashed in erase mode.
+          (when (and hovered-edge (= edit-mode :shape-builder))
+            [:line {:x1 (:x (:from-point hovered-edge))
+                    :y1 (:y (:from-point hovered-edge))
+                    :x2 (:x (:to-point hovered-edge))
+                    :y2 (:y (:to-point hovered-edge))
+                    :style {:stroke coral-color
+                            :strokeWidth (/ (if erase? 2.5 1.5) zoom)
+                            :stroke-dasharray (/ 3 zoom)}}])
+
+          ;; Erase cursor — a small Lucide "minus-circle" inline SVG
+          ;; (stroke-width 2, currentColor) floating at the cursor when
+          ;; Alt is held in Shape Builder. Rendered only when a hit is
+          ;; present so it doesn't sit at the origin.
+          (when (and erase? (some? hit) (not= :outside (:type hit)))
+            (let [pos (mf/ref-val last-pos)
+                  cx  (dm/get-prop pos :x)
+                  cy  (dm/get-prop pos :y)
+                  r   (/ 9 zoom)]
+              [:g.erase-cursor
+               {:transform (dm/str "translate(" cx " " cy ")")
+                :stroke coral-color
+                :fill "none"
+                :stroke-width (/ 2 zoom)}
+               [:circle {:cx 0 :cy 0 :r r}]
+               [:line {:x1 (- r) :y1 0 :x2 r :y2 0}]]))]))
 
      (when (and preview (not drag-handler))
        [:> path-preview* {:segment preview
@@ -546,7 +872,11 @@
                            :edit-mode edit-mode
                            :zoom zoom}]])
 
-     (when @hover-point
+     ;; Figma-parity Shape Builder / Paint Bucket (#28/#29): hide the
+     ;; node hover-point and the editable node/handler circles in those
+     ;; modes — the user interacts with faces, not nodes, so a clean
+     ;; face-only overlay is shown (see path-builder-overlay above).
+     (when (and @hover-point (not builder-or-bucket?))
        [:g.hover-point
         [:> path-point* {:position @hover-point
                          :edit-mode edit-mode
@@ -554,9 +884,10 @@
                          :is-start-path is-path-start
                          :zoom zoom}]])
 
-     (for [position points]
-       (let [pos-x (dm/get-prop position :x)
-             pos-y (dm/get-prop position :y)
+     (when-not builder-or-bucket?
+       (for [position points]
+         (let [pos-x (dm/get-prop position :x)
+               pos-y (dm/get-prop position :y)
 
              show-handler?
              (fn [[index prefix]]
@@ -609,7 +940,7 @@
                            :is-hover point-hover?
                            :is-last is-last
                            :is-start-path is-path-start
-                           :is-curve is-curve}]]))
+                           :is-curve is-curve}]])))
 
      (when (and prev-handler last-p)
        [:g.prev-handler {:pointer-events "none"}

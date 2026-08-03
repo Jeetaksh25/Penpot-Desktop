@@ -25,6 +25,7 @@
    [app.main.ui.workspace.sidebar.options.drawing :as drawing]
    [app.main.ui.workspace.sidebar.options.menus.align :refer [align-options*]]
    [app.main.ui.workspace.sidebar.options.menus.bool :refer [bool-options*]]
+   [app.main.ui.workspace.sidebar.options.menus.pathfinder :refer [pathfinder-options*]]
    [app.main.ui.workspace.sidebar.options.menus.component :refer [component-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.grid-cell :as grid-cell]
    [app.main.ui.workspace.sidebar.options.menus.interactions :refer [interactions-menu*]]
@@ -156,6 +157,9 @@
      [:> bool-options* {:total-selected total-selected
                         :shapes shapes
                         :shapes-with-children shapes-with-children}]
+     [:> pathfinder-options* {:total-selected total-selected
+                              :shapes shapes
+                              :shapes-with-children shapes-with-children}]
 
      (cond
        (and edit-grid? (d/not-empty? selected-cells))

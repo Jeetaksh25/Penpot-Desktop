@@ -418,12 +418,39 @@
 
 (defn calculate-content
   "Create a bool content from a collection of contents and specified
-  type. Returns plain segments"
-  [bool-type contents]
-  ;; We apply the boolean operation in to each pair and the result to the next
-  ;; element
-  (if (seq contents)
-    (->> contents
-         (reduce (partial content-bool-pair bool-type))
-         (vec))
-    []))
+  type. Returns plain segments.
+
+  When `modes` (a parallel seq of per-child boolean operations, each one
+  of :union/:difference/:intersection/:exclusion or nil) is supplied, the
+  left-to-right fold uses each child's own mode as it is combined into the
+  accumulator. A nil mode falls back to `bool-type`. The first child
+  becomes the initial accumulator (no operation is applied to it alone).
+
+  This mirrors how Illustrator Compound Shapes evaluate per-child
+  shape-modes (add/subtract/intersect/exclude) in a hierarchy: fold
+  left-to-right, accumulator starts as the first child, each subsequent
+  child is combined with the accumulator using THAT child's mode."
+  ([bool-type contents]
+   ;; We apply the boolean operation in to each pair and the result to the next
+   ;; element
+   (if (seq contents)
+     (->> contents
+          (reduce (partial content-bool-pair bool-type))
+          (vec))
+     []))
+
+  ([bool-type contents modes]
+   ;; Per-child mode path. The first child is the initial accumulator; each
+   ;; subsequent child is combined with the accumulator using that child's
+   ;; effective mode (`:shape-mode` or `bool-type` when absent). When every
+   ;; mode is nil this is equivalent to the 2-arg form, but callers gate on
+   ;; `has-per-child-mode?` and use the 2-arg fast path in that case.
+   (if (seq contents)
+     (let [effective-modes (map #(or % bool-type) modes)
+           pairs           (map vector contents effective-modes)]
+       (->> (rest pairs)
+            (reduce (fn [acc [content mode]]
+                      (content-bool-pair mode acc content))
+                    (first contents))
+            (vec)))
+     [])))

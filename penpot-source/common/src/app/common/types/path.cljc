@@ -341,10 +341,29 @@
               (map :content))
 
         contents
-        (sequence extract-content-xf (:shapes shape))]
+        (sequence extract-content-xf (:shapes shape))
+
+        ;; Per-child shape-mode support (optional, backward compatible).
+        ;; When ANY child of this :bool carries a `:shape-mode` (one of
+        ;; :union/:difference/:intersection/:exclusion), the combination fold
+        ;; uses each child's own mode instead of the single group `:bool-type`.
+        ;; When no child has a `:shape-mode`, the original group-:bool-type
+        ;; code path is used unchanged (byte-identical behavior).
+        modes
+        (into []
+              (comp (map (d/getf objects))
+                    (remove :hidden)
+                    (remove cpf/svg-raw-shape?)
+                    (map :shape-mode))
+              (:shapes shape))
+
+        has-per-child-mode?
+        (some some? modes)]
 
     (ex/try!
-     (bool/calculate-content (:bool-type shape) contents)
+     (if has-per-child-mode?
+       (bool/calculate-content (:bool-type shape) contents modes)
+       (bool/calculate-content (:bool-type shape) contents))
 
      :on-exception
      (fn [cause]
