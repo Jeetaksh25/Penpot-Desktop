@@ -13,6 +13,7 @@
    [app.main.data.workspace :as udw]
    [app.main.data.workspace.shapes :as dwsh]
    [app.main.features :as features]
+   [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
    [app.main.ui.ds.buttons.icon-button :refer [icon-button*]]
@@ -20,6 +21,7 @@
    [app.main.ui.ds.controls.select :refer [select*]]
    [app.main.ui.ds.foundations.assets.icon :as i]
    [app.main.ui.ds.tooltip.tooltip :refer [tooltip*]]
+   [app.main.ui.workspace.sidebar.options.rows.shader-row :refer [shader-row*]]
    [app.util.i18n :as i18n :refer [tr]]
    [rumext.v2 :as mf]))
 
@@ -353,6 +355,26 @@
            (st/emit! (dwsh/update-shapes ids update-fn)
                      (udw/trigger-bounding-box-cloaking ids))))
 
+        ;; Figma-parity shader effects (gap #64). The opaque :shader-effect
+        ;; vector on the shape. blur-menu* only receives :blur /
+        ;; :background-blur in `values`, so the shape (and its :shader-effect
+        ;; slot) is read via the page-objects ref (same pattern measures.cljs
+        ;; uses for page-objects). The WebGPU / fragment-shader renderer is
+        ;; DEFERRED; the first entry is edited as the primary shader effect
+        ;; (multi-shader stack UI deferred). Renders ONLY when the slot is
+        ;; non-empty; absent = no UI (byte-identical).
+        page-objects   (mf/deref refs/workspace-page-objects)
+        first-shape    (get page-objects (first ids))
+        shader-effect  (first (:shader-effect first-shape))
+        on-shader-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [value]
+           (st/emit! (dwsh/update-shapes ids
+                      (fn [shape]
+                        (let [effects (or (:shader-effect shape) [])]
+                          (assoc shape :shader-effect (assoc effects 0 value))))))))
+
         handle-delete-all
         (mf/use-fn
          (mf/deps change!)
@@ -474,6 +496,16 @@
               :value value
               :blur-values blur-values
               :change-fn change!}]))])
+     ;; Figma-parity shader effects (gap #64). The opaque :shader-effect
+     ;; vector on the shape (read via the page-objects ref above since
+     ;; blur-menu* only receives :blur / :background-blur in `values`).
+     ;; Renders ONLY when the slot is non-empty; absent = no UI
+     ;; (byte-identical). The WebGPU / fragment-shader renderer is
+     ;; DEFERRED; the first entry is edited as the primary shader effect
+     ;; (multi-shader stack UI deferred).
+     (when (and open? (seq (:shader-effect first-shape)))
+       [:> shader-row* {:shader-effect shader-effect
+                        :on-change on-shader-change}])
      ;; Figma-parity stacked layer blurs (gap #74). Stack manager UI
      ;; (add / remove / reorder / edit) for the opaque :blurs vector on
      ;; the shape. Renders ONLY when (seq :blurs) is true; absent :blurs =

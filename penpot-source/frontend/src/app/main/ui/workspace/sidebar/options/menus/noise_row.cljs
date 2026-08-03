@@ -145,7 +145,12 @@
         (mf/use-fn
          (mf/deps ids)
          (fn []
-           (when (and (some? noises) (< (count noises) noise-max-count))
+           ;; First-effect seeding: the section now always mounts (see the
+           ;; shape option pages), so noises is nil for an empty slot.
+           ;; Guard on (or noises []) so count never throws on nil and the
+           ;; first noise can be seeded from a nil :noise slot. The conj
+           ;; already uses (or (:noise %) []) so it is nil-safe.
+           (when (< (count (or noises [])) noise-max-count)
              (st/emit! (udw/trigger-bounding-box-cloaking ids))
              (st/emit! (dwsh/update-shapes ids #(assoc % :noise (conj (or (:noise %) []) (create-noise))))))))
 

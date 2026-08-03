@@ -140,7 +140,11 @@
         (mf/use-fn
          (mf/deps ids)
          (fn []
-           (when (and (some? textures) (< (count textures) texture-max-count))
+           ;; First-effect seeding: the section now always mounts (see the
+           ;; shape option pages), so textures is nil for an empty slot.
+           ;; Guard on (or textures []) so count never throws on nil and the
+           ;; first texture can be seeded from a nil :texture slot.
+           (when (< (count (or textures [])) texture-max-count)
              (st/emit! (udw/trigger-bounding-box-cloaking ids))
              (st/emit! (dwsh/update-shapes ids #(assoc % :texture [(create-texture)]))))))
 

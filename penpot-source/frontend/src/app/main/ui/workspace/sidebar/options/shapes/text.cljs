@@ -224,15 +224,13 @@
        :values (select-keys shape [:blur :background-blur])}]
 
      ;; Figma-parity glass / noise / texture effects (gaps #61 #62 #63).
-     ;; Guarded: render only when the shape already has the opaque effect
-     ;; vector slot, so existing shapes are byte-identical. Renderer shader
-     ;; / overlay deferred (see glass.cljc / noise.cljc / texture.cljc).
-     (when (seq (get shape :glass))
-       [:> glass-menu* {:ids ids :values (get shape :glass)}])
-     (when (seq (get shape :noise))
-       [:> noise-menu* {:ids ids :values (get shape :noise)}])
-     (when (seq (get shape :texture))
-       [:> texture-menu* {:ids ids :values (get shape :texture)}])
+     ;; Always mounted (mirrors shadow-menu* / blur-menu* above) so the
+     ;; add-first-effect button in each row menu is reachable even when the
+     ;; shape has no opaque effect vector slot yet. Renderer shader / overlay
+     ;; deferred (see glass.cljc / noise.cljc / texture.cljc).
+     [:> glass-menu* {:ids ids :values (get shape :glass)}]
+     [:> noise-menu* {:ids ids :values (get shape :noise)}]
+     [:> texture-menu* {:ids ids :values (get shape :texture)}]
 
      [:> exports-menu* {:type type
                         :ids ids

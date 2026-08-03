@@ -141,17 +141,15 @@
                      :values (select-keys shape [:blur :background-blur])}]
 
      ;; Figma-parity glass / noise / texture effects (gaps #61 #62 #63).
-     ;; Guarded: each section renders only when the shape already has the
-     ;; corresponding opaque effect vector slot, so existing shapes (which
-     ;; never carry these slots) are byte-identical. The renderer shader /
-     ;; overlay for each is deferred (see notes in glass.cljc / noise.cljc /
-     ;; texture.cljc); the values round-trip via dwsh/update-shapes.
-     (when (seq (get shape :glass))
-       [:> glass-menu* {:ids ids :values (get shape :glass)}])
-     (when (seq (get shape :noise))
-       [:> noise-menu* {:ids ids :values (get shape :noise)}])
-     (when (seq (get shape :texture))
-       [:> texture-menu* {:ids ids :values (get shape :texture)}])
+     ;; Always mounted (mirrors shadow-menu* / blur-menu* above) so the
+     ;; add-first-effect button in each row menu is reachable even when the
+     ;; shape has no opaque effect vector slot yet. The renderer shader /
+     ;; overlay for each remains deferred (see notes in glass.cljc /
+     ;; noise.cljc / texture.cljc); the values round-trip via
+     ;; dwsh/update-shapes and a nil slot seeds empty.
+     [:> glass-menu* {:ids ids :values (get shape :glass)}]
+     [:> noise-menu* {:ids ids :values (get shape :noise)}]
+     [:> texture-menu* {:ids ids :values (get shape :texture)}]
 
      [:> svg-attrs-menu* {:ids ids
                           :values (select-keys shape [:svg-attrs])}]

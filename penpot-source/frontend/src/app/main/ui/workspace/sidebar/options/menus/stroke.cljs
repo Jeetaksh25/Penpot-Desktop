@@ -20,6 +20,7 @@
    [app.main.ui.ds.foundations.assets.icon :as i]
    [app.main.ui.hooks :as h]
    [app.main.ui.workspace.sidebar.options.rows.stroke-row :refer [stroke-row*]]
+   [app.main.ui.workspace.sidebar.options.rows.brush-row :refer [brush-row*]]
    [app.util.i18n :as i18n :refer [tr]]
    [cuerdas.core :as str]
    [rumext.v2 :as mf]))
@@ -48,7 +49,13 @@
    ;; Figma-parity dynamic strokes (gap #54). Optional :variation map on
    ;; the stroke (wiggle/noise amplitude + frequency + seed). The renderer
    ;; per-segment jitter is deferred; the value round-trips here.
-   :variation])
+   :variation
+   ;; Figma-parity brush settings (gap #52). Optional :brush map on the
+   ;; shape (a brush-asset reference + size / opacity / spacing / mode /
+   ;; scatter / source-shape-id overrides). The shape-generic-attrs map is
+   ;; open, so an absent :brush is fine; the renderer path-following stamp
+   ;; is deferred, the value round-trips here via dwsh/update-shapes.
+   :brush])
 
 (defn- stroke-menu-check-props
   "A stroke-menu specific memoize check function that only checks if
@@ -70,7 +77,11 @@
              n-vals  (unchecked-get n-props "values")
              o-strokes (get o-vals :strokes)
              n-strokes (get n-vals :strokes)]
-         (identical? o-strokes n-strokes))))
+         (and (identical? o-strokes n-strokes)
+              ;; Figma-parity brush settings (gap #52). Track the optional
+              ;; :brush map so brush-row edits re-render; absent on existing
+              ;; shapes (nil = nil) so memo behavior is byte-identical.
+              (identical? (get o-vals :brush) (get n-vals :brush))))))
 
 (mf/defc stroke-menu*
   {::mf/wrap [#(mf/memo' % stroke-menu-check-props)]}
@@ -218,6 +229,17 @@
           (st/emit! (udw/trigger-bounding-box-cloaking ids))
           (st/emit! (dc/change-stroke-attrs ids {:variation value} index)))
 
+        ;; Figma-parity brush settings (gap #52). Updates the optional
+        ;; :brush map on the shape (a brush-asset reference + stamp
+        ;; overrides) via dwsh/update-shapes (undo on). The renderer
+        ;; path-following stamp is deferred; the value round-trips here.
+        on-brush-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [brush]
+           (st/emit! (udw/trigger-bounding-box-cloaking ids))
+           (st/emit! (dwsh/update-shapes ids #(assoc % :brush brush)))))
+
         on-stroke-cap-switch
         (fn [index]
           (let [stroke-cap-start (get-in values [:strokes index :stroke-cap-start])
@@ -319,4 +341,12 @@
                               :on-detach-token on-detach-token
                               :disable-stroke-style disable-stroke-style
                               :select-on-focus (not @disable-drag)
-                              :ids ids}])])])]))
+                              :ids ids}])])
+        ;; Figma-parity brush settings (gap #52). Optional :brush map on
+        ;; the shape (brush-asset reference + stamp overrides). Renders
+        ;; ONLY when :brush is present; absent = no UI (byte-identical).
+        ;; The renderer path-following stamp is deferred; the value
+        ;; round-trips via dwsh/update-shapes.
+        (when (some? (:brush values))
+          [:> brush-row* {:brush (:brush values)
+                          :on-change on-brush-change}])])]))

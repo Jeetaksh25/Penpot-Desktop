@@ -165,7 +165,11 @@
         (mf/use-fn
          (mf/deps ids)
          (fn []
-           (when (and (some? glasses) (< (count glasses) glass-max-count))
+           ;; First-effect seeding: the section now always mounts (see the
+           ;; shape option pages), so glasses is nil for an empty slot.
+           ;; Guard on (or glasses []) so count never throws on nil and the
+           ;; first glass can be seeded from a nil :glass slot.
+           (when (< (count (or glasses [])) glass-max-count)
              (st/emit! (udw/trigger-bounding-box-cloaking ids))
              (st/emit! (dwsh/update-shapes ids #(assoc % :glass [(create-glass)]))))))
 

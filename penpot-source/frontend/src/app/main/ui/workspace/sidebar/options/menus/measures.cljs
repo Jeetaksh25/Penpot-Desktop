@@ -33,6 +33,7 @@
    [app.main.ui.icons :as deprecated-icon]
    [app.main.ui.workspace.sidebar.options.menus.border-radius :refer  [border-radius-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.input-wrapper-tokens :refer [numeric-input-wrapper*]]
+   [app.main.ui.workspace.sidebar.options.rows.transform-3d-row :refer [transform-3d-row*]]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
    [clojure.set :as set]
@@ -560,7 +561,17 @@
                (st/emit! (udw/trigger-bounding-box-cloaking ids)
                          (udw/update-dimensions ids :width new-w)
                          (udw/update-dimensions ids :height new-h))
-               (reset! scale-input* nil)))))]
+               (reset! scale-input* nil))))
+
+        ;; Figma-parity 3D transforms (gap #66). The optional :transform-3d
+        ;; map on the shape (rotation-x/y/z + perspective). The renderer 3D
+        ;; matrix / perspective projection is DEFERRED; the values round-trip
+        ;; on the shape via dwsh/update-shapes.
+        on-transform-3d-change
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [value]
+           (st/emit! (dwsh/update-shapes ids #(assoc % :transform-3d value)))))]
 
     [:section {:class (stl/css :element-set)
                :aria-label "shape-measures-section"}
@@ -914,4 +925,12 @@
                                              :placeholder "100"
                                              :min 0
                                              :value @scale-input*
-                                             :on-change on-scale-change}]])]))
+                                             :on-change on-scale-change}])])
+     ;; Figma-parity 3D transforms (gap #66). Optional :transform-3d map
+     ;; on the shape (rotation-x/y/z + perspective). Renders ONLY when the
+     ;; shape carries :transform-3d; absent = no UI (byte-identical). The
+     ;; renderer 3D matrix / perspective projection is DEFERRED; values
+     ;; round-trip on the shape via dwsh/update-shapes.
+     (when (some? (:transform-3d shape))
+       [:> transform-3d-row* {:transform-3d (:transform-3d shape)
+                              :on-change on-transform-3d-change}])]))

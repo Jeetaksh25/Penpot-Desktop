@@ -1,0 +1,101 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+
+// Figma-parity accessibility insights (gap #77). Styles for the WCAG
+// contrast checker panel rendered by `app.main.ui.inspect.a11y`. The panel
+// mounts ONLY for a single selected text shape, so every class here is
+// purely additive and never touches the existing inspect layout. Class
+// names mirror the `stl/css` keys declared in a11y.cljs.
+
+.a11y-section {
+  @include deprecated.flex-column;
+
+  gap: var(--sp-s);
+  padding-block: var(--sp-s);
+  padding-inline: var(--sp-m);
+}
+
+.a11y-title-bar {
+  // The collapsible title-bar* component supplies its own layout; this
+  // class only exists so the section can be styled/overridden as a unit.
+  width: 100%;
+}
+
+.a11y-content {
+  @include deprecated.flex-column;
+
+  gap: var(--sp-s);
+}
+
+.a11y-ratio-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-s);
+}
+
+.a11y-ratio-label {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+}
+
+.a11y-ratio-value {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.a11y-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-s);
+}
+
+.a11y-row-label {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+}
+
+// AA / AAA pass/fail badge. `pass-badge` in a11y.cljs emits
+// `stl/css-case :a11y-badge true :a11y-pass ok? :a11y-fail (not ok?)`.
+.a11y-badge {
+  @include deprecated.body-small-typography;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: deprecated.$s-32;
+  padding-block: deprecated.$s-2;
+  padding-inline: deprecated.$s-8;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid transparent;
+  line-height: 1;
+}
+
+.a11y-pass {
+  color: var(--status-color-success-500);
+  border-color: var(--status-color-success-500);
+  background-color: color-mix(in srgb, var(--status-color-success-500) 12%, transparent);
+}
+
+.a11y-fail {
+  color: var(--status-color-error-500);
+  border-color: var(--status-color-error-500);
+  background-color: color-mix(in srgb, var(--status-color-error-500) 12%, transparent);
+}
+
+.a11y-hint {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+  margin-block-start: var(--sp-s);
+}

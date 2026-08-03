@@ -34,3 +34,19 @@
   inset: 0;
   z-index: deprecated.$z-index-1;
 }
+
+// Figma-parity outline mode (gap #45). When the render SVG wrapper carries
+// the `.outline-mode` class (toggled from the viewport layout flag of the
+// same name — see viewport.cljs `:outline-mode`), shape fills are
+// suppressed so only strokes remain visible. Purely additive: the class is
+// absent by default, so rendering is byte-identical when the mode is off.
+// The per-shape fill suppression + guaranteed outline stroke in the
+// renderer is a high-blast-radius change and stays DEFERRED — this CSS rule
+// is the visual hook for the already-wired boolean. Pixel-preview
+// rasterization (gap #46) is a separate real render piece and is likewise
+// DEFERRED; no pixel-preview rule is emitted here.
+.outline-mode {
+  :is(rect, circle, ellipse, line, polygon, polyline, path) {
+    fill: transparent !important;
+  }
+}
