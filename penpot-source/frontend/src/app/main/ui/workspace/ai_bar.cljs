@@ -125,9 +125,10 @@
 .ai-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
   display: block; box-shadow: var(--ai-shadow-btn); }
 .ai-thumb-x { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px;
-  background: var(--ai-coral); color: #fff; border-radius: 50%; font-size: 10px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center; line-height: 1; cursor: pointer;
+  background: var(--ai-coral); color: #fff; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
   border: 2px solid var(--ai-white); transition: background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-thumb-x .ai-i { width: 10px; height: 10px; }
 .ai-thumb-x:hover { background: var(--ai-coral-press); }
 
 /* ── Input pill (prompt + send) ─────────────────────────────────────────── */
@@ -633,7 +634,7 @@
                 [:div.ai-thumb {:key idx
                                 :style #js {"animationDelay" (str (* idx 40) "ms")}}
                  [:img {:src (:preview a) :alt (:name a)}]
-                 [:span.ai-thumb-x {:on-click #(remove-attachment idx)} "×"]]))])]
+                 [:span.ai-thumb-x {:on-click #(remove-attachment idx)} lucide-x]]))])]
 
         ;; input pill: [prompt textarea | coral send disc]
         [:div.ai-input-pill {:class (when expanded? "is-expanded")}

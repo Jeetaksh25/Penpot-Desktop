@@ -496,7 +496,7 @@ msgid "dashboard.empty-placeholder-libraries"
 msgstr ""
 "Libraries added to the project will appear here. Try sharing your files or "
 "add from our [Libraries & "
-"templates](https://penpot.app/libraries-templates)."
+"templates](https://ovion.app/libraries-templates)."
 
 #: src/app/main/ui/dashboard/placeholder.cljs
 #, markdown, unused
@@ -504,7 +504,7 @@ msgid "dashboard.empty-placeholder-libraries-subtitle"
 msgstr ""
 "Libraries added to the project will appear here. Try sharing your files or "
 "add from our [Libraries & "
-"templates](https://penpot.app/libraries-templates)."
+"templates](https://ovion.app/libraries-templates)."
 
 #: src/app/main/ui/dashboard/placeholder.cljs:113
 msgid "dashboard.empty-placeholder-libraries-subtitle-viewer-role"
@@ -5900,7 +5900,7 @@ msgstr "Payment was not completed. Try again whenever you're ready."
 msgid "subscription.error.nitrate.checkout-failed"
 msgstr ""
 "We couldn't start the checkout. Please try again. If the problem persists, "
-"contact us: support@penpot.app."
+"contact us: support@ovion.app."
 
 #: src/app/main/ui/settings/subscription.cljs:407
 msgid "subscription.error.nitrate.checkout-finish-failed"
@@ -10204,7 +10204,7 @@ msgstr "Open version menu"
 msgid "workspace.versions.warning.subtext"
 msgstr ""
 "If you'd like to increase this limit, write to us at "
-"[support@penpot.app](%s)"
+"[support@ovion.app](%s)"
 
 #: src/app/main/ui/workspace/sidebar/versions.cljs:463
 msgid "workspace.versions.warning.text"
@@ -11556,5 +11556,5 @@ msgstr "AI settings"
 
 #: src/app/main/ui/dashboard/import.cljs
 msgid "dashboard.import.figma-coming-soon"
-msgstr "Figma file import is coming soon. For now, export your Figma file to .ovion or .penpot first, or use the Figma migration tool."
+msgstr "Figma file import is coming soon. For now, export your Figma file to .ovion first, or use the Figma migration tool."
 

@@ -233,8 +233,8 @@ async function main() {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ovion Desktop</title>
 <style>
-  /* Warm peach design-studio boot screen — matches ds/colors.scss dark theme
-     (mocha-950 surface, cream text, peach-coral accent). The window is
+  /* Warm coral design-studio boot screen — matches ds/colors.scss dark theme
+     (mocha-950 surface, cream text, coral accent). The window is
      borderless, so #wrap is a Tauri drag region (move + double-click
      maximize) until the SPA's custom titlebar takes over. */
   html, body { margin: 0; height: 100%; background: #1c1612; color: #fffaf6;
@@ -246,7 +246,7 @@ async function main() {
   #title { font-size: 20px; font-weight: 600; letter-spacing: .3px; }
   #boot-status { font-size: 14px; color: #9a7f70; min-height: 1.2em; text-align: center; }
   #boot-note { font-size: 12px; color: #6e564a; max-width: 380px; text-align: center; line-height: 1.4; margin-top: 6px; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #362b24; border-top-color: #ff7a52;
+  .spinner { width: 28px; height: 28px; border: 3px solid #362b24; border-top-color: #f28b82;
     border-radius: 50%; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>

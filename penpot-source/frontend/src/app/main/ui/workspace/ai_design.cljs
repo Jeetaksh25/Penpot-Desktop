@@ -10,9 +10,9 @@
 
   The reference is a deliberate, authored visual world — not a generic SaaS
   bar — so the tokens here are PINNED to its exact values rather than derived
-  from Penpot's theme tokens. The reference's accent is a softer, pinker coral
-  (#f28b82) than the app's peach-500 (#ff7a52), so the AI bar uses its own
-  coral, not --color-accent-primary. This is intentional: the AI surfaces are
+  from Penpot's theme tokens. The reference's accent is the same coral (#f28b82) the app chrome
+  now uses (ds/colors.scss $peach-500 = #f28b82), so --ai-coral matches
+  --color-accent-primary. This is intentional: the AI surfaces are
   a distinct layer on top of the base app and carry their own identity, the way
   the reference draws them.
 
@@ -200,7 +200,7 @@
    preference independently. ──────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-  .ai-root *, .ais-root * {
+  .ai-root, .ai-root *, .ais-root, .ais-root * {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
