@@ -227,33 +227,212 @@ export class TextEditor extends EventTarget {
   }
 
   /**
-   * Feature 48 — spell-check pass.
+   * Feature 48 — spell-check pass + live squiggly-underline decorator.
    *
    * Collects the visible text of the root, computes misspelled word
    * ranges with the current dictionary, and stores them on
-   * `#lastMisspelledRanges`. With the default NullDictionary the range
-   * list is empty and the DOM is left untouched.
+   * `#lastMisspelledRanges`. When at least one range is produced, each
+   * range's text node is wrapped in a
+   * `<span class="spellcheck-misspelled">` (the CSS class in
+   * `TextEditor.css` paints the wavy red underline) and the caret
+   * selection is saved before and restored after the DOM mutation.
    *
-   * The live squiggly-underline rendering (wrapping each range in a
-   * `<span class="spellcheck-misspelled">` and restoring the caret
-   * selection afterward) is DEFERRED under the no-build constraint: it
-   * needs the content-model decoration support + a real bundled
-   * dictionary, neither of which is available yet. This hook is the
-   * integration point a future dictionary + decorator will call into.
+   * GUARD / core invariant: with the default `NullDictionary`
+   * `findMisspelledRanges` returns an empty array, so the decorator loop
+   * runs zero iterations, no `<span>` is inserted, no selection is
+   * touched, and `#clearSpellCheckDecorations` unwraps nothing — the
+   * contenteditable DOM is byte-for-byte identical to today. Spans are
+   * inserted only when a real dictionary is plugged via
+   * `setSpellCheckDictionary` AND spell check is enabled.
    */
   #runSpellCheck() {
     if (!this.#spellCheckEnabled || this.#isDisposed) {
       this.#lastMisspelledRanges = [];
       return;
     }
-    const { text } = collectText(this.#root);
+    // Clear any existing squiggly-underline spans first so ranges
+    // recompute against clean, normalized text. With NullDictionary
+    // there are never spans to clear, so this is a no-op.
+    this.#clearSpellCheckDecorations();
+    const { text, nodes } = collectText(this.#root);
     this.#lastMisspelledRanges = findMisspelledRanges(
       text,
       this.#spellCheckDictionary,
     );
-    // DEFERRED: when a non-null dictionary returns ranges, wrap each
-    // range's text node in <span class="spellcheck-misspelled"> here and
-    // restore the selection. With NullDictionary ranges is always empty.
+    // GUARD: empty ranges (NullDictionary / no misspellings) -> the
+    // decorator runs zero iterations -> DOM untouched -> byte-identical.
+    if (this.#lastMisspelledRanges.length === 0) {
+      return;
+    }
+    this.#applySpellCheckDecorations(this.#lastMisspelledRanges, nodes);
+  }
+
+  /**
+   * Removes every existing `<span class="spellcheck-misspelled">` by
+   * unwrapping it (re-parenting its text node back into the span's
+   * parent) and then `normalize()`s the parent so adjacent text nodes
+   * merge back into one — this lets `collectText` see clean text on the
+   * next `#runSpellCheck` pass. Additive: with the NullDictionary the
+   * `querySelectorAll` matches zero nodes, so nothing happens.
+   */
+  #clearSpellCheckDecorations() {
+    if (!this.#root) return;
+    const spans = this.#root.querySelectorAll(".spellcheck-misspelled");
+    for (const span of spans) {
+      const parent = span.parentNode;
+      if (!parent) continue;
+      while (span.firstChild) {
+        parent.insertBefore(span.firstChild, span);
+      }
+      parent.removeChild(span);
+      parent.normalize();
+    }
+  }
+
+  /**
+   * Wraps each misspelled range's text segment in a
+   * `<span class="spellcheck-misspelled">`. Pure DOM manipulation: for
+   * each range it locates the text node (via the `collectText` node map
+   * captured before any split), splits that text node at the range's
+   * end then start offset with `splitText`, and wraps the isolated
+   * middle text node in a span. The caret selection is saved as global
+   * character offsets before the splits and restored afterward by
+   * walking the (now split) text nodes back to the same offsets, so the
+   * caret does not jump. Ranges are processed in descending-start order
+   * so multiple ranges inside the same original text node do not
+   * invalidate one another's offsets.
+   *
+   * @param {Array<{start: number, end: number, word: string}>} ranges
+   * @param {Array<{node: Text, start: number, end: number}>} nodes
+   */
+  #applySpellCheckDecorations(ranges, nodes) {
+    // Save the current selection as global character offsets within the
+    // root text, so it can be restored after the text-node splits. Only
+    // save when both anchors are text nodes inside the root; otherwise
+    // leave savedSelection null and skip restoration.
+    const sel = document.getSelection();
+    let savedStart = null;
+    let savedEnd = null;
+    if (sel && sel.rangeCount > 0) {
+      const r = sel.getRangeAt(0);
+      if (
+        r.startContainer.nodeType === Node.TEXT_NODE &&
+        r.endContainer.nodeType === Node.TEXT_NODE &&
+        this.#root.contains(r.startContainer) &&
+        this.#root.contains(r.endContainer)
+      ) {
+        savedStart = this.#rootOffsetOf(r.startContainer, r.startOffset, nodes);
+        savedEnd = this.#rootOffsetOf(r.endContainer, r.endOffset, nodes);
+      }
+    }
+
+    // Process in descending-start order so that a split at a higher
+    // offset within a text node keeps the lower range valid for the
+    // subsequent (lower-offset) iteration against the same node.
+    const ordered = ranges.slice().sort((a, b) => b.start - a.start);
+    for (const { start, end } of ordered) {
+      const entry = nodes.find(
+        (e) => start >= e.start && end <= e.end && e.node.parentNode,
+      );
+      if (!entry) continue;
+      const node = entry.node;
+      const len = (node.nodeValue || "").length;
+      const localStart = start - entry.start;
+      const localEnd = end - entry.start;
+      if (localStart < 0 || localEnd > len || localStart >= localEnd) {
+        continue;
+      }
+      // Isolate the localStart..localEnd segment into its own text node
+      // `mid`. splitText(offset) keeps the 0..offset prefix on `node`
+      // and returns the new node holding the offset..end suffix.
+      const after = node.splitText(localEnd);
+      const mid = node.splitText(localStart);
+      const span = document.createElement("span");
+      span.className = "spellcheck-misspelled";
+      const parent = mid.parentNode;
+      if (!parent) continue;
+      parent.insertBefore(span, mid);
+      span.appendChild(mid);
+      // `after` is left as a sibling text node; it will be merged back
+      // by normalize() on the next #clearSpellCheckDecorations pass.
+      void after;
+    }
+
+    // Restore the selection at the saved global offsets by walking the
+    // post-split text nodes. Only restore when we actually saved.
+    if (savedStart !== null && savedEnd !== null) {
+      this.#setRootOffsetSelection(savedStart, savedEnd);
+    }
+  }
+
+  /**
+   * Computes the global character offset of `(container, offset)` within
+   * the root text, using the `collectText` node map captured before any
+   * split. Falls back to walking live text nodes if the container is not
+   * found in the map (defensive).
+   *
+   * @param {Node} container
+   * @param {number} offset
+   * @param {Array<{node: Text, start: number, end: number}>} nodes
+   * @returns {number}
+   */
+  #rootOffsetOf(container, offset, nodes) {
+    for (const e of nodes) {
+      if (e.node === container) {
+        return e.start + offset;
+      }
+    }
+    // Fallback: walk live text nodes.
+    const walker = document.createTreeWalker(
+      this.#root,
+      NodeFilter.SHOW_TEXT,
+      null,
+    );
+    let acc = 0;
+    let n;
+    while ((n = walker.nextNode())) {
+      if (n === container) return acc + offset;
+      acc += (n.nodeValue || "").length;
+    }
+    return acc;
+  }
+
+  /**
+   * Sets the selection to the given global character offsets within the
+   * root text by walking the (post-split) text nodes. No-op when the
+   * offsets cannot be located (e.g. root empty / disposed).
+   *
+   * @param {number} globalStart
+   * @param {number} globalEnd
+   */
+  #setRootOffsetSelection(globalStart, globalEnd) {
+    const sel = document.getSelection();
+    if (!sel) return;
+    const walker = document.createTreeWalker(
+      this.#root,
+      NodeFilter.SHOW_TEXT,
+      null,
+    );
+    let acc = 0;
+    let n;
+    let startSet = false;
+    const range = document.createRange();
+    while ((n = walker.nextNode())) {
+      const len = (n.nodeValue || "").length;
+      if (!startSet && globalStart <= acc + len) {
+        range.setStart(n, Math.max(0, globalStart - acc));
+        startSet = true;
+      }
+      if (startSet && globalEnd <= acc + len) {
+        range.setEnd(n, Math.max(0, globalEnd - acc));
+        break;
+      }
+      acc += len;
+    }
+    if (startSet) {
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
   }
 
   /**

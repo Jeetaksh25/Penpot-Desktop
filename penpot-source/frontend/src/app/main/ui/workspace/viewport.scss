@@ -45,6 +45,21 @@
 // is the visual hook for the already-wired boolean. Pixel-preview
 // rasterization (gap #46) is a separate real render piece and is likewise
 // DEFERRED; no pixel-preview rule is emitted here.
+//
+// Per-shape outline fallback (gap #45, renderer side): custom_stroke.cljs
+// `shape-custom-strokes` emits a `[:g.outline-fallback]` containing the
+// original child element with an inline `{:fill "none" :stroke "currentColor"
+// :strokeWidth 1}` ONLY when (a) outline-mode? is true via the
+// `muc/outline-mode?` provider, (b) the shape has no visible strokes, and
+// (c) the shape is not a frame/group. The `:is(...)` fill:transparent rule
+// above still matches the child path/rect (CSS !important beats inline
+// style), but `fill: transparent` is visually identical to the inline
+// `fill: none` — so the fallback is not "nuked"; the guaranteed outline
+// stroke is untouched because the outline-mode rule never sets `stroke`.
+// No `.outline-fallback` rule is needed here; the class is a stable hook
+// for future per-shape outline styling. Additive: zero new elements when
+// the guard is false (context defaults false, non-workspace renders never
+// mount the provider) -> byte-identical with today.
 .outline-mode {
   :is(rect, circle, ellipse, line, polygon, polyline, path) {
     fill: transparent !important;

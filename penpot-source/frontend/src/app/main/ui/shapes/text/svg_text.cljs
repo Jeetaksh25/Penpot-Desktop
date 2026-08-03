@@ -80,6 +80,32 @@
                      :dy "0.2em"
                      :y (- (:y data) (:height data))})
 
+              ;; Feature 50 — leading-punctuation glyphs that, when
+              ;; `:hanging-punctuation` is on, should hang outside the text-box
+              ;; bounds. Chromium WebView2 does not implement the CSS property,
+              ;; so the SVG does the hang itself via a negative `:dx`.
+              hanging-chars #{"‘" "’" "“" "”" "「" "」" "『" "』" "、" "。" "（" "）" "【" "】" "《" "》" "—"}
+
+              ;; Feature 17 — truncation ellipsis. `last-visible?` is the final
+              ;; laid-out block; `overflowed?` is exact for a single-paragraph
+              ;; text box (line count > max-lines) and approximate for
+              ;; multi-paragraph. The ellipsis is appended ONLY when
+              ;; `:text-overflow` is `truncate`, `:max-lines` is a positive
+              ;; number, this is the last block, and the text overflowed —
+              ;; otherwise `display-text` is verbatim `(:text data)`, so an
+              ;; absent slot is byte-identical.
+              last-visible? (= index (dec (count position-data)))
+              max-lines-num (some-> (:max-lines data) js/parseFloat)
+              overflowed?   (and (some? max-lines-num)
+                                 (pos? max-lines-num)
+                                 (> (count position-data) max-lines-num))
+              truncate?     (and (= (:text-overflow data) "truncate")
+                                 (some? (:max-lines data))
+                                 (pos? (js/parseFloat (:max-lines data)))
+                                 last-visible?
+                                 overflowed?)
+              display-text  (if truncate? (str (:text data) "…") (:text data))
+
               props (-> #js {:key (dm/str "text-" (:id shape) "-" index)
                              :x (if rtl? (+ (:x data) (:width data)) (:x data))
                              :y (:y data)
@@ -95,9 +121,41 @@
                                              :fontStyle (:font-style data)
                                              :direction (:direction data)
                                              :whiteSpace "pre"}
-                                        (obj/set! "fill" (str "url(#fill-" index "-" render-id ")")))}
+                                        (obj/set! "fill" (str "url(#fill-" index "-" render-id ")"))
+                                        (cond->
+                                          ;; Feature 12 / 13 — OpenType &
+                                          ;; variable-font axes. Absent (`nil`)
+                                          ;; -> no `style` key -> byte-identical.
+                                          (some? (:font-feature-settings data))
+                                          (obj/set! "fontFeatureSettings"
+                                                    (:font-feature-settings data))
+                                          (some? (:font-variation-settings data))
+                                          (obj/set! "fontVariationSettings"
+                                                    (:font-variation-settings data))))}
                         (cond-> browser-props
-                          (obj/merge! browser-props)))
+                          (obj/merge! browser-props)
+
+                          ;; Feature 78 — super/sub. Only `super`/`sub` (never
+                          ;; the default `baseline`) set a `:dy`; absent ->
+                          ;; no `:dy` -> byte-identical.
+                          (#{"super" "sub"} (:baseline-shift data))
+                          (obj/set! "dy"
+                                    (if (= "super" (:baseline-shift data))
+                                      "-0.5em"
+                                      "0.3em"))
+
+                          ;; Feature 50 — hang leading punctuation. A negative
+                          ;; `:dx` approximates the glyph advance (half the
+                          ;; font-size, em heuristic). Absent / false /
+                          ;; non-hanging first char -> no `:dx` ->
+                          ;; byte-identical.
+                          (and (:hanging-punctuation data)
+                               (contains? hanging-chars (first (:text data))))
+                          (obj/set! "dx"
+                                    (str "-"
+                                          (or (* 0.5 (js/parseFloat (:font-size data)))
+                                              0)
+                                          "px"))))
               shape (-> shape
                         (assoc :fills (:fills data))
                         ;; The text elements have the shadow and blur already applied in the
@@ -113,4 +171,10 @@
             [:& fills/fills          {:shape shape :render-id render-id}]]
 
            [:& shape-custom-strokes {:shape shape :position index :render-id render-id}
-            [:> :text props (:text data)]]]))]]))
+            ;; Feature 18 — hyperlink. Wrap the <text> in an <a> when the block
+            ;; carries a `:hyperlink` map; absent -> bare <text>,
+            ;; byte-identical.
+            (if-let [hl (:hyperlink data)]
+              [:> :a #js {:href (:url hl) :key (dm/str "hl-" index)}
+               [:> :text props display-text]]
+              [:> :text props display-text])]]))]]))

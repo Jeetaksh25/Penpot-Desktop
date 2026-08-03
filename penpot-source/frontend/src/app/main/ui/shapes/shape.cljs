@@ -9,6 +9,7 @@
    [app.common.data :as d]
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
+   [app.common.geom.shapes.transforms-3d :as gsh3d]
    [app.main.refs :as refs]
    [app.main.ui.context :as muc]
    [app.main.ui.hooks :as h]
@@ -66,6 +67,13 @@
 
         type             (dm/get-prop shape :type)
         render-id        (h/use-render-id)
+
+        ;; 3D transform (gap #66). APPROX: CSS matrix3d on the wrapping
+        ;; <g>. nil when the :transform-3d slot is absent or empty, so the
+        ;; cond-> below adds NO new style keys and the <g style> is
+        ;; byte-identical to today.
+        t3d-css          (gsh3d/transform-3d-css-str shape)
+
         styles           (-> (obj/create)
                              (obj/set! "pointerEvents" pointer-events)
                              (cond-> (not (cfh/frame-shape? shape))
@@ -73,12 +81,16 @@
                              (cond-> (:hidden shape)
                                (obj/set! "display" "none"))
                              (cond-> (and blend-mode (not= blend-mode :normal))
-                               (obj/set! "mixBlendMode" (d/name blend-mode))))
+                               (obj/set! "mixBlendMode" (d/name blend-mode)))
+                             (cond-> (some? t3d-css)
+                               (-> (obj/set! "transform" t3d-css)
+                                   (obj/set! "transformOrigin" (gsh3d/transform-3d-origin shape))
+                                   (obj/set! "transformStyle" "preserve-3d"))))
 
         include-metadata? (mf/use-ctx ed/include-metadata-ctx)
 
-        shape-without-blur (dissoc shape :blur)
-        shape-without-shadows (assoc shape :shadow [])
+        shape-without-blur (dissoc shape :blur :blurs :stacked-blur :glass :noise :texture :shader-effect)
+        shape-without-shadows (-> shape (assoc :shadow []) (dissoc :blurs :stacked-blur :glass :noise :texture :shader-effect))
 
         filter-id        (dm/str "filter-" render-id)
         filter-str

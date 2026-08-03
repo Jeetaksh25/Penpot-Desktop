@@ -162,6 +162,101 @@
                :fill (:color col)
                :fill-opacity (:opacity col)}])]))
 
+(mf/defc mesh-gradient
+  {::mf/wrap-props false}
+  [{:keys [id gradient shape]}]
+  ;; Figma-parity mesh gradient (gap #21). SVG has no native mesh gradient,
+  ;; so we tessellate each grid cell into an N x N sub-grid and emit one
+  ;; filled <path> quad per sub-cell, with bilinearly-interpolated color and
+  ;; position across the 4 corner mesh-points. The paths live in a
+  ;; userSpaceOnUse <pattern> sized to the shape bounds (same wrapper as
+  ;; angular-gradient), so `fill="url(#id)"` paints the shape with the mesh.
+  ;; :mesh-points is a flat row-major vector of {:color :opacity :x :y}
+  ;; (x,y in 0..1) laid out as mesh-rows x mesh-cols. GUARD: the whole body
+  ;; is wrapped in (when (seq mesh-points) ...) so a malformed/empty mesh
+  ;; emits no def (nil return). Legacy linear/radial/angular/diamond
+  ;; gradients never carry :type :mesh and never reach this component, so
+  ;; they render byte-identically. Deterministic for a fixed N (no
+  ;; Math/random): N = mesh-tessellation ? 16 : 8.
+  (when (and (some? (:mesh-points gradient))
+             (pos? (count (:mesh-points gradient))))
+    (let [x        (dm/get-prop shape :x)
+          y        (dm/get-prop shape :y)
+          w        (dm/get-prop shape :width)
+          h        (dm/get-prop shape :height)
+
+          points   (mapv (fn [p]
+                            (cond-> p (nil? (:opacity p)) (assoc :opacity 1)))
+                          (vec (:mesh-points gradient)))
+          npoints  (count points)
+          cols     (int (or (:mesh-cols gradient)
+                            (js/Math.sqrt npoints)))
+          cols     (if (pos? cols) cols 1)
+          rows     (int (or (:mesh-rows gradient)
+                            (/ npoints cols)))
+          rows     (if (pos? rows) rows 1)
+
+          tess?    (boolean (:mesh-tessellation gradient))
+          N        (if tess? 16 8)
+
+          ;; clr/interpolate-color expects stop maps carrying :offset; mesh
+          ;; points have none, so we pin the endpoints to offsets 0 and 1 and
+          ;; pass the weight t in [0,1] as the offset. Returns a stop-like
+          ;; map {:color :opacity :offset ...} with interpolated values.
+          interp   (fn [c1 c2 t]
+                     (clr/interpolate-color
+                      (assoc c1 :offset 0)
+                      (assoc c2 :offset 1)
+                      t))
+
+          pt       (fn [row col]
+                     (get points (+ (* row cols) col)))
+
+          ;; Bilinear interpolation of the 4 corner positions of a cell,
+          ;; returned in shape-space coordinates.
+          sub-pos  (fn [p00 p10 p01 p11 u v]
+                     (let [top-x (+ (:x p00) (* (- (:x p10) (:x p00)) u))
+                           top-y (+ (:y p00) (* (- (:y p10) (:y p00)) u))
+                           bot-x (+ (:x p01) (* (- (:x p11) (:x p01)) u))
+                           bot-y (+ (:y p01) (* (- (:y p11) (:y p01)) u))
+                           px    (+ top-x (* (- bot-x top-x) v))
+                           py    (+ top-y (* (- bot-y top-y) v))]
+                       [(+ x (* px w)) (+ y (* py h))]))
+
+          ;; Bilinear interpolation of the 4 corner colors.
+          sub-col  (fn [p00 p10 p01 p11 u v]
+                     (let [top (interp p00 p10 u)
+                           bot (interp p01 p11 u)]
+                       (interp top bot v)))]
+
+      [:> :pattern {:id id
+                    :patternUnits "userSpaceOnUse"
+                    :x x :y y :width w :height h}
+       (for [r (range 0 (dec rows))
+             c (range 0 (dec cols))
+             :let [p00 (pt r c)
+                   p10 (pt r (inc c))
+                   p01 (pt (inc r) c)
+                   p11 (pt (inc r) (inc c))]
+             :when (and p00 p10 p01 p11)]
+         [:* {:key (dm/str id "-cell-" r "-" c)}
+          (for [i (range N)
+                j (range N)
+                :let [u0 (/ i N)       v0 (/ j N)
+                      u1 (/ (inc i) N) v1 (/ (inc j) N)
+                      [ax ay] (sub-pos p00 p10 p01 p11 u0 v0)
+                      [bx by] (sub-pos p00 p10 p01 p11 u1 v0)
+                      [cx cy] (sub-pos p00 p10 p01 p11 u1 v1)
+                      [dx dy] (sub-pos p00 p10 p01 p11 u0 v1)
+                      col     (sub-col p00 p10 p01 p11 u0 v0)]]
+            [:path {:key (dm/str id "-c-" r "-" c "-" i "-" j)
+                    :d (dm/str "M " ax " " ay
+                               " L " bx " " by
+                               " L " cx " " cy
+                               " L " dx " " dy " Z")
+                    :fill (:color col)
+                    :fill-opacity (:opacity col)}])])])))
+
 (mf/defc gradient
   {::mf/wrap-props false}
   [props]
@@ -188,5 +283,10 @@
         ;; gradient and the wedge method does not apply; a true
         ;; Manhattan-distance diamond is deferred to the polish round).
         :angular [:> angular-gradient props]
+        ;; Figma-parity mesh gradient (gap #21) — tessellated <pattern> of
+        ;; bilinearly-interpolated filled quads (see mesh-gradient above).
+        ;; Only reached when (:type gradient) is :mesh; legacy gradients
+        ;; never carry :type :mesh, so this case is inert for them.
+        :mesh [:> mesh-gradient props]
         :diamond [:> radial-gradient props]
         nil))))

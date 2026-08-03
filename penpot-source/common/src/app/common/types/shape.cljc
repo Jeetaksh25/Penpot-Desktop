@@ -337,6 +337,17 @@
      [:rotation-y {:optional true} ::sm/safe-number]
      [:rotation-z {:optional true} ::sm/safe-number]
      [:perspective {:optional true} ::sm/safe-number]]]
+   ;; Figma-parity variable-width strokes (gap #53) + brush strokes.
+   ;; :segment-widths is a per-node map {segment-index width} consumed by
+   ;; custom_stroke.cljs `variable-width-stroke` (path/get-segment-width
+   ;; returns the fallback when an index is absent, so per-segment lookups
+   ;; are safe). :brush-id references a brush asset used by the mesh/brush
+   ;; stroke-defs case owned by group B. Both :optional — absent/empty =
+   ;; existing cond branches in shape-custom-stroke fire = byte-identical
+   ;; with today. Kept permissive so the dedicated schemas can live in NEW
+   ;; files without editing this one; round-trip safe via dwsh/update-shapes.
+   [:segment-widths {:optional true} [:maybe [:map-of ::sm/int ::sm/safe-number]]]
+   [:brush-id {:optional true} ::sm/uuid]
    [:grow-type {:optional true}
     [::sm/one-of grow-types]]
    [:applied-tokens {:optional true} cto/schema:applied-tokens]
@@ -622,7 +633,10 @@
     :glass :noise :texture
     ;; Figma-parity stacked blurs (#74), shader effects (#64) and 3D
     ;; transforms (#66). All optional + opaque/round-trip safe.
-    :blurs :shader-effect :transform-3d})
+    :blurs :shader-effect :transform-3d
+    ;; Figma-parity variable-width strokes (#53) + brush strokes. Optional
+    ;; + round-trip safe; absent = today's render (byte-identical).
+    :segment-widths :brush-id})
 
 (def ^:private allowed-shape-geom-attrs #{:x :y :width :height})
 (def ^:private allowed-shape-base-attrs #{:id :name :type :selrect :points :transform

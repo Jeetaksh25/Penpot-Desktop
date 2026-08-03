@@ -10,6 +10,7 @@
    [app.common.files.helpers :as cfh]
    [app.common.geom.shapes :as gsh]
    [app.common.geom.shapes.bounds :as gsb]
+   [app.common.geom.shapes.transforms-3d :as gsh3d]
    [app.common.types.shape.layout :as ctl]
    [app.config :as cf]
    [app.main.ui.context :as muc]
@@ -68,8 +69,8 @@
         filter-id-blur     (dm/fmt "filter-blur-%" render-id)
         filter-id-shadows  (dm/fmt "filter-shadow-%" render-id)
 
-        filter-str-blur    (filters/filter-str filter-id-blur (dissoc shape :shadow))
-        filter-str-shadows (filters/filter-str filter-id-shadows (dissoc shape :blur))
+        filter-str-blur    (filters/filter-str filter-id-blur (-> shape (dissoc :shadow) (dissoc :noise) (dissoc :texture) (dissoc :shader-effect)))
+        filter-str-shadows (filters/filter-str filter-id-shadows (-> shape (dissoc :blur) (dissoc :stacked-blur) (dissoc :glass)))
 
         x             (dm/get-prop shape :x)
         y             (dm/get-prop shape :y)
@@ -77,6 +78,17 @@
         h             (dm/get-prop shape :height)
         opacity       (dm/get-prop shape :opacity)
         transform     (gsh/transform-str shape)
+
+        ;; 3D transform (gap #66). APPROX: CSS matrix3d on the frame
+        ;; wrapping <g>. t3d-css is nil when the :transform-3d slot is
+        ;; absent or empty, so t3d-style is nil and (cond-> ... (some?
+        ;; t3d-style) ...) adds NO :style key — the wrapper is
+        ;; byte-identical to today's {:opacity opacity}.
+        t3d-css       (gsh3d/transform-3d-css-str shape)
+        t3d-style     (when t3d-css
+                        #js {:transform t3d-css
+                             :transformOrigin (gsh3d/transform-3d-origin shape)
+                             :transformStyle "preserve-3d"})
 
         show-content? (get shape :show-content)
 
@@ -95,7 +107,8 @@
     ;; We need to separate blur from shadows because the blur is applied to the strokes
     ;; while the shadows have to be placed *under* the stroke (for example, the inner shadows)
     ;; and the shadows needs to be applied only to the content (without the stroke)
-    [:g.frame-container-wrapper {:opacity opacity}
+    [:g.frame-container-wrapper (cond-> {:opacity opacity}
+                                  (some? t3d-style) (assoc :style t3d-style))
      [:g.frame-container-blur {:filter filter-str-blur}
       [:defs
        [:> filters/filters* {:shape (dissoc shape :blur) :filter-id filter-id-shadows}]

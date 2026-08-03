@@ -9,11 +9,13 @@
    [app.common.data :as d]
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
+   [app.common.geom.point :as gpt]
    [app.common.geom.rect :as grc]
    [app.common.geom.shapes :as gsh]
    [app.common.geom.shapes.bounds :as gsb]
    [app.common.geom.shapes.text :as gst]
    [app.common.types.path :as path]
+   [app.common.types.path.helpers :as path-h]
    [app.common.uuid :as uuid]
    [app.config :as cf]
    [app.main.ui.context :as muc]
@@ -244,6 +246,12 @@
          :linear  [:> grad/linear-gradient props]
          :radial  [:> grad/radial-gradient props]
          :angular [:> grad/angular-gradient props]
+         ;; Figma-parity mesh gradient (gap #21) — tessellated <pattern>
+         ;; of bilinearly-interpolated filled quads (see gradients.cljs).
+         ;; Only reached when (:type gradient) is :mesh; legacy stroke
+         ;; gradients never carry :type :mesh, so existing arms render
+         ;; byte-identically.
+         :mesh    [:> grad/mesh-gradient props]
          ;; diamond approximated as radial in v1 (see gradients.cljs).
          :diamond [:> grad/radial-gradient props]))
 
@@ -463,6 +471,121 @@
      [:> :line (line-props (+ x w)         (+ y h oy-bottom) x            (+ y h oy-bottom) bottom dash-bottom)]
      [:> :line (line-props (+ x ox-left)   (+ y h)        (+ x ox-left)   y              left   dash-left)]]))
 
+;; Figma-parity variable-width strokes (gap #53). SVG has no native
+;; variable-width stroke, so for :path shapes carrying a non-empty
+;; :segment-widths map we render the stroke as a FILLED outline polygon
+;; built by offsetting the centerline ±(w/2) along the perpendicular of
+;; the incoming tangent at each node. Curve-to segments are sampled at
+;; several t values; each sample is offset along the curve-tangent
+;; perpendicular with a linearly interpolated half-width. The outline is
+;; closed (Z) so it renders as a solid filled band. PURELY ADDITIVE: the
+;; caller (shape-custom-stroke) gates this on (cfh/path-shape? shape) AND
+;; (some? :segment-widths) AND (pos? count) — legacy paths with no
+;; :segment-widths fall through to the existing cond branches and emit
+;; byte-identical SVG. path/get-segment-width returns base-w for any index
+;; absent from the map, so per-segment lookups are safe even for partial
+;; width maps. Returns nil when fewer than 2 usable samples exist; the
+;; component then renders nothing.
+(defn- variable-width-outline-d
+  [shape stroke]
+  (let [content (some-> shape :content seq)
+        widths  (:segment-widths shape)
+        base-w  (:stroke-width stroke 0)]
+    (when (and content (map? widths))
+      (let [n (count content)
+            samples
+            (loop [i 0 prev-pt nil move-start nil acc []]
+              (if (>= i n)
+                acc
+                (let [seg    (nth content i)
+                      cmd    (:command seg)
+                      params (:params seg)
+                      pt     (path-h/segment->point seg)]
+                  (case cmd
+                    :move-to
+                    (recur (inc i) pt pt acc)
+
+                    :line-to
+                    (let [w     (path/get-segment-width widths i base-w)
+                          tang  (if (and prev-pt pt (not= prev-pt pt))
+                                  (gpt/unit (gpt/to-vec prev-pt pt))
+                                  (gpt/point 1 0))]
+                      (recur (inc i) pt move-start
+                             (conj acc [pt (/ w 2) tang])))
+
+                    :curve-to
+                    (if (nil? prev-pt)
+                      (recur (inc i) pt move-start acc)
+                      (let [h1     (gpt/point (:c1x params) (:c1y params))
+                            h2     (gpt/point (:c2x params) (:c2y params))
+                            w-i    (path/get-segment-width widths i base-w)
+                            w-prev (path/get-segment-width widths (dec i) base-w)
+                            curve  [prev-pt pt h1 h2]
+                            ts     [0.25 0.5 0.75]
+                            acc'   (reduce
+                                    (fn [a t]
+                                      (let [sp   (path-h/curve-values curve t)
+                                            sw   (+ w-prev (* (- w-i w-prev) t))
+                                            tang (path-h/curve-tangent curve t)]
+                                        (conj a [sp (/ sw 2) tang])))
+                                    acc ts)]
+                        (recur (inc i) pt move-start
+                               (conj acc' [pt (/ w-i 2)
+                                           (path-h/curve-tangent curve 1)]))))
+
+                    :close-path
+                    (let [w    (path/get-segment-width widths i base-w)
+                          tang (if (and prev-pt move-start (not= prev-pt move-start))
+                                 (gpt/unit (gpt/to-vec prev-pt move-start))
+                                 (gpt/point 1 0))]
+                      (recur (inc i) move-start move-start
+                             (conj acc [move-start (/ w 2) tang])))
+
+                    ;; unknown command — skip, keep prev-pt/move-start
+                    (recur (inc i) prev-pt move-start acc)))))
+            samples (vec samples)]
+        (when (>= (count samples) 2)
+          (let [pairs  (mapv (fn [[p hw tang]]
+                                (let [norm  (gpt/perpendicular tang)
+                                      left  (gpt/add p (gpt/scale norm hw))
+                                      right (gpt/add p (gpt/scale norm (- 0 hw)))]
+                                  [left right]))
+                              samples)
+                lefts  (mapv first pairs)
+                rights (mapv second pairs)
+                p0     (first lefts)
+                body-l (str/join " L " (map gpt/point->str (next lefts)))
+                body-r (str/join " L " (map gpt/point->str (rseq rights)))]
+            (str "M " (gpt/point->str p0)
+                 (when (seq body-l) (str " L " body-l))
+                 (when (seq body-r) (str " L " body-r))
+                 " Z")))))))
+
+(mf/defc variable-width-stroke
+  {::mf/wrap-props false}
+  [{:keys [shape stroke render-id index]}]
+  (let [outline-d (mf/with-memo [shape stroke]
+                    (variable-width-outline-d shape stroke))
+        gradient  (:stroke-color-gradient stroke)
+        image     (:stroke-image stroke)
+        color     (:stroke-color stroke)
+        opacity   (:stroke-opacity stroke)
+        paint     (cond
+                    (some? gradient) (dm/fmt "url(#stroke-color-gradient-%-%)" render-id index)
+                    (some? image)    (dm/fmt "url(#stroke-fill-%-%)" render-id index)
+                    (some? color)    color
+                    :else            "none")
+        t         (gsh/transform-str shape)]
+    (when (some? outline-d)
+      [:g.stroke-shape
+       [:defs
+        [:& stroke-defs {:shape shape :stroke stroke :render-id render-id :index index}]]
+       [:path {:d outline-d
+               :fill paint
+               :fillOpacity opacity
+               :stroke "none"
+               :transform t}]])))
+
 (mf/defc shape-custom-stroke
   {::mf/wrap-props false}
   [props]
@@ -495,9 +618,19 @@
                                    right  (or (:stroke-right stroke)  base 0)
                                    bottom (or (:stroke-bottom stroke) base 0)
                                    left   (or (:stroke-left stroke)   base 0)]
-                               (or (> top 0) (> right 0) (> bottom 0) (> left 0))))]
+                               (or (> top 0) (> right 0) (> bottom 0) (> left 0))))
+
+        ;; Figma-parity variable-width strokes (gap #53). Only :path shapes
+        ;; with a non-empty :segment-widths map. FIRST cond clause so legacy
+        ;; paths (no :segment-widths) fall through untouched = byte-identical.
+        variable-width? (and ^boolean (cfh/path-shape? shape)
+                             (some? (:segment-widths shape))
+                             (pos? (count (:segment-widths shape))))]
 
     (cond
+      variable-width?
+      [:& variable-width-stroke {:shape shape :stroke stroke :index index :render-id render-id}]
+
       per-side?
       [:& per-side-stroke {:shape shape :stroke stroke :index index :render-id render-id}]
 
@@ -620,6 +753,36 @@
 (mf/defc shape-custom-strokes
   {::mf/wrap-props false}
   [props]
-  [:*
-   [:> shape-fills props]
-   [:> shape-strokes props]])
+  (let [shape    (unchecked-get props "shape")
+        child    (unchecked-get props "children")
+        outline? (mf/use-ctx muc/outline-mode?)
+        ;; GUARD: emit the fallback ONLY under outline mode, when the shape
+        ;; has NO visible strokes, and only for leaf shapes (not frame /
+        ;; group, which render their children/strokes differently). When the
+        ;; guard is false (context defaults false, non-workspace renders
+        ;; never mount the provider -> outline? is false) NO new element is
+        ;; emitted -> byte-identical with today.
+        fallback? (and outline?
+                       (empty? (->> (:strokes shape) (remove :hidden)))
+                       (not ^boolean (cfh/frame-shape? shape))
+                       (not ^boolean (cfh/group-shape? shape)))]
+    [:*
+     [:> shape-fills props]
+     [:> shape-strokes props]
+     (when fallback?
+       (let [ctype   (obj/get child "type")
+             cprops  (obj/get child "props")
+             ovr     #js {:fill "none"
+                          :stroke "currentColor"
+                          :strokeWidth 1
+                          :strokeOpacity 1}
+             props'  (-> (obj/clone cprops)
+                         (obj/set! "style" ovr))]
+         ;; Wrapped in [:g.outline-fallback] as a stable hook. The
+         ;; .outline-mode CSS `:is(...)` fill:transparent !important still
+         ;; applies to the child, but fill:transparent is visually identical
+         ;; to the inline fill:none; the guaranteed outline stroke
+         ;; (currentColor, width 1) is untouched because the outline-mode
+         ;; rule never sets stroke.
+         [:g.outline-fallback
+          [:> ctype props']]))]))

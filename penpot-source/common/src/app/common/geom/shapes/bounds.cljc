@@ -38,29 +38,117 @@
   (d/concat-vec
    [{:id "BackgroundImageFix" :type :image-fix}]
 
+   ;; Texture is emitted BEFORE drop-shadows so the drop-shadow filter-in
+   ;; chains from the textured alpha (shadows compute from the displaced
+   ;; graphic). Only present when (seq (remove :hidden (:texture shape))).
+   (->> shape :texture (apply-filters :type :texture))
+
    (->> shape :shadow (apply-filters :style :drop-shadow))
    [{:id "shape" :type :blend-filters}]
    (->> shape :shadow (apply-filters :style :inner-shadow))
 
-   (->> shape :blur list (apply-filters :type :layer-blur))))
+   ;; Noise is an overlay appended after inner-shadows; bounded to the
+   ;; shape (clipped to SourceAlpha) so no filter-region growth is added.
+   ;; Only present when (seq (remove :hidden (:noise shape))).
+   (->> shape :noise (apply-filters :type :noise))
+
+   (->> shape :blur list (apply-filters :type :layer-blur))
+
+   ;; STACKED-BLUR (#60) — :blurs is a VECTOR slot; each non-hidden entry
+   ;; contributes one radius (its :value) to a single :stacked-blur filter
+   ;; entry whose :params carries :radii. Absent/empty/all-hidden :blurs ->
+   ;; no entry -> filters vector stays at baseline count of 2 -> filters*
+   ;; count-guard false -> no <filter> (byte-identical).
+   (when (seq (remove :hidden (:blurs shape)))
+     (let [items (remove :hidden (:blurs shape))
+           radii (vec (keep :value items))]
+       (when (seq radii)
+         [{:id "filter_stacked-blur"
+           :type :stacked-blur
+           :params {:radii radii}}])))
+
+   ;; GLASS (#61) — single-map slot appended after stacked-blur.
+   ;; apply-filters does (remove :hidden) internally, so an
+   ;; absent/nil/hidden slot yields an empty seq and NO entry is added
+   ;; -> filters vector stays at baseline count of 2 -> filters*
+   ;; count-guard false -> no <filter> (byte-identical).
+   (->> shape :glass list (apply-filters :type :glass))
+
+   ;; SHADER (#64) — :shader-effect is a VECTOR slot; index 0 (first
+   ;; non-hidden item) is the active shader-effect map. SVG-expressible
+   ;; presets (:clouds / :halftone / :noise) get a first-class SVG filter
+   ;; entry appended after glass; arbitrary/prompt-built presets are
+   ;; rendered by the WebGL2 canvas path (shader-canvas* in filters.cljs)
+   ;; and deliberately do NOT enter the SVG filter chain. The entry is
+   ;; appended ONLY when the first non-hidden item's :shader-preset is in
+   ;; the SVG-expressible set (inlined here because bounds.cljc is in
+   ;; app.common.* and cannot require filters.cljs); :shader-preset is
+   ;; aliased to :preset in :params (shader-preset-filter* reads
+   ;; :preset). Absent/empty/all-hidden/non-SVG slot -> no entry ->
+   ;; filters vector stays at baseline count of 2 -> filters* count-guard
+   ;; false -> no <filter> element (byte-identical).
+   (when (seq (:shader-effect shape))
+     (let [item (first (remove :hidden (:shader-effect shape)))
+           preset (:shader-preset item)]
+       (when (contains? #{:clouds :halftone :noise} preset)
+         [{:id (dm/str "filter_" (or (:id item) "shader"))
+           :type :shader-effect
+           :params (assoc item :preset preset)}])))))
 
 (defn- calculate-filter-bounds
   [selrect filter-entry]
   (let [x (dm/get-prop selrect :x)
         y (dm/get-prop selrect :y)
         w (dm/get-prop selrect :width)
-        h (dm/get-prop selrect :height)
+        h (dm/get-prop selrect :height)]
+    (cond
+      (= :texture (:type filter-entry))
+      ;; feDisplacementMap scale `radius` grows the filter region
+      ;; symmetrically around the shape. Absent slot -> no :texture
+      ;; entry -> this branch is never reached (byte-identical).
+      (let [radius   (or (-> filter-entry :params :radius) 0)
+            filter-x (- x radius 5)
+            filter-y (- y radius 5)
+            filter-w (+ w (* radius 2) 10)
+            filter-h (+ h (* radius 2) 10)]
+        (grc/make-rect filter-x filter-y filter-w filter-h))
 
-        {:keys [offset-x offset-y blur spread]
-         :or {offset-x 0 offset-y 0 blur 0 spread 0}}
-        (:params filter-entry)
+      (= :stacked-blur (:type filter-entry))
+      ;; N chained Gaussian blurs; the largest radius dominates the
+      ;; filter-region growth. Absent slot -> no :stacked-blur entry
+      ;; -> never reached (byte-identical).
+      (let [radii    (or (seq (-> filter-entry :params :radii)) [0])
+            grow     (apply max radii)
+            filter-x (- x grow 5)
+            filter-y (- y grow 5)
+            filter-w (+ w (* grow 2) 10)
+            filter-h (+ h (* grow 2) 10)]
+        (grc/make-rect filter-x filter-y filter-w filter-h))
 
-        filter-x (mth/min x (+ x offset-x (- spread) (- blur) -5))
-        filter-y (mth/min y (+ y offset-y (- spread) (- blur) -5))
-        filter-w (+ w (mth/abs offset-x) (* spread 2) (* blur 2) 10)
-        filter-h (+ h (mth/abs offset-y) (* spread 2) (* blur 2) 10)]
+      (= :glass (:type filter-entry))
+      ;; Glass grows the region by the max of refraction scale, frost
+      ;; blur and dispersion offset. Absent slot -> no :glass entry
+      ;; -> never reached (byte-identical).
+      (let [grow     (max (or (-> filter-entry :params :refraction) 0)
+                          (or (-> filter-entry :params :frost-blur) 0)
+                          (or (-> filter-entry :params :dispersion) 0))
+            filter-x (- x grow 5)
+            filter-y (- y grow 5)
+            filter-w (+ w (* grow 2) 10)
+            filter-h (+ h (* grow 2) 10)]
+        (grc/make-rect filter-x filter-y filter-w filter-h))
 
-    (grc/make-rect filter-x filter-y filter-w filter-h)))
+      :else
+      (let [{:keys [offset-x offset-y blur spread]
+             :or {offset-x 0 offset-y 0 blur 0 spread 0}}
+            (:params filter-entry)
+
+            filter-x (mth/min x (+ x offset-x (- spread) (- blur) -5))
+            filter-y (mth/min y (+ y offset-y (- spread) (- blur) -5))
+            filter-w (+ w (mth/abs offset-x) (* spread 2) (* blur 2) 10)
+            filter-h (+ h (mth/abs offset-y) (* spread 2) (* blur 2) 10)]
+
+        (grc/make-rect filter-x filter-y filter-w filter-h)))))
 
 (defn get-rect-filter-bounds
   ([selrect filters blur-value]
@@ -68,7 +156,7 @@
   ([selrect filters blur-value ignore-shadow-margin?]
    (let [bounds-xf  (comp
                      (filter #(and (not ignore-shadow-margin?)
-                                   (= :drop-shadow (:type %))))
+                                   (#{:drop-shadow :texture :stacked-blur :glass} (:type %))))
                      (map (partial calculate-filter-bounds selrect)))
          delta-blur (* blur-value 2)]
      (-> (into [selrect] bounds-xf filters)

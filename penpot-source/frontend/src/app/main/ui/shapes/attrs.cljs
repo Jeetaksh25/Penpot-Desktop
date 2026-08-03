@@ -15,6 +15,7 @@
    [app.common.types.color :as clr]
    [app.common.types.shape :refer [stroke-caps-line stroke-caps-marker]]
    [app.common.types.shape.radius :as ctsr]
+   [app.main.ui.shapes.filters :as filters]
    [app.util.object :as obj]
    [clojure.string :as cstr]
    [cuerdas.core :as str]))
@@ -287,7 +288,35 @@
          props        (if (cfh/frame-shape? shape)
                         props
                         (if (or (some? (->> shape-shadow (remove :hidden) seq))
-                                (and (some? shape-blur) (not ^boolean (:hidden shape-blur))))
+                                (some? (->> (get shape :noise) (remove :hidden) seq))
+                                (some? (->> (get shape :texture) (remove :hidden) seq))
+                                (and (some? shape-blur) (not ^boolean (:hidden shape-blur)))
+                                ;; STACKED-BLUR (#60) — :blurs VECTOR slot.
+                                ;; Gate MUST match bounds.cljc shape->filters
+                                ;; and filters.cljs filter-str exactly: at
+                                ;; least one non-hidden entry with a non-nil
+                                ;; :value (the radius). A non-hidden entry
+                                ;; with nil :value must NOT set :filter —
+                                ;; otherwise bounds appends no entry (no
+                                ;; <filter>) while this sets url(#filter-..)
+                                ;; -> dangling :filter attr. (keep :value ..)
+                                ;; mirrors bounds' inner (when (seq radii)).
+                                (some? (->> (get shape :blurs) (remove :hidden) (keep :value) seq))
+                                (and (some? (get shape :glass))
+                                     (not ^boolean (-> shape :glass :hidden)))
+                                ;; SHADER (#64) — :shader-effect VECTOR slot
+                                ;; gated on the first non-hidden item's
+                                ;; :shader-preset being SVG-expressible
+                                ;; (clouds/halftone/noise). The non-SVG
+                                ;; preset path is raster (WebGL2 canvas,
+                                ;; shader-canvas*) and must NOT set a
+                                ;; :filter attr. Absent/empty/all-hidden/
+                                ;; non-SVG preset -> guard false -> no
+                                ;; :filter attr -> byte-identical.
+                                (let [se (first (remove :hidden (get shape :shader-effect)))]
+                                  (and (some? se)
+                                       (filters/svg-expressible-preset?
+                                        (:shader-preset se)))))
                           (obj/set! props "filter" (dm/fmt "url(#filter-%)" render-id))
                           props))]
 

@@ -50,6 +50,7 @@
    [app.main.ui.workspace.viewport.interactions :as interactions]
    [app.main.ui.workspace.viewport.outline :as outline]
    [app.main.ui.workspace.viewport.pixel-overlay :as pixel-overlay]
+   [app.main.ui.workspace.viewport.pixel-preview :as pixel-preview]
    [app.main.ui.workspace.viewport.presence :as presence]
    [app.main.ui.workspace.viewport.rulers :as rulers]
    [app.main.ui.workspace.viewport.scroll-bars :as scroll-bars]
@@ -393,12 +394,25 @@
 
       (when picking-color?
         [:> pixel-overlay/pixel-overlay* {:vport vport
-                                          :viewport-ref viewport-ref}])]
+                                          :viewport-ref viewport-ref}])
+
+      ;; Figma-parity pixel-preview overlay (gap #46). Rasterizes the
+      ;; #render SVG to a device-pixel canvas and composites it on top
+      ;; with image-rendering:pixelated. Mounted only under the
+      ;; :pixel-preview layout flag (default off) — byte-identical to
+      ;; today when the flag is absent. Purely additive sibling of the
+      ;; picking-color? pixel-overlay mount above.
+      (when pixel-preview?
+        [:> pixel-preview/pixel-preview* {:vport vport
+                                          :viewport-ref viewport-ref
+                                          :zoom zoom
+                                          :vbox vbox}])]
 
      [:svg
       {:id "render"
        :class (stl/css-case :render-shapes true
-                            :outline-mode outline-mode?)
+                            :outline-mode outline-mode?
+                            :pixel-preview pixel-preview?)
        :xmlns "http://www.w3.org/2000/svg"
        :xmlnsXlink "http://www.w3.org/1999/xlink"
        :xmlns:penpot "https://penpot.app/xmlns"
@@ -455,14 +469,15 @@
                    :font-size 20 :fill "currentColor" :fill-opacity 0.6}
             (:name section)]]))
 
-      [:& (mf/provider ctx/current-vbox) {:value vbox'}
-       [:& (mf/provider use/include-metadata-ctx) {:value (dbg/enabled? :show-export-metadata)}
-        ;; Render root shape
-        [:& shapes/root-shape {:key (str page-id)
-                               :objects base-objects
-                               :active-frames @active-frames
-                               ;; disable thumbnails when previewing a version
-                               :disable-thumbnails (some? preview-id)}]]]]
+      [:& (mf/provider ctx/outline-mode?) {:value outline-mode?}
+       [:& (mf/provider ctx/current-vbox) {:value vbox'}
+        [:& (mf/provider use/include-metadata-ctx) {:value (dbg/enabled? :show-export-metadata)}
+         ;; Render root shape
+         [:& shapes/root-shape {:key (str page-id)
+                                :objects base-objects
+                                :active-frames @active-frames
+                                ;; disable thumbnails when previewing a version
+                                :disable-thumbnails (some? preview-id)}]]]]]
 
      [:svg.viewport-controls
       {:xmlns "http://www.w3.org/2000/svg"

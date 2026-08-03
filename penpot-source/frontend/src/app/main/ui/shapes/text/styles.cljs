@@ -257,7 +257,14 @@
                              (= text-decoration "line-through")
                              (= text-decoration "overline"))
                        text-decoration
-                       "underline")))
+                       "underline"))
+           ;; Feature 18 — round-trip the hyperlink map onto the editor DOM as
+           ;; a transit-encoded `--hyperlink` CSS custom property (mirroring the
+           ;; `--fills` pattern above) so `text-svg-position` can decode it per
+           ;; block and the SVG renderer can wrap the `<text>` in an `<a>`.
+           ;; Additive: only emitted when `:hyperlink` is present, so absent =
+           ;; no `--hyperlink` property = byte-identical CSS.
+           (obj/set! "--hyperlink" (transit/encode-str (:hyperlink data))))
 
        ;; Feature 12 — OpenType features. The model attr is already a CSS
        ;; `font-feature-settings` string, so it is emitted verbatim. Additive:

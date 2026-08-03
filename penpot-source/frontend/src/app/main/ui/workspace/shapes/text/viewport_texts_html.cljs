@@ -22,6 +22,7 @@
    [app.main.store :as st]
    [app.main.ui.hooks :as hooks]
    [app.main.ui.shapes.text.html-text :as html]
+   [app.main.ui.workspace.shapes.text.multi-editor :as multi-editor]
    [app.util.dom :as dom]
    [app.util.object :as obj]
    [app.util.text-editor :as ted]
@@ -335,6 +336,17 @@
     [:*
      (when editing-shape
        [:& viewport-text-editing {:shape editing-shape}])
+
+     ;; Feature #49 — multi-edit text. A single live editor that drives
+     ;; every selected text shape in lock-step. Mounted as a constant
+     ;; child so this `viewport-texts` component stays pure-props and the
+     ;; `check-props` memo is unchanged; the editor self-guards and
+     ;; renders nothing (returns nil) unless more than one text shape is
+     ;; selected, so the existing editing-shape / renderers path above is
+     ;; byte-for-byte identical when 0 or 1 text shape is selected.
+     ;; TODO: additionally gate on an explicit multi-edit mode flag once
+     ;; one is added to workspace-local state.
+     [:& multi-editor/multi-text-editor]
 
      [:& text-modifiers-renderer {:text-shapes text-shapes-modifiers}]
      [:& text-changes-renderer {:text-shapes text-shapes-changes}]]))

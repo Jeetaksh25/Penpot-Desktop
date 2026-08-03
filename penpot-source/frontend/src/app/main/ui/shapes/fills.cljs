@@ -99,6 +99,12 @@
                "linear"  [:> grad/linear-gradient props]
                "radial"  [:> grad/radial-gradient props]
                "angular" [:> grad/angular-gradient props]
+               ;; Figma-parity mesh gradient (gap #21) — tessellated
+               ;; <pattern> of bilinearly-interpolated filled quads. Only
+               ;; reached when (:type gradient) is :mesh; legacy gradients
+               ;; never carry :type :mesh, so existing arms render
+               ;; byte-identically.
+               "mesh"    [:> grad/mesh-gradient props]
                ;; diamond approximated as radial in v1 (see gradients.cljs).
                "diamond" [:> grad/radial-gradient props]))))
 

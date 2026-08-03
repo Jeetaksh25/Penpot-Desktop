@@ -95,7 +95,35 @@
           (transform-data [{:keys [node position text direction]}]
             (let [styles   (dom/get-computed-styles node)
                   position (assoc position :y (+ (dm/get-prop position :y)
-                                                 (dm/get-prop position :height)))]
+                                                 (dm/get-prop position :height)))
+
+                  paragraph   (dom/get-parent-with-selector node ".paragraph")
+                  para-styles (when (some? paragraph) (dom/get-computed-styles paragraph))
+
+                  ;; Feature 17 — truncation. `generate-paragraph-styles` sets
+                  ;; `-webkit-line-clamp` (via `WebkitLineClamp`) ONLY when
+                  ;; `:text-overflow` is `truncate` and `:max-lines` is a
+                  ;; positive number. Reading it back is additive: when the
+                  ;; clamp is absent the computed value is ""/`none`, both
+                  ;; `:text-overflow` and `:max-lines` become nil and are
+                  ;; dropped by `(filter val)` — byte-identical position-data.
+                  max-lines-raw (when (some? para-styles) (get-prop para-styles "-webkit-line-clamp"))
+                  max-lines-num (some-> max-lines-raw js/parseFloat)
+                  text-overflow (when (and (some? max-lines-num) (pos? max-lines-num)) "truncate")
+                  max-lines     (when (some? text-overflow) (dm/str max-lines-num))
+
+                  ;; Feature 50 — hanging punctuation. The paragraph emits the
+                  ;; real CSS `hanging-punctuation: first last` when the model
+                  ;; flag is true. We carry a boolean forward so the SVG
+                  ;; renderer can hang leading punctuation itself (Chromium
+                  ;; WebView2 does not render the CSS property). Absent /
+                  ;; `none` / "" -> false -> dropped by `(filter val)` ->
+                  ;; byte-identical.
+                  hanging-punctuation
+                  (when (some? para-styles)
+                    (let [v (get-prop para-styles "hanging-punctuation")]
+                      (and (some? v) (not= v "") (not= v "none"))))]
+
               (into position (filter val)
                     {:direction       direction
                      :font-family     (dm/str (get-prop styles "font-family"))
@@ -106,7 +134,38 @@
                      :letter-spacing  (dm/str (get-prop styles "letter-spacing"))
                      :font-style      (dm/str (get-prop styles "font-style"))
                      :fills           (transit/decode-str (get-prop styles "--fills"))
-                     :text            text})))]
+                     :text            text
+
+                     ;; Feature 78 — super/sub. Maps to CSS `vertical-align`;
+                     ;; the computed default is `baseline`, which the SVG
+                     ;; renderer ignores (guard `#{"super" "sub"}`), so
+                     ;; carrying it through is byte-identical when absent.
+                     :baseline-shift  (dm/str (get-prop styles "vertical-align"))
+
+                     ;; Feature 18 — hyperlink. Round-tripped as the
+                     ;; `--hyperlink` transit custom property (set in
+                     ;; `generate-text-styles`). Absent -> nil -> dropped.
+                     :hyperlink       (transit/decode-str (get-prop styles "--hyperlink"))
+
+                     ;; Feature 12 / 13 — OpenType & variable-font axes. The
+                     ;; computed default is `normal`; we drop it so the SVG
+                     ;; `style` object stays byte-identical when no axes are
+                     ;; configured.
+                     :font-feature-settings
+                     (let [v (get-prop styles "font-feature-settings")]
+                       (when (and (some? v) (not= v "normal"))
+                         (dm/str v)))
+                     :font-variation-settings
+                     (let [v (get-prop styles "font-variation-settings")]
+                       (when (and (some? v) (not= v "normal"))
+                         (dm/str v)))
+
+                     ;; Feature 17 / 50 — paragraph-level fields carried into
+                     ;; every block of the paragraph (nil/false when the
+                     ;; feature is absent -> dropped by `(filter val)`).
+                     :text-overflow       text-overflow
+                     :max-lines           max-lines
+                     :hanging-punctuation hanging-punctuation})))]
 
     (when (some? shape-id)
       (->> (calc-text-node-positions shape-id)

@@ -33,6 +33,14 @@
 (def is-render?           (mf/create-context false))
 (def is-component?        (mf/create-context false))
 
+;; Figma-parity outline mode (gap #45). Default false — every non-workspace
+;; render path (thumbnails, exports, viewer) never mounts the provider, so
+;; `mf/use-ctx` here returns false and the per-shape outline fallback in
+;; custom_stroke.cljs emits zero new elements (byte-identical with today).
+;; Only the workspace viewport provider sets this to the :outline-mode
+;; layout flag value. Mirrors is-render?.
+(def outline-mode?        (mf/create-context false))
+
 (def sidebar
   "A context that intends to store the current sidebar position,
   useful for components that behaves distinctly if they are showed in
