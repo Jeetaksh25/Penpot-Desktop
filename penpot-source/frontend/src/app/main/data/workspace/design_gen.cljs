@@ -102,6 +102,137 @@
                                     "")}))))
             selected))))
 
+;; ── Scene serialization (agent visibility) ──────────────────────────────────
+;;
+;; A pure, read-only, token-bounded walk of the current page's shape map for
+;; the agent loop's "understand what's visible via code" channel. Emits one
+;; compact, depth-indented record per shape, grounded in shape.cljc's schema.
+;; It NEVER calls pcb/dch/dws/dwu — it cannot mutate the canvas. A visited-id
+;; guard makes it safe on cyclic component-instance graphs.
+
+(def ^:private scene-defaults
+  {:max-shapes 200 :max-depth 6 :max-content-chars 500 :max-total-chars 12000})
+
+(defn- scene-fill-summary [f]
+  (cond
+    (:fill-image f)          {:image true}
+    (:fill-color-gradient f) {:gradient true}
+    :else                    {:color   (:fill-color f "#cccccc")
+                              :opacity (:fill-opacity f 1)}))
+
+(defn- scene-stroke-summary [strokes]
+  (when-let [s (first strokes)]
+    {:color   (:stroke-color s)
+     :width   (:stroke-width s)
+     :opacity (:stroke-opacity s)
+     :style   (:stroke-style s)}))
+
+(defn- scene-typography [shape]
+  (when (= :text (:type shape))
+    (some (fn [node]
+            (when (and (map? node) (or (:font-family node) (:font-size node)))
+              {:family (:font-family node)
+               :size   (:font-size node)
+               :weight (:font-weight node)
+               :align  (:text-align node)}))
+          (txt/node-seq (:content shape)))))
+
+(defn- scene-layout-summary [shape]
+  (let [grid? (some? (:layout-grid-dir shape))
+        flex? (some? (:layout-flex-dir shape))]
+    (when (or flex? grid?)
+      (cond-> {:kind (if grid? "grid" "flex")}
+        (some? (:layout-flex-dir shape))        (assoc :dir (name (:layout-flex-dir shape)))
+        (some? (:layout-grid-dir shape))        (assoc :dir (name (:layout-grid-dir shape)))
+        (some? (:layout-gap shape))             (assoc :gap (:layout-gap shape))
+        (some? (:layout-align-items shape))     (assoc :align (name (:layout-align-items shape)))
+        (some? (:layout-justify-content shape)) (assoc :justify (name (:layout-justify-content shape)))))))
+
+(defn- scene-shape-record [shape selected-set max-content-chars]
+  (let [typo    (scene-typography shape)
+        layout  (scene-layout-summary shape)
+        content (when (= :text (:type shape))
+                  (when-let [c (:content shape)]
+                    (let [t (txt/content->text c)]
+                      (when (pos? (count t))
+                        (if (> (count t) max-content-chars)
+                          (str (subs t 0 max-content-chars) "…")
+                          t)))))]
+    (cond-> {:id          (str (:id shape))
+             :type        (name (:type shape :rect))
+             :name        (:name shape "")
+             :x           (:x shape 0)
+             :y           (:y shape 0)
+             :w           (:width shape 0)
+             :h           (:height shape 0)
+             :rotation    (:rotation shape 0)
+             :fills       (mapv scene-fill-summary (:fills shape))
+             :stroke      (scene-stroke-summary (:strokes shape))
+             :opacity     (:opacity shape)
+             :r1          (:r1 shape)
+             :hidden      (boolean (:hidden shape))
+             :selected    (boolean (contains? selected-set (:id shape)))
+             :children    (mapv (fn [cid] (str cid)) (:shapes shape []))
+             :componentId (when (:component-id shape) (str (:component-id shape)))}
+      (some? content) (assoc :content content)
+      (some? typo)    (assoc :typography typo)
+      (some? layout)  (assoc :layout layout))))
+
+(defn serialize-scene
+  "Walk the current page's shape map and emit a token-bounded, depth-indented
+  structured description of the visible scene so the AI agent can reason about
+  the canvas before generating / region-updating. Pure + read-only — it never
+  emits dw*/pcb/dch/dwu.
+
+  Returns a string (one compact shape record per line), or nil when the page
+  has no shapes. Bounded by max-shapes / max-depth / max-content-chars /
+  max-total-chars so the prompt cannot overflow the model context. A trailing
+  `[truncated …]` marker is appended when a cap is hit."
+  ([state] (serialize-scene state scene-defaults))
+  ([state {:keys [max-shapes max-depth max-content-chars max-total-chars]
+           :or {max-shapes 200 max-depth 6 max-content-chars 500 max-total-chars 12000}}]
+   (let [objects  (dsh/lookup-page-objects state)
+         selected (into #{} (dsh/lookup-selected state))]
+     (if-not (seq objects)
+       nil
+       (let [marker-budget 80
+             budget        (max 0 (- max-total-chars marker-budget))
+             lines         (volatile! #js [])
+             chars         (volatile! 0)
+             cnt           (volatile! 0)
+             truncated     (volatile! false)
+             visited       (volatile! #{})
+             push!         (fn [line]
+                             (let [c (count line)]
+                               (if (<= (+ @chars c) budget)
+                                 (do (vswap! lines #(doto % (.push line)))
+                                     (vswap! chars + c 1)
+                                     true)
+                                 (do (vreset! truncated true) false))))
+             walk          (fn walk [id depth]
+                             (when (and (not @truncated)
+                                        (< @cnt max-shapes)
+                                        (<= depth max-depth)
+                                        (not (contains? @visited id)))
+                               (when-let [s (get objects id)]
+                                 (when-not (:hidden s)
+                                   (vswap! visited conj id)
+                                   (let [rec  (scene-shape-record s selected max-content-chars)
+                                         line (str (apply str (repeat depth "  "))
+                                                   (pr-str rec))]
+                                     (when (push! line)
+                                       (vswap! cnt inc)
+                                       (when (>= @cnt max-shapes) (vreset! truncated true))
+                                       (doseq [cid (:shapes s [])]
+                                         (walk cid (inc depth)))))))))]
+         (doseq [id (keys objects)]
+           (when (= uuid/zero (get-in objects [id :parent-id]))
+             (walk id 0)))
+         (when @truncated
+           (vswap! lines #(doto % (.push (str "[truncated: shapes=" @cnt "]")))))
+         (let [arr @lines]
+           (if (zero? (.-length arr)) nil (.join arr "\n"))))))))
+
 ;; ── Internal: tree preparation ─────────────────────────────────────────────
 
 (defn- bake-interactions
@@ -119,7 +250,7 @@
                         (assoc s :interactions
                                (conj (vec (get s :interactions)) interaction)))))
           obj-map
-          interactions))
+          interactions)))
 
 (defn- translate-tree
   "Translate EVERY shape in the generated tree by [ox oy] using the canonical

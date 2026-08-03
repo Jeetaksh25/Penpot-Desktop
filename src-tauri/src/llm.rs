@@ -1030,8 +1030,29 @@ struct OpenAiChoice {
     message: OpenAiMessage,
 }
 #[derive(Deserialize)]
+struct OpenAiToolCallFn {
+    name: String,
+    #[serde(default)]
+    arguments: String,
+}
+
+#[derive(Deserialize)]
+struct OpenAiToolCall {
+    #[serde(default = "default_function_type")]
+    r#type: String,
+    #[serde(default)]
+    id: String,
+    function: OpenAiToolCallFn,
+}
+
+#[derive(Deserialize)]
 struct OpenAiMessage {
-    content: String,
+    // OpenAI returns `content: null` when the message carries `tool_calls`
+    // instead of prose, so this must be optional for the agent path.
+    #[serde(default)]
+    content: Option<String>,
+    #[serde(default)]
+    tool_calls: Option<Vec<OpenAiToolCall>>,
 }
 
 #[derive(Deserialize)]
@@ -1088,7 +1109,7 @@ async fn call_deepinfra(
         .choices
         .into_iter()
         .next()
-        .map(|c| c.message.content)
+        .map(|c| c.message.content.unwrap_or_default())
         .ok_or_else(|| "DeepInfra returned no choices".into())
 }
 
@@ -1137,7 +1158,7 @@ async fn call_ovion_cloud(
         .choices
         .into_iter()
         .next()
-        .map(|c| c.message.content)
+        .map(|c| c.message.content.unwrap_or_default())
         .ok_or_else(|| "Ovion Cloud returned no choices".into())
 }
 
@@ -1198,6 +1219,364 @@ async fn call_provider(
         "ovion-cloud" => call_ovion_cloud(cfg, model, system, user_text, images).await,
         "ollama" => call_ollama(cfg, model, system, user_text, images).await,
         _ => call_deepinfra(cfg, model, system, user_text, images).await,
+    }
+}
+
+// ── Agent tool-calling (additive; legacy `llm_generate` is unchanged) ────────
+//
+// The CLJS layer drives an agent loop. Each iteration calls `llm_agent_step`
+// with the running message list + the tool schema; Rust performs ONE model
+// call and returns either `tool_calls` (the model wants to act on the canvas),
+// a `spec` (the model is done drawing — a DesignSpec JSON object), `text`
+// (a free-form final message), or `error`. Rust is STATELESS: all loop state
+// (messages, step count, cancel) lives in CLJS. This keeps the HTTP/provider
+// plumbing in one place and lets the loop cancel between steps via the same
+// `ABORT` flag the legacy path uses.
+//
+// Provider tool shape:
+//   • DeepInfra / Ovion Cloud (OpenAI shape): body gets `tools` + `tool_choice:
+//     "auto"` when tools are present, and `response_format:{type:json_object}`
+//     is OMITTED in that case (OpenAI rejects forcing json_object AND tools in
+//     the same call). With no tools (final spec emission) json_object is kept
+//     so the DesignSpec parses cleanly.
+//   • Ollama (/api/chat): body gets `tools` only; `format:"json"` is omitted
+//     when tools are present. Ollama returns `message.tool_calls` without ids,
+//     so we synthesize `call_<idx>`.
+
+fn default_function_type() -> String { "function".into() }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ToolCallFnOut {
+    name: String,
+    arguments: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ToolCallOut {
+    id: String,
+    #[serde(default = "default_function_type")]
+    r#type: String,
+    function: ToolCallFnOut,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct ChatMessage {
+    role: String,
+    // String (text) OR array of parts (multimodal). serde_json::Value keeps
+    // both shapes round-trippable to the provider body verbatim.
+    #[serde(default)]
+    content: serde_json::Value,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tool_calls: Option<Vec<ToolCallOut>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tool_call_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AgentStepRequest {
+    messages: Vec<ChatMessage>,
+    #[serde(default)]
+    tools: Option<serde_json::Value>,
+    options: GenerateOptions,
+    #[serde(default)]
+    files: Vec<FileInput>,
+    #[serde(default)]
+    model: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct AgentStepResponse {
+    kind: String, // "tool_calls" | "spec" | "text" | "error"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    spec: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_calls: Option<Vec<ToolCallOut>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+}
+
+/// What one model call yielded, normalized across providers.
+struct ModelOutput {
+    content: Option<String>,
+    tool_calls: Option<Vec<ToolCallOut>>,
+}
+
+/// Convert the frontend FileInput vector into ImageInput (the legacy
+/// `llm_generate` path's logic, factored out). Caps at 12 images and ~6 MB.
+fn resolve_file_images(files: &[FileInput]) -> Vec<ImageInput> {
+    let mut out = Vec::new();
+    let mut total: usize = 0;
+    for f in files {
+        let mime = if f.mime.is_empty() { guess_mime(&f.name) } else { f.mime.clone() };
+        if !mime.starts_with("image/") {
+            continue;
+        }
+        let bytes = if let Some(p) = &f.path {
+            std::fs::read(p).ok()
+        } else if let Some(b64) = &f.base64 {
+            base64_decode::decode(b64).ok()
+        } else {
+            None
+        };
+        if let Some(b) = bytes {
+            total += b.len();
+            if total > 6_000_000 || out.len() >= 12 {
+                break;
+            }
+            out.push(ImageInput { mime, b64: base64_encode(&b) });
+        }
+    }
+    out
+}
+
+/// Append `image_url` parts to the FIRST `user` message's content (converting
+/// a string content to a parts array), for the OpenAI-shape providers. Other
+/// messages are untouched. Returns a new messages array.
+fn inject_images_openai(messages: serde_json::Value, images: &[ImageInput]) -> serde_json::Value {
+    if images.is_empty() {
+        return messages;
+    }
+    let mut arr = match messages.as_array() {
+        Some(a) => a.clone(),
+        None => return messages,
+    };
+    for msg in arr.iter_mut() {
+        if msg.get("role").and_then(|r| r.as_str()) != Some("user") {
+            continue;
+        }
+        let parts = match msg.get("content") {
+            Some(serde_json::Value::String(s)) => {
+                vec![serde_json::json!({"type":"text","text": s})]
+            }
+            Some(serde_json::Value::Array(a)) => a.clone(),
+            _ => vec![],
+        };
+        let mut parts = parts;
+        for img in images {
+            parts.push(serde_json::json!({
+                "type":"image_url",
+                "image_url":{"url": format!("data:{};base64,{}", img.mime, img.b64)}
+            }));
+        }
+        msg["content"] = serde_json::Value::Array(parts);
+        break;
+    }
+    serde_json::Value::Array(arr)
+}
+
+/// Attach the image b64 list to the FIRST `user` message's `images` field for
+/// Ollama, and flatten that message's content to a plain text string (Ollama
+/// user content is a string, not a parts array).
+fn inject_images_ollama(messages: serde_json::Value, images: &[ImageInput]) -> serde_json::Value {
+    let mut arr = match messages.as_array() {
+        Some(a) => a.clone(),
+        None => return messages,
+    };
+    let imgs: Vec<String> = images.iter().map(|i| i.b64.clone()).collect();
+    if imgs.is_empty() {
+        return serde_json::Value::Array(arr);
+    }
+    for msg in arr.iter_mut() {
+        if msg.get("role").and_then(|r| r.as_str()) != Some("user") {
+            continue;
+        }
+        let text = match msg.get("content") {
+            Some(serde_json::Value::String(s)) => s.clone(),
+            Some(serde_json::Value::Array(a)) => {
+                a.iter().filter_map(|p| p.get("text").and_then(|t| t.as_str())).collect::<Vec<_>>().join("")
+            }
+            _ => String::new(),
+        };
+        msg["content"] = serde_json::Value::String(text);
+        msg["images"] = serde_json::to_value(&imgs).unwrap_or(serde_json::Value::Null);
+        break;
+    }
+    serde_json::Value::Array(arr)
+}
+
+/// Parse OpenAI-shape tool_calls (id + function{name, arguments:string}) into
+/// the normalized ToolCallOut. `arguments` is a JSON STRING in the OpenAI
+/// response; parse it to a Value, falling back to a string Value of the raw.
+fn normalize_openai_tool_calls(raw: Option<Vec<OpenAiToolCall>>) -> Option<Vec<ToolCallOut>> {
+    raw.filter(|v| !v.is_empty()).map(|calls| {
+        calls.into_iter().enumerate().map(|(i, c)| {
+            let id = if c.id.is_empty() { format!("call_{i}") } else { c.id };
+            let arguments = if c.function.arguments.is_empty() {
+                serde_json::Value::Object(serde_json::Map::new())
+            } else {
+                serde_json::from_str(&c.function.arguments)
+                    .unwrap_or_else(|_| serde_json::Value::String(c.function.arguments.clone()))
+            };
+            ToolCallOut { id, r#type: c.r#type, function: ToolCallFnOut { name: c.function.name, arguments } }
+        }).collect()
+    })
+}
+
+#[derive(Deserialize)]
+struct OpenAiMessageFull {
+    #[serde(default)]
+    content: Option<String>,
+    #[serde(default)]
+    tool_calls: Option<Vec<OpenAiToolCall>>,
+}
+#[derive(Deserialize)]
+struct OpenAiChoiceFull { message: OpenAiMessageFull }
+#[derive(Deserialize)]
+struct OpenAiResponseFull { choices: Vec<OpenAiChoiceFull> }
+
+async fn call_openai_shape_agent(
+    label: &str,
+    url: String,
+    key: &str,
+    cfg: &LlmConfig,
+    model: &str,
+    messages: serde_json::Value,
+    tools: Option<&serde_json::Value>,
+) -> Result<ModelOutput, String> {
+    let mut body = serde_json::json!({
+        "model": model,
+        "messages": messages,
+        "temperature": 0.7,
+    });
+    if let Some(t) = tools {
+        body["tools"] = t.clone();
+        body["tool_choice"] = serde_json::json!("auto");
+        // OpenAI rejects response_format json_object together with tools.
+    } else {
+        body["response_format"] = serde_json::json!({"type":"json_object"});
+    }
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(cfg.timeout_secs))
+        .build()
+        .map_err(|e| format!("{label} http client build failed: {e}"))?;
+    let resp = client
+        .post(&url)
+        .bearer_auth(key)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("{label} request failed: {e}"))?;
+    let status = resp.status();
+    let text = resp.text().await.map_err(|e| format!("{label} read failed: {e}"))?;
+    if !status.is_success() {
+        let snippet: String = text.chars().take(500).collect();
+        return Err(format!("{label} error {status} (model {model}): {snippet}"));
+    }
+    let parsed: OpenAiResponseFull = serde_json::from_str(&text).map_err(|e| {
+        format!("{label} response parse failed: {e} (body: {})", text.chars().take(300).collect::<String>())
+    })?;
+    let msg = parsed.choices.into_iter().next()
+        .map(|c| c.message)
+        .ok_or_else(|| format!("{label} returned no choices"))?;
+    Ok(ModelOutput {
+        content: msg.content,
+        tool_calls: normalize_openai_tool_calls(msg.tool_calls),
+    })
+}
+
+#[derive(Deserialize)]
+struct OllamaToolCallFn { name: String, #[serde(default)] arguments: serde_json::Value }
+#[derive(Deserialize)]
+struct OllamaToolCall {
+    #[serde(default = "default_function_type")] r#type: String,
+    #[serde(default)] id: String,
+    function: OllamaToolCallFn,
+}
+#[derive(Deserialize)]
+struct OllamaMessageFull {
+    #[serde(default)]
+    content: Option<String>,
+    #[serde(default)]
+    tool_calls: Option<Vec<OllamaToolCall>>,
+}
+#[derive(Deserialize)]
+struct OllamaResponseFull { message: OllamaMessageFull }
+
+async fn call_ollama_agent(
+    cfg: &LlmConfig,
+    model: &str,
+    messages: serde_json::Value,
+    tools: Option<&serde_json::Value>,
+) -> Result<ModelOutput, String> {
+    let url = format!("{}/api/chat", cfg.ollama_url.trim_end_matches('/'));
+    let mut body = serde_json::json!({
+        "model": model,
+        "messages": messages,
+        "stream": false,
+    });
+    if let Some(t) = tools {
+        body["tools"] = t.clone();
+        // Omit format:"json" — tools + forced json is not supported by Ollama.
+    } else {
+        body["format"] = serde_json::json!("json");
+    }
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(cfg.timeout_secs))
+        .build()
+        .map_err(|e| format!("Ollama http client build failed: {e}"))?;
+    let mut req = client.post(&url).json(&body);
+    let key = cfg.ollama_api_key.trim();
+    if !key.is_empty() {
+        req = req.bearer_auth(key);
+    }
+    let resp = req.send().await.map_err(|e| {
+        format!("Ollama request failed ({url}): {e}. Is Ollama running at '{}' with model '{}' pulled? (ollama pull {})",
+                cfg.ollama_url, model, model)
+    })?;
+    let status = resp.status();
+    let text = resp.text().await.map_err(|e| format!("Ollama read failed: {e}"))?;
+    if !status.is_success() {
+        return Err(format!("Ollama error {status} (model {model}): {}", text.chars().take(500).collect::<String>()));
+    }
+    let parsed: OllamaResponseFull = serde_json::from_str(&text)
+        .map_err(|e| format!("Ollama response parse failed: {e}"))?;
+    let msg = parsed.message;
+    let tool_calls = msg.tool_calls.filter(|v| !v.is_empty()).map(|calls| {
+        calls.into_iter().enumerate().map(|(i, c)| {
+            let id = if c.id.is_empty() { format!("call_{i}") } else { c.id };
+            ToolCallOut { id, r#type: c.r#type, function: ToolCallFnOut { name: c.function.name, arguments: c.function.arguments } }
+        }).collect()
+    });
+    Ok(ModelOutput { content: msg.content, tool_calls })
+}
+
+/// One agent model call via the configured provider. `messages` is the raw
+/// OpenAI-shape message array (system / user / assistant / tool); images are
+/// injected into the first user message per provider shape.
+async fn call_provider_agent(
+    cfg: &LlmConfig,
+    model: &str,
+    messages: &serde_json::Value,
+    tools: Option<&serde_json::Value>,
+    images: &[ImageInput],
+) -> Result<ModelOutput, String> {
+    match cfg.provider.as_str() {
+        "ollama" => {
+            let m = inject_images_ollama(messages.clone(), images);
+            call_ollama_agent(cfg, model, m, tools).await
+        }
+        "ovion-cloud" => {
+            let key = cfg.ovion_cloud_token.trim();
+            if key.is_empty() {
+                return Err("Ovion Cloud provider selected but no subscription token is configured. (Coming soon — for now use your own DeepInfra or Ollama key in Settings.)".into());
+            }
+            let url = format!("{}/chat/completions", cfg.ovion_cloud_endpoint.trim_end_matches('/'));
+            let m = inject_images_openai(messages.clone(), images);
+            call_openai_shape_agent("Ovion Cloud", url, key, cfg, model, m, tools).await
+        }
+        _ => {
+            let key = cfg.deepinfra_api_key.trim();
+            if key.is_empty() {
+                return Err("DeepInfra provider selected but no API key is configured (set it in Settings or .env.local).".into());
+            }
+            let url = format!("{}/chat/completions", cfg.deepinfra_base.trim_end_matches('/'));
+            let m = inject_images_openai(messages.clone(), images);
+            call_openai_shape_agent("DeepInfra", url, key, cfg, model, m, tools).await
+        }
     }
 }
 
@@ -1397,6 +1776,76 @@ pub fn llm_cancel() -> Result<(), String> {
 pub fn llm_clear_memory(app: AppHandle, file_id: Option<String>) -> Result<(), String> {
     let id = file_id.unwrap_or_else(|| "default".to_string());
     clear_memory(&app, &id)
+}
+
+/// Reset the abort flag at the start of an agent run. The loop checks ABORT
+/// between steps but never resets it — a cancel sets it true (via
+/// `llm_cancel`), and the next run must clear it. Counterpart to `llm_cancel`.
+#[tauri::command]
+pub fn llm_agent_reset() -> Result<(), String> {
+    ABORT.store(false, Ordering::Relaxed);
+    Ok(())
+}
+
+/// Emit a frontend `ai-progress` event from the CLJS agent loop, for
+/// loop-level stages the stateless Rust step cannot know about (agent-done,
+/// agent-max-iterations, agent-cancelled). Reuses the existing bar progress
+/// channel so no new UI surface is needed.
+#[tauri::command]
+pub fn llm_agent_progress(app: AppHandle, stage: String, detail: String) -> Result<(), String> {
+    emit_progress(&app, &stage, &detail);
+    Ok(())
+}
+
+/// One stateless agent step. The CLJS agent loop calls this per iteration
+/// with the running message list + the tool schema. Returns the model's
+/// decision (`tool_calls` | `spec` | `text` | `error`). Never resets ABORT —
+/// the loop calls `llm_agent_reset` at start and `llm_cancel` to abort.
+#[tauri::command]
+pub async fn llm_agent_step(
+    app: AppHandle,
+    request: AgentStepRequest,
+) -> Result<AgentStepResponse, String> {
+    check_aborted()?;
+    let cfg = load_config(&app);
+    let model = request.model.clone().unwrap_or_else(|| glm_model(&cfg));
+    let images = resolve_file_images(&request.files);
+    emit_progress(&app, "tool-thinking", &format!("model:{}", model));
+
+    let messages_val = serde_json::to_value(&request.messages)
+        .map_err(|e| format!("agent messages serialize failed: {e}"))?;
+
+    let out = call_provider_agent(&cfg, &model, &messages_val, request.tools.as_ref(), &images).await?;
+    check_aborted()?;
+
+    // Decision order: tool_calls → spec → text.
+    if let Some(tc) = out.tool_calls.as_ref() {
+        if !tc.is_empty() {
+            let name = tc.first().map(|t| t.function.name.as_str()).unwrap_or("").to_string();
+            emit_progress(&app, "executing-tool", &name);
+            return Ok(AgentStepResponse {
+                kind: "tool_calls".into(),
+                tool_calls: out.tool_calls.clone(),
+                spec: None, text: None, error: None,
+            });
+        }
+    }
+    let content = out.content.unwrap_or_default();
+    match extract_json(&content) {
+        Ok(v) => {
+            emit_progress(&app, "done", "agent spec");
+            Ok(AgentStepResponse {
+                kind: "spec".into(),
+                spec: Some(v),
+                tool_calls: None, text: None, error: None,
+            })
+        }
+        Err(_) => Ok(AgentStepResponse {
+            kind: "text".into(),
+            text: Some(content),
+            spec: None, tool_calls: None, error: None,
+        }),
+    }
 }
 
 /// The closed AI entry point. Returns a DesignSpec JSON value that the

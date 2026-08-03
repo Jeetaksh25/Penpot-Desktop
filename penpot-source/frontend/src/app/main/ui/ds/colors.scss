@@ -6,53 +6,60 @@
 
 @use "sass:color";
 
-// ── Peach design-studio palette ─────────────────────────────────────────────
+// ── Coral studio palette ─────────────────────────────────────────────────────
 //
-// The app is rebranded as a warm, design-studio tool rather than Penpot's
-// cold mint/purple. The whole chrome is driven by the CSS custom properties
-// emitted in the two `:global` blocks below; components consume
-// `var(--color-*)`, so remapping here propagates everywhere. Both the light
-// and the dark (`:global(.default)`) themes are warm peach so whichever the
-// user picks feels like the same studio.
+// The app chrome is driven by the CSS custom properties emitted in the two
+// `:global` blocks below; components consume `var(--color-*)`, so remapping
+// here propagates everywhere. Both the light and the dark (`:global(.default)`)
+// themes are warm coral so whichever the user picks feels like the same studio.
+//
+// This palette is pinned to the warm coral design language (accent #F28B82 —
+// the same coral the AI surfaces use, so the AI bar reads as native to the
+// app instead of a foreign layer). Light surfaces are warm off-whites with a
+// coral sidebar tint; dark surfaces are near-black warm greys. The accent is
+// the same #F28B82 in both themes; only its hover shifts (deeper in light,
+// lighter in dark) per the palette.
 //
 // Semantic colors (success / warning / error / info) are deliberately left
 // recognizable — green / orange / red / blue — because deviating from those
-// hurts usability. The peach family owns accents, actions, surfaces, and text.
+// hurts usability. The coral family owns accents, actions, surfaces, and text.
 
-// Coral / peach accent ramp (light → dark).
-$peach-100: #fff1e6;
-$peach-150: #ffe3d1;
-$peach-200: #ffd0b8;
-$peach-300: #ffb599;
-$peach-400: #ff9e80;
-$peach-500: #ff7a52;   // primary coral
-$peach-600: #ee5a30;   // action / hover
-$peach-700: #c2442a;
-$peach-800: #8c3220;
-$peach-pink: #ff8fa6;  // quaternary — a warm pink sibling for life
+// Coral accent ramp. The accent is #F28B82 in both themes; hover deepens in
+// light and lightens in dark.
+$peach-100: #fceae4;   // light coral tint (muted / select solids)
+$peach-150: #fceae4;   // token background (light)
+$peach-200: #fceae4;   // accent-primary-muted (light) — light coral tint
+$peach-300: #f28b82;   // dark accent-primary (= light accent — same in both)
+$peach-400: #f4a8b8;   // dark accent-secondary (warm pink)
+$peach-500: #f28b82;   // primary accent (light + dark action)
+$peach-600: #e96f65;   // light action / hover (accent-hover, deeper)
+$peach-700: #d85a50;   // deeper (light accent-secondary / action-hover)
+$peach-pink: #f4a8b8;  // quaternary — warm pink sibling (accent-secondary)
+$coral-dark-hover: #f6a196; // dark accent-hover (lighter on dark, per palette)
 
-// Warm neutrals — LIGHT surfaces + text (cream / sand / espresso).
-$cream-0:   #fffaf6;   // page background — warmest white
-$cream-50:  #fdf4ee;
-$cream-100: #faece2;
-$cream-200: #f3e0d3;
-$cream-300: #ead3c3;
-$sand-600:  #8a6f60;   // secondary text + icons on light
-$espresso-900: #2a201a; // primary text on light — warm near-black
+// Warm neutrals — LIGHT surfaces + text.
+$cream-0:   #fff9f7;   // page background (bg) — warmest white
+$cream-50:  #fff2ec;   // recessed surfaces / input bg (surface-2)
+$cream-100: #e8ddd8;   // borders / separators / selected (border)
+$cream-200: #fceae4;   // sidebars / secondary panels (sidebar)
+$cream-300: #d8c8c0;   // warm shadow tone
+$sand-600:  #6e6a6a;   // secondary text + icons on light (text-secondary)
+$espresso-900: #2c2a2a; // primary text on light (text)
 
-// Warm neutrals — DARK surfaces + text (mocha).
-$mocha-1000: #15100d;  // darkest (panel recesses)
-$mocha-950:  #1c1612;  // default dark background
-$mocha-900:  #241c17;
-$mocha-850:  #2c231d;
-$mocha-800:  #362b24;
-$mocha-700:  #4a3a31;
-$mocha-600:  #6e564a;
-$mocha-500:  #9a7f70;  // secondary text + icons on dark
+// Warm neutrals — DARK surfaces + text.
+$mocha-bg:    #141313;  // page background (bg) — darkest
+$mocha-950:   #1c1a1a;  // primary panels (surface)
+$mocha-1000:  #1a1818;  // sidebars / secondary panels (sidebar)
+$mocha-900:   #252222;  // recessed surfaces / input bg (surface-2)
+$mocha-850:   #2c2828;  // disabled
+$mocha-800:   #353131;  // borders / separators / selected (border)
+$mocha-700:   #4a4343;  // token border (dark)
+$mocha-500:   #b6b0ae;  // secondary text + icons on dark (text-secondary)
+$ivory:       #f6f3f2;  // primary text on dark (text)
 
 // Workspace canvas (the backdrop behind artboards).
 $canvas-light: #ece3db;
-$canvas-dark:  #2c231d;
+$canvas-dark:  #1a1818;
 
 // ── Neutral + semantic SCSS vars kept for other files that `@use` them ──────
 $black: #000;
@@ -90,7 +97,7 @@ $blue-950: #082c49;
   --color-accent-primary: #{$peach-500};
   --color-accent-primary-muted: #{$peach-200};
   --color-accent-secondary: #{$peach-700};
-  --color-accent-tertiary: #{$peach-400};
+  --color-accent-tertiary: #{$peach-600};      // primary-button hover = deeper coral (accent-hover)
   --color-accent-quaternary: #{$peach-pink};
   --color-accent-overlay: #{color.change($peach-500, $alpha: 0.6)};
   --color-accent-select: #{color.change($peach-500, $alpha: 0.1)};
@@ -110,7 +117,7 @@ $blue-950: #082c49;
   --color-background-default: #{$cream-0};
   --color-accent-default: #{$cream-200};
   --color-icon-default: #{$sand-600};
-  --color-background-disabled: #{$cream-200};
+  --color-background-disabled: #{$cream-100};
   --color-background-primary: #{$white};
   --color-background-secondary: #{$cream-200};
   --color-background-tertiary: #{$cream-50};
@@ -134,15 +141,15 @@ $blue-950: #082c49;
 // ── Dark theme (default) ────────────────────────────────────────────────────
 :global(.default) {
   --color-accent-primary: #{$peach-300};
-  --color-accent-primary-muted: #{$peach-700};
+  --color-accent-primary-muted: #{$peach-pink};
   --color-accent-secondary: #{$peach-400};
-  --color-accent-tertiary: #{$peach-500};
+  --color-accent-tertiary: #{$coral-dark-hover};  // primary-button hover = lighter coral on dark
   --color-accent-quaternary: #{$peach-pink};
   --color-accent-overlay: #{color.change($peach-300, $alpha: 0.6)};
   --color-accent-select: #{color.change($peach-300, $alpha: 0.1)};
   --color-accent-background-select: #{color.change($peach-300, $alpha: 0.7)};
   --color-accent-action: #{$peach-500};
-  --color-accent-action-hover: #{$peach-600};
+  --color-accent-action-hover: #{$coral-dark-hover};
   --color-accent-off: #{$mocha-800};
   --color-accent-success: #{$green-500};
   --color-background-success: #{$green-950};
@@ -153,15 +160,15 @@ $blue-950: #082c49;
   --color-foreground-error: #{$red-500};
   --color-accent-info: #{$blue-500};
   --color-background-info: #{$blue-950};
-  --color-background-default: #{$mocha-950};
+  --color-background-default: #{$mocha-bg};
   --color-accent-default: #{$mocha-800};
   --color-icon-default: #{$mocha-500};
-  --color-background-disabled: #{$mocha-800};
+  --color-background-disabled: #{$mocha-850};
   --color-background-primary: #{$mocha-950};
   --color-background-secondary: #{$mocha-1000};
   --color-background-tertiary: #{$mocha-900};
   --color-background-quaternary: #{$mocha-800};
-  --color-foreground-primary: #{$cream-0};
+  --color-foreground-primary: #{$ivory};
   --color-foreground-secondary: #{$mocha-500};
   --color-static-white: #{$white};
   --color-static-black: #{$black};

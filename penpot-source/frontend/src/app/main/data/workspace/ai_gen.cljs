@@ -20,6 +20,8 @@
    ["@tauri-apps/api/event" :as tevent]
    [cuerdas.core :as str]
    [app.common.data.macros :as dm]
+   [app.main.data.workspace.ai-agent :as aia]
+   [app.main.data.workspace.ai-tools :as ait]
    [app.main.data.workspace.design-gen :as dg]
    [app.main.store :as st]
    [app.util.i18n :as i18n :refer [tr]]
@@ -36,6 +38,16 @@
 ;; the atom, so a late-arriving result whose captured id no longer matches
 ;; `@gen-id` is dropped instead of clobbering the preview / busy / error state.
 (def ^:private gen-id (atom 0))
+
+(defn bump-gen-id
+  "Bump the stale-result guard and return the new id. The agent loop captures
+  this at start and checks it before applying a final spec, so a cancel (which
+  also bumps) invalidates a late-arriving spec."
+  []
+  (swap! gen-id inc))
+
+(defn gen-id-current []
+  @gen-id)
 
 (defn file->input
   "Read a browser File/Blob into a backend FileInput map {:name :mime :base64}.
@@ -92,7 +104,7 @@
                   :file_id       (:file-id options)
                   :use_memory    (:use-memory options)}
                  (cond-> (:selection options)
-                   (assoc :selection (clj->js (:selection options))))
+                   (assoc :selection (clj->js (:selection options)))))
         req #js {:prompt  (str prompt)
                  :files   (apply array (mapv clj->js files))
                  :options (clj->js opts)}]
@@ -132,6 +144,148 @@
    Top-level command param `config` is camelCased by Tauri v2 automatically."
   [config]
   (invoke "llm_set_config" #js {:config (clj->js config)}))
+
+;; ── Agent loop IPC wrappers ───────────────────────────────────────────────────
+;;
+;; The agent loop is CLJS-driven; Rust (`llm.rs`) is a stateless one-step model
+;; service. Each step is one `llm_agent_step` call returning an
+;; AgentStepResponse (kind "spec" | "tool_calls" | "text" | "error"). Loop
+;; state (messages, step count, cancel) lives in CLJS.
+
+(defn invoke-agent-step
+  "One model step. `request` is the AgentStepRequest JS object
+  ({:messages :tools :options :files :model}); Tauri camelCases the top-level
+  param name. Returns a promesa promise resolving to the AgentStepResponse JS
+  object — keywordize with `js->clj` at the call site."
+  [request]
+  (invoke "llm_agent_step" #js {:request request}))
+
+(defn invoke-agent-reset
+  "Reset the backend ABORT flag so a fresh agent run is not immediately
+  cancelled by a prior cancel. Resolves to nil."
+  []
+  (p/then (invoke "llm_agent_reset" #js {}) identity))
+
+(defn invoke-agent-progress
+  "Emit an `ai-progress` event from CLJS (loop-level stage text). Used so the
+  bar's existing `subscribe-progress` cond surfaces agent stage strings without
+  any new UI. `stage` is the stage key (e.g. \"tool-thinking\",
+  \"executing-tool\"); `detail` is a free string (e.g. the tool name)."
+  [stage detail]
+  (invoke "llm_agent_progress" #js {:stage stage :detail (str detail)}))
+
+(defn build-agent-step-request
+  "Assemble the AgentStepRequest JS object. `messages` is a vector of CLJS
+  message maps; `tools` is the CLJS tools-list from `ait/tools-list`; `files`
+  is a vector of FileInput maps (vision attachments; pass [] on non-first
+  steps); `model` is an optional model slug (nil = backend default GLM)."
+  [{:keys [messages tools files options model]}]
+  (let [opts (-> {:target       (:target options "new-board")
+                  :quality      (:quality options)
+                  :frame_preset  (:frame-preset options)
+                  :frame_width   (:frame-width options)
+                  :frame_height   (:frame-height options)
+                  :file_id       (:file-id options)
+                  :use_memory    (:use-memory options)}
+                 (cond-> (:selection options)
+                   (assoc :selection (clj->js (:selection options)))))]
+    #js {:messages (clj->js messages)
+         :tools   (if (seq tools) (clj->js tools) nil)
+         :options (clj->js opts)
+         :files   (apply array (mapv clj->js files))
+         :model   model}))
+
+;; ── Viewport capture (visual channel) ─────────────────────────────────────────
+;;
+;; Capture the workspace design canvas (`#render` — an <svg> for the classic
+;; renderer or a <canvas> for the WASM renderer) as a PNG FileInput for the
+;; vision model. Pure browser canvas API; NO Tauri command, NO Rust recompile
+;; (lowest static-verify risk under no-build). Fonts may render as fallback in
+;; the SVG path — the scene-text channel (`dg/serialize-scene`) carries the
+;; exact typography, so the image is a supplementary visual hint, not the sole
+;; context. Returns a promesa promise of a FileInput map or nil on any failure
+;; (tainted canvas, missing node). The loop treats nil as 'no visual'.
+
+(defn- attr-num
+  [el k fallback]
+  (let [v (.getAttribute el k)]
+    (if (seq v)
+      (let [n (js/parseFloat v)]
+        (if (js/isFinite n) n fallback))
+      fallback)))
+
+(defn- data-url->file-input
+  [data-url]
+  (let [idx (.indexOf data-url ",")]
+    (when (pos? idx)
+      {:name "viewport.png" :mime "image/png"
+       :base64 (.substring data-url (inc idx))})))
+
+(defn- canvas->file-input
+  "Sync rasterization of a <canvas> via an off-DOM scratch canvas (so the
+  source is not mutated). Returns a FileInput or nil."
+  [src]
+  (try
+    (let [w (.-width src) h (.-height src)
+          scratch (js/document.createElement "canvas")
+          _ (set! (.-width scratch) w)
+          _ (set! (.-height scratch) h)
+          ctx (.getContext scratch "2d")]
+      (.drawImage ctx src 0 0 w h)
+      (data-url->file-input (.toDataURL scratch "image/png")))
+    (catch :default _ nil)))
+
+(defn- svg->file-input
+  "Async rasterization of an <svg> via Blob URL → Image → canvas. Capped to
+  1600px on the long edge. Returns a promesa promise of a FileInput or nil."
+  [node]
+  (p/create
+   (fn [resolve]
+     (try
+       (let [w (attr-num node "width" 1440)
+             h (attr-num node "height" 900)
+             cap 1600
+             scale (if (> (max w h) cap) (/ cap (max w h)) 1)
+             cw (* w scale) ch (* h scale)
+             clone (.cloneNode node true)
+             _ (when-not (seq (.getAttribute node "viewBox"))
+                 (.setAttribute clone "viewBox" (str "0 0 " w " " h)))
+             _ (.setAttribute clone "width" cw)
+             _ (.setAttribute clone "height" ch)
+             _ (.setAttribute clone "xmlns" "http://www.w3.org/2000/svg")
+             xml (.serializeToString (js/XMLSerializer.) clone)
+             blob (js/Blob. #js [xml] #js {:type "image/svg+xml;charset=utf-8"})
+             url (js/URL.createObjectURL blob)
+             img (js/Image.)]
+         (set! (.. img -onload)
+               (fn []
+                 (try
+                   (let [canvas (js/document.createElement "canvas")
+                         ctx (.getContext canvas "2d")]
+                     (set! (.-width canvas) cw)
+                     (set! (.-height canvas) ch)
+                     (.drawImage ctx img 0 0 cw ch)
+                     (js/URL.revokeObjectURL url)
+                     (resolve (data-url->file-input (.toDataURL canvas "image/png"))))
+                   (catch :default _
+                     (js/URL.revokeObjectURL url) (resolve nil)))))
+         (set! (.. img -onerror) (fn [] (js/URL.revokeObjectURL url) (resolve nil)))
+         (set! (.. img -src) url))
+       (catch :default _ (resolve nil))))))
+
+(defn capture-viewport-png
+  "Capture the workspace `#render` canvas as a PNG FileInput for the vision
+  model, or nil. Returns a promesa promise. See section header for the
+  trade-offs (font fallback, tainted-canvas guard)."
+  []
+  (try
+    (let [node (js/document.getElementById "render")]
+      (cond
+        (nil? node)                     (p/resolved nil)
+        (instance? js/HTMLCanvasElement node) (p/resolved (canvas->file-input node))
+        (instance? js/SVGSVGElement node)     (svg->file-input node)
+        :else                            (p/resolved nil)))
+    (catch :default _ (p/resolved nil))))
 
 ;; ── Progress events ──────────────────────────────────────────────────────────
 
@@ -274,6 +428,16 @@
     (update [_ state]
       (assoc-in state [:workspace-local :ai-error] message))))
 
+(defn set-ai-update-sel
+  "Persist the 'Update only the selection' generation preference (shared
+   between the AI bar and the AI Settings modal via refs/ai-update-sel).
+   `value` is boolean; nil leaves the default (true) in place."
+  [value]
+  (ptk/reify ::set-ai-update-sel
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:workspace-local :ai-update-sel] value))))
+
 ;; ── The generate event ───────────────────────────────────────────────────────
 
 (defn- err->str
@@ -354,3 +518,209 @@
           (p/then  (fn [_] (st/emit! (set-ai-busy false))))
           (p/catch (fn [_] (st/emit! (set-ai-busy false)))))
       (rx/of (set-ai-busy false)))))
+
+;; ── The agent loop ─────────────────────────────────────────────────────────────
+;;
+;; `run-agent-design` is the powerful, native path (the AI bar routes "max"
+;; quality to it; "auto" stays on the single-shot `generate-design` so the
+;; existing path — and the bar's visuals — are byte-identical-when-inactive).
+;;
+;; Pipeline (all detached promises; the WatchEvent returns immediately with a
+;; busy flag, exactly like `generate-design`):
+;;   0. bump gen-id guard + reset backend ABORT + mark busy/clear error
+;;   1. capture viewport PNG (visual channel; nil = no visual)
+;;   2. OPTIONAL scout step: Kimi (vision) sees the PNG + scene text → a short
+;;      visual brief. Skipped when there is no viewport. Failure is non-fatal.
+;;   3. tool-calling loop (GLM, up to `aia/max-steps`): each step is one
+;;      `llm_agent_step`. On tool_calls → execute via `ait/execute-tool`,
+;;      append assistant+tool-result messages, loop. On spec → preview (same
+;;      `set-ai-preview` the bar already renders, so Apply/Cancel is identical).
+;;      On text → done. On error / cancel / max-iter → stop.
+;;
+;; The loop reuses the bar's existing `subscribe-progress` cond (no new UI):
+;; `invoke-agent-progress` emits `ai-progress` events with stage keys the bar
+;; already maps (tool-thinking / executing-tool / agent-done / …).
+
+(defn- kimi-slug
+  "Pick the configured vision-model slug from the JS config object returned by
+  `llm_get_config` (already keywordized)."
+  [config]
+  (if (= (:provider config) "ollama")
+    (:ollama_kimi_model config)
+    (:deepinfra_kimi_model config)))
+
+(defn- parse-tool-args
+  "Coerce a model-supplied `arguments` value (a JSON string, a JS object, or
+  nil) into a keywordized CLJS map for `ait/execute-tool`."
+  [args]
+  (cond
+    (nil? args)              {}
+    (string? args)           (try (js->clj (js/JSON.parse args) :keywordize-keys true)
+                                 (catch :default _ {}))
+    (object? args)           (js->clj args :keywordize-keys true)
+    (map? args)              args
+    :else                    {}))
+
+(defn- emit-agent-stage
+  "Fire-and-forget an `ai-progress` event so the bar's existing stage line shows
+  agent progress. Never throws."
+  [stage detail]
+  (-> (invoke-agent-progress stage detail) (p/catch (fn [_] nil))))
+
+(defn- agent-finish-busy
+  [my-id & events]
+  (when (= my-id (gen-id-current))
+    (apply st/emit! events)))
+
+(defn- run-agent-loop
+  "The recursive tool-calling loop. `state` is captured from the WatchEvent so
+  read-tools (get_scene / get_selection) operate on the LIVE store (each step
+  sees the latest page objects, including shapes created by prior tool calls)."
+  [my-id state target options tools messages step]
+  (letfn [(stop-max []
+            (emit-agent-stage "agent-max-iterations" (str (aia/max-steps)))
+            (agent-finish-busy my-id (set-ai-busy false) (set-ai-error nil)))
+          (stop-error [err]
+            (agent-finish-busy my-id (set-ai-busy false) (set-ai-error (err->str err))))
+          (stop-done []
+            (emit-agent-stage "agent-done" "")
+            (agent-finish-busy my-id (set-ai-busy false) (set-ai-error nil)))
+          (apply-spec [spec-js]
+            (when (= my-id (gen-id-current))
+              (let [spec (js->clj spec-js :keywordize-keys true)]
+                (st/emit! (set-ai-busy false)
+                          (set-ai-error nil)
+                          (set-ai-preview {:spec spec :target target})))))
+          (run-step [messages step]
+            (if (>= step (aia/max-steps))
+              (stop-max)
+              (let [req (build-agent-step-request
+                         {:messages messages :tools tools :files []
+                          :options options :model nil})]
+                (emit-agent-stage "tool-thinking" "")
+                (-> (invoke-agent-step req)
+                    (p/then
+                     (fn [resp-js]
+                       (let [resp (js->clj resp-js :keywordize-keys true)
+                             kind (keyword (:kind resp))]
+                         (cond
+                           ;; Backend cancelled (ABORT) or model error.
+                           (= kind :error) (stop-error (:error resp))
+                           ;; A DesignSpec → preview (the bar's Apply button
+                           ;; commits it; identical to the non-agent path).
+                           (= kind :spec)  (apply-spec (:spec resp))
+                           ;; Tool calls → execute, append results, loop.
+                           (= kind :tool_calls)
+                           (let [calls (vec (:tool_calls resp))]
+                             (when (seq calls)
+                               (emit-agent-stage
+                                "executing-tool"
+                                (str/join ", " (map #(get-in % [:function :name]) calls))))
+                             (let [results (mapv
+                                            (fn [c]
+                                              (let [name (get-in c [:function :name])
+                                                    args (parse-tool-args
+                                                           (get-in c [:function :arguments]))]
+                                                {:id (:id c)
+                                                 :result (ait/execute-tool name args state)}))
+                                            calls)
+                                   new-messages (aia/append-tool-results messages resp results)]
+                               (run-step new-messages (inc step))))
+                           ;; Plain text → done.
+                           (= kind :text)  (stop-done)
+                           ;; Unknown kind → stop gracefully.
+                           :else          (stop-done)))))
+                    (p/catch (fn [err] (stop-error err)))))))]
+    (run-step messages step)))
+
+(defn run-agent-design
+  "Fire an agent-driven generation. Reuses the bar's busy/stage/error/preview
+  state atoms (same as `generate-design`) so the UI is byte-identical-when-
+  inactive and the preview modal is the same. Routes the bar's 'max' quality.
+
+  Keys (same shape as `generate-design`):
+    :prompt   prompt string
+    :files    FileInput maps (user attachments; passed to the scout so the
+              vision model also sees user reference images, when present)
+    :options  {:target :quality :frame-preset :frame-width :frame-height
+               :use-memory}"
+  [{:keys [prompt files options]}]
+  (ptk/reify ::run-agent-design
+    ptk/WatchEvent
+    (watch [_ state _]
+      (let [my-id     (bump-gen-id)
+            target    (:target options "new-board")
+            is-update (= target "update-selection")
+            file-id   (str (:current-file-id state))
+            opts      (assoc options :file-id file-id)
+            scene     (dg/serialize-scene state)
+            sel       (when is-update (or (dg/selection->snippet state) []))
+            tools     (ait/tools-list)
+
+            user-text (str (or prompt "")
+                           (when (seq scene)
+                             (dm/str
+                              "\n\n--- LIVE SCENE (structured; use these ids verbatim when calling tools) ---\n"
+                              scene))
+                           (when (seq sel)
+                             (dm/str
+                              "\n\n--- CURRENT SELECTION (the region the user wants updated) ---\n"
+                              (js/JSON.stringify (clj->js sel)))))
+
+            ;; Non-fatal scout: only when we can capture a viewport; runs on the
+            ;; vision (Kimi) model with the PNG + user attachments. Its brief is
+            ;; folded into the tool-loop's user message.
+            run-scout
+            (fn [viewport]
+              (let [scout-files (into (vec (or files []))
+                                      (when viewport [viewport]))]
+                (if (seq scout-files)
+                  (let [scout-req (build-agent-step-request
+                                   {:messages [(aia/system-message (aia/scout-system-prompt))
+                                               (aia/user-message
+                                                (dm/str (or prompt "")
+                                                         (when (seq scene)
+                                                           (dm/str "\n\nSCENE:\n" scene))))]
+                                    :tools nil :files scout-files :options opts
+                                    :model nil})]
+                    ;; invoke-get-config is a promise; resolve it first
+                    (-> (invoke-get-config)
+                        (p/then
+                         (fn [cfg-js]
+                           (let [cfg (js->clj cfg-js :keywordize-keys true)
+                                 req (build-agent-step-request
+                                       {:messages [(aia/system-message (aia/scout-system-prompt))
+                                                   (aia/user-message
+                                                    (dm/str (or prompt "")
+                                                             (when (seq scene)
+                                                               (dm/str "\n\nSCENE:\n" scene))))]
+                                        :tools nil :files scout-files :options opts
+                                        :model (kimi-slug cfg)})]
+                             (invoke-agent-step req))))
+                        (p/then
+                         (fn [resp-js]
+                           (let [resp (js->clj resp-js :keywordize-keys true)]
+                             (or (:text resp) ""))))
+                        (p/catch (fn [_] ""))))
+                  (p/resolved ""))))
+
+            begin-loop
+            (fn [brief]
+              (let [final-user (if (and (seq brief) (not= brief ""))
+                                 (dm/str user-text
+                                         "\n\n--- VISUAL BRIEF (from the screenshot) ---\n"
+                                         brief)
+                                 user-text)
+                    messages [(aia/system-message (aia/design-system-prompt))
+                              (aia/user-message final-user)]]
+                (run-agent-loop my-id state target opts tools messages 0)))]
+
+        ;; Mark busy + reset ABORT (detached, non-blocking).
+        (-> (invoke-agent-reset) (p/catch (fn [_] nil)))
+        ;; Detached pipeline: capture viewport → optional scout → loop. All
+        ;; side-effects feed back via st/emit!; the WatchEvent itself just
+        ;; returns the busy flag, exactly like `generate-design`.
+        (-> (capture-viewport-png)
+            (p/then (fn [viewport] (-> (run-scout viewport) (p/then begin-loop))))
+            (p/catch (fn [_] (begin-loop ""))))
+        (rx/of (set-ai-busy true))))))

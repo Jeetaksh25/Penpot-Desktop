@@ -257,6 +257,13 @@
 (def ai-error
   (l/derived :ai-error workspace-local))
 
+;; "Update only the selection" generation preference. Lives here (not in the
+;; AI bar's component state) so the AI Settings modal can host the toggle while
+;; the AI bar still reads it at generate time. nil => default true (update the
+;; selection when one exists), matching the bar's previous local default.
+(def ai-update-sel
+  (l/derived :ai-update-sel workspace-local))
+
 ;; Figma #72: prototype sections — in-session sections vector edited by
 ;; the interactions panel (see data/workspace/interactions.cljs). Falls
 ;; back to the current page's :prototype-sections when the session slot

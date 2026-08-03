@@ -9,11 +9,11 @@
 :root {
   // DARK
   // Dark background
-  --db-primary-60: #{color.change(#18181a, $alpha: 0.6)}; // used on overlay dark mode
+  --db-primary-60: #{color.change(#141313, $alpha: 0.6)}; // used on overlay dark mode (warm — matches the coral dark page bg)
 
   // Dark foreground
-  --df-secondary: #8f9da3; // Used on button disabled background dark mode, grid metadata and some svg
-  --df-secondary-40: #{color.change(#8f9da3, $alpha: 0.4)}; // Used on button disabled foreground dark mode
+  --df-secondary: #2c2828; // Used on button disabled background dark mode, grid metadata and some svg (warm neutral, matches mocha-850)
+  --df-secondary-40: #{color.change(#b6b0ae, $alpha: 0.4)}; // Used on button disabled foreground dark mode (warm)
 
   // Dark accent
   --da-tertiary-10: #{color.change(#00d1b8, $alpha: 0.1)}; // selection rect dark mode
@@ -22,10 +22,10 @@
   // LIGHT
   // Light background
   --lb-primary-60: #{color.change(#fff, $alpha: 0.6)}; // overlay color light mode
-  --lb-quaternary: #eef0f2; // background disabled token
+  --lb-quaternary: #e8ddd8; // background disabled token (warm neutral, matches cream-100)
 
   // Light foreground
-  --lf-secondary-40: #{color.change(#495e74, $alpha: 0.4)}; // foreground disabled token
+  --lf-secondary-40: #{color.change(#6e6a6a, $alpha: 0.4)}; // foreground disabled token (warm)
 
   // Light accent
   --la-tertiary-10: #{color.change(#8c33eb, $alpha: 0.1)}; // selection rect light mode

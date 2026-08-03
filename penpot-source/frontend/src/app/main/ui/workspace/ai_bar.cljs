@@ -5,34 +5,45 @@
 ;; Copyright (c) KALEIDOS INC Sucursal en España SL
 
 (ns app.main.ui.workspace.ai-bar
-  "Feature 3 + 4 — the AI design bar.
+  "Feature 3 + 4 — the Ovion AI bar, rebuilt to match the Penpot-generated
+  UI reference (UI_Reference/*.html) exactly.
 
-  A bottom-floating input that drives the closed AI backend:
-    - prompt textarea + reference URL input + image attachments
-    - Max quality / Auto mode toggle (the two GLM/Kimi orchestration modes;
-      the underlying models are NOT named in the UI, per spec)
-    - frame preset selector (mobile / web / …) so generations land at the
-      right canvas size for the project type
-    - selection-aware region update: when shapes are selected, the bar
-      offers 'update only the selection' so the AI regenerates just that
-      region in place
-    - generate button with spinner + live stage text (from the backend's
-      ai-progress events), cancel button
-    - preview modal: renders the generated DesignSpec as a crude SVG before
-      it hits the canvas; Apply commits it (one undo transaction) /
-      Regenerate / Cancel
+  The reference draws a deliberate, authored visual world: white pill
+  surfaces with a soft outer shadow and a coral inset ring, a coral send
+  disc with a white arrow-up, grey #7d7d7d inactive icons at stroke-width
+  2, and a mode pill that turns coral + swaps to a sparkles glyph when
+  'Max' is active. The bar is calm — no orb, no sparkle beam, no glass —
+  so the motion is calm too: a quiet rise on mount, an icon swap on mode
+  toggle, a pill-radius grow when the prompt expands, and the signature
+  coral-inset intensify on hover/press (GSAP + anime.js — NO size change).
 
-  Styled with an injected <style> block + inline :style (no scss pipeline
+  Layout (matches the reference's bottom-of-frame composition, kept clean):
+    - A bottom-centered dock, sitting between the two sidebars with a
+      little space from the exact bottom.
+    - A single primary row: a cluster pill `[mode | paperclip | settings]`,
+      the input pill `[prompt textarea | coral send]`, and a Screen pill
+      on the right (the frame-preset selector, promoted out of the old
+      secondary strip and given a custom themed picker popover).
+  The reference-URL input was removed (URLs go straight in the prompt; the
+  backend parses them out). The 'update only the selection' toggle and the
+  Figma-#71 AI tools (rename / generate text) were relocated to the AI
+  Settings modal so this bar stays uncluttered — see `ai_settings.cljs` and
+  the shared `refs/ai-update-sel` ref.
+
+  All colors/timing/type come from the reference-pinned tokens in
+  `app.main.ui.workspace.ai-design` (Helvetica Now Display, #f28b82 coral,
+  #7d7d7d grey). Styled via an injected <style> block (no scss pipeline
   dependency, so it compiles without the build-generated .css.json that
   `stl/css` needs)."
   (:require
    [cuerdas.core :as str]
    [app.main.data.modal :as modal]
-   [app.main.data.workspace :as dw]
    [app.main.data.workspace.ai-gen :as ai]
    [app.main.data.workspace.design-gen :as dg]
    [app.main.refs :as refs]
    [app.main.store :as st]
+   [app.main.ui.workspace.ai-design :as ad]
+   [app.main.ui.workspace.ai-motion :as aim]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
    [promesa.core :as p]
@@ -40,162 +51,383 @@
 
 ;; ── Injected CSS ─────────────────────────────────────────────────────────────
 ;;
-;; One <style> block, scoped under a unique root class so it cannot collide
-;; with Penpot's own styles. Rendered once at the top of the bar.
+;; Scoped under `.ai-root`. Built on the reference-pinned `ai-base-css`
+;; tokens from `app.main.ui.workspace.ai-design` (coral #f28b82, grey
+;; #7d7d7d, white surfaces, Helvetica Now Display). The look is the
+;; reference's exact visual language, scaled from the 1920×1080 frame to
+;; tasteful web-app sizes (circles 40px, icons 18–20px, text 15px) while
+;; preserving the pill / coral-ring / inset-glow proportions.
+;;
+;; Hover/press box-shadow is OWNED by GSAP (ai-motion) — the coral inset
+;; ring quietly intensifies and the small-control shadow deepens, with NO
+;; transform/scale (the user explicitly banned size-change animations). CSS
+;; keeps color/background only as the no-GSAP fallback, so the two never
+;; fight over the same property on the same frame.
 
 (def ^:private ai-css
   "
-.ai-root, .ai-root * { box-sizing: border-box; font-family: inherit; }
-.ai-bar {
+/* ── The dock — bottom-centered between the sidebars ─────────────────────── */
+.ai-dock {
   position: absolute; left: 50%; transform: translateX(-50%);
-  bottom: 18px; z-index: 60; width: min(760px, calc(100vw - 48px));
-  background: rgba(255,255,255,0.96); backdrop-filter: blur(12px);
-  border: 1px solid rgba(15,23,42,0.10); border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(15,23,42,0.18);
-  padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;
+  bottom: 28px; z-index: 60;
+  width: min(720px, calc(100% - 48px));
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  font-family: var(--ai-font);
+  animation: ai-rise var(--ai-dur-slow) var(--ai-ease-out) both;
+  pointer-events: none;              /* let clicks pass through the gaps */
 }
-.ai-row { display: flex; align-items: flex-end; gap: 8px; }
-.ai-grow { flex: 1 1 auto; min-width: 0; }
-.ai-textarea {
-  width: 100%; min-height: 44px; max-height: 160px; resize: none;
-  border: 1px solid rgba(15,23,42,0.12); border-radius: 10px;
-  padding: 9px 11px; font-size: 14px; line-height: 1.35; color: #0f172a;
-  background: #fff; outline: none;
+.ai-dock > * { pointer-events: auto; }
+
+/* ── Primary row: cluster pill + input pill + screen pill ──────────────── */
+.ai-primary { display: flex; align-items: center; gap: 20px; width: 100%;
+  justify-content: center; }
+
+/* ── Cluster pill (mode | paperclip | settings) ────────────────────────── */
+.ai-cluster {
+  display: inline-flex; align-items: center; gap: 12px; flex: none;
+  background: var(--ai-white); border-radius: var(--ai-radius-pill);
+  padding: 6px;
+  box-shadow: var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral);
 }
-.ai-textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
-.ai-input {
-  border: 1px solid rgba(15,23,42,0.12); border-radius: 10px;
-  padding: 8px 11px; font-size: 13px; color: #334155; background: #fff; outline: none; width: 100%;
+.ai-mode {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  height: 40px; padding: 0 16px; border: none; cursor: pointer;
+  background: var(--ai-white); color: var(--ai-grey);
+  border-radius: var(--ai-radius-pill);
+  font-family: var(--ai-font); font-size: 14.5px; font-weight: 500;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral);
+  transition: color var(--ai-dur-fast) var(--ai-ease-out);
 }
-.ai-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
-.ai-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.ai-seg { display: inline-flex; border: 1px solid rgba(15,23,42,0.12); border-radius: 9px; overflow: hidden; }
-.ai-seg button {
-  border: none; background: #fff; color: #475569; padding: 6px 12px;
-  font-size: 12.5px; font-weight: 600; cursor: pointer; border-right: 1px solid rgba(15,23,42,0.08);
+.ai-mode:hover { color: var(--ai-ink); }
+.ai-mode:active { color: var(--ai-ink); }
+.ai-mode:focus-visible { outline: none; box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral), 0 0 0 3px var(--ai-coral-faint); }
+.ai-mode.is-max { color: var(--ai-coral); }
+.ai-mode .ai-i { width: 18px; height: 18px; }
+.ai-mode .ai-i-anim { display: inline-flex; animation: ai-icon-in var(--ai-dur-base) var(--ai-ease-out) both; }
+
+.ai-circle {
+  width: 40px; height: 40px; flex: none; border: none; cursor: pointer;
+  background: var(--ai-white); color: var(--ai-grey);
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral);
+  transition: color var(--ai-dur-fast) var(--ai-ease-out);
 }
-.ai-seg button:last-child { border-right: none; }
-.ai-seg button.on { background: #4f46e5; color: #fff; }
-.ai-select {
-  border: 1px solid rgba(15,23,42,0.12); border-radius: 9px;
-  padding: 6px 8px; font-size: 12.5px; color: #334155; background: #fff; cursor: pointer;
+.ai-circle:hover { color: var(--ai-ink); }
+.ai-circle:active { color: var(--ai-ink); }
+.ai-circle:focus-visible { outline: none; box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral), 0 0 0 3px var(--ai-coral-faint); }
+.ai-circle .ai-i { width: 20px; height: 20px; }
+
+/* ── Attachment thumbs (inside the cluster, after settings) ─────────────── */
+.ai-thumbs { display: inline-flex; align-items: center; gap: 8px; padding: 0 4px 0 2px; }
+.ai-thumb { position: relative; width: 34px; height: 34px; border-radius: 10px;
+  animation: ai-thumb-in var(--ai-dur-base) var(--ai-ease-out) both; }
+.ai-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px;
+  display: block; box-shadow: var(--ai-shadow-btn); }
+.ai-thumb-x { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px;
+  background: var(--ai-coral); color: #fff; border-radius: 50%; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; line-height: 1; cursor: pointer;
+  border: 2px solid var(--ai-white); transition: background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-thumb-x:hover { background: var(--ai-coral-press); }
+
+/* ── Input pill (prompt + send) ─────────────────────────────────────────── */
+.ai-input-pill {
+  flex: 1 1 auto; min-width: 0; position: relative;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--ai-white); border-radius: var(--ai-radius-pill);
+  padding: 6px 6px 6px 20px;
+  box-shadow: var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral);
+  transition: border-radius var(--ai-dur-base) var(--ai-ease-out);
 }
-.ai-chk { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #475569; cursor: pointer; }
-.ai-chk input { margin: 0; }
-.ai-btn {
-  border: none; border-radius: 10px; padding: 9px 16px; font-size: 13.5px;
-  font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
-  white-space: nowrap;
+.ai-input-pill.is-expanded { border-radius: var(--ai-radius-expanded); align-items: flex-end; }
+.ai-prompt {
+  flex: 1 1 auto; min-width: 0; border: none; outline: none; background: transparent;
+  font-family: var(--ai-font); font-size: 15px; font-weight: 400; line-height: 1.45;
+  color: var(--ai-ink); resize: none; overflow-y: auto;
+  min-height: 40px; max-height: 160px; padding: 10px 0;
+  white-space: pre-wrap; word-break: break-word;
 }
-.ai-btn-primary { background: #4f46e5; color: #fff; }
-.ai-btn-primary:hover { background: #4338ca; }
-.ai-btn-primary:disabled { background: #c7d2fe; cursor: not-allowed; }
-.ai-btn-ghost { background: transparent; color: #64748b; border: 1px solid rgba(15,23,42,0.12); }
-.ai-btn-ghost:hover { background: #f8fafc; }
-.ai-icon-btn {
-  border: 1px solid rgba(15,23,42,0.12); background: #fff; border-radius: 10px;
-  width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #475569; font-size: 16px;
+.ai-prompt::placeholder { color: var(--ai-grey); opacity: 1; }
+
+.ai-send {
+  flex: none; width: 40px; height: 40px; border: none; cursor: pointer;
+  border-radius: 50%;
+  background: var(--ai-coral); color: var(--ai-white);
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-white);
+  transition: background var(--ai-dur-fast) var(--ai-ease-out);
 }
-.ai-icon-btn:hover { background: #f8fafc; }
-.ai-attach { display: inline-flex; gap: 6px; flex-wrap: wrap; }
-.ai-thumb {
-  width: 40px; height: 40px; border-radius: 8px; object-fit: cover;
-  border: 1px solid rgba(15,23,42,0.12); cursor: pointer; position: relative;
+.ai-send:hover { background: var(--ai-coral-press); }
+.ai-send:active { background: var(--ai-coral-press); }
+.ai-send:focus-visible { outline: none; box-shadow: var(--ai-shadow-btn), var(--ai-inset-white), 0 0 0 3px var(--ai-coral-faint); }
+.ai-send:disabled { background: #f3c4be; color: #fff; cursor: not-allowed; box-shadow: var(--ai-shadow-btn); }
+.ai-send .ai-i { width: 20px; height: 20px; }
+
+/* ── Screen selection pill (right of the input, mirrors the cluster) ───────
+   The frame-preset selector promoted to the primary bar. Same construction
+   as the mode pill: white surface + coral inset ring + small-control shadow,
+   label in #7d7d7d Helvetica Now Display 500. A device glyph leads, a
+   chevron trails and flips 180° when the picker is open. ──────────────── */
+.ai-screen {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  height: 40px; padding: 0 14px 0 16px; border: none; cursor: pointer;
+  background: var(--ai-white); color: var(--ai-grey);
+  border-radius: var(--ai-radius-pill);
+  font-family: var(--ai-font); font-size: 14.5px; font-weight: 500;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral);
+  transition: color var(--ai-dur-fast) var(--ai-ease-out);
 }
-.ai-thumb-x {
-  position: absolute; top: -6px; right: -6px; width: 16px; height: 16px;
-  background: #ef4444; color: #fff; border-radius: 50%; font-size: 10px;
-  display: flex; align-items: center; justify-content: center; line-height: 1;
+.ai-screen:hover { color: var(--ai-ink); }
+.ai-screen:active { color: var(--ai-ink); }
+.ai-screen:focus-visible { outline: none; box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral), 0 0 0 3px var(--ai-coral-faint); }
+.ai-screen.is-open { color: var(--ai-ink); box-shadow: var(--ai-shadow-btn-hover), var(--ai-inset-coral-hover); }
+.ai-screen .ai-i { width: 18px; height: 18px; }
+.ai-screen .ai-i-chev { width: 16px; height: 16px; margin-left: 2px; color: var(--ai-grey);
+  transition: transform var(--ai-dur-base) var(--ai-ease-out), color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-screen.is-open .ai-i-chev { transform: rotate(180deg); color: var(--ai-coral); }
+
+/* ── Screen picker popover (custom, on-theme — NOT a native <select>) ──────
+   Renders above the pill. Entrance is driven by anime.js (ai-motion/pop-in):
+   a calm rise + fade, no scale. The element starts at opacity:0 in CSS so
+   the first frame is invisible; pop-in tweens it in, and under reduced
+   motion / missing anime it is forced to the visible end state. ───────── */
+.ai-screen-wrap { position: relative; flex: none; }
+.ai-screen-back { position: fixed; inset: 0; z-index: 70; background: transparent; }
+.ai-screen-pop {
+  position: absolute; bottom: calc(100% + 10px); right: 0; z-index: 71;
+  min-width: 188px; background: var(--ai-white); border-radius: var(--ai-radius-md);
+  box-shadow: var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral);
+  padding: 6px; opacity: 0;
+  display: flex; flex-direction: column; gap: 2px;
 }
-.ai-stage { font-size: 11.5px; color: #6b7280; min-height: 14px; display: flex; align-items: center; gap: 7px; }
-.ai-err { font-size: 12px; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca;
-  border-radius: 8px; padding: 6px 9px; }
-.ai-spin { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.5); border-top-color: #fff;
-  border-radius: 50%; animation: ai-spin 0.7s linear infinite; }
-@keyframes ai-spin { to { transform: rotate(360deg); } }
-.ai-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 200;
-  display: flex; align-items: center; justify-content: center; padding: 24px; }
-.ai-modal { background: #fff; border-radius: 16px; max-width: 920px; width: 100%;
-  max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
-  box-shadow: 0 24px 70px rgba(15,23,42,0.4); }
-.ai-modal-head { padding: 16px 20px; border-bottom: 1px solid #eef2f7; display: flex; align-items: center; justify-content: space-between; }
-.ai-modal-title { font-size: 15px; font-weight: 700; color: #0f172a; }
-.ai-modal-body { padding: 20px; overflow: auto; flex: 1; background: #f8fafc; }
-.ai-modal-foot { padding: 14px 20px; border-top: 1px solid #eef2f7; display: flex; gap: 10px; justify-content: flex-end; }
-.ai-badge { font-size: 11px; font-weight: 600; color: #6366f1; background: #eef2ff;
-  padding: 3px 8px; border-radius: 6px; }
+.ai-screen-opt {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: none; cursor: pointer;
+  background: transparent; color: var(--ai-grey-2); border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 13px; font-weight: 500; text-align: left;
+  transition: background var(--ai-dur-fast) var(--ai-ease-out),
+              color var(--ai-dur-fast) var(--ai-ease-out);
+}
+.ai-screen-opt:hover { background: var(--ai-coral-faint); color: var(--ai-ink); }
+.ai-screen-opt.is-cur { color: var(--ai-coral); }
+.ai-screen-opt .ai-i { width: 17px; height: 17px; flex: none; }
+.ai-screen-opt .ai-i-check { width: 15px; height: 15px; flex: none; margin-left: auto; color: var(--ai-coral); }
+.ai-screen-opt.is-cur .ai-i-check { animation: ai-check-in var(--ai-dur-base) var(--ai-ease-out) both; }
+
+/* ── Stage / status / error ─────────────────────────────────────────────── */
+.ai-stage { font-size: 12px; color: var(--ai-grey-2); min-height: 16px;
+  display: flex; align-items: center; gap: 8px; font-family: var(--ai-font); }
+.ai-dots { display: inline-flex; gap: 4px; }
+.ai-dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--ai-coral);
+  animation: ai-dot 1.2s var(--ai-ease-in-out) infinite; }
+.ai-dots span:nth-child(2) { animation-delay: 0.16s; }
+.ai-dots span:nth-child(3) { animation-delay: 0.32s; }
+.ai-err { font-size: 12px; color: #b3261e; background: #fbeceb;
+  border: 1px solid #f3c4be; border-radius: var(--ai-radius-sm); padding: 7px 12px;
+  font-family: var(--ai-font); max-width: 100%; }
+.ai-spin { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.45);
+  border-top-color: #fff; border-radius: 50%; animation: ai-spin 0.7s linear infinite;
+  display: inline-block; }
+.ai-cancel { background: none; border: none; cursor: pointer; color: var(--ai-grey);
+  font-family: var(--ai-font); font-size: 12.5px; font-weight: 500; text-decoration: underline;
+  padding: 0; margin-left: 4px; transition: color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-cancel:hover { color: var(--ai-ink); }
+
+/* ── Preview modal ──────────────────────────────────────────────────────── */
+.ai-overlay { position: fixed; inset: 0; background: var(--ai-overlay); z-index: 200;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  animation: ai-overlay-in var(--ai-dur-base) var(--ai-ease-out) both; }
+.ai-modal { background: var(--ai-white); border-radius: var(--ai-radius-md);
+  max-width: 920px; width: 100%; max-height: 88vh; display: flex; flex-direction: column;
+  overflow: hidden; box-shadow: 0 24px 70px rgba(0,0,0,0.4);
+  animation: ai-modal-in var(--ai-dur-slow) var(--ai-ease-out) both; }
+.ai-modal-head { padding: 16px 24px; border-bottom: 1px solid #ececec;
+  display: flex; align-items: center; justify-content: space-between; }
+.ai-modal-title { font-size: 15px; font-weight: 700; color: var(--ai-ink); font-family: var(--ai-font); }
+.ai-modal-body { padding: 24px; overflow: auto; flex: 1; background: #fafafa; }
+.ai-modal-foot { padding: 12px 24px; border-top: 1px solid #ececec;
+  display: flex; gap: 8px; justify-content: flex-end; }
+.ai-badge { font-size: 11px; font-weight: 600; color: var(--ai-coral);
+  background: var(--ai-coral-faint); padding: 3px 9px; border-radius: var(--ai-radius-sm); }
+.ai-btn { border: none; border-radius: var(--ai-radius-md); padding: 9px 16px; font-size: 13px;
+  font-weight: 600; cursor: pointer; font-family: var(--ai-font);
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  transition: background var(--ai-dur-fast) var(--ai-ease-out),
+              color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ai-coral-faint); }
+.ai-btn-primary { background: var(--ai-coral); color: var(--ai-white);
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-white); }
+.ai-btn-primary:hover { background: var(--ai-coral-press); }
+.ai-btn-ghost { background: var(--ai-white); color: var(--ai-grey-2);
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral); }
+.ai-btn-ghost:hover { color: var(--ai-ink); }
+.ai-close { width: 34px; height: 34px; flex: none; border: none; cursor: pointer; background: var(--ai-white);
+  color: var(--ai-grey); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral);
+  transition: color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-close:hover { color: var(--ai-ink); }
+.ai-close:focus-visible { outline: none; box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral), 0 0 0 3px var(--ai-coral-faint); }
+.ai-close .ai-i { width: 18px; height: 18px; }
 ")
 
 (defn- style-block
-  "Render the injected <style> once."
+  "Render the shared base + AI bar <style> once. Wrapped in a
+  display:contents div so it adds no layout (some rumext versions don't
+  parse the `:<>` fragment keyword reliably)."
   []
-  [:style {:dangerouslySetInnerHTML #js {:__html ai-css}}])
+  [:div {:style #js {"display" "contents"}}
+   (ad/base-style-block)
+   [:style {:dangerouslySetInnerHTML #js {:__html ai-css}}]])
+
+;; ── Lucide icons (one family, stroke-width 2, currentColor) ──────────────────
+;;
+;; The reference uses Lucide glyphs drawn as inline SVG. `currentColor`
+;; lets each context tint them via CSS (grey at rest, coral when active,
+;; white on the coral send disc).
+
+(defn- li
+  "Wrap a seq of SVG children in a Lucide 24×24 icon frame."
+  [body]
+  [:svg.ai-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+              :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+              :aria-hidden "true"} body])
+
+(def ^:private lucide-arrow-up
+  (li [[:path {:d "M12 19V5"}]
+       [:path {:d "m5 12 7-7 7 7"}]]))
+
+(def ^:private lucide-paperclip
+  (li [[:path {:d "m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.93 8.83l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"}]]))
+
+(def ^:private lucide-settings
+  (li [[:path {:d "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"}]
+       [:circle {:cx 12 :cy 12 :r 3}]]))
+
+(def ^:private lucide-refresh-cw
+  (li [[:path {:d "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"}]
+       [:path {:d "M21 3v5h-5"}]
+       [:path {:d "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"}]
+       [:path {:d "M3 21v-5h5"}]]))
+
+(def ^:private lucide-sparkles
+  (li [[:path {:d "M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"}]
+       [:path {:d "M20 3v4"}]
+       [:path {:d "M22 5h-4"}]
+       [:path {:d "M4 17v2"}]
+       [:path {:d "M5 18H3"}]]))
+
+(def ^:private lucide-x
+  (li [[:path {:d "M18 6 6 18"}]
+       [:path {:d "m6 6 12 12"}]]))
+
+;; Screen-selection glyphs (one per frame preset). All Lucide, stroke-width 2.
+(def ^:private lucide-layout-grid
+  (li [[:rect {:x 3 :y 3 :width 7 :height 7 :rx 1}]
+       [:rect {:x 14 :y 3 :width 7 :height 7 :rx 1}]
+       [:rect {:x 14 :y 14 :width 7 :height 7 :rx 1}]
+       [:rect {:x 3 :y 14 :width 7 :height 7 :rx 1}]]))
+
+(def ^:private lucide-smartphone
+  (li [[:rect {:x 5 :y 2 :width 14 :height 20 :rx 2}]
+       [:path {:d "M12 18h.01"}]]))
+
+(def ^:private lucide-tablet
+  (li [[:rect {:x 4 :y 2 :width 16 :height 20 :rx 2}]
+       [:path {:d "M12 18h.01"}]]))
+
+(def ^:private lucide-monitor
+  (li [[:rect {:x 2 :y 3 :width 20 :height 14 :rx 2}]
+       [:path {:d "M8 21h8"}]
+       [:path {:d "M12 17v4"}]]))
+
+(def ^:private lucide-watch
+  (li [[:circle {:cx 12 :cy 12 :r 6}]
+       [:path {:d "M9 6V3h6v3"}]
+       [:path {:d "M9 18v3h6v-3"}]]))
+
+(def ^:private lucide-chevron-down
+  (li [[:path {:d "m6 9 6 6 6-6"}]]))
+
+(def ^:private lucide-check
+  (li [[:path {:d "M20 6 9 17l-5-5"}]]))
 
 ;; ── Small presentational bits ───────────────────────────────────────────────
 
+;; Frame presets — the Screen selection pill. Each pairs a backend value
+;; (`:frame-preset`) with a label + a Lucide device glyph shown in the pill
+;; and the picker. "auto" lets the backend/model pick the canvas size.
 (def ^:private presets
-  [["auto" "Auto"]
-   ["mobile" "Mobile"]
-   ["mobile-sm" "Mobile small"]
-   ["tablet" "Tablet"]
-   ["web" "Web"]
-   ["web-wide" "Web wide"]
-   ["desktop" "Desktop"]
-   ["watch" "Watch"]])
+  [{:v "auto"      :label "Auto"         :icon lucide-layout-grid}
+   {:v "mobile"    :label "Mobile"       :icon lucide-smartphone}
+   {:v "mobile-sm" :label "Mobile small" :icon lucide-smartphone}
+   {:v "tablet"    :label "Tablet"       :icon lucide-tablet}
+   {:v "web"       :label "Web"          :icon lucide-monitor}
+   {:v "web-wide"  :label "Web wide"     :icon lucide-monitor}
+   {:v "desktop"   :label "Desktop"      :icon lucide-monitor}
+   {:v "watch"     :label "Watch"        :icon lucide-watch}])
+
+(defn- preset-by-v [v] (some #(when (= (:v %) v) %) presets))
+(defn- preset-label [v] (or (:label (preset-by-v v)) "Auto"))
+(defn- preset-icon  [v] (or (:icon  (preset-by-v v)) lucide-layout-grid))
 
 (defn- spinner [] [:span.ai-spin])
+
+(defn- stage-dots [] [:span.ai-dots [:span] [:span] [:span]])
 
 ;; ── The bar ──────────────────────────────────────────────────────────────────
 
 (mf/defc ai-bar*
   []
   (let [prompt*        (mf/use-state "")
-        url*           (mf/use-state "")
         quality*       (mf/use-state "auto")        ; "max" | "auto"
-        preset*       (mf/use-state "auto")
-        update-sel?*  (mf/use-state true)          ; region-update toggle
-        attachments*  (mf/use-state [])            ; [{:file :name :preview}]
-        stage*        (mf/use-state nil)
-        file-input*   (mf/use-ref nil)
-        ;; Figma #71: AI rename + text-gen tool state. Local (not potok) so
-        ;; it never interferes with the design-generation busy/preview flags.
-        tool-busy*   (mf/use-state false)
-        tool-error*  (mf/use-state nil)
-        tool-result* (mf/use-state nil)
+        preset*        (mf/use-state "auto")
+        screen-open?*  (mf/use-state false)         ; Screen picker popover
+        attachments*   (mf/use-state [])            ; [{:file :name :preview}]
+        stage*         (mf/use-state nil)
+        file-input*    (mf/use-ref nil)
+        prompt-ref     (mf/use-ref nil)
+        pop-ref        (mf/use-ref nil)             ; Screen popover element (for anime entrance)
 
         busy          (mf/deref refs/ai-busy)
         preview       (mf/deref refs/ai-preview)
         error*        (mf/deref refs/ai-error)
         selected      (mf/deref refs/selected-shapes)
         has-sel?      (boolean (seq selected))
-        ;; Figma #71: lookup the first selected shape for rename/text-gen.
-        ;; `selected` is an ordered-set of ids; objects maps id -> shape.
-        objects       (mf/deref refs/workspace-page-objects)
-        first-sel     (first selected)
-        first-shape   (when first-sel (get objects first-sel))
-        single-text?  (and (= (count selected) 1)
-                           (= (:type first-shape) :text))
+
+        ;; "Update only the selection" now lives in the AI Settings modal and
+        ;; is shared via refs/ai-update-sel. nil => default true (update the
+        ;; selection when one exists), matching the bar's previous local default.
+        update-sel-raw (mf/deref refs/ai-update-sel)
+        update-sel?    (if (nil? update-sel-raw) true update-sel-raw)
 
         prompt        (deref prompt*)
-        url           (deref url*)
         quality       (deref quality*)
         preset        (deref preset*)
-        update-sel?   (deref update-sel?*)
+        screen-open?  (deref screen-open?*)
         attachments   (deref attachments*)
         stage         (deref stage*)
 
-        ;; Effective target: region update only when something is selected AND
-        ;; the user hasn't disabled it. Otherwise "new-board" — the backend's
-        ;; documented placement value (it injects `[placement target: …]` into
-        ;; the LLM prompt), so the model sees a value it was taught.
+        ;; The input pill drops from a full pill (999px) to a rounded
+        ;; rectangle (~22px) when the prompt grows past one line, mirroring
+        ;; the reference's 169px -> 48px radius shift.
+        expanded?     (or (str/includes? prompt "\n") (> (count prompt) 48))
+
+        ;; Effective target: region update only when something is selected
+        ;; AND the user hasn't disabled it (in AI Settings). Otherwise
+        ;; "new-board" — the backend's documented placement value.
         target (if (and has-sel? update-sel?) "update-selection" "new-board")
 
         on-prompt  (mf/use-fn (fn [e] (reset! prompt* (.. e -target -value))))
-        on-url     (mf/use-fn (fn [e] (reset! url* (.. e -target -value))))
         on-quality (mf/use-fn (mf/deps quality*) (fn [q] (reset! quality* q)))
-        on-preset  (mf/use-fn (fn [e] (reset! preset* (.. e -target -value))))
-        on-toggle-sel (mf/use-fn (fn [e] (reset! update-sel?* (.. e -target -checked))))
+        ;; The mode pill toggles Auto <-> Max (the two GLM/Kimi
+        ;; orchestration modes; the models are never named in the UI).
+        on-toggle-quality
+        (mf/use-fn (mf/deps quality*)
+          (fn [] (reset! quality* (if (= quality "max") "auto" "max"))))
+
+        on-toggle-screen (mf/use-fn (fn [] (swap! screen-open?* not)))
+        on-close-screen  (mf/use-fn (fn [] (reset! screen-open?* false)))
+        on-pick-screen   (mf/use-fn
+                          (fn [v] (reset! preset* v) (reset! screen-open?* false)))
 
         on-pick-files
         (mf/use-fn
@@ -217,6 +449,11 @@
          (fn []
            (some-> (mf/ref-val file-input*) dom/click)))
 
+        open-settings
+        (mf/use-fn
+         (fn []
+           (st/emit! (modal/show {:type :ai-settings}))))
+
         remove-attachment
         (mf/use-fn
          (fn [idx]
@@ -227,32 +464,36 @@
 
         on-generate
         (mf/use-fn
-         (mf/deps prompt url attachments quality preset target)
+         (mf/deps prompt attachments quality preset target)
          (fn []
-           (let [full-prompt (ai/attach-url prompt url)]
-             (if (and (str/empty? full-prompt) (empty? attachments))
-               (st/emit! (ai/set-ai-error (tr "workspace.ai.bar.need-prompt")))
-               (-> (ai/files->inputs (mapv :file attachments))
-                   (p/then
-                    (fn [inputs]
-                      (st/emit! (ai/set-ai-error nil)
-                                (ai/generate-design
-                                 {:prompt full-prompt
-                                  :files  inputs
-                                  :options {:target       target
-                                            :quality      quality
-                                            :frame-preset preset
-                                            :use-memory   true}}))))
-                   (p/catch
-                    (fn [e] (st/emit! (ai/set-ai-error (str e))))))))))
+           ;; URLs are no longer a separate field — the user drops them into
+           ;; the prompt and the backend's extract_urls parses them out.
+           (if (and (str/empty? prompt) (empty? attachments))
+             (st/emit! (ai/set-ai-error (tr "workspace.ai.bar.need-prompt")))
+             (-> (ai/files->inputs (mapv :file attachments))
+                 (p/then
+                  (fn [inputs]
+                    ;; "max" routes to the native agent loop (tool-calling +
+                    ;; vision scout); anything else stays on the byte-identical
+                    ;; single-shot spec path. No visual change to the bar.
+                    (let [ev-opts {:target       target
+                                   :quality      quality
+                                   :frame-preset preset
+                                   :use-memory   true}
+                          event (if (= quality "max")
+                                  (ai/run-agent-design
+                                   {:prompt prompt :files inputs :options ev-opts})
+                                  (ai/generate-design
+                                   {:prompt prompt :files inputs :options ev-opts}))]
+                      (st/emit! (ai/set-ai-error nil) event))))
+                 (p/catch
+                  (fn [e] (st/emit! (ai/set-ai-error (str e)))))))))
 
         on-cancel
         (mf/use-fn (fn []
                      ;; Clear the local stage text immediately: a cancelled
-                     ;; generation's HTTP request can't be interrupted, so the
-                     ;; backend may never emit its "done" progress event (it
-                     ;; returns early when it notices the abort). Without this
-                     ;; the spinner would spin beside the (now-hidden) busy flag.
+                     ;; generation's HTTP request can't be interrupted, so
+                     ;; the backend may never emit its "done" progress event.
                      (reset! stage* nil)
                      (st/emit! (ai/cancel-generation))))
 
@@ -272,73 +513,9 @@
          (mf/deps on-generate)
          (fn []
            (st/emit! (ai/clear-ai-preview))
-           (on-generate)))
+           (on-generate)))]
 
-        ;; Figma #71: "Rename with AI". Sends a crafted rename prompt through
-        ;; the existing llm_generate plumbing, best-effort extracts a short
-        ;; name from the DesignSpec response, and applies it to the first
-        ;; selected shape via dw/rename-shape-or-variant. Faithful plain-text
-        ;; response (an llm_text backend command) is DEFERRED.
-        on-rename-with-ai
-        (mf/use-fn
-         (mf/deps first-sel first-shape)
-         (fn []
-           (if-not (and first-sel first-shape)
-             (reset! tool-error* (tr "workspace.ai.bar.tool-select-shape"))
-             (do
-               (reset! tool-busy* true)
-               (reset! tool-error* nil)
-               (reset! tool-result* nil)
-               (-> (ai/invoke-generate (ai/build-tool-request (ai/rename-prompt first-shape)))
-                   (p/then
-                    (fn [result]
-                      (let [name (ai/extract-text-from-spec result)]
-                        (reset! tool-busy* false)
-                        (if (and (string? name) (not (str/empty? name)))
-                          (do (st/emit! (dw/rename-shape-or-variant first-sel name))
-                              (reset! tool-result* (tr "workspace.ai.bar.tool-renamed")))
-                          (reset! tool-error* (tr "workspace.ai.bar.tool-no-result"))))))
-                   (p/catch
-                    (fn [e]
-                      (reset! tool-busy* false)
-                      (reset! tool-error* (str e)))))))))
-
-        ;; Figma #71: "Generate text". Crafts a placeholder-copy prompt from
-        ;; the selected text layer's current content, invokes llm_generate,
-        ;; and on a successful extraction copies the copy to the clipboard
-        ;; and surfaces it as a toast for the user to paste into the layer.
-        ;; Direct application to the text layer's content is DEFERRED (needs
-        ;; the text edit pipeline + a plain-text LLM response mode).
-        on-generate-text
-        (mf/use-fn
-         (mf/deps first-shape)
-         (fn []
-           (if-not first-shape
-             (reset! tool-error* (tr "workspace.ai.bar.tool-select-shape"))
-             (do
-               (reset! tool-busy* true)
-               (reset! tool-error* nil)
-               (reset! tool-result* nil)
-               (let [label (or (:content first-shape)
-                               (:name first-shape)
-                               "")]
-                 (-> (ai/invoke-generate (ai/build-tool-request (ai/text-gen-prompt label)))
-                     (p/then
-                      (fn [result]
-                        (let [copy (ai/extract-text-from-spec result)]
-                          (reset! tool-busy* false)
-                          (if (and (string? copy) (not (str/empty? copy)))
-                            (do (some-> js/navigator .-clipboard (.writeText copy))
-                                (reset! tool-result*
-                                        (tr "workspace.ai.bar.tool-text-copied" copy)))
-                            (reset! tool-error* (tr "workspace.ai.bar.tool-no-result"))))))
-                     (p/catch
-                      (fn [e]
-                        (reset! tool-busy* false)
-                        (reset! tool-error* (str e))))))))))]
-
-    ;; Subscribe to backend ai-progress events → local stage text. Empty deps
-    ;; so it subscribes once on mount and cleans up on unmount.
+    ;; ── Subscribe to backend ai-progress events → local stage text.
     (mf/with-effect
       []
       (let [unp (ai/subscribe-progress
@@ -352,130 +529,197 @@
                         (= s "scouting")  (reset! stage* (tr "workspace.ai.bar.stage-scouting"))
                         (= s "generating") (reset! stage* (tr "workspace.ai.bar.stage-generating"))
                         (= s "finalizing") (reset! stage* (tr "workspace.ai.bar.stage-finalizing"))
+                        (= s "tool-thinking") (reset! stage* (tr "workspace.ai.bar.stage-thinking"))
+                        (= s "executing-tool") (reset! stage* (tr "workspace.ai.bar.stage-tool" (or d "")))
+                        (= s "agent-done") (reset! stage* nil)
+                        (= s "agent-max-iterations") (reset! stage* (tr "workspace.ai.bar.stage-max-iter"))
+                        (= s "agent-cancelled") (reset! stage* nil)
                         :else (reset! stage* (str d))))))]
         (fn [] (-> unp
                    (p/then (fn [u] (when (fn? u) (u))))
                    (p/catch (fn [_] nil))))))
 
-    ;; On error the backend returns Err BEFORE emitting the "done" progress
-    ;; event, so the stage* set by "generating"/"finalizing" would never clear
-    ;; and the spinner would spin forever beside the red error box. Clear the
-    ;; stage text whenever an error appears.
+    ;; Clear the stage text whenever an error appears (the backend returns Err
+    ;; BEFORE emitting "done", so the spinner would otherwise spin forever).
     (mf/with-effect [error*]
       (when error* (reset! stage* nil)))
 
-    ;; Single root: a display:contents wrapper so the absolute bar + fixed
-    ;; modals position against the workspace :section / viewport, not this div.
+    ;; ── Auto-grow the prompt textarea to fit its content (up to 160px),
+    ;; so the input pill expands the way the reference's does. Runs on
+    ;; every prompt change, including the regenerate path that re-fills it.
+    (mf/with-effect [prompt]
+      (when-let [el (mf/ref-val prompt-ref)]
+        (set! (.. el -style -height) "auto")
+        (let [sh (.. el -scrollHeight)]
+          (set! (.. el -style -height) (str (min sh 160) "px"))))
+      nil)
+
+    ;; ── Screen picker: anime.js entrance + Escape-to-close. The popover
+    ;; element starts at opacity:0 (CSS); pop-in tweens it in, and under
+    ;; reduced motion / missing anime it forces the visible end state.
+    (mf/with-effect [screen-open?]
+      (if screen-open?
+        (do
+          (aim/pop-in (mf/ref-val pop-ref))
+          (let [on-key (fn [e] (when (= (.-key e) "Escape") (reset! screen-open?* false)))]
+            (.addEventListener js/document "keydown" on-key)
+            (fn [] (.removeEventListener js/document "keydown" on-key))))
+        (fn [] nil)))
+
+    ;; Single root: a display:contents wrapper so the absolute dock + fixed
+    ;; modal position against the workspace :section / viewport, not this div.
     [:div {:style #js {"display" "contents"}}
      (style-block)
 
      [:div.ai-root
-      [:div.ai-bar
-       ;; prompt row
-       [:div.ai-row
-        [:div.ai-grow
-         [:textarea.ai-textarea
-          {:placeholder (tr "workspace.ai.bar.placeholder")
+      [:div.ai-dock
+       ;; ── Primary row: matches the reference exactly ───────────────────
+       [:div.ai-primary
+        ;; cluster pill: [mode | paperclip | settings]
+        [:div.ai-cluster
+         [:button.ai-mode
+          {:type "button"
+           :class (when (= quality "max") "is-max")
+           :on-click on-toggle-quality
+           :on-mouse-enter aim/hov-white-in
+           :on-mouse-leave aim/hov-white-out
+           :on-mouse-down aim/press-white-in
+           :on-mouse-up aim/press-white-out
+           :aria-pressed (str (= quality "max"))}
+          ;; Reference: the Auto/Max glyph sits on the RIGHT of the label.
+          [:span (if (= quality "max")
+                   (tr "workspace.ai.bar.mode-max")
+                   (tr "workspace.ai.bar.mode-auto"))]
+          [:span.ai-i-anim {:key (str "mode-" quality)}
+           (if (= quality "max") lucide-sparkles lucide-refresh-cw)]]
+         [:button.ai-circle
+          {:type "button" :on-click open-picker
+           :title (tr "workspace.ai.bar.attach")
+           :on-mouse-enter aim/hov-white-in
+           :on-mouse-leave aim/hov-white-out
+           :on-mouse-down aim/press-white-in
+           :on-mouse-up aim/press-white-out}
+          lucide-paperclip]
+         [:button.ai-circle
+          {:type "button" :on-click open-settings
+           :title (tr "workspace.ai.bar.settings")
+           :on-mouse-enter aim/hov-white-in
+           :on-mouse-leave aim/hov-white-out
+           :on-mouse-down aim/press-white-in
+           :on-mouse-up aim/press-white-out}
+          lucide-settings]
+
+         ;; attachment thumbnails live inside the cluster so the paperclip's
+         ;; result is visible without leaving the primary bar.
+         (when (seq attachments)
+           [:div.ai-thumbs
+            (for [idx (range (count attachments))]
+              (let [a (get attachments idx)]
+                [:div.ai-thumb {:key idx
+                                :style #js {"animationDelay" (str (* idx 40) "ms")}}
+                 [:img {:src (:preview a) :alt (:name a)}]
+                 [:span.ai-thumb-x {:on-click #(remove-attachment idx)} "×"]]))])]
+
+        ;; input pill: [prompt textarea | coral send disc]
+        [:div.ai-input-pill {:class (when expanded? "is-expanded")}
+         [:textarea.ai-prompt
+          {:ref prompt-ref
+           :placeholder (tr "workspace.ai.bar.placeholder")
            :value prompt
            :on-change on-prompt
-           :rows 2}]]]
+           :rows 1}]
+         [:button.ai-send
+          {:type "button"
+           :on-click on-generate
+           :disabled (or busy (and (str/empty? prompt) (empty? attachments)))
+           :on-mouse-enter aim/hov-coral-in
+           :on-mouse-leave aim/hov-coral-out
+           :on-mouse-down aim/press-coral-in
+           :on-mouse-up aim/press-coral-out}
+          (if busy (spinner) lucide-arrow-up)]]
 
-       ;; attachments row (only when there are some)
-       (when (seq attachments)
-         [:div.ai-attach
-          (for [idx (range (count attachments))]
-            (let [a (get attachments idx)]
-              [:div.ai-thumb {:key idx}
-               [:img {:src (:preview a) :style #js {"width" "40px" "height" "40px" "object-fit" "cover"
-                                                    "borderRadius" "8px"}
-                      :alt (:name a)}]
-               [:span.ai-thumb-x {:on-click #(remove-attachment idx)} "×"]]))])
+        ;; screen pill: frame-preset picker (custom themed popover).
+        [:div.ai-screen-wrap
+         [:button.ai-screen
+          {:type "button"
+           :class (when screen-open? "is-open")
+           :on-click on-toggle-screen
+           :aria-expanded (str screen-open?)
+           :aria-haspopup "listbox"
+           :title (tr "workspace.ai.bar.screen-tooltip")
+           :on-mouse-enter aim/hov-white-in
+           :on-mouse-leave aim/hov-white-out
+           :on-mouse-down aim/press-white-in
+           :on-mouse-up aim/press-white-out}
+          (preset-icon preset)
+          [:span (preset-label preset)]
+          lucide-chevron-down]
+         (when screen-open?
+           [:div.ai-screen-back {:on-click on-close-screen}
+            [:div.ai-screen-pop {:ref pop-ref :role "listbox"
+                                 :on-click #(.stopPropagation %)}
+             (for [p presets]
+               (let [cur? (= (:v p) preset)]
+                 [:button.ai-screen-opt
+                  {:key (:v p)
+                   :type "button"
+                   :role "option"
+                   :aria-selected (str cur?)
+                   :class (when cur? "is-cur")
+                   :on-click #(on-pick-screen (:v p))}
+                  (:icon p)
+                  [:span (:label p)]
+                  (when cur? lucide-check)]))]])]]
 
-       ;; reference URL row
-       [:div.ai-row
-        [:div.ai-grow
-         [:input.ai-input
-          {:type "url"
-           :placeholder (tr "workspace.ai.bar.url-placeholder")
-           :value url
-           :on-change on-url}]]]
-
-       ;; controls row
-       [:div.ai-controls
-        [:button.ai-icon-btn {:on-click open-picker :title (tr "workspace.ai.bar.attach")} "+"]
-        [:div.ai-seg
-         [:button {:class (when (= quality "max") "on") :on-click #(on-quality "max")}
-          (tr "workspace.ai.bar.mode-max")]
-         [:button {:class (when (= quality "auto") "on") :on-click #(on-quality "auto")}
-          (tr "workspace.ai.bar.mode-auto")]]
-        [:select.ai-select {:value preset :on-change on-preset}
-         (for [[v label] presets]
-           [:option {:key v :value v} label])]
-        (when has-sel?
-          [:label.ai-chk
-           [:input {:type "checkbox" :checked update-sel? :on-change on-toggle-sel}]
-           (tr "workspace.ai.bar.update-selection")])
-        [:div.ai-grow]
-        [:button.ai-icon-btn {:on-click #(st/emit! (modal/show {:type :ai-settings}))
-                              :title (tr "workspace.ai.bar.settings")} "⚙"]
-        (if busy
-          [:button.ai-btn.ai-btn-ghost {:on-click on-cancel}
-           (spinner) (tr "workspace.ai.bar.cancel")]
-          [:button.ai-btn.ai-btn-primary {:on-click on-generate
-                                          :disabled (and (str/empty? prompt)
-                                                          (str/empty? url)
-                                                          (empty? attachments))}
-           (tr "workspace.ai.bar.generate")])]
-
-       ;; Figma #71: AI tools row — rename layers + generate text. Reuses the
-       ;; existing llm_generate plumbing (see on-rename-with-ai / on-generate-text).
-       ;; Additive: a new row below the controls, never modifies existing rows.
-       [:div.ai-controls
-        [:button.ai-btn.ai-btn-ghost
-         {:on-click on-rename-with-ai
-          :disabled (or busy @tool-busy* (not has-sel?))
-          :title (tr "workspace.ai.bar.tool-rename-tooltip")}
-         (if @tool-busy* (spinner) (tr "workspace.ai.bar.tool-rename"))]
-        [:button.ai-btn.ai-btn-ghost
-         {:on-click on-generate-text
-          :disabled (or busy @tool-busy* (not single-text?))
-          :title (tr "workspace.ai.bar.tool-text-tooltip")}
-         (tr "workspace.ai.bar.tool-generate-text")]
-        [:div.ai-grow]]
-
-       ;; stage + error
+       ;; ── Stage + error (generation progress) ──────────────────────────
        (when (or stage busy)
-         [:div.ai-stage (spinner) (or stage (tr "workspace.ai.bar.working"))])
-       (when error*
-         [:div.ai-err error*])
-       ;; Figma #71: tool result / error surface (local state, additive).
-       (when @tool-result*
-         [:div.ai-stage @tool-result*])
-       (when @tool-error*
-         [:div.ai-err @tool-error*])
+         [:div.ai-stage
+          (stage-dots)
+          (or stage (tr "workspace.ai.bar.working"))
+          (when busy
+            [:button.ai-cancel {:type "button" :on-click on-cancel}
+             (tr "workspace.ai.bar.cancel")])])
+       (when error* [:div.ai-err error*])
 
        ;; hidden file input
        [:input {:type "file" :accept "image/*" :multiple true
                 :ref file-input* :style #js {"display" "none"}
-                :on-change on-pick-files}]]]
+                :on-change on-pick-files}]]
 
-     ;; preview modal
-     (when-let [p preview]
-       [:div.ai-overlay {:on-click on-cancel-preview}
-        [:div.ai-modal {:on-click #(.stopPropagation %)}
-         [:div.ai-modal-head
-          [:div {:style #js {"display" "flex" "alignItems" "center" "gap" "10px"}}
-           [:span.ai-modal-title (tr "workspace.ai.bar.preview-title")]
-           [:span.ai-badge (if (= (:target p) "update-selection")
-                             (tr "workspace.ai.bar.preview-region")
-                             (tr "workspace.ai.bar.preview-full"))]]
-          [:button.ai-icon-btn {:on-click on-cancel-preview} "×"]]
-         [:div.ai-modal-body
-          (dg/spec->preview (:spec p))]
-         [:div.ai-modal-foot
-          [:button.ai-btn.ai-btn-ghost {:on-click on-regenerate}
-           (tr "workspace.ai.bar.regenerate")]
-          [:button.ai-btn.ai-btn-ghost {:on-click on-cancel-preview}
-           (tr "workspace.ai.bar.cancel")]
-          [:button.ai-btn.ai-btn-primary {:on-click on-apply}
-           (tr "workspace.ai.bar.apply")]]]])]))
+      ;; ── Preview modal ───────────────────────────────────────────────────
+      (when-let [p preview]
+        [:div.ai-overlay {:on-click on-cancel-preview}
+         [:div.ai-modal {:on-click #(.stopPropagation %)}
+          [:div.ai-modal-head
+           [:div {:style #js {"display" "flex" "alignItems" "center" "gap" "10px"}}
+            [:span.ai-modal-title (tr "workspace.ai.bar.preview-title")]
+            [:span.ai-badge (if (= (:target p) "update-selection")
+                              (tr "workspace.ai.bar.preview-region")
+                              (tr "workspace.ai.bar.preview-full"))]]
+           [:button.ai-close {:type "button" :on-click on-cancel-preview
+                              :on-mouse-enter aim/hov-white-in
+                              :on-mouse-leave aim/hov-white-out
+                              :on-mouse-down aim/press-white-in
+                              :on-mouse-up aim/press-white-out}
+            lucide-x]]
+          [:div.ai-modal-body
+           (dg/spec->preview (:spec p))]
+          [:div.ai-modal-foot
+           [:button.ai-btn.ai-btn-ghost {:on-click on-regenerate
+                                         :on-mouse-enter aim/hov-white-in
+                                         :on-mouse-leave aim/hov-white-out
+                                         :on-mouse-down aim/press-white-in
+                                         :on-mouse-up aim/press-white-out}
+            (tr "workspace.ai.bar.regenerate")]
+           [:button.ai-btn.ai-btn-ghost {:on-click on-cancel-preview
+                                         :on-mouse-enter aim/hov-white-in
+                                         :on-mouse-leave aim/hov-white-out
+                                         :on-mouse-down aim/press-white-in
+                                         :on-mouse-up aim/press-white-out}
+            (tr "workspace.ai.bar.cancel")]
+           [:button.ai-btn.ai-btn-primary {:on-click on-apply
+                                            :on-mouse-enter aim/hov-coral-in
+                                            :on-mouse-leave aim/hov-coral-out
+                                            :on-mouse-down aim/press-coral-in
+                                            :on-mouse-up aim/press-coral-out}
+            (tr "workspace.ai.bar.apply")]]]])]]))

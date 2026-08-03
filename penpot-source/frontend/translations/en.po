@@ -10238,6 +10238,12 @@ msgstr "Update only the selection"
 msgid "workspace.ai.bar.settings"
 msgstr "AI settings"
 
+msgid "workspace.ai.bar.screen-tooltip"
+msgstr "Canvas size — choose a device frame or let the AI decide"
+
+msgid "workspace.ai.bar.orb-title"
+msgstr "Toggle AI region update on the selection"
+
 msgid "workspace.ai.bar.cancel"
 msgstr "Cancel"
 
@@ -10270,6 +10276,15 @@ msgstr "Generating the design…"
 
 msgid "workspace.ai.bar.stage-finalizing"
 msgstr "Finalizing…"
+
+msgid "workspace.ai.bar.stage-thinking"
+msgstr "Thinking…"
+
+msgid "workspace.ai.bar.stage-tool"
+msgstr "Running: %s"
+
+msgid "workspace.ai.bar.stage-max-iter"
+msgstr "Reached the step limit — applying what’s done"
 
 msgid "workspace.ai.bar.preview-title"
 msgstr "Preview"
@@ -10315,6 +10330,18 @@ msgstr "URL fetching"
 
 msgid "workspace.ai.settings.section-memory"
 msgstr "Memory"
+
+msgid "workspace.ai.settings.section-selection"
+msgstr "Selection tools"
+
+msgid "workspace.ai.settings.selection-none"
+msgstr "No layer selected"
+
+msgid "workspace.ai.settings.selection-current"
+msgstr "Selected: %s"
+
+msgid "workspace.ai.settings.selection-hint"
+msgstr "These act on the layer currently selected on the canvas. 'Update only the selection' also decides where new generations land — on the selection when one is active, otherwise on a fresh board."
 
 msgid "workspace.ai.settings.provider"
 msgstr "Provider"

@@ -756,6 +756,9 @@ pub fn run() {
             llm::llm_generate,
             llm::llm_cancel,
             llm::llm_clear_memory,
+            llm::llm_agent_step,
+            llm::llm_agent_reset,
+            llm::llm_agent_progress,
             fonts::fonts_download_family,
             code_export::write_code_zip,
         ])
