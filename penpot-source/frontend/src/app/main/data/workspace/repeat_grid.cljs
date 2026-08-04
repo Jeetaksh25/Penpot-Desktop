@@ -64,7 +64,7 @@
           (rx/empty)
           (let [shapes       (keep #(get objects %) ids)
                 rect         (or (gsh/shapes->rect shapes)
-                                 (grc/rect 0 0 0 0))
+                                 (grc/make-rect 0 0 0 0))
                 rect-w       (:width  rect 0)
                 rect-h       (:height rect 0)
                 r            (max 1 (int rows))

@@ -166,7 +166,7 @@
   (page `page-id`). `comments` is a vector of comment maps, or nil/empty to
   clear the slot. `changes` must carry file-data + page context."
   [changes shape-id page-id comments]
-  (let [value (if (or (nil? comments) (empty? comments)) "" (pr-str comments))]
+  (let [value (if (or (nil? comments) (empty? comments)) nil (pr-str comments))]
     (pcb/set-plugin-data changes :shape shape-id page-id
                          ovion-namespace shape-comments-key value)))
 
@@ -176,7 +176,7 @@
   must carry file-data + page context (mirrors plugin_registry.cljs's
   page-level set-plugin-data arity)."
   [changes page-id comments]
-  (let [value (if (or (nil? comments) (empty? comments)) "" (pr-str comments))]
+  (let [value (if (or (nil? comments) (empty? comments)) nil (pr-str comments))]
     (pcb/set-plugin-data changes :page page-id
                          ovion-namespace page-comments-key value)))
 
@@ -197,7 +197,7 @@
             shape    (get-in page [:objects shape-id])
             existing (read-comments shape)
             new-vec  (update-fn existing)
-            value    (if (or (nil? new-vec) (empty? new-vec)) "" (pr-str new-vec))]
+            value    (if (or (nil? new-vec) (empty? new-vec)) nil (pr-str new-vec))]
         (rx/of (dwu/start-undo-transaction undo-id)
                (dch/commit-changes
                 (-> (pcb/empty-changes it)
@@ -220,7 +220,7 @@
       (let [undo-id  (js/Symbol)
             existing (read-page-comments page)
             new-vec  (update-fn existing)
-            value    (if (or (nil? new-vec) (empty? new-vec)) "" (pr-str new-vec))]
+            value    (if (or (nil? new-vec) (empty? new-vec)) nil (pr-str new-vec))]
         (rx/of (dwu/start-undo-transaction undo-id)
                (dch/commit-changes
                 (-> (pcb/empty-changes it)

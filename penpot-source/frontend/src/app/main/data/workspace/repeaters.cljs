@@ -265,7 +265,7 @@
                     delta        (gpt/point 0 0)
 
                     rect         (or (gsh/shapes->rect [shape])
-                                     (grc/rect 0 0 0 0))
+                                     (grc/make-rect 0 0 0 0))
                     rect-w       (:width  rect 0)
                     rect-h       (:height rect 0)
                     gap-w        (or (:gap-w cfg) 0)

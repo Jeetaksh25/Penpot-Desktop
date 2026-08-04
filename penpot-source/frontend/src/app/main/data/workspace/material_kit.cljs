@@ -134,9 +134,9 @@
   future Material-theme generator can consume the same token set."
   []
   (into []
-        (cat
-         (map #(token->library-color % "Material 3/Light") m3-light-tokens)
-         (map #(token->library-color % "Material 3/Dark")  m3-dark-tokens))))
+        cat
+        [(map #(token->library-color % "Material 3/Light") m3-light-tokens)
+         (map #(token->library-color % "Material 3/Dark")  m3-dark-tokens)]))
 
 ;; ── M3 component specs (DesignSpec frames/groups) ───────────────────────────
 ;;

@@ -115,11 +115,11 @@
 
         handle-focus-stop-color
         (mf/use-fn
-         (mf/deps on-select-stop on-focus-stop-offset index)
+         (mf/deps on-select-stop on-focus-stop-color index)
          (fn []
            (on-select-stop index)
            (when on-focus-stop-color
-             (on-focus-stop-offset))))
+             (on-focus-stop-color))))
 
         handle-blur-stop-color
         (mf/use-fn
