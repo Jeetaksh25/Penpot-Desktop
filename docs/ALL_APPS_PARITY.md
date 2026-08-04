@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **54** | Implemented end-to-end + verified (commit referenced). |
+| ✅ done | **61** | Implemented end-to-end + verified (commit referenced). |
 | 🟡 half-done | **1** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **40** | Not implemented yet. |
-| ⚠️ not-working | **1** | Present but broken. |
-| **Remaining** | **42** | half-done + missing + not-working. |
+| 🔴 missing | **33** | Not implemented yet. |
+| ⚠️ not-working | **0** | Present but broken. |
+| **Remaining** | **34** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — half-done sweep ✅ (24/25 half-done gaps completed end-to-end; P2.16 deferred on host-block). Next: 40 🔴 missing + 1 ⚠️ not-working.
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 33 missing / 0 not-working / 34 remaining. Building the 33 🔴 missing next.
 
-Most-recent done: **P0.13 / P2.15 / P1.20 / P2.05 / P1.23** + 19 more half-done gaps (C5 half-done sweep — HTML authoring menu + export, DS versions panel, redline overlay + embed, site-audit tab, spring/flow-list interactions, Code Connect persistence, command-bar swap shortcut). P2.16 deferred (host-block).
+Most-recent done: **P0.08 / P0.09 / P0.18 / P1.17 / P1.25 / P1.26 / P1.27** — reconciled 7 stale State lines to ✅ done (Shape Builder cluster + outline-stroke, built in Phase 1 daa9d6c/da885ee, code-verified 2026-08-04).
 
 ## Contents
 
@@ -142,12 +142,12 @@ Sorted P0 → P1 → P2.
 
 #### P0.08 Face arrangement computation (Divide-style region splitting) as the geometric basis for region selection
 
-- **State:** 🔴 missing  ·  **Sources:** Adobe Illustrator
+- **State:** ✅ done (Phase 1 daa9d6c — arrangement.cljc DCEL planar subdivision, code-verified 2026-08-04)  ·  **Sources:** Adobe Illustrator
 - **Detail / build direction:** bool.cljc implements the 4 Shape Modes but has no Divide routine returning the full set of non-overlapping faces with owning sub-paths. Recommended: add a divide-arrangement function in a new common/types/path/arrangement.cljc that builds the planar subdivision (DCEL) and returns all faces as independent paths; this is the prerequisite for Shape Builder hover-hit-testing AND the Pathfinder Divide/Trim/Merge/Crop ops. Pure CLJC data logic, unblocked by no-build. Reuse existing split-ts and intersection helpers.
 
 #### P0.09 Interactive hover-region Shape Builder tool (face/edge highlight + click-drag-to-merge + Alt-erase)
 
-- **State:** 🔴 missing  ·  **Sources:** Adobe Illustrator
+- **State:** ✅ done (Phase 1 da885ee — interactive Shape Builder edit-mode in editor.cljs, code-verified 2026-08-04)  ·  **Sources:** Adobe Illustrator
 - **Detail / build direction:** ui/workspace/shapes/path/editor.cljs L513-535 registers :shape-builder as a stub text-badge only; comment L517-518 confirms '#28 — drag merge/extract/subtract via the boolean engine is not yet wired.' Recommended: implement a planar face-graph arrangement routine (compute all segment intersections, split into edges, form non-overlapping faces via a half-edge/DCEL structure) reusing bool.cljc's intersection helpers (line-line/line-curve/curve-curve); add a cursor-tracking overlay (reuse pixel_overlay.cljs loupe machinery) that highlights the face/edge under the cursor; implement click-to-isolate-face (Divide-equivalent), drag-across-faces-to-unite, and Alt/Option erase (delete face/edge). See the dedicated shapeBuilder section for the full build plan.
 
 #### P0.10 Local MCP server exposing the design surface to external AI agents (run_code/design_to_code/code_to_design, get_node/layer/variables/variants/screenshot, create_instance, apply_design)
@@ -192,7 +192,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.18 Shape Builder Alt/Option erase-mode (click/drag to delete faces and edges interactively on an N-path arrangement)
 
-- **State:** 🔴 missing  ·  **Sources:** Adobe Illustrator
+- **State:** ✅ done (Phase 1 da885ee — Alt/Option erase-mode in shape-builder, code-verified 2026-08-04)  ·  **Sources:** Adobe Illustrator
 - **Detail / build direction:** Ovion's :difference is a whole-shape top-minus-bottom op requiring selection ordering; no edge-deletion primitive exists. Recommended: in the Shape Builder edit-mode (see face-graph engine above), add an Alt/Option modifier that flips the gesture to erase — click a face to remove its sub-path contribution, drag to remove several, click an edge to delete that segment. The face-graph arrangement already models edges as first-class, so erase is a removal op on the DCEL. Bundled with the Shape Builder build plan.
 
 #### P0.19 Sync external React component libraries from Git / Storybook / npm into the design library
@@ -285,7 +285,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.17 Gap Detection + open-path-as-closed tolerance for region composition
 
-- **State:** 🔴 missing  ·  **Sources:** Adobe Illustrator
+- **State:** ✅ done (Phase 1 daa9d6c — gap-tolerance + open-path-as-closed in arrangement.cljc, code-verified 2026-08-04)  ·  **Sources:** Adobe Illustrator
 - **Detail / build direction:** bool.cljc requires genuine geometric intersection; an open path or sub-pixel gap yields no region, so a Shape Builder built on it fails on imperfect pen-tool output. Recommended: add a gap-tolerance parameter (configurable px threshold + presets) that snaps near-coincident endpoints before arrangement computation, and an open-path-as-closed toggle, in the new arrangement.cljc. Essential for Shape Builder usability on Ovion's own pen-tool output. Pure CLJC, unblocked.
 
 #### P1.18 Glass effect rendering (Liquid Glass for iOS 26 / macOS 26)
@@ -325,17 +325,17 @@ Sorted P0 → P1 → P2.
 
 #### P1.25 Outline Stroke (borders -> filled shapes) runtime-active
 
-- **State:** ⚠️ not-working  ·  **Sources:** Sketch, Adobe Illustrator
+- **State:** ✅ done (Phase 1 daa9d6c — outline-stroke frontend CLJS ptk, render-wasm fallback-only, code-verified 2026-08-04)  ·  **Sources:** Sketch, Adobe Illustrator
 - **Detail / build direction:** shapes_to_path.cljs L235-252 delegates to wasm.api/stroke-to-path GATED on render-wasm/v1 which is OFF in the desktop build — safe no-op; context-menu entry do-outline-stroke is wired. Recommended: implement a frontend stroke-to-path (offset each side of the stroke outline by half-width using the offset-vector routine, close the ends) so it works on the SVG renderer without render-wasm. Depends on upgrading offset-vector to handle curves (see Offset Path gap). Pure CLJS, unblocked.
 
 #### P1.26 Paint-bucket / vector-network region flood fill (enclosed-region graph-cycle detection -> filled sub-path)
 
-- **State:** 🔴 missing  ·  **Sources:** Adobe Illustrator
+- **State:** ✅ done (Phase 1 da885ee — paint-bucket flood-fill via face-graph in editor.cljs, code-verified 2026-08-04)  ·  **Sources:** Adobe Illustrator
 - **Detail / build direction:** editor.cljs L524-535 registers :paint-bucket as a stub badge; comment L519-520 confirms '#29 — enclosed-region graph-cycle detection not yet wired.' Recommended: implement graph-cycle detection on the path node/segment topology (a bounded region is a cycle enclosing no other un-split region) reusing the Shape Builder face-graph; on click, create a filled sub-path for the bounded region. Bundled with the Shape Builder face-graph work. Pure CLJC + frontend, unblocked.
 
 #### P1.27 Pathfinder panel: 6 Pathfinders (Divide, Trim, Merge, Crop, Outline, Minus-Back) + Divide boolean op
 
-- **State:** 🔴 missing  ·  **Sources:** Adobe Illustrator, Pixso
+- **State:** ✅ done (Phase 1 da885ee — pathfinder.cljs panel: 6 Pathfinders + Divide, code-verified 2026-08-04)  ·  **Sources:** Adobe Illustrator, Pixso
 - **Detail / build direction:** Only the 4 Shape Modes exist in bool.cljs / bool.cljs menu; no Divide/Trim/Merge/Crop/Outline/Minus-Back; en.po has none of these labels. Recommended: add a pathfinder.cljs panel with the 6 ops backed by new bool.cljc routines — Divide (face-graph split, shared with Shape Builder), Trim (remove hidden parts + strokes), Merge (unite same-fill faces), Crop (top-object clip), Outline (edges-as-segments), Minus-Back (reverse difference). Add en.po labels. Divide is the shared prerequisite with Shape Builder. Pure CLJC + UI, unblocked.
 
 #### P1.28 Plugin Center marketplace + Figma plugin compatibility
