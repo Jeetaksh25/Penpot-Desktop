@@ -23,9 +23,13 @@
                    :soft-light :hard-light :difference :exclusion
                    :hue :saturation :color :luminosity}]]
    ;; Figma-parity progressive blur (gap #60). Same optional falloff params
-   ;; as the layer blur; absent = :value is uniform = today's behavior. The
-   ;; renderer gradient-blur kernel is deferred; the fields round-trip.
+   ;; as the layer blur (mirrored for schema symmetry); absent = :value is
+   ;; uniform = today's behavior. NOTE: background blur renders via CSS
+   ;; backdrop-filter / the render-wasm path (uniform), so the blur-menu
+   ;; UI suppresses the progressive toggle for background blur — these
+   ;; fields only round-trip if set by a loaded file. The fields round-trip.
    [:progressive? {:optional true} :boolean]
+   [:direction {:optional true} ::sm/safe-number]
    [:start-radius {:optional true} ::sm/safe-number]
    [:start-offset {:optional true} ::sm/safe-number]
    [:end-offset {:optional true} ::sm/safe-number]])

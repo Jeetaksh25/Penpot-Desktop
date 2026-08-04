@@ -23,12 +23,18 @@
                    :soft-light :hard-light :difference :exclusion
                    :hue :saturation :color :luminosity}]]
    ;; Figma-parity progressive blur (gap #60). When :progressive? is true
-   ;; the blur falloff varies across the shape (gradient-like blur). The
-   ;; :start-radius / :start-offset / :end-offset params describe the
-   ;; falloff region (absent = :value is uniform = today's behavior). The
-   ;; renderer gradient-blur kernel is deferred (significant GPU work, no
-   ;; build to verify); the fields round-trip on the blur map.
+   ;; the blur falloff varies across the shape (gradient-like blur): the
+   ;; layer is blurred at :start-radius along the start edge and ramps to
+   ;; sharp (radius 0) along the end edge, across the [:start-offset,
+   ;; :end-offset] falloff region (0..1 of the selrect, normalized).
+   ;; :direction (degrees, 0=right 90=down 180=left 270=up, quantized to
+   ;; the nearest cardinal by the renderer) sets the falloff axis.
+   ;; Absent :progressive? (or false) = :value is a uniform blur = today's
+   ;; behavior (byte-identical). The renderer emits an N-band stacked
+   ;; feGaussianBlur graph (filters.cljs progressive-blur-bands); the
+   ;; fields round-trip on the blur map.
    [:progressive? {:optional true} :boolean]
+   [:direction {:optional true} ::sm/safe-number]
    [:start-radius {:optional true} ::sm/safe-number]
    [:start-offset {:optional true} ::sm/safe-number]
    [:end-offset {:optional true} ::sm/safe-number]])

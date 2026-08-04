@@ -124,17 +124,43 @@
 
         ;; Figma-parity progressive blur (gap #60). When :progressive? is
         ;; true the blur falloff varies across the shape (gradient-like
-        ;; blur). The :start-radius / :start-offset / :end-offset params
-        ;; describe the falloff region. All optional; absent = :value is a
-        ;; uniform blur = today's behavior. The renderer gradient-blur
-        ;; kernel is deferred (significant GPU work, no build to verify);
-        ;; the fields round-trip on the blur map via change!.
+        ;; blur). The :start-radius / :start-offset / :end-offset /
+        ;; :direction params describe the falloff region. All optional;
+        ;; absent = :value is a uniform blur = today's behavior. Toggling
+        ;; progressive ON seeds the falloff defaults (direction 90 = start
+        ;; edge at the TOP holding the full :start-radius, ramping to sharp
+        ;; (radius 0) at the bottom — same "start edge = strong" convention
+        ;; as Fade; start-radius = current :value; offsets 0..1) so the
+        ;; renderer always receives a complete map; toggling OFF just clears
+        ;; :progressive? (the falloff fields are left in place so a re-toggle
+        ;; restores the user's last falloff). The N-band stacked
+        ;; feGaussianBlur renderer lives in filters.cljs
+        ;; (progressive-blur-bands); the fields round-trip via change!.
         progressive? (boolean (:progressive? value))
         handle-toggle-progressive
         (mf/use-fn
          (mf/deps change-fn blur-key)
          (fn []
-           (change-fn #(update-in % [blur-key :progressive?] (fn [v] (not (boolean v)))))))
+           (change-fn
+            (fn [shape]
+              (let [cur (get-in shape [blur-key :progressive?])]
+                (if (true? cur)
+                  (assoc-in shape [blur-key :progressive?] false)
+                  (-> shape
+                      (assoc-in [blur-key :progressive?] true)
+                      (update blur-key
+                              (fn [b]
+                                (-> b
+                                    (assoc :direction (or (:direction b) 90))
+                                    (assoc :start-radius (or (:start-radius b) (:value b)))
+                                    (assoc :start-offset (or (:start-offset b) 0))
+                                    (assoc :end-offset (or (:end-offset b) 1))))))))))))
+
+        handle-change-direction
+        (mf/use-fn
+         (mf/deps change-fn blur-key)
+         (fn [v]
+           (change-fn #(assoc-in % [blur-key :direction] v))))
 
         handle-change-start-radius
         (mf/use-fn
@@ -284,42 +310,60 @@
           :on-change handle-blend-mode-change}]
 
         ;; Figma-parity progressive blur (gap #60). Toggle + falloff params.
-        ;; Rendered only when the more-options panel is open; default off =
-        ;; today's uniform blur. Renderer falloff deferred.
-        [:div {:class (stl/css :blur-progressive-row)
-               :data-testid "blur.progressive-options"}
-         [:label {:class (stl/css :blur-progressive-toggle)}
-          [:input {:type "checkbox"
-                   :checked progressive?
-                   :on-change handle-toggle-progressive}]
-          [:span {:class (stl/css :blur-progressive-label)}
-           (tr "workspace.options.blur-options.progressive")]]
-         (when progressive?
-           [:div {:class (stl/css :blur-progressive-params)}
-            [:> numeric-input*
-             {:class (stl/css :numeric-input)
-              :placeholder "--"
-              :min 0
-              :text-icon "value"
-              :on-change handle-change-start-radius
-              :name "blur-start-radius"
-              :value (:start-radius value)}]
-            [:> numeric-input*
-             {:class (stl/css :numeric-input)
-              :placeholder "--"
-              :min 0
-              :text-icon "value"
-              :on-change handle-change-start-offset
-              :name "blur-start-offset"
-              :value (:start-offset value)}]
-            [:> numeric-input*
-             {:class (stl/css :numeric-input)
-              :placeholder "--"
-              :min 0
-              :text-icon "value"
-              :on-change handle-change-end-offset
-              :name "blur-end-offset"
-              :value (:end-offset value)}]])]])]))
+        ;; Rendered only for LAYER blur — background blur composites via CSS
+        ;; backdrop-filter (uniform), so the progressive toggle is suppressed
+        ;; for :background-blur. Default off = today's uniform blur. The
+        ;; N-band stacked feGaussianBlur renderer lives in filters.cljs
+        ;; (progressive-blur-bands); the fields round-trip on the blur map.
+        (when (= blur-key :blur)
+          [:div {:class (stl/css :blur-progressive-row)
+                 :data-testid "blur.progressive-options"}
+           [:label {:class (stl/css :blur-progressive-toggle)}
+            [:input {:type "checkbox"
+                     :checked progressive?
+                     :on-change handle-toggle-progressive}]
+            [:span {:class (stl/css :blur-progressive-label)}
+             (tr "workspace.options.blur-options.progressive")]]
+           (when progressive?
+             [:div {:class (stl/css :blur-progressive-params)}
+              [:> numeric-input*
+               {:class (stl/css :numeric-input)
+                :placeholder "--"
+                :min 0
+                :text-icon "value"
+                :on-change handle-change-start-radius
+                :name "blur-start-radius"
+                :value (:start-radius value)}]
+              [:> numeric-input*
+               {:class (stl/css :numeric-input)
+                :placeholder "--"
+                :min 0
+                :max 1
+                :step 0.01
+                :text-icon "value"
+                :on-change handle-change-start-offset
+                :name "blur-start-offset"
+                :value (:start-offset value)}]
+              [:> numeric-input*
+               {:class (stl/css :numeric-input)
+                :placeholder "--"
+                :min 0
+                :max 1
+                :step 0.01
+                :text-icon "value"
+                :on-change handle-change-end-offset
+                :name "blur-end-offset"
+                :value (:end-offset value)}]
+              [:> numeric-input*
+               {:class (stl/css :numeric-input)
+                :placeholder "--"
+                :min 0
+                :max 360
+                :step 90
+                :text-icon "value"
+                :on-change handle-change-direction
+                :name "blur-direction"
+                :value (:direction value)}]])])])]))
 
 (defn get-blurs [values]
   (cond-> []

@@ -135,3 +135,52 @@
   border-right: $b-1 solid var(--color-background-quaternary);
   border-left: $b-1 solid transparent;
 }
+
+// Figma-parity progressive blur (gap #60) + fade effect (gap #60 fade).
+// Shared row/toggle/label/params classes used by BOTH the progressive
+// layer-blur controls (blur.cljs blur-menu-content*) and the fade effect
+// controls (blur.cljs blur-menu*). A vertical stack: a checkbox row to
+// toggle the effect on/off, then a wrapping flex row of numeric inputs for
+// the falloff / opacity params. No width constraint so the params wrap onto
+// a second line on narrow sidebars (matches the second-row 3-column grid).
+.blur-progressive-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xxs);
+  padding: var(--sp-xxs) 0 0;
+}
+
+.blur-progressive-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xxs);
+  cursor: pointer;
+  user-select: none;
+
+  & > input {
+    margin: 0;
+    width: $sz-16;
+    height: $sz-16;
+    cursor: pointer;
+    accent-color: var(--color-accent-primary);
+  }
+}
+
+.blur-progressive-label {
+  @include t.use-typography("body-small");
+
+  color: var(--color-foreground-primary);
+  user-select: none;
+}
+
+.blur-progressive-params {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-xxs);
+
+  .numeric-input {
+    flex: 1 1 auto;
+    min-width: 4rem;
+  }
+}

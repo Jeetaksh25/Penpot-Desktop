@@ -21,6 +21,22 @@
     (+ stroke-width (mth/sqrt (* 2 stroke-width stroke-width)))
     (mth/sqrt (* 2 stroke-width stroke-width))))
 
+(defn effective-blur-value
+  "The blur radius that drives filter-region growth (the `delta-blur =
+  2*blur-value` uniform grow in get-rect-filter-bounds). For a
+  progressive layer blur the falloff peak is :start-radius (defaulting to
+  :value when absent); for a uniform blur it is :value. A nil/absent
+  :blur slot, or a slot whose effective radius is 0, yields 0 — so the
+  `no-shadows-and-no-blur` fast path in get-shape-filter-bounds and the
+  uniform grow are byte-identical to today for every non-progressive
+  blur (the only call sites are the 3 blur-value args + the no-blur
+  fast path, all switched to this helper)."
+  [blur]
+  (if (and (map? blur) (true? (:progressive? blur)))
+    (max (or (:value blur) 0)
+         (or (:start-radius blur) (or (:value blur) 0)))
+    (or (:value blur) 0)))
+
 (defn- apply-filters
   [attr type filters]
   (sequence
@@ -194,15 +210,17 @@
      ;; No shadows or blur: use the axis-aligned bounding box from the actual
      ;; (possibly rotated) points. Using selrect here would be wrong for rotated
      ;; shapes because selrect stores the unrotated rectangle, not the screen-space bbox.
+     ;; Uses effective-blur-value so a progressive blur whose :value is 0 but whose
+     ;; :start-radius peak is > 0 still takes the blur-bounds path (else its bands
+     ;; would clip). Byte-identical for every non-progressive blur (effective == value).
      (and (empty? (-> shape :shadow))
-          (or (nil? (:blur shape))
-              (zero? (-> shape :blur :value (or 0)))))
+          (zero? (effective-blur-value (:blur shape))))
      (-> (dm/get-prop shape :points)
          (grc/points->rect))
 
      :else
      (let [filters    (shape->filters shape)
-           blur-value (or (-> shape :blur :value) 0)
+           blur-value (effective-blur-value (:blur shape))
            srect      (-> (dm/get-prop shape :points)
                           (grc/points->rect))]
        (get-rect-filter-bounds srect filters blur-value ignore-shadow-margin?)))))
@@ -334,7 +352,7 @@
            (not (cfh/frame-shape? shape)) (or (:children-bounds shape)))
 
          filters (shape->filters shape)
-         blur-value (or (-> shape :blur :value) 0)]
+         blur-value (effective-blur-value (:blur shape))]
 
      (get-rect-filter-bounds children-bounds filters blur-value ignore-shadow-margin?))))
 

@@ -153,11 +153,103 @@
                   :operator "in"
                   :result filter-id}]])
 
-(mf/defc layer-blur-filter*
-  [{:keys [filter-id params]}]
+;; PROGRESSIVE BLUR (#60) — a directional (gradient) layer blur rendered
+;; as N adjacent feGaussianBlur bands. Each band is the whole source
+;; (filter-in) blurred at a radius that ramps from :start-radius along the
+;; start edge to 0 (sharp) along the end edge, clipped to its band strip
+;; via feFlood+feComposite-in, then feMerge recombines the bands in order.
+;; Bands span the selrect grown by `maxr` on every side so the blur spreads
+;; into the filter margin (not clipped at the shape edge); the falloff
+;; region [:start-offset, :end-offset] (0..1 of the selrect, clamped +
+;; ordered) maps onto the selrect, so margin bands naturally take the edge
+;; value (blurry before start, sharp after end). Direction is quantized to
+;; the nearest cardinal (0=right, 90=down, 180=left, 270=up): 90/270 ->
+;; vertical bands (falloff along y); 0/180 -> horizontal bands (falloff
+;; along x); 180/270 reverse the ramp (blurry end). Rides the existing
+;; :layer-blur 3-gate lockstep — progressive is just a renderer branch
+;; inside layer-blur-filter*, NO gate changes. Degenerate selrect
+;; (w<=0 or h<=0) is guarded upstream in layer-blur-filter* (falls back to
+;; the uniform blur) so no axis-len division by zero can reach here.
+(defn- progressive-blur-bands
+  [filter-in filter-id selrect params]
+  (let [x         (dm/get-prop selrect :x)
+        y         (dm/get-prop selrect :y)
+        w         (dm/get-prop selrect :width)
+        h         (dm/get-prop selrect :height)
+        value     (or (:value params) 0)
+        start-r   (or (:start-radius params) value)
+        maxr      (max value start-r)
+        so        (mth/clamp (or (:start-offset params) 0) 0 1)
+        eo        (mth/clamp (or (:end-offset params) 1) 0 1)
+        start-off (min so eo)
+        end-off   (max so eo)
+        ;; Quantize direction to the nearest cardinal (0/90/180/270). mod 360
+        ;; first so an out-of-range :direction (e.g. 450 or -90 from a loaded
+        ;; file — the schema allows any ::sm/safe-number) maps to the correct
+        ;; cardinal instead of mis-classifying vertical?/reverse?. The UI
+        ;; stepper bounds 0..360 but the slot is not range-validated, so this
+        ;; is defense-in-depth for round-tripped/programmatic values.
+        dir       (mod (* (js/Math.round (/ (mod (or (:direction params) 90) 360) 90)) 90) 360)
+        vertical? (or (= dir 90) (= dir 270))
+        reverse?  (or (= dir 180) (= dir 270))
+        n         10
+        axis-len  (if vertical? h w)
+        extent    (+ axis-len (* 2 maxr))
+        band-size (/ extent n)
+        origin    (if vertical? y x)
+        perp-org  (if vertical? x y)
+        perp-ext  (+ (if vertical? w h) (* 2 maxr))
+        ramp-span (max 1e-9 (- end-off start-off))
+        falloff   (fn [p]
+                    (let [p (if reverse? (- 1 p) p)]
+                      (cond
+                        (<= p start-off) start-r
+                        (>= p end-off)   0
+                        :else            (* start-r (- 1 (/ (- p start-off) ramp-span))))))
+        band-prims (mapcat
+                    (fn [i]
+                      (let [band-lo (+ (- origin maxr) (* i band-size))
+                            band-c  (+ band-lo (/ band-size 2))
+                            p       (/ (- band-c origin) axis-len)
+                            radius  (falloff p)
+                            fl-res  (dm/str filter-id "-fl-" i)
+                            bl-res  (dm/str filter-id "-bl-" i)
+                            bd-res  (dm/str filter-id "-bd-" i)]
+                        [[:feFlood {:flood-color "#FFFFFF"
+                                    :flood-opacity 1
+                                    :x (if vertical? (- perp-org maxr) band-lo)
+                                    :y (if vertical? band-lo (- perp-org maxr))
+                                    :width (if vertical? perp-ext band-size)
+                                    :height (if vertical? band-size perp-ext)
+                                    :result fl-res}]
+                         [:feGaussianBlur {:in filter-in
+                                           :stdDeviation radius
+                                           :result bl-res}]
+                         [:feComposite {:in bl-res
+                                        :in2 fl-res
+                                        :operator "in"
+                                        :result bd-res}]]))
+                    (range n))]
+    (into [:*]
+          (conj (vec band-prims)
+                [:feMerge {:result filter-id}
+                 (for [i (range n)]
+                   [:feMergeNode {:in (dm/str filter-id "-bd-" i)}])]))))
 
-  [:feGaussianBlur {:stdDeviation (:value params)
-                    :result filter-id}])
+(mf/defc layer-blur-filter*
+  [{:keys [filter-id filter-in params selrect]}]
+  (if (and (true? (:progressive? params))
+           (some? selrect)
+           (pos? (dm/get-prop selrect :width))
+           (pos? (dm/get-prop selrect :height)))
+    ;; Progressive (gradient) blur — N-band stacked feGaussianBlur. The
+    ;; else branch is byte-identical to the prior single feGaussianBlur, so
+    ;; an absent/false :progressive? (or a degenerate selrect) changes the
+    ;; rendered SVG by nothing — no new <filter> element, no new primitive
+    ;; beyond the single feGaussianBlur that was always emitted.
+    (progressive-blur-bands filter-in filter-id selrect params)
+    [:feGaussianBlur {:stdDeviation (:value params)
+                      :result filter-id}]))
 
 (mf/defc image-fix-filter* [{:keys [filter-id]}]
   [:feFlood {:flood-opacity 0 :result filter-id}])
@@ -518,10 +610,11 @@
          {:x x :y y :width w :height h}
          [:canvas {:ref canvas-ref :width w :height h}]]))))
 
-(mf/defc filter-entry* [{:keys [entry]}]
+(mf/defc filter-entry* [{:keys [entry selrect]}]
   (let [props #js {:filter-id (:id entry)
                    :filter-in (:filter-in entry)
-                   :params (:params entry)}]
+                   :params (:params entry)
+                   :selrect selrect}]
     (case (:type entry)
       :drop-shadow [:> drop-shadow-filter* props]
       :inner-shadow [:> inner-shadow-filter* props]
@@ -573,7 +666,7 @@
 
   (let [shape'        (update shape :shadow reverse)
         filters       (-> shape' gsb/shape->filters change-filter-in)
-        bounds        (gsb/get-rect-filter-bounds (:selrect shape) filters (or (-> shape :blur :value) 0))
+        bounds        (gsb/get-rect-filter-bounds (:selrect shape) filters (gsb/effective-blur-value (:blur shape)))
         padding       (gsb/calculate-padding shape)
         selrect       (:selrect shape)
 
@@ -590,5 +683,6 @@
                 :color-interpolation-filters "sRGB"}
        (for [[index entry] (d/enumerate filters)]
          [:> filter-entry* {:key (dm/str filter-id "-" index)
-                            :entry entry}])])))
+                            :entry entry
+                            :selrect selrect}])])))
 
