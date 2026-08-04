@@ -4223,6 +4223,126 @@ msgstr "Cancel"
 msgid "modals.rotate-copies-apply"
 msgstr "Rotate copies"
 
+#: figma-parity/p2/c3-wave2/repeat-grid
+msgid "workspace.header.menu.repeat-grid"
+msgstr "Repeat grid"
+
+#: figma-parity/p2/c3-wave2/repeat-grid
+msgid "modals.repeat-grid-title"
+msgstr "Repeat grid"
+
+#: figma-parity/p2/c3-wave2/repeat-grid
+msgid "modals.repeat-grid-rows"
+msgstr "Rows"
+
+#: figma-parity/p2/c3-wave2/repeat-grid
+msgid "modals.repeat-grid-cols"
+msgstr "Columns"
+
+#: figma-parity/p2/c3-wave2/repeat-grid
+msgid "modals.repeat-grid-gap-w"
+msgstr "Horizontal gap"
+
+#: figma-parity/p2/c3-wave2/repeat-grid
+msgid "modals.repeat-grid-gap-h"
+msgstr "Vertical gap"
+
+#: figma-parity/p2/c3-wave2/repeat-grid
+msgid "modals.repeat-grid-cancel"
+msgstr "Cancel"
+
+#: figma-parity/p2/c3-wave2/repeat-grid
+msgid "modals.repeat-grid-apply"
+msgstr "Apply"
+
+#: figma-parity/p2/c3-wave2/concentric-corners
+msgid "workspace.options.radius.auto-corners"
+msgstr "Auto corners (concentric)"
+
+#: figma-parity/p2/c3-wave2/smart-layout
+msgid "workspace.shape.menu.smart-layout"
+msgstr "Smart layout"
+
+#: figma-parity/p2/c3-wave2/smart-layout
+msgid "workspace.shape.menu.smart-layout-distribute"
+msgstr "Distribute evenly"
+
+#: figma-parity/p2/c3-wave2/smart-layout
+msgid "workspace.shape.menu.smart-layout-fit"
+msgstr "Fit to content"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.authoring"
+msgstr "Accessibility"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.name"
+msgstr "Accessible name"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.name.placeholder"
+msgstr "Add accessible name"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role"
+msgstr "Role"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.button"
+msgstr "Button"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.link"
+msgstr "Link"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.heading"
+msgstr "Heading"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.image"
+msgstr "Image"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.navigation"
+msgstr "Navigation"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.region"
+msgstr "Region"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.list"
+msgstr "List"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.listitem"
+msgstr "List item"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.checkbox"
+msgstr "Checkbox"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.switch"
+msgstr "Switch"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.none"
+msgstr "None"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.role.presentation"
+msgstr "Presentation"
+
+#: figma-parity/p2/c3-wave2/aria-authoring
+msgid "inspect.a11y.authoring.hint"
+msgstr "Saved on the shape and surfaced in the viewer."
+
+#: figma-parity/p2/c3-wave2/image-cutout
+msgid "workspace.shape.image.cutout"
+msgstr "Cut out"
+
 #: src/app/main/ui/dashboard/team.cljs:461
 msgid "modals.promote-owner-confirm.accept"
 msgstr "Transfer ownership"

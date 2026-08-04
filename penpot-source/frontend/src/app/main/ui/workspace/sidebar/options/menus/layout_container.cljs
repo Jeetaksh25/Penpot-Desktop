@@ -16,6 +16,7 @@
    [app.main.data.workspace :as udw]
    [app.main.data.workspace.grid-layout.editor :as dwge]
    [app.main.data.workspace.shape-layout :as dwsl]
+   [app.main.data.workspace.smart-layout :as dwsm]
    [app.main.data.workspace.tokens.application :as dwta]
    [app.main.features :as features]
    [app.main.refs :as refs]
@@ -1270,6 +1271,35 @@
         on-hide-dropdown
         (mf/use-fn #(reset! show-dropdown* false))
 
+        ;; Smart Layout (P1.03) — one-click heuristic affordance gated
+        ;; on a single flex container being selected (`has-layout?` &&
+        ;; `:flex` && not a mixed selection). Opens a small dropdown with
+        ;; "Distribute evenly" and "Fit to content"; both emit the
+        ;; `dwsm/smart-layout` event which commits one undo step.
+        show-smart-dropdown* (mf/use-state false)
+        show-smart-dropdown? @show-smart-dropdown*
+
+        smart-enabled?
+        (and ^boolean has-layout?
+             (= :flex layout-type)
+             (not ^boolean multiple))
+
+        on-toggle-smart-dropdown
+        (mf/use-fn #(swap! show-smart-dropdown* not))
+
+        on-hide-smart-dropdown
+        (mf/use-fn #(reset! show-smart-dropdown* false))
+
+        on-smart-layout
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [event]
+           (let [mode (-> (dom/get-current-target event)
+                          (dom/get-data "mode")
+                          (keyword))]
+             (st/emit! (dwsm/smart-layout {:ids ids :mode mode}))
+             (reset! show-smart-dropdown* false))))
+
         add-layout-dropdown
         (mf/html
          [:& dropdown {:show show-dropdown?
@@ -1282,7 +1312,21 @@
            [:button {:class (stl/css :layout-option)
                      :data-type "grid"
                      :on-click on-add-layout}
-            (tr "labels.grid-layout")]]])]
+            (tr "labels.grid-layout")]]])
+
+        smart-layout-dropdown
+        (mf/html
+         [:& dropdown {:show show-smart-dropdown?
+                       :on-close on-hide-smart-dropdown}
+          [:div {:class (stl/css :layout-options)}
+           [:button {:class (stl/css :layout-option)
+                     :data-mode "distribute"
+                     :on-click on-smart-layout}
+            (tr "workspace.shape.menu.smart-layout-distribute")]
+           [:button {:class (stl/css :layout-option)
+                     :data-mode "fit"
+                     :on-click on-smart-layout}
+            (tr "workspace.shape.menu.smart-layout-fit")]]])]
 
     [:section {:class (stl/css :element-set)
                :aria-label "Layout container section"
@@ -1303,6 +1347,15 @@
                             :icon i/menu}]
 
           add-layout-dropdown
+
+          (when ^boolean smart-enabled?
+            [:> icon-button* {:variant "ghost"
+                              :aria-label (tr "workspace.shape.menu.smart-layout")
+                              :on-click on-toggle-smart-dropdown
+                              :icon i/distribute-horizontally}])
+
+          (when ^boolean smart-enabled?
+            smart-layout-dropdown)
 
           (when has-layout?
             [:> icon-button* {:variant "ghost"

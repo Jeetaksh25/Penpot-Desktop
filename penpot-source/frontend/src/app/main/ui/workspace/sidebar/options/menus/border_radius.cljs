@@ -3,6 +3,7 @@
   (:require
    [app.common.data.macros :as dm]
    [app.common.types.shape.radius :as ctsr]
+   [app.main.data.workspace.concentric-corners :as dwcc]
    [app.main.data.workspace.shapes :as dwsh]
    [app.main.data.workspace.tokens.application :as dwta]
    [app.main.features :as features]
@@ -108,6 +109,47 @@
                            :fontWeight "600" :color "#64748b" :cursor "pointer"}}
       "iOS"]]))
 
+(defn- auto-button*
+  "Concentric (Auto) Corners action (ALL_APPS_PARITY P2.13).
+  A one-shot Lucide 'sparkles' icon button that, on click, bakes each
+  selected shape's per-corner radius to max(0, ancestor-radius - inset)
+  via `dwcc/apply-auto-radius`. Coral accent (#f28b82) ties it to the
+  Ovion rebrand. No persistent toggle state is read from the shape — the
+  action writes through the same :r1..:r4 attrs the manual controls use,
+  so the manual controls remain the source of truth afterwards."
+  {::mf/wrap-props false}
+  [props]
+  (let [on-click (unchecked-get props "on-click")
+        label    (unchecked-get props "label")]
+    [:button {:type "button"
+              :on-click on-click
+              :title label
+              :aria-label label
+              :style #js {:display "inline-flex"
+                          :alignItems "center"
+                          :justifyContent "center"
+                          :width "28px"
+                          :height "28px"
+                          :border "1px solid rgba(15,23,42,0.12)"
+                          :borderRadius "8px"
+                          :background "transparent"
+                          :cursor "pointer"
+                          :color "#7d7d7d"
+                          :padding "0"
+                          :flexShrink "0"}}
+     [:svg {:viewBox "0 0 24 24"
+            :width "16"
+            :height "16"
+            :fill "none"
+            :stroke "currentColor"
+            :stroke-width "2"
+            :stroke-linecap "round"
+            :stroke-linejoin "round"}
+      ;; Lucide 'sparkles' — auto/concentric corners affordance
+      [:path {:d "M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"}]
+      [:path {:d "M19 14l.9 2.4L22 17l-2.1.6L19 20l-.9-2.4L16 17l2.1-.6z"}]
+      [:path {:d "M5 14l.9 2.4L8 17l-2.1.6L5 20l-.9-2.4L2 17l2.1-.6z"}]]]))
+
 (mf/defc border-radius-menu*
   {::mf/wrap [#(mf/memo' % check-border-radius-menu-props)]}
   [{:keys [class ids values applied-tokens]}]
@@ -189,6 +231,12 @@
          (fn []
            (swap! radius-expanded* not)))
 
+        on-auto-radius
+        (mf/use-fn
+         (mf/deps ids)
+         (fn []
+           (st/emit! (dwcc/apply-auto-radius ids))))
+
 
         on-all-radius-change
         (mf/use-fn
@@ -260,6 +308,8 @@
                      0
                      (:r1 values))
                    nil)}]
+        [:& auto-button* {:on-click on-auto-radius
+                          :label (tr "workspace.options.radius.auto-corners")}]
         [:> icon-button* {:class (stl/css-case :selected radius-expanded)
                           :variant "ghost"
                           :tooltip-placement "top-left"
@@ -403,6 +453,8 @@
              :min 0
              :on-change on-radius-r3-change
              :value (:r3 values)}]]])
+       [:& auto-button* {:on-click on-auto-radius
+                         :label (tr "workspace.options.radius.auto-corners")}]
        [:> icon-button* {:class (stl/css-case :selected radius-expanded)
                          :variant "ghost"
                          :on-click toggle-radius-mode

@@ -5,22 +5,36 @@
 ;; Copyright (c) KALEIDOS INC Sucursal en España SL
 
 (ns app.main.ui.inspect.a11y
-  "Figma-parity accessibility insights (gap #77). A WCAG contrast checker
-  shown in the Inspect panel for a selected text shape: computes the
-  contrast ratio between the text color and the background behind it
-  (nearest ancestor solid fill, falling back to white) and reports
-  AA / AAA pass/fail for normal and large text.
+  "Figma-parity accessibility insights (gap #77) + ARIA authoring
+  (ALL_APPS_PARITY P1.06).
 
-  Pure math + read-only UI. Renders ONLY for a single text shape, so
-  every other selection is byte-identical to before."
+  Two additive Inspect-panel sections:
+
+  1. `a11y-contrast*` — a WCAG contrast checker shown for a single
+     selected text shape: computes the contrast ratio between the text
+     color and the background behind it (nearest ancestor solid fill,
+     falling back to white) and reports AA / AAA pass/fail for normal
+     and large text. Pure math + read-only UI. Renders ONLY for a single
+     text shape, so every other selection is byte-identical to before.
+
+  2. `a11y-authoring*` — ARIA authoring for ANY single selected shape:
+     a text input for the accessible name (aria-label) and a dropdown of
+     ARIA roles, persisted on the shape under an additive `:a11y` map
+     via `dwga/set-a11y-label` / `dwga/set-a11y-role`. Renders ONLY for a
+     single shape, so multi-shape selections are byte-identical."
   (:require-macros [app.main.style :as stl])
   (:require
    [app.common.data :as d]
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
+   [app.main.data.workspace.a11y :as dwga]
+   [app.main.store :as st]
+   [app.main.ui.components.select :refer [select]]
    [app.main.ui.components.title-bar :refer [title-bar*]]
    [app.util.code-gen.frameworks.common :as fc]
+   [app.util.dom :as dom]
    [app.util.i18n :refer [tr]]
+   [app.util.keyboard :as kbd]
    [rumext.v2 :as mf]))
 
 ;; ---------------------------------------------------------------------------
@@ -191,3 +205,143 @@
              [pass-badge aaa-large]]
             [:div {:class (stl/css :a11y-hint)}
              (tr "inspect.a11y.hint")]])]))))
+
+;; ---------------------------------------------------------------------------
+;; ARIA authoring (P1.06)
+;; ---------------------------------------------------------------------------
+;;
+;; Renders for any SINGLE selected shape (text or otherwise): a text
+;; input for the accessible name (aria-label) and a dropdown of ARIA
+;; roles. Values are persisted on the shape under an additive `:a11y`
+;; map. The local input draft is resynced from the shape whenever the
+;; selection (shape id) or the persisted label changes, so external
+;; edits / undo / redo are reflected; commits happen on blur / Enter so
+;; typing does not spam undo steps.
+
+(def ^:private aria-roles
+  "Vector of `{:value :role :label (tr ...)}` options for the role
+  dropdown. Values are keywords so the persisted `:a11y` map reads as
+  `{:role :button}`. `none` is the explicit no-role option (the dropdown
+  has no blank state — `none` IS the default)."
+  [{:value :button        :label (tr "inspect.a11y.role.button")}
+   {:value :link          :label (tr "inspect.a11y.role.link")}
+   {:value :heading       :label (tr "inspect.a11y.role.heading")}
+   {:value :image         :label (tr "inspect.a11y.role.image")}
+   {:value :navigation    :label (tr "inspect.a11y.role.navigation")}
+   {:value :region        :label (tr "inspect.a11y.role.region")}
+   {:value :list          :label (tr "inspect.a11y.role.list")}
+   {:value :listitem      :label (tr "inspect.a11y.role.listitem")}
+   {:value :checkbox      :label (tr "inspect.a11y.role.checkbox")}
+   {:value :switch        :label (tr "inspect.a11y.role.switch")}
+   {:value :none          :label (tr "inspect.a11y.role.none")}
+   {:value :presentation  :label (tr "inspect.a11y.role.presentation")}])
+
+(defn- role->option
+  "Find the dropdown option matching `role` (a keyword or string),
+  defaulting to `:none` so the select always has a valid current value."
+  [role]
+  (let [role (if (string? role) (keyword role) role)
+        role (if (nil? role) :none role)]
+    (or (some #(when (= (:value %) role) %) aria-roles)
+        {:value :none :label (tr "inspect.a11y.role.none")})))
+
+(mf/defc a11y-authoring*
+  "ARIA authoring panel for a single selected shape. Returns nil
+  (renders nothing) for a multi-shape selection, so the feature is
+  purely additive and guarded."
+  {::mf/private true}
+  [{:keys [shapes]}]
+  (let [single?       (= (count shapes) 1)
+        shape         (first shapes)
+        shape-id      (:id shape)
+        a11y          (:a11y shape)
+        cur-label     (:label a11y "")
+        cur-role      (:role a11y)
+
+        open*         (mf/use-state true)
+        label*        (mf/use-state cur-label)
+
+        ;; Resync the local draft when the selection (shape id) or the
+        ;; persisted label changes (undo / redo / external edit). The
+        ;; deps vector is the dependency; the effect runs on mount and
+        ;; whenever a dep changes.
+        _             (mf/use-effect
+                       (mf/deps shape-id cur-label)
+                       (fn [] (reset! label* cur-label)))
+
+        toggle        (mf/use-fn #(swap! open* not))
+
+        commit-label
+        (mf/use-fn
+         (mf/deps shape-id cur-label)
+         (fn []
+           (let [draft @label*]
+             ;; Only emit when the draft actually differs from the
+             ;; persisted value, so a no-op blur (focus + immediate
+             ;; blur) does not create a spurious undo step. `cur-label`
+             ;; is in the deps so the closure is fresh after every
+             ;; commit / undo / redo.
+             (when (not= draft cur-label)
+               (st/emit! (dwga/set-a11y-label shape-id draft))))))
+
+        on-label-change
+        (mf/use-fn
+         (fn [event]
+           (reset! label* (dom/get-target-val event))))
+
+        on-label-key-down
+        (mf/use-fn
+         (mf/deps commit-label)
+         (fn [event]
+           (cond
+             (kbd/enter? event)
+             (do (dom/prevent-default event)
+                 (dom/blur! (dom/get-target event)))
+             (kbd/esc? event)
+             (do (reset! label* cur-label)
+                 (dom/blur! (dom/get-target event))))))
+
+        on-label-blur
+        (mf/use-fn
+         (mf/deps commit-label)
+         (fn [] (commit-label)))
+
+        on-role-change
+        (mf/use-fn
+         (mf/deps shape-id)
+         (fn [value]
+           (let [role (if (string? value) (keyword value) value)]
+             (st/emit! (dwga/set-a11y-role shape-id role)))))]
+
+    (when single?
+      [:div {:class (stl/css :a11y-section)}
+       [:> title-bar* {:collapsable true
+                       :collapsed (not @open*)
+                       :on-collapsed toggle
+                       :title (tr "inspect.a11y.authoring")
+                       :class (stl/css :a11y-title-bar)}]
+       (when @open?
+         [:div {:class (stl/css :a11y-content)}
+          [:div {:class (stl/css :a11y-field)}
+           [:label {:class (stl/css :a11y-field-label)
+                    :for "a11y-aria-label-input"}
+            (tr "inspect.a11y.name")]
+           [:input {:id "a11y-aria-label-input"
+                    :class (stl/css :a11y-text-input)
+                    :type "text"
+                    :value @label*
+                    :placeholder (tr "inspect.a11y.name.placeholder")
+                    :on-change on-label-change
+                    :on-key-down on-label-key-down
+                    :on-blur on-label-blur}]]
+
+          [:div {:class (stl/css :a11y-field)}
+           [:span {:class (stl/css :a11y-field-label)}
+            (tr "inspect.a11y.role")]
+           [:& select {:default-value (role->option cur-role)
+                       :options aria-roles
+                       :on-change on-role-change
+                       :class (stl/css :a11y-role-select)}]]
+
+          [:div {:class (stl/css :a11y-hint)}
+           (tr "inspect.a11y.authoring.hint")]])])))

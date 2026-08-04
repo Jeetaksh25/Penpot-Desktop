@@ -99,3 +99,61 @@
   color: var(--color-foreground-secondary);
   margin-block-start: var(--sp-s);
 }
+
+// ---------------------------------------------------------------------------
+// ARIA authoring (ALL_APPS_PARITY P1.06)
+//
+// Styles for the accessible-name input + role dropdown rendered by
+// `a11y-authoring*`. Shares `.a11y-section` / `.a11y-title-bar` /
+// `.a11y-content` / `.a11y-hint` with the contrast checker so the two
+// sections read as one a11y panel. Class names mirror the `stl/css`
+// keys declared in a11y.cljs.
+// ---------------------------------------------------------------------------
+
+.a11y-field {
+  @include deprecated.flex-column;
+
+  gap: var(--sp-xs);
+}
+
+.a11y-field-label {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+}
+
+.a11y-text-input {
+  @include deprecated.body-small-typography;
+
+  // Coral accent focus ring (Ovion brand) so the a11y panel matches the
+  // rest of the rebranded chrome; base state uses the shared input vars.
+  inline-size: 100%;
+  padding-block: deprecated.$s-4;
+  padding-inline: deprecated.$s-8;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid var(--input-border-color);
+  background-color: var(--input-background-color);
+  color: var(--color-foreground-primary);
+  line-height: 1.4;
+
+  &::placeholder {
+    color: var(--color-foreground-secondary);
+  }
+
+  &:hover {
+    border-color: var(--input-border-color-hover);
+    background-color: var(--input-background-color-hover);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #f28b82;
+    box-shadow: 0 0 0 deprecated.$s-2 color-mix(in srgb, #f28b82 35%, transparent);
+  }
+}
+
+.a11y-role-select {
+  // The `select` component supplies its own layout; this class sizes
+  // it to the panel width and inherits the coral focus treatment.
+  inline-size: 100%;
+}

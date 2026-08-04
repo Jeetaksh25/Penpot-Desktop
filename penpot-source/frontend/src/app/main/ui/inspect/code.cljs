@@ -22,7 +22,7 @@
    [app.main.ui.components.copy-button :refer [copy-button*]]
    [app.main.ui.components.radio-buttons :refer [radio-button radio-buttons]]
    [app.main.ui.components.select :refer [select]]
-   [app.main.ui.inspect.a11y :refer [a11y-contrast*]]
+   [app.main.ui.inspect.a11y :refer [a11y-authoring* a11y-contrast*]]
    [app.main.ui.hooks.resize :refer [use-resize-hook]]
    [app.main.ui.icons :as deprecated-icon]
    [app.main.ui.shapes.text.fontfaces :refer [shapes->fonts]]
@@ -389,6 +389,10 @@
      ;; checker for a single text shape. The component renders nothing
      ;; for any other selection, so this is purely additive + guarded.
      [:> a11y-contrast* {:objects objects :shapes shapes}]
+     ;; ALL_APPS_PARITY P1.06: ARIA authoring (accessible name + role)
+     ;; for any single selected shape. Renders nothing for multi-shape
+     ;; selections, so purely additive + guarded.
+     [:> a11y-authoring* {:shapes shapes}]
      [:div {:class (stl/css :attributes-block)}
       (if framework?
         [:button {:class (stl/css :download-button)

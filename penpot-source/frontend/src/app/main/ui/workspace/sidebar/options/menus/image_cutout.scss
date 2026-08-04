@@ -1,0 +1,58 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+@use "../../../sidebar/common/sidebar.scss" as sidebar;
+
+// P1.19 Image cutout button — a single coral-accent action that clips
+// the selected image to the selected vector shape. Uses the workspace
+// coral accent (`--color-accent-primary` = #f28b82 in both themes) so
+// it reads as the primary action of the image+vector selection.
+
+.image-cutout-options {
+  @include sidebar.option-grid-structure;
+
+  grid-column: 1 / -1;
+  padding: deprecated.$s-2 deprecated.$s-3;
+}
+
+.image-cutout-btn {
+  @extend %button-secondary;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: deprecated.$s-2;
+  grid-column: 1 / -1;
+  height: deprecated.$s-32;
+  width: 100%;
+  padding: 0 deprecated.$s-3;
+  border-radius: deprecated.$br-8;
+  color: var(--color-accent-primary);
+  font-weight: 500;
+
+  &:hover:not(.disabled) {
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+  }
+
+  &.disabled {
+    cursor: default;
+    color: var(--color-foreground-secondary);
+    opacity: 0.5;
+  }
+}
+
+.image-cutout-icon {
+  flex: 0 0 auto;
+  stroke: currentColor;
+}
+
+.image-cutout-label {
+  @include deprecated.body-small-typography;
+
+  white-space: nowrap;
+}
