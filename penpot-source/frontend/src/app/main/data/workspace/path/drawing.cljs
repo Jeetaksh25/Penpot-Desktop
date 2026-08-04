@@ -13,6 +13,7 @@
    [app.common.types.container :as ctn]
    [app.common.types.path :as path]
    [app.common.types.path.helpers :as path.helpers]
+   [app.common.types.path.subpath :as psub]
    [app.common.types.shape :as cts]
    [app.common.types.shape-tree :as ctst]
    [app.common.types.shape.layout :as ctl]
@@ -153,22 +154,116 @@
             [idx prefix] (when (= (count handlers) 1)
                            (first handlers))
 
-            drag-events-stream
+            ;; Figma-parity vector networks (ALL_APPS_PARITY P1.33). When
+            ;; the user is drawing and clicks an existing node mid-subpath
+            ;; (the `(and is-draw (not is-start-path))` branch in
+            ;; path-point*), two intents must be distinguished by whether
+            ;; the clicked node IS the current subpath's start node:
+            ;;
+            ;;   * start node  -> CLOSE the current subpath into a loop and
+            ;;     finish drawing. This is the pre-existing behavior and is
+            ;;     preserved byte-identically in the `closing?` branch below
+            ;;     (same add-node + close-drag + close-path-drag-end +
+            ;;     finish-path sequence).
+            ;;
+            ;;   * any OTHER existing node -> CONNECT the current subpath to
+            ;;     that node as a branch and KEEP drawing from the junction
+            ;;     (the Figma "vector network" pen behavior). `add-node`
+            ;;     appends a segment whose endpoint equals the existing
+            ;;     node's coordinate (a line-to/curve-to, because
+            ;;     `last-point` is non-nil), and the editor's
+            ;;     coordinate-coincident drag (segment/point-indices +
+            ;;     handler-indices, used by edition/modify-content-point)
+            ;;     already moves EVERY segment that shares that endpoint, so
+            ;;     the junction is a real shared node -- dragging it later
+            ;;     moves the whole branch. No finish-path is emitted, so
+            ;;     drawing resumes from the junction (add-node has set
+            ;;     :last-point to it); a click makes the next segment a
+            ;;     corner line from the junction, and a drag pulls the
+            ;;     outgoing c1 handle of the NEXT segment the user is about
+            ;;     to draw from the junction, making that next segment a
+            ;;     smooth curve (the same pattern `start-path-from-point`
+            ;;     uses to shape a fresh segment from an existing node; see
+            ;;     the connect-drag-events comment below for the nil-index
+            ;;     `(count content)` virtual-handle convention).
+            ;;
+            ;; No data-model or renderer change is needed: the flat
+            ;; PathData content already permits >2 segments to share a node
+            ;; coordinate (multiple subpaths with coincident endpoints), and
+            ;; `PathData.toString` renders that as ordinary SVG subpaths --
+            ;; branching is purely an editing affordance, not a render case.
+            ;; The current subpath's start is the :from of the last subpath
+            ;; produced by `psub/get-subpaths` (the subpath currently being
+            ;; drawn); `pt=` matches it against the clicked position with
+            ;; the same 0.1px tolerance the rest of the path code uses.
+            subpaths      (psub/get-subpaths content)
+            current-start (some-> subpaths peek :from)
+            closing?      (and (some? current-start)
+                               (psub/pt= current-start position))
+
+            stopper (rx/merge
+                     (mse/drag-stopper stream)
+                     (rx/filter end-path-event? stream))
+
+            close-drag-events
             (->> (streams/position-stream state)
                  (rx/map #(drag-handler position idx prefix %))
-                 (rx/take-until
-                  (rx/merge
-                   (mse/drag-stopper stream)
-                   (rx/filter end-path-event? stream))))]
+                 (rx/take-until stopper))
 
-        (rx/concat
-         (rx/of (add-node position))
-         (streams/drag-stream
+            ;; For a connect we use drag-handler's 1-arity form (nil index,
+            ;; default :c1 prefix), the SAME convention `start-path-from-point`
+            ;; and `make-drag-stream` use to shape a fresh segment from an
+            ;; existing node. With nil index, drag-handler falls back to
+            ;; `(count content)` -- the virtual "next segment to be drawn"
+            ;; index -- so a DRAG pulls the outgoing c1 handle of the segment
+            ;; the user is about to draw from the junction (making the next
+            ;; segment a smooth curve from J), and a pure CLICK emits no drag
+            ;; events so finish-drag leaves :prev-handler nil (making the next
+            ;; segment a corner line from J). The just-appended branch segment
+            ;; itself is a line-to/curve-to with no editable handle here; its
+            ;; handle is edited later in :move mode via the shared-node
+            ;; handler-indices mechanism. This is byte-identical to the
+            ;; start-path-from-point stream shape (the only difference is that
+            ;; add-node emits a line-to/curve-to here because :last-point is
+            ;; non-nil, vs a move-to in start-path-from-point where it is nil).
+            ;;
+            ;; Known limitation (inherent to Penpot's flat-subpath SVG model,
+            ;; NOT a regression): a junction where two SEPARATE subpaths meet
+            ;; renders with a stroke seam, because SVG stroke-linejoin does
+            ;; not apply across an `M` (subpath) boundary -- only Figma's
+            ;; graph renderer joins branching strokes seamlessly. close-subpaths
+            ;; (run at finish-path) merges endpoint-coincident subpaths into
+            ;; one subpath (fixing the seam for connect-to-start/end cases),
+            ;; but an interior-node connect leaves a seam. Shared-node DRAG is
+            ;; unaffected either way (point-indices + the implicit-prev-start
+            ;; property keep all arms attached to J).
+            connect-drag-events
+            (->> (streams/position-stream state)
+                 (rx/map #(drag-handler %))
+                 (rx/take-until stopper))]
+
+        (if closing?
+          ;; Close-and-finish: pre-existing behavior, unchanged.
           (rx/concat
-           drag-events-stream
-           (rx/of (finish-drag))
-           (rx/of (close-path-drag-end))))
-         (rx/of (common/finish-path)))))))
+           (rx/of (add-node position))
+           (streams/drag-stream
+            (rx/concat
+             close-drag-events
+             (rx/of (finish-drag))
+             (rx/of (close-path-drag-end))))
+           (rx/of (common/finish-path)))
+
+          ;; Connect-and-continue (P1.33): append the branch segment to the
+          ;; existing node, pull an optional handle, and resume drawing from
+          ;; the junction. `add-node` has set :last-point to the junction
+          ;; coordinate so the next click continues from it; no finish-path
+          ;; is emitted, so the path stays open for further branches.
+          (rx/concat
+           (rx/of (add-node position))
+           (streams/drag-stream
+            (rx/concat
+             connect-drag-events
+             (rx/of (finish-drag))))))))))
 
 (defn close-path-drag-end []
   (ptk/reify ::close-path-drag-end
