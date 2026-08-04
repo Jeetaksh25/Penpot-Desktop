@@ -20,6 +20,7 @@
    [app.common.transit :as t]
    [app.common.types.color :as clr]
    [app.common.types.fills :refer [schema:fills fill->color]]
+   [app.common.types.breakpoint :as ctbp]
    [app.common.types.grid :as ctg]
    [app.common.types.component-property :as ctcp]
    [app.common.types.path :as path]
@@ -378,7 +379,11 @@
    ;; which is the existing behavior. The viewer chrome render is deferred
    ;; (needs SVG bezel assets + a viewer pass); the field round-trips here
    ;; and a picker is exposed in measures.cljs.
-   [:device-frame {:optional true} :keyword]])
+   [:device-frame {:optional true} :keyword]
+   ;; ALL_APPS_PARITY P0.15 — responsive breakpoints. Optional; absent =
+   ;; no breakpoints (byte-identical with prior frames). See
+   ;; app.common.types.breakpoint.
+   [:breakpoints {:optional true} ctbp/schema:breakpoints]])
 
 (def ^:private schema:bool-attrs
   [:map {:title "BoolAttrs"}
@@ -654,7 +659,7 @@
 (def ^:private allowed-bool-attrs #{:shapes :bool-type :content})
 (def ^:private allowed-group-attrs #{:shapes})
 (def ^:private allowed-frame-attrs #{:shapes :hide-fill-on-export :show-content :hide-in-viewer
-                                     :device-frame
+                                     :device-frame :breakpoints
                                      :layout :layout-flex-dir :layout-gap-type :layout-gap
                                      :layout-align-items :layout-justify-content :layout-align-content
                                      :layout-wrap-type :layout-padding-type :layout-padding

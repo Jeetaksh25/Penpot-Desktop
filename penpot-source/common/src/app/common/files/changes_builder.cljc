@@ -220,8 +220,15 @@
    (let [page (::page (meta changes))]
      (mod-page changes page options)))
 
-  ([changes page {:keys [name background pixel-grid-color pixel-grid-opacity]}]
+  ([changes page {:keys [name background pixel-grid-color pixel-grid-opacity] :as options}]
    (let [change {:type :mod-page :id (:id page)}
+         ;; Extra page metadata keys (e.g. :seo, :cms-data) are carried
+         ;; through generically so page-level author data persists without
+         ;; a dedicated change type. Nil values clear the key (handled in
+         ;; `process-change :mod-page`). Existing callers pass only the
+         ;; four known keys -> `extras` is nil -> no-op.
+         extras (not-empty
+                 (dissoc options :name :background :pixel-grid-color :pixel-grid-opacity))
          redo   (cond-> change
                   (some? name)
                   (assoc :name name)
@@ -233,7 +240,10 @@
                   (assoc :pixel-grid-color pixel-grid-color)
 
                   (some? pixel-grid-opacity)
-                  (assoc :pixel-grid-opacity pixel-grid-opacity))
+                  (assoc :pixel-grid-opacity pixel-grid-opacity)
+
+                  (some? extras)
+                  (merge extras))
 
          undo   (cond-> change
                   (some? name)
@@ -246,7 +256,10 @@
                   (assoc :pixel-grid-color (:pixel-grid-color page))
 
                   (some? pixel-grid-opacity)
-                  (assoc :pixel-grid-opacity (:pixel-grid-opacity page)))]
+                  (assoc :pixel-grid-opacity (:pixel-grid-opacity page))
+
+                  (some? extras)
+                  (merge (select-keys page (keys extras))))]
 
      (-> changes
          (update :redo-changes conj redo)

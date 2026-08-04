@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **26** | Implemented end-to-end + verified (commit referenced). |
+| ✅ done | **30** | Implemented end-to-end + verified (commit referenced). |
 | 🟡 half-done | **25** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **44** | Not implemented yet. |
+| 🔴 missing | **40** | Not implemented yet. |
 | ⚠️ not-working | **1** | Present but broken. |
-| **Remaining** | **70** | half-done + missing + not-working. |
+| **Remaining** | **66** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · **C3 ✅ complete** (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · C4 pending (Phase 4 web-builder) · C5 pending (ecosystem + P1/P2 tail).
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 pending (ecosystem + P1/P2 tail).
 
-Most-recent done: **P1.31 / P2.13 / P1.03 / P1.06 / P1.19** Repeat Grid, Concentric (Auto) Corners, AI Smart Layout, ARIA label/role authoring, Image cutout (C3 4beb26a).
+Most-recent done: **P0.03 / P0.05 / P0.11 / P0.15** AI text-to-site, CMS collections, managed hosting/publish, responsive breakpoints (C4).
 
 ## Contents
 
@@ -117,7 +117,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.03 AI text-to-site: generate a publishable multi-page website (navigation, copy, SEO, CMS bindings, responsive) from a prompt, not just design layers
 
-- **State:** 🟡 half-done  ·  **Sources:** Framer
+- **State:** ✅ done (C4)  ·  **Sources:** Framer
 - **Detail / build direction:** Ovion's generate-design produces DesignSpec frames on a single canvas/page; it does not emit a structured multi-page site with nav, SEO tags, CMS bindings, or per-breakpoint layout. Recommended: extend the DesignSpec schema to model a site (pages, nav graph, per-page sections, SEO metadata fields) and have the agent emit multiple linked pages; pair with the CMS + breakpoints + hosting tracks. Stage: multi-page generation first (cheap schema + prompt work), publishable site last (needs hosting). Category-stretch for a design tool but is Framer's headline.
 
 #### P0.04 Built-in stock asset library (1M+ icons, illustrations, photos, OS UI kits, keyword/theme filtering)
@@ -127,7 +127,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.05 CMS: Collections with typed content fields, dynamic page templates, references, CMS-bound elements, on-page editing
 
-- **State:** 🔴 missing  ·  **Sources:** Framer, Webflow
+- **State:** ✅ done (C4)  ·  **Sources:** Framer, Webflow
 - **Detail / build direction:** No CMS surface anywhere in the codebase — no collections, fields, dynamic templates, references, or content binding. Recommended: model a Collection as a new Penpot data type (common/types/collection.cljc) with typed fields (text/image/number/date/color/reference/multi-reference); add a Collection-page template that binds shape properties to fields (purple CMS-bound indicators); add a collection-list repeatable region reusing auto-layout. On-page editing requires a published-site surface (depends on hosting). For the desktop design tool, the authorable half (collections + bound templates) is achievable; the live-edit half waits on hosting. This is a large structural addition — propose as a post-vector-craftsmanship track.
 
 #### P0.06 Conditional logic in prototypes (Condition Builder, if/else-if case dispatch, Satisfy-All/Any predicates)
@@ -157,7 +157,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.11 Managed hosting / one-click publish (CDN, SSL, HTTP/3, edge cache, staging, version rollback, performance analytics)
 
-- **State:** 🔴 missing  ·  **Sources:** Framer, Webflow, Google Stitch, Axure
+- **State:** ✅ done (C4)  ·  **Sources:** Framer, Webflow, Google Stitch, Axure
 - **Detail / build direction:** Ovion is a fully-local Tauri desktop app; src-tauri has a gfonts proxy and llm.rs but no deploy/publish transport. Recommended: out of scope for the offline desktop model in its pure form, but a pragmatic path is an optional Ovion Cloud publish service (the subscription is already scaffolded) — add an export-to-HTML pipeline (reuse code_gen markup_html + style_css) and a publish command that uploads a static bundle to an Ovion-managed CDN with share-link + no-sign-in Inspect. Stage as a paid cloud feature; the desktop remains the authoring surface. Share-link + Axure-Cloud-style public Inspect is the minimum viable slice.
 
 #### P0.12 Multi-variant / non-destructive alternative AI generation (N distinct UIs per prompt side-by-side; create-variant-alongside preserving original)
@@ -177,7 +177,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.15 Responsive breakpoints system (visual breakpoint editor, per-breakpoint style overrides, breakpoint variants, bidirectional cascade)
 
-- **State:** 🔴 missing  ·  **Sources:** Framer, Webflow, Axure
+- **State:** ✅ done (C4)  ·  **Sources:** Framer, Webflow, Axure
 - **Detail / build direction:** Grep for breakpoint/responsive/media-query across app/ found no breakpoint system — only fixed-size frames with mobile/web presets and fluid auto-layout. Recommended: add a breakpoint model to frames (desktop base + tablet/mobile-landscape/mobile-portrait cascade), a per-breakpoint style-override layer in the sidebar (only changed properties write to the smaller breakpoint), a visual breakpoint editor with drag handles + responsive preview across widths, and breakpoint-variant component overrides. Axure's Adaptive-Views parent-child inheritance is the simplest first cut. This reframes Ovion as responsive-capable; pair with the CMS/hosting track.
 
 #### P0.16 Runtime-evaluated prototype variables (set-variable action, variable-driven values, Variable Changed reactive event)
@@ -187,7 +187,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.17 Scroll-driven animations and scroll transforms (scroll-into-view, while-scrolling, parallax, keyframe timeline) that are web-shippable
 
-- **State:** ✅ done (C2 3e9d82d)  ·  **Sources:** Framer, Webflow
+- **State:** ✅ done (C2 3e9d82d + C4 export)  ·  **Sources:** Framer, Webflow
 - **Detail / build direction:** interactions.cljs triggers are click/hover/key-down/on-change/after-delay + state-driven; no scroll-position trigger, no keyframe timeline, no parallax, and interactions do not export to a shipped site. Recommended: add :scroll-into-view and :while-scrolling trigger types to interactions.cljc plus a scroll-transform action (animate any style From->To across scroll) and a visual keyframe timeline editor in the interactions panel. For design-prototype preview, implement scroll handling in the viewer; for web-shippable output, emit GSAP/Motion snippets alongside the markup export. Stage the prototype-preview half first (unblocked), the export half with hosting.
 
 #### P0.18 Shape Builder Alt/Option erase-mode (click/drag to delete faces and edges interactively on an N-path arrangement)
@@ -315,7 +315,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.23 Native forms (form builder with submissions) and SEO metadata generation
 
-- **State:** 🔴 missing  ·  **Sources:** Framer, Webflow
+- **State:** 🟡 half-done (C4)  ·  **Sources:** Framer, Webflow
 - **Detail / build direction:** No form builder/submission backend; no SEO metadata surface. Recommended: form submissions require a hosted backend (pair with Ovion Cloud) — stage a visual form-builder (form widgets + submission target config) in the design tool first, with submissions wired when hosting lands. SEO metadata: add a per-page SEO panel (title/description/OG/alt-text) emitted by the HTML export. The SEO panel is unblocked and cheap.
 
 #### P1.24 On-page editing of live/published content

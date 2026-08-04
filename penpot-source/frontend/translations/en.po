@@ -4343,6 +4343,194 @@ msgstr "Saved on the shape and surfaced in the viewer."
 msgid "workspace.shape.image.cutout"
 msgstr "Cut out"
 
+#: figma-parity/p4/c4/breakpoints
+msgid "workspace.options.breakpoints.title"
+msgstr "Breakpoints"
+
+#: figma-parity/p4/c4/breakpoints
+msgid "workspace.options.breakpoints.add"
+msgstr "Add breakpoint"
+
+#: figma-parity/p4/c4/breakpoints
+msgid "workspace.options.breakpoints.width"
+msgstr "Width"
+
+#: figma-parity/p4/c4/breakpoints
+msgid "workspace.options.breakpoints.desktop"
+msgstr "Desktop"
+
+#: figma-parity/p4/c4/breakpoints
+msgid "workspace.options.breakpoints.tablet"
+msgstr "Tablet"
+
+#: figma-parity/p4/c4/breakpoints
+msgid "workspace.options.breakpoints.mobile"
+msgstr "Mobile"
+
+#: figma-parity/p4/c4/breakpoints
+msgid "workspace.options.breakpoints.remove"
+msgstr "Remove breakpoint"
+
+#: figma-parity/p4/c4/breakpoints
+msgid "workspace.options.breakpoints.hint"
+msgstr "Per-breakpoint style overrides are written when a property is changed while a breakpoint is active."
+
+#: figma-parity/p4/c4/breakpoints
+msgid "workspace.options.breakpoints.name"
+msgstr "Name"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.title"
+msgstr "CMS"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.new-collection"
+msgstr "New collection"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.add-field"
+msgstr "Add field"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.add-item"
+msgstr "Add item"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.field-type.text"
+msgstr "Text"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.field-type.image"
+msgstr "Image"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.field-type.number"
+msgstr "Number"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.field-type.date"
+msgstr "Date"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.field-type.color"
+msgstr "Color"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.field-type.reference"
+msgstr "Reference"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.field-type.multi-reference"
+msgstr "Multi-reference"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.items"
+msgstr "Items: %s"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.bind"
+msgstr "Bind selected"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.bound-to-short"
+msgstr "Bound"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.unbind"
+msgstr "Unbind"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.bound-to"
+msgstr "Bound to %s · %s"
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.empty"
+msgstr "No collections yet — create one to bind content."
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.select-shape"
+msgstr "Select a shape to bind."
+
+#: figma-parity/p4/c4/cms
+msgid "workspace.options.cms.repeatable-hint"
+msgstr "Bind a frame as a collection list to repeat items via auto-layout."
+
+#: figma-parity/p4/c4/seo
+msgid "workspace.options.seo.section"
+msgstr "SEO"
+
+#: figma-parity/p4/c4/seo
+msgid "workspace.options.seo.title"
+msgstr "Title"
+
+#: figma-parity/p4/c4/seo
+msgid "workspace.options.seo.description"
+msgstr "Description"
+
+#: figma-parity/p4/c4/seo
+msgid "workspace.options.seo.og-image"
+msgstr "OG image URL"
+
+#: figma-parity/p4/c4/seo
+msgid "workspace.options.seo.keywords"
+msgstr "Keywords"
+
+#: figma-parity/p4/c4/seo
+msgid "workspace.options.seo.hint"
+msgstr "Emitted as <meta> tags when publishing to Ovion Cloud."
+
+#: figma-parity/p4/c4/publish
+msgid "workspace.header.menu.publish"
+msgstr "Publish to Ovion Cloud…"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.title"
+msgstr "Publish to Ovion Cloud"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.description"
+msgstr "Generates a static HTML site from the current page and uploads it to Ovion Cloud. Requires an Ovion Cloud token in AI Settings."
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.publish"
+msgstr "Publish"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.cancel"
+msgstr "Cancel"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.share-url"
+msgstr "Share URL"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.open"
+msgstr "Open"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.copy"
+msgstr "Copy"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.copied"
+msgstr "Copied"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.not-configured"
+msgstr "Ovion Cloud token not configured — add it in AI Settings."
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.publishing"
+msgstr "Publishing…"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.error"
+msgstr "Publish failed"
+
+#: figma-parity/p4/c4/publish
+msgid "modals.publish.empty-page"
+msgstr "Nothing to publish — the current page is empty."
+
 #: src/app/main/ui/dashboard/team.cljs:461
 msgid "modals.promote-owner-confirm.accept"
 msgstr "Transfer ownership"

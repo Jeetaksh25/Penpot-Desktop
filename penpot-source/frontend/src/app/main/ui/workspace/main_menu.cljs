@@ -686,6 +686,15 @@
         perms        (mf/use-ctx ctx/permissions)
         can-edit     (:can-edit perms)
 
+        ;; Figma-parity web-builder publish (Phase 4): opens the Ovion Cloud
+        ;; publish modal, which builds a static HTML bundle from the current
+        ;; page (CSS + SEO <head> + scroll snippets) and uploads it, returning
+        ;; a share-link. Gated on edit permission. See ui/workspace/publish.cljs
+        ;; + data/exports/publish.cljs.
+        show-publish
+        (mf/use-fn
+         (fn [] (on-close) (modal/show! {:type :publish})))
+
         on-remove-shared
         (mf/use-fn
          (mf/deps file-id)
@@ -846,7 +855,19 @@
                                 :on-key-down on-export-frames-key-down
                                 :id          "file-menu-export-frames"}
         [:span {:class (stl/css :item-name)}
-         (tr "dashboard.export-frames")]])]))
+         (tr "dashboard.export-frames")]])
+
+     ;; Publish to Ovion Cloud (Phase 4 web-builder). One-click static-site
+     ;; publish — see ui/workspace/publish.cljs + data/exports/publish.cljs.
+     (when can-edit
+       [:> dropdown-menu-item* {:class (stl/css :base-menu-item :submenu-item)
+                                :on-click    show-publish
+                                :on-key-down (fn [event]
+                                               (when (kbd/enter? event)
+                                                 (show-publish)))
+                                :id          "file-menu-publish"}
+        [:span {:class (stl/css :item-name)}
+         (tr "workspace.header.menu.publish")]])]))
 
 (mf/defc plugins-menu*
   {::mf/private true

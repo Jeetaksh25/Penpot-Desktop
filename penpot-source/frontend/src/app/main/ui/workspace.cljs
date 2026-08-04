@@ -28,6 +28,7 @@
    [app.main.ui.workspace.coordinates :as coordinates]
    [app.main.ui.workspace.libraries]
    [app.main.ui.workspace.nudge]
+   [app.main.ui.workspace.publish]
    [app.main.ui.workspace.repeat-grid]
    [app.main.ui.workspace.rotate-copies]
    [app.main.ui.workspace.palette :refer [palette*]]

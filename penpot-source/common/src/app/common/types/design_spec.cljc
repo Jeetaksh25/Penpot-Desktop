@@ -94,15 +94,61 @@
    [:name {:optional true} :string]
    [:starting-frame :string]])
 
+;; Forward declaration: `schema:design-spec` references `schema:site` (optional
+;; `:site` key) and `schema:site` → `schema:site-page` → `schema:design-spec`
+;; closes the mutual recursion. Declared here so the design-spec def resolves.
+(declare schema:site)
+
 (def schema:design-spec
   [:map
    [:target {:optional true} :string]
    [:frames [:vector schema:frame]]
    [:interactions {:optional true} [:vector schema:interaction]]
-   [:flows {:optional true} [:vector schema:flow]]])
+   [:flows {:optional true} [:vector schema:flow]]
+   ;; P0.03 — multi-page site generation. Optional; absent for the classic
+   ;; single-page DesignSpec the AI bar has always emitted. When present,
+   ;; `app.main.data.workspace.site-gen/apply-site-spec` fans the `:pages`
+   ;; out across real Penpot pages (one page per site-page).
+   [:site {:optional true} schema:site]])
+
+;; ── Site (multi-page) ───────────────────────────────────────────────────────
+;;
+;; A Site bundles multiple DesignSpec pages + optional nav links. Each
+;; site-page carries its own `:spec` (a recursive DesignSpec). The mutual
+;; recursion (design-spec → site → site-page → design-spec) is broken by the
+;; `declare` above. Nav links are schema-only at this stage — cross-page
+;; interaction wiring is deferred (no canvas nav-graph is built yet).
+
+(def schema:seo
+  [:map
+   [:title {:optional true} string?]
+   [:description {:optional true} string?]
+   [:og-image {:optional true} string?]
+   [:keywords {:optional true} [:vector string?]]])
+
+(def schema:nav-link
+  [:map
+   [:label string?]
+   [:page-slug string?]])
+
+(def schema:site-page
+  [:map
+   [:id {:optional true} uuid?]
+   [:name string?]
+   [:slug string?]
+   [:seo {:optional true} schema:seo]
+   [:spec schema:design-spec]])
+
+(def schema:site
+  [:map {:title "Site" :closed true}
+   [:pages [:vector schema:site-page]]
+   [:nav {:optional true} [:vector schema:nav-link]]])
 
 (def check-design-spec
   (sm/check-fn schema:design-spec))
+
+(def check-site
+  (sm/check-fn schema:site))
 
 ;; ── Coercion helpers ────────────────────────────────────────────────────────
 

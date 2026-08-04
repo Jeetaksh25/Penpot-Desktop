@@ -863,28 +863,37 @@
                       (let [name       (get params :name)
                             bg         (get params :background :not-found)
                             grid-color (get params :pixel-grid-color :not-found)
-                            grid-op    (get params :pixel-grid-opacity :not-found)]
-                        (cond-> page
-                          (string? name)
-                          (assoc :name name)
+                            grid-op    (get params :pixel-grid-opacity :not-found)
+                            ;; Generic pass-through for extra page metadata
+                            ;; keys (e.g. :seo, :cms-data) carried by the
+                            ;; extended `pcb/mod-page`. Nil clears the key.
+                            extras     (dissoc params :type :id :name :background
+                                               :pixel-grid-color :pixel-grid-opacity)
+                            page'      (cond-> page
+                                        (string? name)
+                                        (assoc :name name)
 
-                          (string? bg)
-                          (assoc :background bg)
+                                        (string? bg)
+                                        (assoc :background bg)
 
-                          (nil? bg)
-                          (dissoc :background)
+                                        (nil? bg)
+                                        (dissoc :background)
 
-                          (string? grid-color)
-                          (assoc :pixel-grid-color grid-color)
+                                        (string? grid-color)
+                                        (assoc :pixel-grid-color grid-color)
 
-                          (and (not= grid-color :not-found) (nil? grid-color))
-                          (dissoc :pixel-grid-color)
+                                        (and (not= grid-color :not-found) (nil? grid-color))
+                                        (dissoc :pixel-grid-color)
 
-                          (number? grid-op)
-                          (assoc :pixel-grid-opacity grid-op)
+                                        (number? grid-op)
+                                        (assoc :pixel-grid-opacity grid-op)
 
-                          (and (not= grid-op :not-found) (nil? grid-op))
-                          (dissoc :pixel-grid-opacity))))))
+                                        (and (not= grid-op :not-found) (nil? grid-op))
+                                        (dissoc :pixel-grid-opacity))]
+                        (reduce-kv
+                         (fn [p k v] (if (nil? v) (dissoc p k) (assoc p k v)))
+                         page'
+                         extras)))))
 
 (defmethod process-change :set-plugin-data
   [data {:keys [object-type object-id page-id namespace key value]}]

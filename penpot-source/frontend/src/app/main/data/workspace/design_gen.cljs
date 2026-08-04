@@ -44,6 +44,7 @@
    [app.main.data.helpers :as dsh]
    [app.main.data.notifications :as ntf]
    [app.main.data.workspace.selection :as dws]
+   [app.main.data.workspace.site-gen :as site-gen]
    [app.main.data.workspace.undo :as dwu]
    [app.util.i18n :as i18n :refer [tr]]
    [beicon.v2.core :as rx]
@@ -548,9 +549,16 @@
   (ptk/reify ::apply-design-spec
     ptk/WatchEvent
     (watch [it state _]
-      (let [page-id (:current-page-id state)
-            page    (dsh/lookup-page state)
-            objects (dsh/lookup-page-objects state)
+      ;; P0.03 — multi-page delegation. If the spec carries a `:site`, hand
+      ;; off to `site-gen/apply-site-spec` which fans the pages out across
+      ;; real Penpot pages in one undo transaction. The single-page behavior
+      ;; below is unchanged when `:site` is absent (the existing ai_bar.cljs
+      ;; callsite path).
+      (if (get spec :site)
+        (rx/of (site-gen/apply-site-spec opts))
+        (let [page-id (:current-page-id state)
+              page    (dsh/lookup-page state)
+              objects (dsh/lookup-page-objects state)
             ;; Validate AND expand in one guarded step. `check-design-spec`
             ;; returns the spec on success and throws ex-info on failure;
             ;; `spec->shape-tree` can also throw on malformed nested :shapes
@@ -624,7 +632,7 @@
                    (dch/commit-changes changes)
                    (when (and select? (seq top-ids))
                      (dws/select-shapes (apply d/ordered-set top-ids)))
-                   (dwu/commit-undo-transaction undo-id))))))))
+                   (dwu/commit-undo-transaction undo-id)))))))))
 
 ;; ── Preview (crude SVG) ──────────────────────────────────────────────────────
 ;;

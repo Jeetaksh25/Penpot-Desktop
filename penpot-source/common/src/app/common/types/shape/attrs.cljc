@@ -25,6 +25,9 @@
             ;; Figma-parity device frames (gap #35).
             :device-frame
 
+            ;; ALL_APPS_PARITY P0.15 — responsive breakpoints.
+            :breakpoints
+
             :applied-tokens
 
             :opacity
