@@ -7,6 +7,25 @@
 > (2 recon agents + 10 parallel tool-research agents + 1 synthesis lead, ~600k tokens, 0 errors).
 > Static-verified research only — no build was run.
 
+---
+
+## Progress dashboard
+
+> Updated at each checkpoint commit/push. **96 gaps total** (19 P0 · 36 P1 · 41 P2).
+> Mission: complete ALL of them end-to-end, production-ready.
+
+| Status | Count | Meaning |
+|---|---|---|
+| ✅ done | **21** | Implemented end-to-end + verified (commit referenced). |
+| 🟡 half-done | **26** | Partial / stubbed / runtime-no-op — needs finishing. |
+| 🔴 missing | **48** | Not implemented yet. |
+| ⚠️ not-working | **1** | Present but broken. |
+| **Remaining** | **75** | half-done + missing + not-working. |
+
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · **C3 in progress** (Phase 5 craft polish — Wave 1 render effects done; Wave 2 vector+tools in flight: P1.33 ✅, P2.32 ✅) · C4 pending (Phase 4 web-builder) · C5 pending (ecosystem + P1/P2 tail).
+
+Most-recent done: **P2.32** Scissors + Rotate Copies (C3 487253b).
+
 ## Contents
 
 1. [Executive summary & cross-cutting themes](#1-executive-summary--cross-cutting-themes)
@@ -525,7 +544,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.32 Scissors tool (cut line/border paths) and Rotate Copies tool (radial duplicates around a point)
 
-- **State:** 🔴 missing  ·  **Sources:** Sketch
+- **State:** ✅ done (C3 487253b)  ·  **Sources:** Sketch
 - **Detail / build direction:** No scissors/rotate-copies in top_toolbar.cljs or the path editor. Recommended: add a Scissors action in the path editor (split a segment at the click point) and a Rotate Copies command (radial duplicate dialog: count + center). Both reuse the path split primitive. Frontend, unblocked.
 
 #### P2.33 Selection Colors (adjust colors across multiple selected layers at once, sort by frequency/color)
@@ -604,7 +623,7 @@ Sorted P0 → P1 → P2.
 - `P1` · 🟡 half-done · **Glass effect (Liquid Glass rendering for iOS 26 / macOS 26)** — Figma-parity #61 glass is DONE-v1 = schema+UI+authoring wired (sidebar/options/menus/glass_row.cljs) but the visual renderer (shader/overlay) is DEFERRED under the no-build constraint per the recon summary; first-effect creation was wired unconditionally in Round-2 so it is authorable but does not render. Sketch's Glass was built from scratch (Barcelona 2025.2) and renders accurately for Apple's Liquid Glass language, with Apple UI Libraries updated for macOS 26/iOS 26.
 - `P1` · 🟡 half-done · **Progressive blur (linear + radial, on-canvas adjustable stops) and Fade (gradient transparency without alpha masks)** — Figma-parity #60 progressive blur is DONE-v1 (schema+UI in sidebar/options/menus/blur.cljs, 24KB) with renderer DEFERRED under no-build - authorable, not rendering. No Fade (gradient-based transparency) tool exists anywhere in Ovion's options menus. Sketch Barcelona ships both progressive blur (linear+radial, stops draggable on canvas) and the Fade effect.
 - `P2` · 🔴 missing · **Concentric (Auto) Corners - nested corner radius calculated from proximity to nearest container** — Ovion has corner smoothing/squircle (Figma-parity #2) and per-corner radii (sidebar/options/menus/border_radius.cljs r1..r4) but no auto mode that derives a child's radius from its container's radius plus inset. Sketch Athens (2025.1) ships this as a corner mode.
-- `P2` · 🔴 missing · **Scissors tool (cut away line/border paths) and Rotate Copies tool (radial duplicates around a point)** — Grep for scissors|rotate-copies|:scissors across the frontend src returned no files; ui/workspace/top_toolbar.cljs tool list is :rect :circle :text :path :image :curve :polygon with no scissors/rotate-copies entries, and the path editor (ui/workspace/shapes/path/editor.cljs) has no cut/rotate-copies action. Sketch ships both under Layer > Path.
+- `P2` · ✅ done (C3 487253b) · **Scissors tool (cut away line/border paths) and Rotate Copies tool (radial duplicates around a point)** — DONE: `:scissors` path edit-mode (Shift+C) splits a segment at the clicked point via `path/closest-point` + `drp/create-node-at-position`, with a wide transparent hit path and a Lucide scissors toolbar toggle (path_actions.cljs, editor.cljs, shortcuts.cljs). Rotate Copies: Edit-menu command opens a modal (count + center x/y); `data/workspace/rotate_copies.cljs` duplicates the selection N-1 times fanned evenly around a pivot via `cll/generate-duplicate-changes` + `ctm/rotation-modifiers` baked with `gsh/transform-shape`, one undo step.
 - `P2` · 🟡 half-done · **Explicit 4 vector point-type system (Straight / Mirror angle+length / Independent / Mirror angle) with Inspector + number-key 1-4 switching** — Ovion's pen tool (data/workspace/path/drawing.cljs) supports straight nodes, drag-to-create curve-to with c1/c2 handles, shift=fix-angle, alt=toggle opposite-handle mirror - i.e. straight/mirrored/independent behaviors exist implicitly via drag+modifiers. Grep for point-type|node-type|handle-type|mirror-angle|asymmetric|disconnected in ui/workspace/shapes/path/ found no explicit 4-type enum or number-key 1-4 shortcut system like Sketch's Inspector point-type control.
 - `P2` · 🔴 missing · **Boolean 'Add' operation (combine open paths without a boolean, for stroke/open-path compositing)** — Ovion's boolean engine (common/types/path/bool.cljc + sidebar/options/menus/bool.cljs) implements union/difference/intersection/exclusion only (4 ops). There is no 'Add' that merges open subpaths without running a boolean - useful for joining open stroke outlines. Sketch ships Add as Cmd+Opt+A.
 - `P2` · 🔴 missing · **Perceptual (Oklab) and Vibrant (Oklch) gradient interpolation** — Ovion gradients (sidebar/options/menus/gradients.cljs + fills.cljs) support linear/radial/conic/mesh (Figma-parity #5/#21) but the recon and 2026 Sketch Edinburgh release indicate Ovion uses standard sRGB interpolation; no Oklab/Oklab or Oklch perceptual interpolation mode is present. Sketch Edinburgh (2026.2) added both.
