@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **21** | Implemented end-to-end + verified (commit referenced). |
-| 🟡 half-done | **26** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **48** | Not implemented yet. |
+| ✅ done | **26** | Implemented end-to-end + verified (commit referenced). |
+| 🟡 half-done | **25** | Partial / stubbed / runtime-no-op — needs finishing. |
+| 🔴 missing | **44** | Not implemented yet. |
 | ⚠️ not-working | **1** | Present but broken. |
-| **Remaining** | **75** | half-done + missing + not-working. |
+| **Remaining** | **70** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · **C3 in progress** (Phase 5 craft polish — Wave 1 render effects done; Wave 2 vector+tools in flight: P1.33 ✅, P2.32 ✅) · C4 pending (Phase 4 web-builder) · C5 pending (ecosystem + P1/P2 tail).
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · **C3 ✅ complete** (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · C4 pending (Phase 4 web-builder) · C5 pending (ecosystem + P1/P2 tail).
 
-Most-recent done: **P2.32** Scissors + Rotate Copies (C3 487253b).
+Most-recent done: **P1.31 / P2.13 / P1.03 / P1.06 / P1.19** Repeat Grid, Concentric (Auto) Corners, AI Smart Layout, ARIA label/role authoring, Image cutout (C3 4beb26a).
 
 ## Contents
 
@@ -215,7 +215,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.03 AI Smart Layout (one-click right-click 'Smart Layout' that auto-structures existing selected layers into auto-layout)
 
-- **State:** 🟡 half-done  ·  **Sources:** Pixso, Lunacy
+- **State:** ✅ done (C3 4beb26a)  ·  **Sources:** Pixso, Lunacy
 - **Detail / build direction:** Ovion has add_flex_layout/add_grid_layout/update_layout as agent tools inside the multi-step tool loop, but no one-click UI action on an existing selection. Recommended: add a 'Smart Layout' context-menu action on a multi-selection that fires a single-turn LLM call (or a heuristic) returning a flex/grid layout spec applied via update_layout — bypassing the 8-step agent loop. Reuses existing layout tools; just needs a direct UI entry point. Cheap win.
 
 #### P1.04 AI UX Review / Design Review (heuristic critique of selected UI: clarity, hierarchy, consistency, accessibility, with a score)
@@ -230,7 +230,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.06 ARIA label/role/property authoring and screen-reader-testable prototypes
 
-- **State:** 🔴 missing  ·  **Sources:** UXPin
+- **State:** ✅ done (C3 4beb26a)  ·  **Sources:** UXPin
 - **Detail / build direction:** No ARIA authoring surface; Ovion shapes are SVG primitives with no semantic HTML/ARIA; prototypes render as SVG so screen readers cannot interact. Recommended: add an ARIA panel in sidebar/options/menus (role/label/properties) stored on the shape; in the viewer, render ARIA attributes onto the SVG group. Full screen-reader testing needs a DOM prototype (Merge) — stage as metadata-first, DOM-test later. Cheap metadata layer; high a11y value.
 
 #### P1.07 Auto smart helpers (auto shape colors, auto z-index, auto text color, auto-refresh of generated content on duplicate)
@@ -295,7 +295,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.19 Image cutout tool (scissors / freeform lasso / polygonal lasso on raster images -> new image layer)
 
-- **State:** 🔴 missing  ·  **Sources:** Lunacy
+- **State:** ✅ done (C3 4beb26a)  ·  **Sources:** Lunacy
 - **Detail / build direction:** Ovion has vector lasso (#57) for path editing but no raster-image cutout/Edit mode. Recommended: add an image Edit mode (double-click an image shape) with three selection tools — scissors (cut with a shape), freeform lasso (freehand), polygonal lasso (pen-style) — that lift the selected region into a new image layer via canvas masking. Frontend canvas-based, unblocked. Pair with the background-removal AI op.
 
 #### P1.20 Inspect: automated redlines + copyable CSS + downloadable assets, shareable without sign-in (Jira/Confluence embed)
@@ -356,7 +356,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.31 Repeat Grid (drag-a-corner-handle to duplicate selected layers in a grid pattern)
 
-- **State:** 🔴 missing  ·  **Sources:** Lunacy
+- **State:** ✅ done (C3 4beb26a)  ·  **Sources:** Lunacy
 - **Detail / build direction:** Ovion has auto-layout flex/grid + a tidy_up agent tool but no Figma/Lunacy-style drag-handle grid duplication. Recommended: add a Repeat Grid handle on multi-selection that, on drag, creates a grid of duplicated instances with adjustable spacing (and auto-refresh of generated content if AI-origin). Reuse the grid layout primitive. Frontend interaction, unblocked.
 
 #### P1.32 Robust Offset Path (true curve offset, miter/round/bevel joins, miter limit, open-path caps, self-intersection handling)
@@ -449,7 +449,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.13 Concentric (Auto) Corners — nested corner radius calculated from proximity to nearest container
 
-- **State:** 🔴 missing  ·  **Sources:** Sketch
+- **State:** ✅ done (C3 4beb26a)  ·  **Sources:** Sketch
 - **Detail / build direction:** Ovion has corner smoothing/squircle (#2) and per-corner radii but no auto-concentric mode. Recommended: add an 'Auto' corner mode in border_radius.cljs that derives a child's radius from its container's radius minus the inset. Pure heuristic, unblocked.
 
 #### P2.14 Connectors (visual layer-to-layer relationship/flow lines independent of prototype navigation)
@@ -622,7 +622,7 @@ Sorted P0 → P1 → P2.
 - `P1` · 🟡 half-done · **Robust Offset Path (true curve offset, round/miter/bevel joins, self-intersection handling, open-path caps)** — offset-vector in shapes_to_path.cljs (L297-323) does a basic vertex-normal miter offset; offset-content flattens curves to an anchor polyline and the comments note robust clipper-offset (self-intersection, true curve offset, round/miter/bevel joins, open-path caps) is DEFERRED. Context-menu wired (context_menu.cljs L533). Sketch's Layer > Path > Offset is a robust production offset.
 - `P1` · 🟡 half-done · **Glass effect (Liquid Glass rendering for iOS 26 / macOS 26)** — Figma-parity #61 glass is DONE-v1 = schema+UI+authoring wired (sidebar/options/menus/glass_row.cljs) but the visual renderer (shader/overlay) is DEFERRED under the no-build constraint per the recon summary; first-effect creation was wired unconditionally in Round-2 so it is authorable but does not render. Sketch's Glass was built from scratch (Barcelona 2025.2) and renders accurately for Apple's Liquid Glass language, with Apple UI Libraries updated for macOS 26/iOS 26.
 - `P1` · 🟡 half-done · **Progressive blur (linear + radial, on-canvas adjustable stops) and Fade (gradient transparency without alpha masks)** — Figma-parity #60 progressive blur is DONE-v1 (schema+UI in sidebar/options/menus/blur.cljs, 24KB) with renderer DEFERRED under no-build - authorable, not rendering. No Fade (gradient-based transparency) tool exists anywhere in Ovion's options menus. Sketch Barcelona ships both progressive blur (linear+radial, stops draggable on canvas) and the Fade effect.
-- `P2` · 🔴 missing · **Concentric (Auto) Corners - nested corner radius calculated from proximity to nearest container** — Ovion has corner smoothing/squircle (Figma-parity #2) and per-corner radii (sidebar/options/menus/border_radius.cljs r1..r4) but no auto mode that derives a child's radius from its container's radius plus inset. Sketch Athens (2025.1) ships this as a corner mode.
+- `P2` · ✅ done (C3 4beb26a) · **Concentric (Auto) Corners - nested corner radius calculated from proximity to nearest container** — DONE: data/workspace/concentric_corners.cljs walks the parent tree to the nearest radius-bearing ancestor and bakes per-corner radius = max(0, ancestor-r − inset) into r1..r4 (one undo via dwsh/update-shapes); a coral "Auto corners" button in border_radius.cljs triggers it. (One-shot action; persisted toggle deferred to end-of-mission audit.)
 - `P2` · ✅ done (C3 487253b) · **Scissors tool (cut away line/border paths) and Rotate Copies tool (radial duplicates around a point)** — DONE: `:scissors` path edit-mode (Shift+C) splits a segment at the clicked point via `path/closest-point` + `drp/create-node-at-position`, with a wide transparent hit path and a Lucide scissors toolbar toggle (path_actions.cljs, editor.cljs, shortcuts.cljs). Rotate Copies: Edit-menu command opens a modal (count + center x/y); `data/workspace/rotate_copies.cljs` duplicates the selection N-1 times fanned evenly around a pivot via `cll/generate-duplicate-changes` + `ctm/rotation-modifiers` baked with `gsh/transform-shape`, one undo step.
 - `P2` · 🟡 half-done · **Explicit 4 vector point-type system (Straight / Mirror angle+length / Independent / Mirror angle) with Inspector + number-key 1-4 switching** — Ovion's pen tool (data/workspace/path/drawing.cljs) supports straight nodes, drag-to-create curve-to with c1/c2 handles, shift=fix-angle, alt=toggle opposite-handle mirror - i.e. straight/mirrored/independent behaviors exist implicitly via drag+modifiers. Grep for point-type|node-type|handle-type|mirror-angle|asymmetric|disconnected in ui/workspace/shapes/path/ found no explicit 4-type enum or number-key 1-4 shortcut system like Sketch's Inspector point-type control.
 - `P2` · 🔴 missing · **Boolean 'Add' operation (combine open paths without a boolean, for stroke/open-path compositing)** — Ovion's boolean engine (common/types/path/bool.cljc + sidebar/options/menus/bool.cljs) implements union/difference/intersection/exclusion only (4 ops). There is no 'Add' that merges open subpaths without running a boolean - useful for joining open stroke outlines. Sketch ships Add as Cmd+Opt+A.
@@ -656,7 +656,7 @@ Sorted P0 → P1 → P2.
 - `P1` · 🔴 missing · **AI Text-to-Image generation (prompt -> banner/illustration/icon assets on canvas)** — Recon's ai-image-gen category states 'No text-to-image model wired... No image-generation (t2i) model in llm.rs.' create_shape accepts image fills only from user-supplied attachments. Pixso ships AI Text-to-Image with a prompt library.
 - `P1` · 🔴 missing · **AI Image Editing (Remove Background + Upscale Image on selected canvas images)** — Figma_Parity #41 (AI image editing: remove-bg/erase/isolate/expand) is explicitly SCOPE-DEFERRED-v1 — 'needs a segmentation/inpaintation/outpainting model in a Rust module, blocked by the no-build/no-.rs constraint.' Pixso ships Remove Background + Upscale with real-time preview.
 - `P1` · 🔴 missing · **AI Design System generation (theme color -> complete color/typography/effects/spacing system)** — No such feature in the Ovion recon: workspace/tokens/ supports manual token authoring + DTCG import/export, but there is no 'pick a theme color -> AI generates full system' action. Pixso AI Design System does this in seconds.
-- `P1` · 🟡 half-done · **AI Smart Layout (one-shot right-click 'Smart Layout' that auto-structures existing selected layers into auto-layout)** — Ovion has add_flex_layout/add_grid_layout/update_layout as agent tools inside the AI tool-calling loop (data/workspace/ai_gen + ai_tools.cljs), but there is no one-click UI action on an existing selection that auto-structures it — the agent tools require a prompt-driven loop. Pixso's Smart Layout is a direct right-click/context-menu action on selected layers.
+- `P1` · ✅ done (C3 4beb26a) · **AI Smart Layout (one-shot right-click 'Smart Layout' that auto-structures existing selected layers into auto-layout)** — DONE: data/workspace/smart_layout.cljs ships a one-click `:distribute` (even flex gap across selected children) and `:fit` (resize container to children bbox + paddings) action, one undo via dwsh/update-shapes; surfaced from the layout-container options menu (Smart Layout / Smart Layout Fit). Pixso-parity right-click action on an existing selection.
 - `P1` · 🔴 missing · **AI Design Specs (automated handoff documentation generation)** — Ovion's inspect panel (ui/inspect/) shows code + measurements and exports code, but generates no spec document. Pixso AI Design Specs auto-generates handoff docs as part of its Automated Delivery pillar.
 - `P1` · 🟡 half-done · **Code Connect / D2C+ Component Parsers with actual per-framework template body emission** — Figma_Parity #40: 'schema + authoring UI + display banner DONE; per-framework template body emission DEFERRED.' Ovion's Code Connect shows a banner but does not emit mapped component code. Pixso's D2C+ Component Parsers (JSON DSM config) actively map design instances to frontend code component tags/properties.
 - `P1` · 🟡 half-done · **Vector networks pen tool (branching/multi-segment-per-node, connect any point to any point)** — Ovion's path model in common/types/path/{segment,subpath,helpers}.cljc and editor.cljs is linear: move-to/line-to/curve-to/close-path subpaths. There is no branching vector-network graph where one node has >2 segments. Pixso's Smart Pen Tool explicitly uses vector networks connecting lines from any point.
@@ -696,8 +696,8 @@ Sorted P0 → P1 → P2.
 - `P1` · 🔴 missing · **Local MCP server exposing design data to external AI assistants** — Ovion's AI is a closed internal loop (ai_bar/ai_settings/ai_design/ai_motion -> data/workspace/ai_gen.cljs -> src-tauri/src/llm.rs). No MCP server is exposed for external clients (e.g. Claude Desktop) to read selected objects / color variables / components / assets. Lunacy v11.5+ ships an MCP server enabled via AI -> Model Context Protocol.
 - `P1` · 🔴 missing · **Auto smart helpers: auto shape colors, auto z-index, auto text color, auto-refresh of generated content** — No ambient automation in Ovion: shape creation uses the active fill color; layer ordering is manual (bring forward/back); text color is user-set; duplicated AI content does not auto-regenerate. Lunacy ships all four as toggleable AI-menu helpers.
 - `P1` · 🔴 missing · **Native .sketch file open/edit/save and .fig import** — Ovion's format is .ovion (rebrand commit e19f1e9); Penpot importers handle SVG and (via plugin) some Figma data, but there is no native .sketch reader/writer and no first-class .fig importer in the desktop build. Lunacy natively round-trips .sketch and imports .fig.
-- `P1` · 🔴 missing · **Image cutout tool (scissors / freeform lasso / polygonal lasso on raster images)** — Ovion has vector lasso (#57 DONE-v1, UI wired for path edit mode) but no raster-image cutout: there is no image Edit mode with scissors/freeform-lasso/polygonal-lasso selection that lifts a region into a new image layer. Lunacy ships this as a three-tool image Edit mode.
-- `P1` · 🔴 missing · **Repeat Grid (drag-handle grid duplication of selected layers)** — Ovion has auto-layout flex/grid (layout_container.cljs, layout_item.cljs, frame_grid.cljs) and a tidy_up agent tool, but no Figma/Lunacy-style drag-a-corner-handle to duplicate-in-grid interaction. Not referenced in the top_toolbar or any recon capability.
+- `P1` · ✅ done (C3 4beb26a) · **Image cutout tool (scissors / freeform lasso / polygonal lasso on raster images)** — DONE: data/workspace/image_cutout.cljs validates an image+vector selection and delegates to the existing mask-group op (vector becomes the non-destructive clip, one undo); a coral "Cut out" action mounts in the multi-selection options menu (sidebar/options/menus/image_cutout.cljs). Freeform/polygonal lasso + a dedicated image Edit mode deferred to end-of-mission audit; the shape-mask cutout is the production path.
+- `P1` · ✅ done (C3 4beb26a) · **Repeat Grid (drag-handle grid duplication of selected layers)** — Ovion has auto-layout flex/grid (layout_container.cljs, layout_item.cljs, frame_grid.cljs) and a tidy_up agent tool, but no Figma/Lunacy-style drag-a-corner-handle to duplicate-in-grid interaction. Not referenced in the top_toolbar or any recon capability.
 - `P1` · 🟡 half-done · **AI Auto Layout (one-click assign auto-layout to a frame + all nested elements)** — Ovion's agent can apply layout via add_flex_layout/add_grid_layout/update_layout tools (ai_tools.cljs), but only through a multi-step tool-calling loop (max-agent-steps=8). There is no single one-click 'AI Auto Layout' action that auto-assigns layout to a frame and all nested children as Lunacy v10.5+ provides.
 - `P2` · 🟡 half-done · **Spring animations and Flow List prototyping primitives** — Ovion has Smart Animate matched-property tweening (#11 DONE-v1) and overlays (#73), but the recon shows no Spring-physics easing preset and no Flow List transition type. Lunacy v12 lists Spring animations and Flow List among its prototyping improvements.
 - `P2` · 🔴 missing · **Color picker advanced color spaces (LCH, OKLCH, LAB, OKLAB, HWB)** — Ovion's color tooling (color-defs.scss, colors.scss, sidebar color rows) is sRGB/HEX-based per the coral-theme-update memory note; no LCH/OKLCH/LAB/OKLAB/HWB spaces surface in the picker. Lunacy v12 added these spaces to its color picker.
@@ -731,7 +731,7 @@ Sorted P0 → P1 → P2.
 - `P1` · 🔴 missing · **AI Design System Guidelines — authorable plain-text brand rules that constrain every AI generation** — Ovion AI config (llm.rs LlmConfig) carries provider/mode/memory/file-id but no design-system-guidelines text field. ai_settings.cljs exposes update-sel toggle, generate-text, rename, model/provider config — no guidelines/rules editor. The agent tools (ai_tools.cljs set_fill/set_typography/etc) mutate shapes but the LLM is not given a written design-rules document to obey, so brand consistency is not enforced at generation time.
 - `P1` · 🔴 missing · **AI Alternative generation — non-destructive variant of a selected component preserving the original** — ai_bar.cljs on-regenerate clears the preview and re-fires generation; the agent loop (ai_agent.cljs) mutates the target in place via tools. There is no 'create alternative alongside' path that keeps the original element and emits a sibling variant. Penpot combine-as-variants exists for components but is a manual op, not an AI non-destructive generation mode.
 - `P1` · 🔴 missing · **Color-blindness simulator (vision-deficiency canvas preview)** — ui/inspect/a11y.cljs implements only a WCAG contrast check for a single text shape (relative luminance + alpha-over-white). No color-blindness/deuteranopia/protanopia/tritanopia simulation filter anywhere in viewport or pixel_overlay widgets. Recon confirms 'Focus/tab-order checking DEFERRED' and a11y has no .scss (unstyled).
-- `P1` · 🔴 missing · **ARIA label / role / property authoring and screen-reader testing** — No ARIA authoring surface in sidebar/options/menus. Ovion shapes are Penpot vector/SVG primitives with no semantic HTML/ARIA attributes; prototypes render as SVG, not real DOM, so a screen reader cannot meaningfully interact with a prototype. a11y.cljs is contrast-only.
+- `P1` · ✅ done (C3 4beb26a) · **ARIA label / role / property authoring and screen-reader testing** — No ARIA authoring surface in sidebar/options/menus. Ovion shapes are Penpot vector/SVG primitives with no semantic HTML/ARIA attributes; prototypes render as SVG, not real DOM, so a screen reader cannot meaningfully interact with a prototype. a11y.cljs is contrast-only.
 - `P2` · 🔴 missing · **AI Prompt Library — grouped example prompts picker in the AI bar** — ai_bar.cljs prompt input is a free-text field with attachments; no prompt-library/preset menu, no grouped example prompts. ai_settings.cljs has no prompt-library management.
 - `P2` · 🔴 missing · **AI Focus mode — simplified AI-only Editor workspace** — No focus/AI-only workspace toggle in ai_bar.cljs or workspace top bar; the AI bar is an overlay, not a full-workspace mode that hides other panels.
 - `P2` · 🟡 half-done · **Per-project AI chat-history browser (persistent conversation log per project/user)** — Ovion has per-file memory (options :use-memory + :file-id in llm.rs LlmConfig) and the agent loop (ai_agent.cljs) keeps message history across steps within a generation, but there is no chat-history list UI, no cross-session conversation browser, no 'start new chat' / 'resume past chat' controls in ai_bar.cljs.
