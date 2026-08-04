@@ -19,6 +19,7 @@
    [app.common.types.shape.layout :as ctl]
    [app.main.data.workspace.modifiers :as dwm]
    [app.main.data.workspace.variants :as dwv]
+   [app.main.data.workspace.layout :as dwlm]
    [app.main.features :as features]
    [app.main.refs :as refs]
    [app.main.store :as st]
@@ -264,6 +265,12 @@
         ;; lasso widget in viewport/widgets.cljs, which captures a freehand
         ;; path and selects intersecting shapes. Default off = no widget.
         lasso-mode?              (contains? layout :lasso-mode)
+        ;; Color-blindness simulator (ALL_APPS_PARITY P1.09). At most one
+        ;; cb flag is present in :workspace-layout; nil when none is set,
+        ;; so the render SVG emits no :filter and no <filter> defs —
+        ;; byte-identical to the unmodified render path. The flag->mode
+        ;; mapping is owned by `app.main.data.workspace.layout`.
+        cb-mode                  (dwlm/active-color-blindness-mode layout)
         show-text-editor?        (and editing-shape (= :text (:type editing-shape)))
 
         hover-grid?              (and (some? @hover-top-frame-id)
@@ -421,8 +428,10 @@
        :width (:width vport 0)
        :height (:height vport 0)
        :view-box (utils/format-viewbox vbox)
-       :style {:background-color background
-               :pointer-events "none"}
+       :style (cond-> {:background-color background
+                       :pointer-events "none"}
+                (some? cb-mode)
+                (assoc :filter (str "url(#cb-" (name cb-mode) ")")))
        :fill "none"}
 
       [:defs
@@ -436,7 +445,29 @@
           :repeatCount "indefinite"}]
         [:stop {:offset "0%" :stop-color (str "color-mix(in srgb-linear, " background " 90%, #777)") :stop-opacity 1}]
         [:stop {:offset "50%" :stop-color (str "color-mix(in srgb-linear, " background " 80%, #777)") :stop-opacity 1}]
-        [:stop {:offset "100%" :stop-color (str "color-mix(in srgb-linear, " background " 90%, #777)") :stop-opacity 1}]]]
+        [:stop {:offset "100%" :stop-color (str "color-mix(in srgb-linear, " background " 90%, #777)") :stop-opacity 1}]]
+
+       ;; Color-blindness simulator filter defs (ALL_APPS_PARITY P1.09).
+       ;; Standard LMS confusions via feColorMatrix, matching Chrome
+       ;; DevTools' "Emulate vision deficiencies". Guarded on cb-mode so
+       ;; the defs (and the :filter style above) are entirely absent when
+       ;; no simulator is active — byte-identical to the unmodified path.
+       (when cb-mode
+         [:filter {:id "cb-deuteranopia"}
+          [:feColorMatrix {:type "matrix"
+                           :values "0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"}]])
+       (when cb-mode
+         [:filter {:id "cb-protanopia"}
+          [:feColorMatrix {:type "matrix"
+                           :values "0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"}]])
+       (when cb-mode
+         [:filter {:id "cb-tritanopia"}
+          [:feColorMatrix {:type "matrix"
+                           :values "0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0"}]])
+       (when cb-mode
+         [:filter {:id "cb-achromatopsia"}
+          [:feColorMatrix {:type "matrix"
+                           :values "0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0"}]])]
 
       (when (dbg/enabled? :show-export-metadata)
         [:> use/export-page* {:page page}])

@@ -44,7 +44,16 @@
     :lasso-mode
     ;; Figma-parity command palette (gap #47). When set, the
     ;; command-palette overlay mounts.
-    :command-palette})
+    :command-palette
+    ;; Color-blindness simulator (ALL_APPS_PARITY P1.09). At most one of
+    ;; these flags is ever present in :workspace-layout at a time —
+    ;; `set-color-blindness-mode` clears the whole group before adding the
+    ;; chosen mode (or adds nothing for :none). All default to absent, so
+    ;; rendering is byte-identical when no simulator is active.
+    :color-blindness/deuteranopia
+    :color-blindness/protanopia
+    :color-blindness/tritanopia
+    :color-blindness/achromatopsia})
 
 (def presets
   {:assets
@@ -132,6 +141,65 @@
     (effect [_ state _]
       (let [flags (:workspace-layout state)]
         (persist-layout-flags! flags)))))
+
+(def ^:private color-blindness-flag->mode
+  "Map of layout flag -> simulator mode keyword. The single source of
+  truth for the flag/mode pairing (ALL_APPS_PARITY P1.09)."
+  {:color-blindness/deuteranopia :deuteranopia
+   :color-blindness/protanopia   :protanopia
+   :color-blindness/tritanopia   :tritanopia
+   :color-blindness/achromatopsia :achromatopsia})
+
+(def ^:private color-blindness-flags
+  "The mutually-exclusive set of color-blindness simulator flags. Exactly one
+  (or none) is present in :workspace-layout at any time."
+  (set (keys color-blindness-flag->mode)))
+
+(def ^:private color-blindness-mode->flag
+  "Reverse map of simulator mode keyword -> layout flag. :none has no
+  entry (it clears the group)."
+  (into {} (for [[flag mode] color-blindness-flag->mode]
+             [mode flag])))
+
+(defn active-color-blindness-mode
+  "Return the active color-blindness simulator mode keyword present in the
+  given `:workspace-layout` flag set, or nil when no simulator flag is
+  set. Shared by the viewport renderer and the toolbar Vision menu so the
+  flag->mode mapping lives in exactly one place."
+  [layout]
+  (let [hit (some #(when (contains? layout %) %)
+                  color-blindness-flags)]
+    (get color-blindness-flag->mode hit)))
+
+(defn set-color-blindness-mode
+  "Set the active color-blindness simulator mode (ALL_APPS_PARITY P1.09).
+
+  `mode` is one of :deuteranopia, :protanopia, :tritanopia,
+  :achromatopsia or :none. The whole `color-blindness-flags` group is
+  cleared first, then the chosen mode's flag is added — so the group is
+  always mutually exclusive and :none leaves no flag set. The result is
+  persisted exactly like `toggle-layout-flag`."
+  [mode]
+  (dm/assert!
+   "expected valid color-blindness mode"
+   (or (contains? color-blindness-mode->flag mode)
+       (= mode :none)))
+  (let [flag (get color-blindness-mode->flag mode)]
+    (ptk/reify ::set-color-blindness-mode
+      ev/Event
+      (-data [_] {:name :color-blindness :mode (d/name mode)})
+
+      ptk/UpdateEvent
+      (update [_ state]
+        (update state :workspace-layout
+                (fn [flags]
+                  (let [flags (set/difference flags color-blindness-flags)]
+                    (if flag (conj flags flag) flags)))))
+
+      ptk/EffectEvent
+      (effect [_ state _]
+        (let [flags (:workspace-layout state)]
+          (persist-layout-flags! flags))))))
 
 (defn set-options-mode
   [mode]

@@ -10197,6 +10197,30 @@ msgstr "Typographies (%s)"
 msgid "workspace.toolbar.toggle-toolbar"
 msgstr "Toggle toolbar"
 
+#: src/app/main/ui/workspace/top_toolbar.cljs
+msgid "workspace.toolbar.vision"
+msgstr "Vision"
+
+#: src/app/main/ui/workspace/top_toolbar.cljs
+msgid "workspace.toolbar.vision-achromatopsia"
+msgstr "Achromatopsia"
+
+#: src/app/main/ui/workspace/top_toolbar.cljs
+msgid "workspace.toolbar.vision-deuteranopia"
+msgstr "Deuteranopia"
+
+#: src/app/main/ui/workspace/top_toolbar.cljs
+msgid "workspace.toolbar.vision-none"
+msgstr "None"
+
+#: src/app/main/ui/workspace/top_toolbar.cljs
+msgid "workspace.toolbar.vision-protanopia"
+msgstr "Protanopia"
+
+#: src/app/main/ui/workspace/top_toolbar.cljs
+msgid "workspace.toolbar.vision-tritanopia"
+msgstr "Tritanopia"
+
 #: src/app/main/ui/workspace/viewport/top_bar.cljs:45
 msgid "workspace.top-bar.read-only.done"
 msgstr "Done"

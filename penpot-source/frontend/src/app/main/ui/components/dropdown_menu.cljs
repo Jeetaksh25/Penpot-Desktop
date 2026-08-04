@@ -22,12 +22,18 @@
   [{:keys [can-focus] :rest props}]
   (let [can-focus (d/nilv can-focus true)
         tab-index (if can-focus "0" "-1")
-        props     (mf/spread-props props {:role "menuitem" :tab-index tab-index})]
+        props     (mf/spread-props props {:tab-index tab-index})
+        ;; Default :role to "menuitem" only when the caller did not
+        ;; supply one, so single-select callers can pass
+        ;; :role "menuitemradio" (or "menuitemcheckbox") and keep the
+        ;; ARIA semantics. Byte-identical for every existing caller —
+        ;; none of them pass :role.
+        props     (cond-> props (nil? (:role props)) (assoc :role "menuitem"))]
     [:> :li props]))
 
 (mf/defc internal-dropdown-menu*
   {::mf/private true}
-  [{:keys [on-close children class id on-pointer-enter on-pointer-leave]}]
+  [{:keys [on-close children class id aria-label on-pointer-enter on-pointer-leave]}]
 
   (assert (fn? on-close) "missing `on-close` prop")
 
@@ -55,7 +61,7 @@
         on-key-down
         (fn [event]
           (when-let [container (mf/ref-val container)]
-            (let [entries (vec (dom/query-all container "[role=menuitem]"))]
+            (let [entries (vec (dom/query-all container "[role=menuitem], [role=menuitemradio]"))]
 
               (cond
                 (kbd/up-arrow? event)
@@ -106,11 +112,12 @@
         #(doseq [key keys]
            (events/unlistenByKey key))))
 
-    [:ul {:class class
-          :role "menu"
-          :ref container
-          :on-pointer-enter on-pointer-enter
-          :on-pointer-leave on-pointer-leave}
+    [:ul (cond-> {:class class
+                  :role "menu"
+                  :ref container
+                  :on-pointer-enter on-pointer-enter
+                  :on-pointer-leave on-pointer-leave}
+            (some? aria-label) (assoc :aria-label aria-label))
      children]))
 
 (mf/defc dropdown-menu*

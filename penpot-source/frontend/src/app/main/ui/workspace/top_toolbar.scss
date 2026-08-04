@@ -191,6 +191,68 @@
   }
 }
 
+// Color-blindness / vision-deficiency simulator (ALL_APPS_PARITY P1.09).
+// The toolbar Vision button + dropdown mirror the MCP menu structure. The
+// eye glyph turns the accent color while a simulator mode is active so the
+// state is legible at a glance; the active menu item carries a check mark.
+.vision-icon {
+  // Named `vision-active` (not `active`) so the compound selector is not
+  // mistaken for the CSS :active pseudo-class at a glance.
+  &.vision-active {
+    color: var(--color-accent-primary);
+  }
+}
+
+.toolbar-vision-menu {
+  position: absolute;
+  left: 0;
+  top: $sz-36;
+}
+
+.toolbar-vision-dropdown {
+  box-shadow: 0 0 $sz-12 0 var(--color-shadow-dark);
+  z-index: var(--z-index-dropdown);
+  margin: 0;
+  padding: var(--sp-xs);
+  border: $b-1 solid var(--panel-border-color);
+  border-radius: $br-8;
+  background-color: var(--menu-background-color);
+  min-inline-size: px2rem(176);
+}
+
+.toolbar-vision-item {
+  @include t.use-typography("body-small");
+
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  padding: var(--sp-s) var(--sp-m);
+  border-radius: $br-8;
+  color: var(--menu-foreground-color);
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--menu-background-color-hover);
+  }
+
+  // Selected (aria-checked="true") radio item: accent text + a leading
+  // check glyph, matching the single-select semantics of role="menuitemradio".
+  &[aria-checked="true"] {
+    color: var(--color-accent-primary);
+    font-weight: 500;
+
+    &::before {
+      content: "";
+      inline-size: px2rem(4);
+      block-size: px2rem(4);
+      border-radius: 50%;
+      background-color: var(--color-accent-primary);
+      margin-inline-end: var(--sp-xxs);
+    }
+  }
+}
+
 .toolbar-separator {
   --separator-color: var(--color-background-quaternary);
 

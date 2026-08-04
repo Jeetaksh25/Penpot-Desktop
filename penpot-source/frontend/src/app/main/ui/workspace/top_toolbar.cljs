@@ -14,6 +14,7 @@
    [app.main.data.workspace :as dw]
    [app.main.data.workspace.common :as dwc]
    [app.main.data.workspace.drawing.common :as dwdc]
+   [app.main.data.workspace.layout :as dwlm]
    [app.main.data.workspace.mcp :as mcp]
    [app.main.data.workspace.media :as dwm]
    [app.main.data.workspace.shortcuts :as sc]
@@ -279,6 +280,7 @@
      [:div {:class (stl/css :toolbar-mcp-menu)}
       [:> dropdown-menu* {:show menu-open?
                           :on-close on-close-menu
+                          :id "mcp-menu"
                           :class (stl/css :toolbar-mcp-dropdown)}
        (if is-mcp-connected
          [:li {:class (stl/css :toolbar-mcp-dropdown-info)
@@ -287,6 +289,85 @@
          [:> dropdown-menu-item* {:class (stl/css :toolbar-mcp-dropdown-item)
                                   :on-click on-connect}
           (tr "workspace.toolbar.mcp-connect-here")])]]]))
+
+;; Color-blindness / vision-deficiency simulator (ALL_APPS_PARITY P1.09).
+;; A single-select dropdown that emits `dwlm/set-color-blindness-mode`;
+;; the viewport renders the matching SVG feColorMatrix filter on the
+;; canvas. `cb-mode` is the currently active mode keyword (or nil = None).
+;; Always visible — it is an accessibility inspection tool, not a
+;; feature-gated integration like the MCP tool above.
+(mf/defc vision-tool*
+  {::mf/private true
+   ::mf/wrap [mf/memo]}
+  [{:keys [cb-mode]}]
+  (let [menu-open* (mf/use-state false)
+        menu-open? (deref menu-open*)
+
+        on-toggle-menu
+        (mf/use-fn
+         (fn [event]
+           (dom/stop-propagation event)
+           (swap! menu-open* not)))
+
+        on-close-menu
+        (mf/use-fn
+         #(reset! menu-open* false))
+
+        on-select
+        (mf/use-fn
+         (fn [mode]
+           (fn []
+             (st/emit! (dwlm/set-color-blindness-mode mode)
+                       (ev/event {::ev/name "set-color-blindness-mode"
+                                  ::ev/origin "workspace:toolbar"
+                                  :mode (name mode)}))
+             (reset! menu-open* false))))]
+
+    [:*
+     [:> icon-button* {:variant "ghost"
+                       :tooltip-placement "bottom"
+                       :aria-haspopup "menu"
+                       :aria-expanded menu-open?
+                       :aria-label (tr "workspace.toolbar.vision")
+                       :data-tool "vision"
+                       :data-testid "vision-btn"
+                       :icon i/eye
+                       :icon-class (stl/css-case :vision-icon true
+                                                 :vision-active (some? cb-mode))
+                       :flyout-indicator true
+                       :on-click on-toggle-menu}]
+
+     [:div {:class (stl/css :toolbar-vision-menu)}
+      [:> dropdown-menu* {:show menu-open?
+                          :on-close on-close-menu
+                          :id "vision-menu"
+                          :aria-label (tr "workspace.toolbar.vision")
+                          :class (stl/css :toolbar-vision-dropdown)}
+       [:> dropdown-menu-item* {:role "menuitemradio"
+                                :aria-checked (if (nil? cb-mode) "true" "false")
+                                :class (stl/css :toolbar-vision-item)
+                                :on-click (on-select :none)}
+        (tr "workspace.toolbar.vision-none")]
+       [:> dropdown-menu-item* {:role "menuitemradio"
+                                :aria-checked (if (= cb-mode :deuteranopia) "true" "false")
+                                :class (stl/css :toolbar-vision-item)
+                                :on-click (on-select :deuteranopia)}
+        (tr "workspace.toolbar.vision-deuteranopia")]
+       [:> dropdown-menu-item* {:role "menuitemradio"
+                                :aria-checked (if (= cb-mode :protanopia) "true" "false")
+                                :class (stl/css :toolbar-vision-item)
+                                :on-click (on-select :protanopia)}
+        (tr "workspace.toolbar.vision-protanopia")]
+       [:> dropdown-menu-item* {:role "menuitemradio"
+                                :aria-checked (if (= cb-mode :tritanopia) "true" "false")
+                                :class (stl/css :toolbar-vision-item)
+                                :on-click (on-select :tritanopia)}
+        (tr "workspace.toolbar.vision-tritanopia")]
+       [:> dropdown-menu-item* {:role "menuitemradio"
+                                :aria-checked (if (= cb-mode :achromatopsia) "true" "false")
+                                :class (stl/css :toolbar-vision-item)
+                                :on-click (on-select :achromatopsia)}
+        (tr "workspace.toolbar.vision-achromatopsia")]]]]))
 
 (mf/defc top-toolbar*
   {::mf/wrap [mf/memo]}
@@ -308,6 +389,10 @@
         mcp-show?        (and (contains? cf/flags :mcp)
                               mcp-enabled?
                               mcp-valid-token?)
+
+        ;; Color-blindness simulator (P1.09): the active mode derived from
+        ;; the :workspace-layout flag set, nil when no simulator is on.
+        cb-mode          (dwlm/active-color-blindness-mode layout)
 
         separator?       (or plugins-enabled? *assert* mcp-show?)
 
@@ -507,6 +592,11 @@
                              :aria-label (tool-label :debug)
                              :icon i/bug
                              :on-click on-toggle-debug-panel}]])
+
+        ;; Color-blindness / vision-deficiency simulator (P1.09). Always
+        ;; available — an accessibility inspection tool, not feature-gated.
+        [:li {:class (stl/css :toolbar-option)}
+         [:> vision-tool* {:cb-mode cb-mode}]]
 
         (when mcp-show?
           [:li {:class (stl/css :toolbar-option)}
