@@ -135,7 +135,7 @@
   "Escape regex special chars in a literal string for safe embedding in
   a `js/RegExp` pattern."
   [s]
-  (str/replace s #"[.*+?^${}()|[\]\\]" "\\$&"))
+  (str/replace s #"[.*+?^${}()|\[\]\\]" "\\$&"))
 
 (defn- tag-element-contenteditable
   "In `html` string, find the first opening tag whose `class` attribute

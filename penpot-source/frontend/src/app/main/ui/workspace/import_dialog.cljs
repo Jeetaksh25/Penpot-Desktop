@@ -53,7 +53,7 @@
    (fn []
      (try
        (some-> js/window
-               (.-matchMedia "(prefers-reduced-motion: reduce)")
+               (.matchMedia "(prefers-reduced-motion: reduce)")
                (.-matches))
        (catch :default _ false)))))
 

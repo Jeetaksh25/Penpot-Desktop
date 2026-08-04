@@ -22,7 +22,6 @@
   data module provides the read/write helpers + the undo-safe commit
   events that persist through the changes pipeline (mirrors
   data/workspace/collections.cljs for shape plugin-data)."
-  (:require-macros [app.main.store :as st])
   (:require
    [app.common.data.macros :as dm]
    [app.common.files.changes-builder :as pcb]

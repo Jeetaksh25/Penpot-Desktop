@@ -379,7 +379,7 @@
 
 /* ── P2.03 — Prompt library popover ──────────────────────────────────────
    Mirrors .ai-mini-pop but wider: a search input, grouped preset rows,
-   and a "save current as preset" inline form at the bottom. Reduced-motion
+   and a \"save current as preset\" inline form at the bottom. Reduced-motion
    forces opacity:1 (the pop-in anime handles the calm entrance otherwise). */
 .ai-lib-pop { position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 71;
   min-width: 320px; max-width: 380px; max-height: 360px; display: flex; flex-direction: column;
@@ -452,7 +452,7 @@
 /* ── P2.01 — AI design checklist popover ─────────────────────────────────
    Mirrors .ai-lib-pop but tailored to a tickable checklist: a header
    row (title + generate/clear), a scrollable item list with coral
-   checkboxes, and a "Generate checklist" call-to-action when empty.
+   checkboxes, and a \"Generate checklist\" call-to-action when empty.
    Reduced-motion forces opacity:1 (the pop-in anime handles the calm
    entrance otherwise). */
 .ai-check-pop { position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 71;
@@ -508,7 +508,7 @@
 .ai-check-genbtn .ai-i { width: 14px; height: 14px; }
 
 /* ── P2.19 — focus-area predictor popover ────────────────────────────────
-   A compact popover: a one-line rationale + a coral "Go to" action and
+   A compact popover: a one-line rationale + a coral \"Go to\" action and
    a dismiss link. Reuses .ai-check-pop surface tokens. */
 .ai-focus-pop { position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 71;
   min-width: 280px; max-width: 360px; background: var(--ai-white);
@@ -2103,7 +2103,7 @@
               cur    (if multi? (get specs variant-idx) (:spec p))
               ;; P2.34 — code-gen of the just-generated element. Pure: expand
               ;; the current spec into a shape tree, then run the same Inspect
-              │  Code generators (HTML markup + CSS style) the Inspect panel
+              ;; Code generators (HTML markup + CSS style) the Inspect panel
               ;;  uses. Defensive — any failure yields nil so the code panel
               ;;  shows an "unavailable" message instead of crashing the modal.
               tree         (try (cds/spec->shape-tree cur) (catch :default _ nil))
