@@ -415,7 +415,7 @@
 
             on-pick
             (mf/use-fn
-             (mf/deps shape-id)
+             (mf/deps shape-id registry)
              (fn [e]
                (let [raw (.. e -target -value)
                      id-kw (if (or (nil? raw) (empty? raw)) nil (keyword raw))

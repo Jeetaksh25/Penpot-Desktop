@@ -297,7 +297,7 @@
                 name     (:name action)
                 payload  (build-payload state page-id cfg)
                 request  (clj->js {:endpoint  (or endpoint nil)
-                                   :form_name (or name "form")
+                                   :formName (or name "form")
                                    :payload   payload
                                    :token     nil})
                 handle     (fn [result]

@@ -147,7 +147,7 @@
   `slot` is `{:id <kw> :props {..}}` or nil to clear. `changes` must carry
   file-data + page context (via pcb/with-file-data + pcb/with-page)."
   [changes shape-id page-id slot]
-  (let [value (if (nil? slot) "" (pr-str slot))]
+  (let [value (if (nil? slot) nil (pr-str slot))]
     (pcb/set-plugin-data changes :shape shape-id page-id ovion-namespace slot-key value)))
 
 ;; --- Events (one undo transaction) ------------------------------------------

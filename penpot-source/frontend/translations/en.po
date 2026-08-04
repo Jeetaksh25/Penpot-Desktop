@@ -14451,3 +14451,31 @@ msgstr "Expand"
 msgid "workspace.ai.bar.adapt-select"
 msgstr "Select a region to adapt"
 
+#: ovion/all-apps-parity/final-audit
+msgid "workspace.path.actions.offset-path.distance"
+msgstr "Distance"
+
+#: ovion/all-apps-parity/final-audit
+msgid "workspace.path.actions.offset-path.join"
+msgstr "Join"
+
+#: ovion/all-apps-parity/final-audit
+msgid "workspace.path.actions.offset-path.miter-limit"
+msgstr "Miter limit"
+
+#: ovion/all-apps-parity/final-audit
+msgid "workspace.path.actions.offset-path.cap"
+msgstr "Cap"
+
+#: ovion/all-apps-parity/final-audit
+msgid "workspace.path.actions.offset-path.live"
+msgstr "Live Offset Path"
+
+#: ovion/all-apps-parity/final-audit
+msgid "workspace.path.actions.offset-path.bake"
+msgstr "Bake into path"
+
+#: ovion/all-apps-parity/final-audit
+msgid "workspace.path.actions.offset-path.clear"
+msgstr "Clear offset"
+

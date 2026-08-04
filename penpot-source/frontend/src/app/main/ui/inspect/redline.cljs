@@ -30,6 +30,7 @@
    [app.main.data.event :as-alias ev]
    [app.main.store :as st]
    [app.main.ui.components.copy-button :refer [copy-button*]]
+   [app.main.ui.components.title-bar :refer [inspect-title-bar*]]
    [app.util.i18n :refer [tr]]
    [rumext.v2 :as mf]))
 

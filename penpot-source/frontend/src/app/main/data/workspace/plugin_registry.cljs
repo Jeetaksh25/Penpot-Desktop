@@ -107,7 +107,7 @@
                                               (:id page)
                                               pc-namespace
                                               pc-key
-                                              (write-enabled-map new-map)))]
+                                              (if (empty? new-map) nil (write-enabled-map new-map))))]
         (rx/of (dwu/start-undo-transaction undo-id)
                (dch/commit-changes changes)
                (dwu/commit-undo-transaction undo-id))))))
@@ -227,4 +227,4 @@
       (let [page    (dsh/lookup-page state)
             enabled (current-enabled-map page)
             pid     (:id plugin)]
-        (commit-enabled-map it state (assoc enabled pid false))))))
+        (commit-enabled-map it state (dissoc enabled pid))))))
