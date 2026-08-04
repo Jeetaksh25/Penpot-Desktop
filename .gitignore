@@ -58,3 +58,8 @@ LPT2
 # ── IDE / AI ──────────────────────────────────────────────────────────────
 /.claude
 /.serena
+
+# ── temp tooling (untracked, removed at C5) ──
+scan2.py
+__pycache__/
+*.pyc

@@ -109,6 +109,28 @@
                      :subsections [:path-editor]
                      :fn #(st/emit! (drp/make-curve))}
 
+   ;; ALL_APPS_PARITY P2.18 — explicit 4 vector point-type system. Number
+   ;; keys 1-4 switch the selected node's point-type when the path editor
+   ;; is active. Bound to the :path-editor subsection only, so they don't
+   ;; clobber global shortcuts (plain 1-4 are otherwise unbound; the zoom
+   ;; shortcuts use shift+0/1/2).
+   :point-type-straight            {:tooltip "1"
+                                    :command "1"
+                                    :subsections [:path-editor]
+                                    :fn #(st/emit! (drp/set-point-type :straight))}
+   :point-type-mirror-angle-length {:tooltip "2"
+                                    :command "2"
+                                    :subsections [:path-editor]
+                                    :fn #(st/emit! (drp/set-point-type :mirror-angle-length))}
+   :point-type-independent          {:tooltip "3"
+                                    :command "3"
+                                    :subsections [:path-editor]
+                                    :fn #(st/emit! (drp/set-point-type :independent))}
+   :point-type-mirror-angle         {:tooltip "4"
+                                    :command "4"
+                                    :subsections [:path-editor]
+                                    :fn #(st/emit! (drp/set-point-type :mirror-angle))}
+
    :snap-nodes      {:tooltip (ds/meta "'")
                      ;;https://github.com/ccampbell/mousetrap/issues/85
                      :command [(ds/c-mod "'") (ds/c-mod "219")]

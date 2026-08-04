@@ -15,6 +15,9 @@
    [app.common.types.tokens-lib :as ctob]
    [app.common.uuid :as uuid]
    [app.main.data.viewer :as dv]
+   [app.main.data.workspace.dynamic-panels :as dwdp]
+   [app.main.data.workspace.element-states :as dwes]
+   [app.main.data.workspace.motion-effects :as dwme]
    [app.main.refs :as refs]
    [app.main.router :as rt]
    [app.main.store :as st]
@@ -28,10 +31,12 @@
    [app.main.ui.shapes.shape :refer [shape-container]]
    [app.main.ui.shapes.svg-raw :as svg-raw]
    [app.main.ui.shapes.text :as text]
+   [app.main.ui.workspace.ai-motion :as am]
    [app.util.dom :as dom]
    [app.util.object :as obj]
    [app.util.timers :as tm]
    [okulary.core :as l]
+   [potok.v2.core :as ptk]
    [rumext.v2 :as mf]))
 
 (def base-frame-ctx (mf/create-context nil))
@@ -51,6 +56,48 @@
 
 (def ^:private ref:viewer-error-state
   (l/derived :viewer-error-state st/state))
+
+;; P1.14 + P2.29: runtime panel-state + element-state slices. Top-level potok
+;; slices written by `set-panel-state` / `set-element-state` (defined below).
+;; Derived here so the generic wrapper + frame container re-render reactively
+;; when a :set-panel-state / :set-element-state interaction fires.
+;;   :viewer-panel-state   {frame-id -> state-name}
+;;   :viewer-element-state  {shape-id -> state-name}
+;; Empty/absent map = no state active = byte-identical rendering.
+(def ^:private ref:viewer-panel-state
+  (l/derived :viewer-panel-state st/state))
+
+(def ^:private ref:viewer-element-state
+  (l/derived :viewer-element-state st/state))
+
+;; P1.14: set the active named state on a frame (dynamic panel). Mutates the
+;; :viewer-panel-state slice {frame-id -> state-name}. A nil state-name clears
+;; the entry (reverts to showing all children). Additive — empty map = no panel
+;; state active = byte-identical rendering.
+(defn set-panel-state
+  [frame-id state-name]
+  (ptk/reify ::set-panel-state
+    ptk/UpdateEvent
+    (update [_ state]
+      (let [panel-state (or (:viewer-panel-state state) {})]
+        (assoc state :viewer-panel-state
+               (if (nil? state-name)
+                 (dissoc panel-state frame-id)
+                 (assoc panel-state frame-id state-name)))))))
+
+;; P2.29: set the active state on a shape (element multi-state). Mutates the
+;; :viewer-element-state slice {shape-id -> state-name}. A nil state-name
+;; reverts the shape to its :base state.
+(defn set-element-state
+  [shape-id state-name]
+  (ptk/reify ::set-element-state
+    ptk/UpdateEvent
+    (update [_ state]
+      (let [el-state (or (:viewer-element-state state) {})]
+        (assoc state :viewer-element-state
+               (if (nil? state-name)
+                 (dissoc el-state shape-id)
+                 (assoc el-state shape-id state-name)))))))
 
 (defn- find-relative-to-base-frame
   [shape objects overlays-ids base-frame]
@@ -170,6 +217,26 @@
          sh))
      shape
      overrides)))
+
+;; P2.29: merge a shape's active element-state into its render props, on top
+;; of any runtime style overrides. Reads the shape's element-states plugin-data
+;; (base/active/nested) and the active state-name from the runtime slice. A
+;; non-base state inherits unset props from :base (base->all propagation);
+;; reuses apply-style-overrides' prop->render mapping so the merged props are
+;; applied identically to a :set-style override. Nil-safe when there are no
+;; element-states or no active state (returns shape byte-identical).
+(defn- apply-element-state
+  [shape active-states]
+  (let [shape-id (:id shape)
+        active   (get active-states shape-id)]
+    (if (nil? active)
+      shape
+      (let [states        (dwes/read-element-states shape)
+            base          (get states :base {})
+            active-props  (get states active)]
+        (if (nil? active-props)
+          shape
+          (apply-style-overrides shape (merge base active-props)))))))
 
 (defn activate-interaction
   ([interaction shape base-frame frame-offset objects overlays]
@@ -385,6 +452,28 @@
           error?    (true? (get interaction :error? true))]
       (when target-id
         (st/emit! (dv/set-error-state target-id error?))))
+
+    ;; P1.14: set-panel-state switches a generic N-state frame to a named
+    ;; panel state. :panel-id is the frame carrying panel-states plugin-data
+    ;; (:ovion "panel-states"); :panel-state is the named state to activate.
+    ;; A nil :panel-id falls back to the source shape's own id. Nil-safe when
+    ;; either id or state-name is absent.
+    :set-panel-state
+    (let [frame-id   (or (:panel-id interaction) (:id shape))
+          state-name (:panel-state interaction)]
+      (when (and frame-id (string? state-name))
+        (st/emit! (set-panel-state frame-id state-name))))
+
+    ;; P2.29: set-element-state switches a shape's active element state
+    ;; (base/active/nested). :element-state-name is the state to activate on
+    ;; the source shape. The shape's element-states plugin-data
+    ;; (:ovion "element-states") carries the per-state prop maps; the viewer
+    ;; merges base+active on render (see apply-element-state below).
+    :set-element-state
+    (let [shape-id   (:id shape)
+          state-name (:element-state-name interaction)]
+      (when (and shape-id (string? state-name))
+        (st/emit! (set-element-state shape-id state-name))))
 
     ;; P0.17: scroll-animate is a continuous scroll-driven animation binding.
     ;; It is applied by the scroll handler on each scroll event (see
@@ -665,7 +754,14 @@
           ;; visual overrides, and the id is unchanged).
           style-overrides    (mf/deref ref:viewer-style-overrides)
           error-state        (mf/deref ref:viewer-error-state)
-          effective-shape    (apply-style-overrides shape (get style-overrides (:id shape)))
+          ;; P2.29: element-state reactive read. The active state-name for this
+          ;; shape lives in the :viewer-element-state slice; apply-element-state
+          ;; merges base+active props into effective-shape (on top of style
+          ;; overrides). Nil-safe when no state is active.
+          element-states     (mf/deref ref:viewer-element-state)
+          effective-shape    (-> shape
+                                 (apply-style-overrides (get style-overrides (:id shape)))
+                                 (apply-element-state element-states))
           in-error?          (contains? error-state (:id shape))
 
           ;; The objects parameter has the shapes that we must draw. It may be a subset of
@@ -691,6 +787,53 @@
       (mf/with-effect []
         (let [sems (on-load shape base-frame frame-offset objects overlays)]
           (partial run! tm/dispose! sems)))
+
+      ;; P1.16: motion-effect runtime. Read the shape's motion-effect plugin-data
+      ;; (:ovion "motion-effect") and run the corresponding GSAP/AnimeJS timeline
+      ;; on the shape's DOM node (#shape-<id>). Reduced-motion guarded inside
+      ;; ai-motion (run-motion-effect forces the end state under reduced-motion
+      ;; for Appear, no-ops Loop/Drag). Dispose the returned teardown on unmount.
+      (mf/with-effect [(:id shape)]
+        (let [effect (dwme/read-motion-effect shape)
+              node   (dom/query (str "#shape-" (str (:id shape))))]
+          (if (and (some? effect) (some? node))
+            (let [teardown (am/run-motion-effect node effect)]
+              (fn [] (when (fn? teardown) (teardown))))
+            (fn [] nil))))
+
+      ;; P2.24: component hover/pressed state-overrides runtime. Read the
+      ;; shape's state-overrides plugin-data (:ovion "state-overrides") and
+      ;; attach DOM listeners that emit dv/set-style for each overridden prop
+      ;; on mouseenter/mousedown and dv/clear-style on mouseleave/mouseup. The
+      ;; overrides then render through the existing :viewer-style-overrides
+      ;; slice + apply-style-overrides. Only attaches when overrides exist.
+      (mf/with-effect [(:id shape)]
+        (let [overrides (dwes/read-state-overrides shape)
+              node     (dom/query (str "#shape-" (str (:id shape))))]
+          (if (and (seq overrides) (some? node))
+            (let [shape-id    (:id shape)
+                  hover-props (get overrides :hover)
+                  press-props (get overrides :pressed)
+                  apply-props (fn [props]
+                                (when (seq props)
+                                  (doseq [[k v] props]
+                                    (st/emit! (dv/set-style shape-id k v)))))
+                  on-enter    (fn [] (apply-props hover-props))
+                  on-leave    (fn [] (when (seq hover-props)
+                                       (st/emit! (dv/clear-style shape-id))))
+                  on-down     (fn [] (apply-props press-props))
+                  on-up       (fn [] (when (seq press-props)
+                                       (st/emit! (dv/clear-style shape-id))))]
+              (.addEventListener node "mouseenter" on-enter)
+              (.addEventListener node "mouseleave" on-leave)
+              (.addEventListener node "mousedown" on-down)
+              (.addEventListener node "mouseup" on-up)
+              (fn []
+                (.removeEventListener node "mouseenter" on-enter)
+                (.removeEventListener node "mouseleave" on-leave)
+                (.removeEventListener node "mousedown" on-down)
+                (.removeEventListener node "mouseup" on-up)))
+            (fn [] nil))))
 
       (if-not svg-element?
         [:> shape-container {:shape effective-shape
@@ -774,8 +917,31 @@
     (mf/fnc frame-container
       {::mf/wrap-props false}
       [props]
-      (let [shape  (unchecked-get props "shape")
-            childs (into [] lookup-xf (:shapes shape))
+      (let [shape        (unchecked-get props "shape")
+            raw-childs   (into [] lookup-xf (:shapes shape))
+            ;; P1.14: dynamic-panel child filtering. Read the frame's
+            ;; panel-states plugin-data (:ovion "panel-states" =
+            ;; {state-name [child-id ...]}) and the active state-name from the
+            ;; runtime :viewer-panel-state slice. When a state is active, hide
+            ;; children that belong to a DIFFERENT state (children in the active
+            ;; state or in no state stay visible). Nil-safe: empty panel-states
+            ;; or no active state = show all children (byte-identical).
+            panel-states (dwdp/read-panel-states shape)
+            active-state (get (mf/deref ref:viewer-panel-state) (:id shape))
+            childs       (if (or (empty? panel-states) (nil? active-state))
+                           raw-childs
+                           (let [hidden-ids
+                                 (reduce-kv
+                                  (fn [acc sname ids]
+                                    (if (= sname active-state)
+                                      acc
+                                      (reduce conj acc ids)))
+                                  #{} panel-states)]
+                             (if (empty? hidden-ids)
+                               raw-childs
+                               (filterv (fn [c]
+                                          (not (contains? hidden-ids (:id c))))
+                                        raw-childs))))
             props  (obj/merge props
                               #js {:childs childs
                                    :objects objects

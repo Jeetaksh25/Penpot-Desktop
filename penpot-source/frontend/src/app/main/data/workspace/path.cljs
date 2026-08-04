@@ -44,6 +44,8 @@
 (dm/export tools/join-nodes)
 (dm/export tools/separate-nodes)
 (dm/export tools/toggle-snap)
+;; ALL_APPS_PARITY P2.18 — explicit 4 vector point-type system.
+(dm/export tools/set-point-type)
 
 ;; Undo/redo
 (dm/export undo/undo-path)

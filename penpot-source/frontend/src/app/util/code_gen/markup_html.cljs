@@ -15,6 +15,7 @@
    [app.main.ui.shapes.text.html-text :as text]
    [app.util.code-gen.common :as cgc]
    [app.util.code-gen.markup-svg :refer [generate-svg]]
+   [cljs.reader :as reader]
    [cuerdas.core :as str]
    [rumext.v2 :as mf]))
 
@@ -107,6 +108,96 @@
                  "})();</script>"))))))
        (str/join "\n")))
 
+;; ── Ovion authoring: semantic tags, custom CSS classes, forms, notes ────────
+;;
+;; P0.13 (semantic HTML + custom CSS classes), WS-FORMS (form export), and
+;; WS-INSPECT (widget notes) all persist author intent on the shape's
+;; plugin-data under the `:ovion` namespace as pr-str EDN. These helpers
+;; read+parse those slots here, in the lower code-gen layer, WITHOUT taking a
+;; dependency on the workspace data namespaces (avoids a layering cycle).
+
+(defn- read-pd
+  "Read+parse an EDN value from `shape`'s plugin-data under the :ovion
+  namespace for `key`. Returns nil when absent or unreadable."
+  [shape key]
+  (let [raw (get-in shape [:plugin-data :ovion key])]
+    (when (some? raw)
+      (try (reader/read-string raw)
+           (catch :default _ nil)))))
+
+(def ^:private semantic-tags
+  #{"header" "main" "section" "nav" "article" "aside" "footer"
+    "figure" "figcaption" "ul" "ol" "li" "blockquote" "h1" "h2" "h3"
+    "h4" "h5" "h6" "p" "span" "div"})
+
+(defn- pd-tag
+  "Authored semantic HTML tag (plugin-data :ovion/\"semantic-tag\"), validated
+  against a safe whitelist so an authored value can never emit an arbitrary
+  tag. Defaults to \"div\"."
+  [shape]
+  (let [t (read-pd shape "semantic-tag")]
+    (if (contains? semantic-tags t) (or t "div") "div")))
+
+(defn- pd-class
+  "Authored custom CSS class (plugin-data :ovion/\"css-class\"), or nil.
+  Returned verbatim only when it is a non-blank string."
+  [shape]
+  (let [c (read-pd shape "css-class")]
+    (when (and (string? c) (not (str/blank? c))) c)))
+
+(defn- class-string
+  "Build the class attribute value for `shape`. When `prefix?` is true the
+  legacy `shape ` prefix is prepended (kept for backward-compat with the
+  scroll-snippet selectors). Any authored custom CSS class is appended."
+  [shape prefix?]
+  (let [base (if prefix?
+               (dm/str "shape " (d/name (:type shape)) " " (cgc/shape->selector shape))
+               (dm/str (d/name (:type shape)) " " (cgc/shape->selector shape)))
+        cls  (pd-class shape)]
+    (if cls (dm/str base " " cls) base)))
+
+(defn- pd-notes
+  "Authored widget note (plugin-data :ovion/\"widget-notes\") as a plain
+  string for the HTML comment, or nil. Stored as either a raw string or an
+  EDN map with a :note key."
+  [shape]
+  (let [n (read-pd shape "widget-notes")]
+    (cond
+      (string? n) (when-not (str/blank? n) n)
+      (map? n)    (let [s (:note n)]
+                    (when (and (string? s) (not (str/blank? s))) s))
+      :else       nil)))
+
+(defn- form-slot
+  "Raw form-config slot string for `shape`, or nil."
+  [shape]
+  (get-in shape [:plugin-data :ovion "form-config"]))
+
+(defn- form-frame?
+  "True when `shape` is a frame carrying an Ovion form config in plugin-data."
+  [shape]
+  (and (cfh/frame-shape? shape) (some? (form-slot shape))))
+
+(defn- form-config
+  "Parsed form config for `shape`, or nil when not a form frame / unreadable."
+  [shape]
+  (when-let [raw (form-slot shape)]
+    (try (reader/read-string raw) (catch :default _ nil))))
+
+(defn- form-action-attr
+  "Build the `action`/`method`/data attributes for a form config. Ovion-cloud
+  forms POST to the configured endpoint; unconfigured forms POST to `#` so the
+  markup still validates. The success/error messages ride along as data
+  attributes for the front-end submit hook."
+  [config]
+  (let [action  (-> config :action :endpoint)
+        has-ep? (and (some? action) (not (str/blank? action)))]
+    (dm/str " action=\"" (if has-ep? action "#") "\""
+            " method=\"POST\""
+            " data-ovion-form=\"\""
+            " data-ovion-success=\"" (or (:success-message config) "") "\""
+            " data-ovion-error=\"" (or (:error-message config) "") "\"")))
+
 (defn generate-html
   ([objects shape]
    (generate-html objects shape 0))
@@ -119,22 +210,24 @@
            (cond
              (cgc/svg-markup? shape)
              (let [svg-markup (generate-svg objects shape)]
-               (dm/fmt "%<div class=\"%\">\n%\n%</div>"
+               (dm/fmt "%<% class=\"%\">\n%\n</%>"
                        indent
-                       (dm/str "shape " (d/name (:type shape)) " "
-                               (cgc/shape->selector shape))
+                       (pd-tag shape)
+                       (class-string shape true)
                        svg-markup
-                       indent))
+                       indent
+                       (pd-tag shape)))
 
              (cfh/text-shape? shape)
              (let [text-shape-html (rds/renderToStaticMarkup (mf/element text/text-shape* #js {:shape shape :isCode true}))
                    text-shape-html (str/replace text-shape-html #"style\s*=\s*[\"'][^\"']*[\"']" "")]
-               (dm/fmt "%<div class=\"%\">\n%\n%</div>"
+               (dm/fmt "%<% class=\"%\">\n%\n</%>"
                        indent
-                       (dm/str "shape " (d/name (:type shape)) " "
-                               (cgc/shape->selector shape))
+                       (pd-tag shape)
+                       (class-string shape true)
                        text-shape-html
-                       indent))
+                       indent
+                       (pd-tag shape)))
 
              (cfh/image-shape? shape)
              (let [data (or (:metadata shape) (:fill-image shape))
@@ -142,30 +235,47 @@
                (dm/fmt "%<img src=\"%\" class=\"%\">\n%</img>"
                        indent
                        image-url
-                       (dm/str "shape " (d/name (:type shape)) " "
-                               (cgc/shape->selector shape))
+                       (class-string shape true)
                        indent))
 
              (empty? (:shapes shape))
-             (dm/fmt "%<div class=\"%\">\n%</div>"
+             (dm/fmt "%<% class=\"%\">\n%</%>"
                      indent
-                     (dm/str "shape " (d/name (:type shape)) " "
-                             (cgc/shape->selector shape))
-                     indent)
+                     (pd-tag shape)
+                     (class-string shape true)
+                     indent
+                     (pd-tag shape))
+
+             (form-frame? shape)
+             (let [config   (form-config shape)
+                   children (->> shape :shapes (map #(get objects %)))
+                   reverse? (ctl/any-layout? shape)
+                   ;; The order for layout elements is the reverse of SVG order
+                   children (cond-> children reverse? reverse)
+                   action   (form-action-attr config)]
+               (dm/fmt "%<form% class=\"%\">\n%\n</form>"
+                       indent
+                       action
+                       (class-string shape false)
+                       (->> children
+                            (map #(generate-html objects % (inc level)))
+                            (str/join "\n"))
+                       indent))
 
              :else
              (let [children (->> shape :shapes (map #(get objects %)))
                    reverse? (ctl/any-layout? shape)
                    ;; The order for layout elements is the reverse of SVG order
                    children (cond-> children reverse? reverse)]
-               (dm/fmt "%<div class=\"%\">\n%\n%</div>"
+               (dm/fmt "%<% class=\"%\">\n%\n</%>"
                        indent
-                       (dm/str (d/name (:type shape)) " "
-                               (cgc/shape->selector shape))
+                       (pd-tag shape)
+                       (class-string shape false)
                        (->> children
                             (map #(generate-html objects % (inc level)))
                             (str/join "\n"))
-                       indent)))
+                       indent
+                       (pd-tag shape))))
 
            shape-html
            (let [scroll-ints (scroll-interactions shape)]
@@ -180,7 +290,14 @@
                       shape-html)
 
              shape-html)]
-       (dm/fmt "%<!-- % -->\n%" indent (dm/str (d/name (:type shape)) ": " (:name shape)) shape-html)))))
+       (dm/fmt "%<!-- % -->\n%"
+               indent
+               (dm/str (d/name (:type shape)) ": " (:name shape)
+                       (when-let [n (pd-notes shape)]
+                         ;; Collapse `--` so an authored note can never break
+                         ;; out of the HTML comment.
+                         (dm/str " — " (str/replace n #"-{2,}" "-"))))
+               shape-html)))))
 
 (defn- any-scroll-shape?
   "Walk the shape tree (via the objects index) and return true if any shape

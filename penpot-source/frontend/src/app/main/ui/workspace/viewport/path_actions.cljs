@@ -13,6 +13,7 @@
    [app.main.data.workspace.path.shapes-to-path :as dwps]
    [app.main.store :as st]
    [app.main.ui.icons :as deprecated-icon]
+   [app.main.ui.workspace.sidebar.options.menus.point-type :refer [point-type-options*]]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
    [rumext.v2 :as mf]))
@@ -82,6 +83,35 @@
 
 (def ^:private simplify-vector-icon
   (deprecated-icon/icon-xref :remove (stl/css :remove :pathbar-icon)))
+
+;; ALL_APPS_PARITY P1.32 — live Offset Path effect icons. Inline Lucide
+;; glyphs (stroke-width 2, currentColor): "sparkles" (Live — store the
+;; non-destructive effect), "check" (Bake — finalize into path data) and
+;; "eraser"/x (Clear — remove the effect, restore the original outline).
+(def ^:private offset-live-icon
+  [:svg {:class (stl/css :offset-btn-icon)
+         :viewBox "0 0 24 24" :fill "none"
+         :stroke "currentColor" :stroke-width 2
+         :stroke-linecap "round" :stroke-linejoin "round"
+         :aria-hidden true}
+   [:path {:d "M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"}]])
+
+(def ^:private offset-bake-icon
+  [:svg {:class (stl/css :offset-btn-icon)
+         :viewBox "0 0 24 24" :fill "none"
+         :stroke "currentColor" :stroke-width 2
+         :stroke-linecap "round" :stroke-linejoin "round"
+         :aria-hidden true}
+   [:path {:d "M20 6L9 17l-5-5"}]])
+
+(def ^:private offset-clear-icon
+  [:svg {:class (stl/css :offset-btn-icon)
+         :viewBox "0 0 24 24" :fill "none"
+         :stroke "currentColor" :stroke-width 2
+         :stroke-linecap "round" :stroke-linejoin "round"
+         :aria-hidden true}
+   [:line {:x1 18 :y1 6 :x2 6 :y2 18}]
+   [:line {:x1 6 :y1 6 :x2 18 :y2 18}]])
 
 (defn check-enabled [content selected-points]
   (when content
@@ -226,7 +256,40 @@
         (mf/use-fn
          (mf/deps (:id shape) @simplify-threshold*)
          (fn [_]
-           (st/emit! (dwps/simplify-vector [(:id shape)] @simplify-threshold*))))]
+           (st/emit! (dwps/simplify-vector [(:id shape)] @simplify-threshold*))))
+
+        ;; ALL_APPS_PARITY P1.32 — live (non-destructive) Offset Path effect.
+        ;; Local component state for the effect params (distance/join/miter-
+        ;; limit/cap). "Live" stores the effect on the shape (the renderer
+        ;; in shapes/path.cljs applies it at draw time); "Bake" finalizes it
+        ;; into the path data; "Clear" removes it and restores the original.
+        offset-distance*    (mf/use-state 1.0)
+        offset-join*        (mf/use-state :miter)
+        offset-miter-limit* (mf/use-state 4)
+        offset-cap*         (mf/use-state nil)
+
+        on-offset-live
+        (mf/use-fn
+         (mf/deps (:id shape) @offset-distance* @offset-join*
+                  @offset-miter-limit* @offset-cap*)
+         (fn [_]
+           (let [effect (cond-> {:distance     @offset-distance*
+                                  :join         @offset-join*
+                                  :miter-limit  @offset-miter-limit*}
+                          (some? @offset-cap*) (assoc :cap @offset-cap*))]
+             (st/emit! (dwps/set-offset-effect [(:id shape)] effect)))))
+
+        on-offset-bake
+        (mf/use-fn
+         (mf/deps (:id shape))
+         (fn [_]
+           (st/emit! (dwps/bake-offset-effect [(:id shape)]))))
+
+        on-offset-clear
+        (mf/use-fn
+         (mf/deps (:id shape))
+         (fn [_]
+           (st/emit! (dwps/clear-offset-effect [(:id shape)]))))]
 
     [:div {:class (stl/css :sub-actions)
            :data-dont-clear-path true}
@@ -354,10 +417,72 @@
                               (when-not (js/isNaN value)
                                 (reset! simplify-threshold* value))))}]]
 
+     ;; ALL_APPS_PARITY P1.32 — live Offset Path effect. Exposes distance /
+     ;; join / miter-limit / cap params alongside the destructive Offset
+     ;; Vector button above. "Live" stores the non-destructive effect (the
+     ;; renderer in shapes/path.cljs applies it at draw time); "Bake"
+     ;; finalizes it into the path data; "Clear" removes it.
+     [:div {:class (stl/css :sub-actions-group)}
+      [:input {:class (stl/css :offset-input)
+               :type "number"
+               :min -1000 :max 1000 :step 0.1
+               :value @offset-distance*
+               :title (tr "workspace.path.actions.offset-path.distance")
+               :on-change (fn [event]
+                            (let [v (js/Number (dom/get-value (dom/get-current-target event)))]
+                              (when-not (js/isNaN v)
+                                (reset! offset-distance* v))))}]
+      [:select {:class (stl/css :offset-select)
+                :value (name @offset-join*)
+                :title (tr "workspace.path.actions.offset-path.join")
+                :on-change (fn [event]
+                             (let [v (keyword (dom/get-value (dom/get-current-target event)))]
+                               (reset! offset-join* v)))}
+       [:option {:value "miter"} "miter"]
+       [:option {:value "round"} "round"]
+       [:option {:value "bevel"} "bevel"]]
+      [:input {:class (stl/css :offset-input)
+               :type "number"
+               :min 1 :max 20 :step 0.5
+               :value @offset-miter-limit*
+               :title (tr "workspace.path.actions.offset-path.miter-limit")
+               :on-change (fn [event]
+                            (let [v (js/Number (dom/get-value (dom/get-current-target event)))]
+                              (when-not (js/isNaN v)
+                                (reset! offset-miter-limit* v))))}]
+      [:select {:class (stl/css :offset-select)
+                :value (if (nil? @offset-cap*) "none" (name @offset-cap*))
+                :title (tr "workspace.path.actions.offset-path.cap")
+                :on-change (fn [event]
+                             (let [raw (dom/get-value (dom/get-current-target event))]
+                               (reset! offset-cap* (when (not= raw "none") (keyword raw)))))}
+       [:option {:value "none"} "none"]
+       [:option {:value "butt"} "butt"]
+       [:option {:value "round"} "round"]
+       [:option {:value "square"} "square"]]
+      [:button {:class (stl/css :offset-btn)
+                :title (tr "workspace.path.actions.offset-path.live")
+                :on-click on-offset-live}
+       offset-live-icon]
+      [:button {:class (stl/css :offset-btn)
+                :title (tr "workspace.path.actions.offset-path.bake")
+                :on-click on-offset-bake}
+       offset-bake-icon]
+      [:button {:class (stl/css :offset-btn)
+                :title (tr "workspace.path.actions.offset-path.clear")
+                :on-click on-offset-clear}
+       offset-clear-icon]]
+
      [:div {:class (stl/css :sub-actions-group)}
       ;; Toggle snap
       [:button {:class  (stl/css-case :is-toggled snap-toggled
                                       :topbar-btn true)
                 :title (tr "workspace.path.actions.snap-nodes" (sc/get-tooltip :snap-nodes))
                 :on-click on-toggle-snap}
-       snap-nodes-icon]]]))
+       snap-nodes-icon]]
+
+     ;; ALL_APPS_PARITY P2.18 — explicit 4 vector point-type Inspector.
+     ;; Shown when a path node is selected in :move edit-mode. The 4
+     ;; buttons + number-key 1-4 shortcuts (shortcuts.cljs) switch the
+     ;; selected node's point-type (see point_type.cljs / tools.cljs).
+     [:> point-type-options* {:shape shape :state state}]]))

@@ -29,6 +29,11 @@
    [app.main.ui.workspace.sidebar.options.menus.component :refer [component-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.grid-cell :as grid-cell]
    [app.main.ui.workspace.sidebar.options.menus.interactions :refer [interactions-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.effects :refer [effects-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.states :refer [states-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.notes :refer [notes-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.html-authoring :refer [html-authoring-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.ds-versions :refer [ds-versions-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.layout-container :as layout-container]
    [app.main.ui.workspace.sidebar.options.page :as page]
    [app.main.ui.workspace.sidebar.options.shapes.bool :as bool]
@@ -161,6 +166,16 @@
                               :shapes shapes
                               :shapes-with-children shapes-with-children}]
 
+     ;; P1.16 + P2.24/P2.29 + P2.31 + P0.13: per-shape motion effects, element/
+     ;; component states, widget notes/spec, and HTML authoring (semantic tag,
+     ;; CSS class, custom CSS) — all-shape menus (frame-mount not needed).
+     (when (pos? total-selected)
+       [:*
+        [:> effects-menu* {:shapes shapes}]
+        [:> states-menu* {:shapes shapes}]
+        [:> notes-menu* {:shapes shapes}]
+        [:> html-authoring-menu* {:shapes shapes}]])
+
      (cond
        (and edit-grid? (d/not-empty? selected-cells))
        [:> grid-cell/options*
@@ -181,7 +196,11 @@
         {:drawing-state drawing}]
 
        (zero? total-selected)
-       [:> page/options*]
+       [:*
+        [:> page/options*]
+        ;; P2.15: design-system-scoped version control — file-level menu,
+        ;; mounted when nothing is selected (library concern).
+        [:> ds-versions-menu*]]
 
        :else
        [:> shape-options*

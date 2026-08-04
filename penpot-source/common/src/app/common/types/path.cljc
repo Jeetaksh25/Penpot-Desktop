@@ -299,6 +299,27 @@
   (let [content (impl/path-data content)]
     (segment/make-curve-point content point)))
 
+;; ALL_APPS_PARITY P2.18 — explicit 4 vector point-type system. See
+;; app.common.types.path.segment for the full design. The type is
+;; inferred from handle geometry (infer-point-type) and set by adjusting
+;; handles (set-point-type-point). The explicit, sticky type is persisted
+;; on the shape as a `:point-types` map by the set-point-type event.
+(def point-types segment/point-types)
+
+(defn infer-point-type
+  "Derive the point-type enum at `point` from current handle geometry."
+  [content point]
+  (let [content (impl/path-data content)]
+    (segment/infer-point-type content point)))
+
+(defn set-point-type-point
+  "Adjusts the handles at `point` so the inferred type matches `ptype`.
+  Returns a PathData. Geometry-only; persist the explicit type via the
+  shape's :point-types map (see tools/set-point-type)."
+  [content point ptype]
+  (let [content (impl/path-data content)]
+    (segment/set-point-type-point content point ptype)))
+
 (defn split-segments
   "Given a content, splits segments between points with new segments."
   [content points value]

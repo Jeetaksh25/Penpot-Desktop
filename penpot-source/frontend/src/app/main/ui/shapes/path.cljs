@@ -12,6 +12,7 @@
    [app.common.logging :as log]
    [app.common.math :as mth]
    [app.common.types.path :as path]
+   [app.main.data.workspace.path.shapes-to-path :as dwps]
    [app.main.ui.shapes.custom-stroke :refer [shape-custom-strokes]]
    [rumext.v2 :as mf]))
 
@@ -171,9 +172,25 @@
   {::mf/props :obj}
   [{:keys [shape brush objects render-id]}]
   (let [content (get shape :content)
-        pdata   (mf/with-memo [content]
+        effect (get shape :offset-effect)
+        pdata   (mf/with-memo [content effect]
                   (try
-                    (content->string content)
+                    ;; ALL_APPS_PARITY P1.32 — live (non-destructive) Offset
+                    ;; Path effect. When `:offset-effect` is present the
+                    ;; rendered <path> shows the offset outline; the shape's
+                    ;; `:content` is untouched so the effect is reversible.
+                    ;; Byte-identical to the legacy output when the slot is
+                    ;; absent (effect is nil -> `base` returned unchanged).
+                    (let [base (content->string content)]
+                      (if (nil? effect)
+                        base
+                        (let [{:keys [distance join miter-limit cap]
+                               :or {join :miter miter-limit 4}} effect
+                              offset (dwps/offset-content content distance
+                                       {:join join :miter-limit miter-limit :cap cap})]
+                          (if (some? offset)
+                            (content->string offset)
+                            base))))
                     (catch :default cause
                       (log/error :hint "unexpected error on formatting path"
                                  :shape-name (:name shape)

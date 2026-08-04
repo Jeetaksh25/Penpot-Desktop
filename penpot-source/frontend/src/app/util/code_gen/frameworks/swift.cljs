@@ -23,6 +23,7 @@
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
    [app.config :as cfg]
+   [app.util.code-gen.code-connect :as cc]
    [app.util.code-gen.frameworks.common :as fc]
    [cuerdas.core :as str]))
 
@@ -145,6 +146,16 @@
      (cond
        (fc/hidden? shape) nil
 
+       ;; Code Connect binding (P1.08): emit the mapped code component
+       ;; `Tag(props)` with the shape's frame + position modifiers, instead
+       ;; of recursing into a generic ZStack.
+       (when-let [binding (fc/code-connect-binding objects shape)]
+         (let [tag (:tag binding)
+               props (cc/format-props-swift binding)]
+           (dm/str ind "// Code Connect: " tag "\n"
+                   ind tag "(" props ")\n"
+                   ind "        " (frame+position objects shape origin level))))
+
        (fc/svg-shape? shape)
        ;; SwiftUI has no built-in SVG view. Emit a placeholder Rectangle
        ;; (transparent) with a comment pointing at the SVG export. A real
@@ -223,9 +234,10 @@
   "Render a SwiftUI `View` struct source string for `shapes` placed
   relative to `origin`, sized to `size`."
   [objects shapes origin size comp-name]
-  (let [body (->> shapes
-                  (keep #(render-shape objects % origin 2))
-                  (str/join "\n"))
+  (let [body (binding [fc/*framework-type* "swift"]
+              (->> shapes
+                   (keep #(render-shape objects % origin 2))
+                   (str/join "\n")))
         inner (if (str/blank? body) "Color.clear"
                   (dm/str "ZStack {\n" body "\n    }"))]
     (dm/str "import SwiftUI\n\n"

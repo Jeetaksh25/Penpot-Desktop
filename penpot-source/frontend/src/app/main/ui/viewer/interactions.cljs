@@ -24,6 +24,7 @@
    [app.main.ui.viewer.shapes :as shapes]
    [app.main.ui.viewer.viewport-common :as vpc]
    [app.main.ui.viewer.viewport-wasm :as viewport.wasm]
+   [app.main.ui.workspace.ai-motion :as am]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
    [app.util.keyboard :as kbd]
@@ -41,11 +42,20 @@
 (defn- easing-str
   [animation]
   (let [easing (:easing animation)]
-    (if (= easing :custom-bezier)
+    (cond
+      (= easing :custom-bezier)
       (let [{:keys [x1 y1 x2 y2]} (:bezier-ctrl animation)]
         (str "cubic-bezier("
              (or x1 0) "," (or y1 0) ","
              (or x2 1) "," (or y2 1) ")"))
+
+      ;; Ovion spring easing (gap P1.16): approximate the authored
+      ;; {stiffness damping mass} config as a cubic-bezier string for the
+      ;; Web Animations API. Returns "linear" under reduced motion.
+      (= easing :spring)
+      (am/spring-easing->bezier (:spring-config animation))
+
+      :else
       (name easing))))
 
 (mf/defc viewport-svg*
@@ -565,7 +575,16 @@
                       [#js {:top "0"}
                        #js {:top (str offset "px")}]
                       #js {:duration (:duration animation)
-                           :easing (easing-str animation)})))))
+                           :easing (easing-str animation)})))
+
+    ;; Ovion Flow List transition (gap P2.36): a stack push/pop — incoming
+    ;; frame slides in from the right + fades in, outgoing frame slides
+    ;; slightly left + fades out. Reduced-motion guarded inside am.
+    :flow-list
+    (let [width (:width wrapper-size)]
+      (am/run-flow-list-transition
+       current-viewport orig-viewport width
+       #(st/emit! (dv/complete-animation))))))
 
 (defn animate-open-overlay
   [animation overlay-viewport
@@ -616,7 +635,15 @@
                        #js {:top (str (:y overlay-position) "px")}]
                       #js {:duration (:duration animation)
                            :easing (easing-str animation)}
-                      #(st/emit! (dv/complete-animation)))))))
+                      #(st/emit! (dv/complete-animation))))
+
+      ;; Ovion Flow List overlay open (gap P2.36): degrade the stack-push
+      ;; feel to a single-element slide-in (no outgoing viewport for an
+      ;; overlay). Reduced-motion guarded inside am.
+      :flow-list
+      (am/run-flow-list-transition
+       overlay-viewport nil (:width wrapper-size)
+       #(st/emit! (dv/complete-animation))))))
 
 (defn animate-close-overlay
   [animation overlay-viewport

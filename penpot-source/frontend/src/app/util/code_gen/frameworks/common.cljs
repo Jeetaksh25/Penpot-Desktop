@@ -29,6 +29,7 @@
    [app.common.types.text :as types.text]
    [app.config :as cfg]
    [app.main.fonts :as fonts]
+   [app.util.code-gen.code-connect :as cc]
    [app.util.code-gen.common :as cgc]
    [app.util.code-gen.markup-svg :as markup-svg]
    [app.util.code-gen.style-css-values :as scv]
@@ -534,3 +535,21 @@
   "The component reference name for a hoisted instance, or nil."
   [shape]
   (get *hoist-map* (:id shape)))
+
+;; ---------------------------------------------------------------------------
+;; Code Connect binding (gap #40 / P1.08)
+;; ---------------------------------------------------------------------------
+
+;; Dynamic framework-id (one of the keys of `app.util.code-gen/framework-meta`)
+;; bound by each framework's `generate` / `generate-project` while rendering
+;; the tree. Default nil => no Code Connect lookup happens => the emitters
+;; behave byte-identically to the pre-Code-Connect output.
+(def ^:dynamic *framework-type* nil)
+
+(defn code-connect-binding
+  "Resolve the Code Connect tag+props binding for `shape` on the currently
+  bound `*framework-type*`. Returns `{:tag :props}` or nil (no binding or
+  no framework bound → emitters fall back to generic markup)."
+  [objects shape]
+  (when *framework-type*
+    (cc/binding-for objects *framework-type* shape)))

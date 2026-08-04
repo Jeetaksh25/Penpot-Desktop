@@ -145,6 +145,16 @@
            :parent-id
            :frame-id
 
+           ;; ALL_APPS_PARITY P1.10 — per-child shape-mode override when this
+           ;; shape is a child of a :bool compound shape. Absent = inherit the
+           ;; parent :bool's group :bool-type (byte-identical to legacy).
+           :shape-mode
+
+           ;; ALL_APPS_PARITY P1.32 — live, non-destructive Offset Path effect
+           ;; stored on the shape (Appearance-style). Absent = no effect
+           ;; (byte-identical to legacy rendering).
+           :offset-effect
+
            :opacity
            :blend-mode
            :blocked
@@ -202,6 +212,11 @@
              :fixed-scroll
              :parent-id
              :frame-id
+
+             ;; ALL_APPS_PARITY P1.10 — per-child shape-mode override.
+             :shape-mode
+             ;; ALL_APPS_PARITY P1.32 — live Offset Path effect.
+             :offset-effect
 
              :opacity
              :blend-mode
@@ -261,6 +276,11 @@
            :parent-id
            :frame-id
 
+           ;; ALL_APPS_PARITY P1.10 — per-child shape-mode override.
+           :shape-mode
+           ;; ALL_APPS_PARITY P1.32 — live Offset Path effect.
+           :offset-effect
+
            :opacity
            :blend-mode
            :blocked
@@ -318,6 +338,11 @@
            :fixed-scroll
            :parent-id
            :frame-id
+
+           ;; ALL_APPS_PARITY P1.10 — per-child shape-mode override.
+           :shape-mode
+           ;; ALL_APPS_PARITY P1.32 — live Offset Path effect.
+           :offset-effect
 
            :opacity
            :blend-mode
@@ -402,6 +427,11 @@
             :parent-id
             :frame-id
 
+            ;; ALL_APPS_PARITY P1.10 — per-child shape-mode override.
+            :shape-mode
+            ;; ALL_APPS_PARITY P1.32 — live Offset Path effect.
+            :offset-effect
+
             :opacity
             :blend-mode
             :blocked
@@ -439,6 +469,11 @@
               :fixed-scroll
               :parent-id
               :frame-id
+
+              ;; ALL_APPS_PARITY P1.10 — per-child shape-mode override.
+              :shape-mode
+              ;; ALL_APPS_PARITY P1.32 — live Offset Path effect.
+              :offset-effect
 
               :opacity
               :blend-mode
@@ -498,6 +533,12 @@
            :fixed-scroll
            :parent-id
            :frame-id
+
+           ;; ALL_APPS_PARITY P1.10 — per-child shape-mode override (a
+           ;; :bool may itself be a child of another :bool).
+           :shape-mode
+           ;; ALL_APPS_PARITY P1.32 — live Offset Path effect.
+           :offset-effect
 
            :opacity
            :blend-mode

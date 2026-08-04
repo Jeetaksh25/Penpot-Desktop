@@ -62,3 +62,47 @@
     stroke: var(--pathbar-icon-color);
   }
 }
+
+// ALL_APPS_PARITY P1.32 — live Offset Path effect controls. Compact
+// number/select inputs alongside the destructive Offset Vector button.
+// Honors prefers-reduced-motion (no transitions on these inputs).
+.offset-input,
+.offset-select {
+  height: deprecated.$s-32;
+  min-width: deprecated.$s-48;
+  padding: 0 deprecated.$s-8;
+  border: deprecated.$s-1 solid var(--panel-border-color);
+  border-radius: deprecated.$s-8;
+  background-color: var(--color-background-primary);
+  color: var(--color-foreground-primary);
+  font-size: 12px;
+  margin: 0 deprecated.$s-2;
+}
+
+.offset-select {
+  cursor: pointer;
+}
+
+.offset-btn {
+  @extend %button-tertiary;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: deprecated.$s-36;
+  width: deprecated.$s-36;
+  border-radius: deprecated.$s-8;
+  color: var(--color-foreground-secondary);
+  margin: 0 deprecated.$s-2;
+
+  // Live/Bake/Clear active state — coral accent (Ovion AI #f28b82).
+  &.is-active {
+    color: var(--ai-coral, #f28b82);
+  }
+}
+
+.offset-btn-icon {
+  @extend %button-icon;
+
+  stroke: currentColor;
+}

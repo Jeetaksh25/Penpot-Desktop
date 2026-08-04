@@ -1,0 +1,44 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+@use "../../../sidebar/common/sidebar.scss" as sidebar;
+
+// ALL_APPS_PARITY P2.05 — CMS platform importer menu.
+// Reuses the shared .element-set / .element-title / .element-set-content
+// grid structure (same as cms.scss / breakpoints.scss). The panel's
+// custom styling is injected inline by the CLJS (cms_import.cljs) under
+// the `.cmsi-root` scope using the AI reference tokens (coral #f28b82,
+// grey #7d7d7d, Helvetica Now Display) so it renders identically with or
+// without this SCSS being compiled; these classes are a build-time
+// fallback that mirror the inline styles.
+
+.element-set {
+  @include sidebar.option-grid-structure;
+}
+
+.element-title {
+  grid-column: span 8;
+}
+
+.element-set-content {
+  @include deprecated.flex-column;
+
+  grid-column: span 8;
+  margin: deprecated.$s-4 0 deprecated.$s-8 0;
+}
+
+.cmsi-hint {
+  color: #7d7d7d;
+  font-size: deprecated.$fs-11;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmsi-spin {
+    animation: none;
+  }
+}

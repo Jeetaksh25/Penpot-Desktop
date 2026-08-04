@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **30** | Implemented end-to-end + verified (commit referenced). |
-| 🟡 half-done | **25** | Partial / stubbed / runtime-no-op — needs finishing. |
+| ✅ done | **54** | Implemented end-to-end + verified (commit referenced). |
+| 🟡 half-done | **1** | Partial / stubbed / runtime-no-op — needs finishing. |
 | 🔴 missing | **40** | Not implemented yet. |
 | ⚠️ not-working | **1** | Present but broken. |
-| **Remaining** | **66** | half-done + missing + not-working. |
+| **Remaining** | **42** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 pending (ecosystem + P1/P2 tail).
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — half-done sweep ✅ (24/25 half-done gaps completed end-to-end; P2.16 deferred on host-block). Next: 40 🔴 missing + 1 ⚠️ not-working.
 
-Most-recent done: **P0.03 / P0.05 / P0.11 / P0.15** AI text-to-site, CMS collections, managed hosting/publish, responsive breakpoints (C4).
+Most-recent done: **P0.13 / P2.15 / P1.20 / P2.05 / P1.23** + 19 more half-done gaps (C5 half-done sweep — HTML authoring menu + export, DS versions panel, redline overlay + embed, site-audit tab, spring/flow-list interactions, Code Connect persistence, command-bar swap shortcut). P2.16 deferred (host-block).
 
 ## Contents
 
@@ -167,7 +167,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.13 Real HTML/CSS DOM-editor authoring (canvas = real code, authorable class system, semantic element choice, real-time CSS)
 
-- **State:** 🟡 half-done  ·  **Sources:** Webflow
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Webflow
 - **Detail / build direction:** markup_html.cljs is a one-way shape-to-<div class="shape <type>"> translator; style_css.cljs generates styles only at export; no authorable CSS class system, no semantic element selection (<nav>/<article>/<section>), no 'canvas is the code' contract. Recommended: this is a category redefinition (vector canvas -> DOM editor) and likely out of scope for Ovion's Penpot engine. Pragmatic alternative: add an optional 'HTML authoring' frame mode that renders a real-DOM iframe on canvas with a class manager and semantic-element picker, exported verbatim. Treat as a long-term research item; not recommended before vector-craftsmanship and AI gaps close.
 
 #### P0.14 Render real React/code components on canvas (Merge-style: design canvas = production component tree, props panel edits map to component props)
@@ -240,7 +240,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.08 Code Connect / D2C+ Component Parsers with actual per-framework template body emission
 
-- **State:** 🟡 half-done  ·  **Sources:** Pixso
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Pixso
 - **Detail / build direction:** Figma-parity #40: schema + authoring UI + display banner DONE; per-framework template body emission DEFERRED. Recommended: implement template-body emission in app/util/code_gen so a design component instance maps to a configured frontend code component tag + props (JSON parser config in the Code Connect authoring UI), emitting real mapped component code instead of generic markup. Reuse the existing 7-framework export scaffolding.
 
 #### P1.09 Color-blindness simulator (vision-deficiency canvas preview: deuteranopia/protanopia/tritanopia)
@@ -250,7 +250,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.10 Compound Shape with per-child shape-mode overrides + Expand-to-finalize button
 
-- **State:** 🟡 half-done  ·  **Sources:** Adobe Illustrator
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Adobe Illustrator
 - **Detail / build direction:** Ovion's :bool is non-destructive (keeps :shapes children, recomputes content) but the bool-type is a single radio on the whole group; no per-child shape-mode hierarchy; no Expand (Flatten is destructive-only). Recommended: extend the :bool schema so each child carries its own :shape-mode (add/subtract/intersect/exclude); update bool.cljs content recompute to honor per-child modes; add an Expand button that finalizes into a static :path while preserving a live-original copy for undo. Schema + renderer change, unblocked.
 
 #### P1.11 DESIGN.md / design-system extraction from any URL into a reusable tokens library
@@ -265,12 +265,12 @@ Sorted P0 → P1 → P2.
 
 #### P1.13 Dedicated screenshot / sketch / wireframe-to-UI entry flow (vision-based reconstruction into editable shape tree)
 
-- **State:** 🟡 half-done  ·  **Sources:** Uizard, Google Stitch
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Uizard, Google Stitch
 - **Detail / build direction:** Image attachments feed the Kimi K2.7 vision model as context, but there is no dedicated screenshot/sketch->editable-mockup pipeline that reconstructs editable shapes from a raster. Recommended: add a 'Screenshot to UI' / 'Sketch to UI' mode in the AI bar that sends the image to a vision-capable LLM prompted to emit a DesignSpec (shape tree) and applies it via apply-design-spec; for sketches, add a sketch-clarification prompt. Reuses the existing vision + DesignSpec path; mostly a prompt + UI entry-point change. High value, low cost.
 
 #### P1.14 Dynamic Panels (generic N-state container + Set Panel State action, decoupled from components)
 
-- **State:** 🟡 half-done  ·  **Sources:** Axure
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Axure
 - **Detail / build direction:** Closest analogues are overlays and component variants; no generic multi-state panel independent of the component system, and action-types has no :set-panel-state. Recommended: add a :set-panel-state action type + a generic multi-state panel object (a frame with named states) switchable at runtime in the viewer; decouple from component variants so any frame can be an N-state panel. Pure schema + viewer dispatch, unblocked.
 
 #### P1.15 E-commerce suite (products, variants, cart, checkout, payments, inventory, tax, shipping)
@@ -280,7 +280,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.16 Effects system: Appear, Loop, Drag as first-class design-time effect types (beyond hover/press)
 
-- **State:** 🟡 half-done  ·  **Sources:** Framer
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Framer
 - **Detail / build direction:** Ovion motion = calm GSAP+AnimeJS box-shadow hover/press only + smart-animate variant transitions; no Appear/Loop/Drag effect types. Recommended: extend the motion/effect model (ai_motion.cljs + a new effects menu) with Appear (load), Loop (continuous), and Drag effect types as design-time primitives, rendered via GSAP/AnimeJS in the viewer. Frontend, unblocked.
 
 #### P1.17 Gap Detection + open-path-as-closed tolerance for region composition
@@ -300,7 +300,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.20 Inspect: automated redlines + copyable CSS + downloadable assets, shareable without sign-in (Jira/Confluence embed)
 
-- **State:** 🟡 half-done  ·  **Sources:** Axure
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Axure
 - **Detail / build direction:** ui/inspect/ has Code + WCAG contrast + 7-framework export, but no automated redline/spacing overlay and no public share-link Inspect surface. Recommended: (1) add a redline overlay in the inspect panel (measurements/spacing/position annotations); (2) for the share side, depend on hosting — publish a no-sign-in Inspect view (reuse code_gen + redline overlay) and offer a Jira/Confluence embed iframe. Redline overlay is unblocked; share needs hosting.
 
 #### P1.21 Jetpack Compose (Kotlin) code export with Material 3 tokens
@@ -315,7 +315,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.23 Native forms (form builder with submissions) and SEO metadata generation
 
-- **State:** 🟡 half-done (C4)  ·  **Sources:** Framer, Webflow
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Framer, Webflow
 - **Detail / build direction:** No form builder/submission backend; no SEO metadata surface. Recommended: form submissions require a hosted backend (pair with Ovion Cloud) — stage a visual form-builder (form widgets + submission target config) in the design tool first, with submissions wired when hosting lands. SEO metadata: add a per-page SEO panel (title/description/OG/alt-text) emitted by the HTML export. The SEO panel is unblocked and cheap.
 
 #### P1.24 On-page editing of live/published content
@@ -340,7 +340,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.28 Plugin Center marketplace + Figma plugin compatibility
 
-- **State:** 🟡 half-done  ·  **Sources:** Pixso
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Pixso
 - **Detail / build direction:** Ovion has the Penpot plugin runtime (plugins.cljs, plugins/api.cljs bridge, manifest loading, permissions) — plugins RUN — but no browsable marketplace and no Figma-plugin compatibility layer. Recommended: add a Plugin Center panel (sidebar) backed by an Ovion-hosted plugin registry JSON (browse/install/enable), and a Figma-plugin API compatibility shim mapping figma.* globals onto plugins/api.cljs so existing Figma plugins can load. Start with the registry (curated list); Figma compat is a larger shim effort.
 
 #### P1.29 Progressive blur rendering (linear + radial, on-canvas adjustable stops) and Fade effect (gradient transparency without alpha masks)
@@ -361,7 +361,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.32 Robust Offset Path (true curve offset, miter/round/bevel joins, miter limit, open-path caps, self-intersection handling)
 
-- **State:** 🟡 half-done  ·  **Sources:** Sketch, Adobe Illustrator
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Sketch, Adobe Illustrator
 - **Detail / build direction:** shapes_to_path.cljs L297-323 offset-vector does a basic vertex-normal miter offset; offset-content flattens curves to a polyline; comments note robust clipper-offset is DEFERRED. Recommended: implement true Bezier offset (offset the control polygon + re-derive handle lengths) or a curve-flatten-at-high-tolerance + clipper-offset approach with join selection (miter/round/bevel) and a self-intersection cleanup pass reusing the face-graph arrangement (planar subdivision) to remove loops. Add a live Offset Path effect entry (Appearance-style) alongside the destructive Object command. Pure CLJS/CLJC, unblocked.
 
 #### P1.33 Vector networks pen tool (branching / multi-segment-per-node, connect any point to any point)
@@ -404,12 +404,12 @@ Sorted P0 → P1 → P2.
 
 #### P2.04 AI Smart Text operations (Translate, Continue Writing, Polish, Summarize) on selected canvas text with layout-preserving translation
 
-- **State:** 🟡 half-done  ·  **Sources:** Pixso
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Pixso
 - **Detail / build direction:** Ovion has AI generate-text (single generate op) only. Recommended: add Translate/Continue/Polish/Summarize as named operations in ai_settings.cljs/ai_bar.cljs, with layout-preserving translation (preserve text-box dimensions). Prompt-template additions. Unblocked.
 
 #### P2.05 AI migration/import from WordPress, Webflow, Contentful, or live URLs into an Ovion project (content-model mapping)
 
-- **State:** 🟡 half-done  ·  **Sources:** Framer
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Framer
 - **Detail / build direction:** Feature 4 URL-clone clones a single URL; no structured CMS-platform migration with content-model mapping. Recommended: extend the URL-clone path with per-platform importers (WordPress REST API, Webflow API, Contentful API) that map content models to Ovion CMS collections (once CMS lands). Late-stage, post-CMS.
 
 #### P2.06 AI structured real-content input (CSV for tables) + AI-generated CSS state animations
@@ -459,22 +459,22 @@ Sorted P0 → P1 → P2.
 
 #### P2.15 Design-system-scoped version control with shareable DS versions
 
-- **State:** 🟡 half-done  ·  **Sources:** UXPin
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** UXPin
 - **Detail / build direction:** sidebar/versions.cljs provides single-user file snapshots; no DS-level versioning shared across projects; branching (#38) is SCOPE-DEFERRED-v1. Recommended: extend the versions model to scope a named DS version shared across files; stage after branching. Schema work, unblocked but lower priority.
 
 #### P2.16 DevLink-style two-way component sync with external React/TypeScript codebases
 
-- **State:** 🟡 half-done  ·  **Sources:** Webflow
+- **State:** 🟡 half-done (C5 deferred — DevLink two-way sync blocked on code-component host, P0.14 🔴 missing)  ·  **Sources:** Webflow
 - **Detail / build direction:** Ovion's code export is one-way (component hoisting + PNG raster) with no sync back. Recommended: add a DevLinkProvider-style runtime + a sync command that reconciles code-side component changes back into Ovion. Depends on the code-component host; multi-quarter.
 
 #### P2.17 Expand / Expand Appearance workflow (finalize live effects into editable anchor paths)
 
-- **State:** 🟡 half-done  ·  **Sources:** Adobe Illustrator
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Adobe Illustrator
 - **Detail / build direction:** Ovion has Flatten (collapse bool/rect/etc to :path) — the rough Expand analog — but no Expand Appearance (resolve an effect stack into paths) because there is no per-shape live-effect stack. Recommended: once a live-effect/Appearance architecture exists, add Expand Appearance; for now Flatten covers the common case. Lower priority for a non-print workflow.
 
 #### P2.18 Explicit 4 vector point-type system (Straight / Mirror angle+length / Independent / Mirror angle) with number-key 1-4 switching
 
-- **State:** 🟡 half-done  ·  **Sources:** Sketch
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Sketch
 - **Detail / build direction:** Ovion's pen tool supports straight/mirrored/independent behaviors implicitly via drag+modifiers, but there is no explicit 4-type enum or number-key shortcut. Recommended: add an explicit point-type enum on path nodes (straight/mirror-angle-length/independent/mirror-angle) with an Inspector control and 1-4 shortcuts. Schema + UI, unblocked.
 
 #### P2.19 Focus Predictor: AI attention heatmap predicting where users will look on a screen
@@ -494,7 +494,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.22 Full Command Bar (Cmd+K) indexing all commands + S-to-insert-component + Cmd+Opt+R swap
 
-- **State:** 🟡 half-done  ·  **Sources:** Sketch
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Sketch
 - **Detail / build direction:** Ovion's command palette (#47) is a curated 9-command quick-action overlay; Cmd+K is bound to create-component-variant. Recommended: expand the palette to index all commands with fuzzy search, add S (insert any component) and Cmd+Opt+R (swap instance) shortcuts. Frontend, unblocked.
 
 #### P2.23 Hard Mix / Soft Mix / Trap pathfinder effects (per-face CMYK primary mixing, print registration)
@@ -504,7 +504,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.24 Hover/Pressed states directly on components without separate variants
 
-- **State:** 🟡 half-done  ·  **Sources:** Framer
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Framer
 - **Detail / build direction:** Ovion uses the variant model for states; no direct hover/pressed state layer distinct from variants. Recommended: add a Hover/Pressed state override directly on components (per-property override layer) in the component panel, rendered via the motion layer. Frontend, unblocked.
 
 #### P2.25 Localization / multi-locale content with locale-switching and translated content
@@ -524,22 +524,22 @@ Sorted P0 → P1 → P2.
 
 #### P2.28 Multi-screen size adaptation as a one-shot AI action (mobile -> tablet reflow)
 
-- **State:** 🟡 half-done  ·  **Sources:** Pixso
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Pixso
 - **Detail / build direction:** Agent tools can mutate layout via prompts but there is no dedicated 'adapt to tablet' action. Recommended: add an adapt_screen(target_size) action that reflows flexbox/padding in one LLM turn. Depends on breakpoints for full effect. Unblocked as a prompt-driven action.
 
 #### P2.29 Per-element multi-State system (base/active/nested states with interaction control and instance overrides, decoupled from components)
 
-- **State:** 🟡 half-done  ·  **Sources:** UXPin
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** UXPin
 - **Detail / build direction:** Ovion models statefulness through component variants + interactions; no generic per-element State list with base->all propagation. Recommended: add a per-element States panel (base/active/nested) with base-state propagation and state-as-instance-override; overlaps with Dynamic Panels. Frontend + schema, unblocked.
 
 #### P2.30 Per-project AI chat-history browser (persistent conversation log per project/user)
 
-- **State:** 🟡 half-done  ·  **Sources:** UXPin
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** UXPin
 - **Detail / build direction:** Ovion has per-file memory + in-generation message history but no chat-history list UI or resume-past-chat controls. Recommended: persist chat sessions (reuse the per-file memory store) and add a history list + 'new chat'/'resume' controls in ai_bar.cljs. Frontend, unblocked.
 
 #### P2.31 Per-widget Notes/Specifications fields (structured spec annotations that publish with the prototype)
 
-- **State:** 🟡 half-done  ·  **Sources:** Axure
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Axure
 - **Detail / build direction:** Ovion has comment threads + sticky notes but no per-widget spec field. Recommended: add a Notes/Spec panel on each shape (requirements/copy/colors/placement text) that publishes with the prototype/Inspect. Schema + UI, unblocked.
 
 #### P2.32 Scissors tool (cut line/border paths) and Rotate Copies tool (radial duplicates around a point)
@@ -554,17 +554,17 @@ Sorted P0 → P1 → P2.
 
 #### P2.34 Show-Code reveal of AI-generated components inline in the AI panel
 
-- **State:** 🟡 half-done  ·  **Sources:** UXPin
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** UXPin
 - **Detail / build direction:** Ovion has an Inspect Code panel + copy_css/copy_svg agent tools but no inline 'Show code' button in the AI bar alongside the preview. Recommended: add a Show Code toggle in the AI bar that reveals the code_gen output of the just-generated element. Reuses code_gen, unblocked.
 
 #### P2.35 Site auditing (broken links, accessibility, consistency scan) and Advanced Analytics (A/B testing, funnels, click tracking)
 
-- **State:** 🟡 half-done  ·  **Sources:** Framer
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Framer
 - **Detail / build direction:** Ovion has a single-shape WCAG contrast checker only. Recommended: site-wide audit depends on hosting/publish; an in-design a11y audit (scan all screens for contrast/hierarchy issues) is unblocked via the LLM review path. Analytics depends on hosting. Stage the in-design audit first.
 
 #### P2.36 Spring physics animations and Flow List prototyping primitives
 
-- **State:** 🟡 half-done  ·  **Sources:** Lunacy
+- **State:** ✅ done (C5 half-done)  ·  **Sources:** Lunacy
 - **Detail / build direction:** Ovion has Smart Animate tweening (#11) + overlays (#73) but no Spring easing preset or Flow List transition. Recommended: add a Spring easing curve option in the transition model and a Flow List transition type (stack navigation). Frontend, unblocked.
 
 #### P2.37 Team sharing: cloud publish + on-screen comments + Slack/Teams/Jira/Confluence integrations

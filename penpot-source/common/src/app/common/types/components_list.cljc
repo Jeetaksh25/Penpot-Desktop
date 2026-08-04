@@ -41,7 +41,7 @@
       variant-properties (update-in [:components id] assoc :variant-properties variant-properties))))
 
 (defn mod-component
-  [file-data {:keys [id name path main-instance-id main-instance-page objects annotation variant-id variant-properties component-properties modified-at]}]
+  [file-data {:keys [id name path main-instance-id main-instance-page objects annotation variant-id variant-properties component-properties code-connect modified-at]}]
   (d/update-in-when file-data [:components id]
                     (fn [component]
                       (let [new-comp (cond-> component
@@ -88,7 +88,17 @@
                                        (assoc :component-properties component-properties)
 
                                        (nil? component-properties)
-                                       (dissoc :component-properties))
+                                       (dissoc :component-properties)
+
+                                       ;; Ovion Code Connect (gap P2.12): per-component
+                                       ;; framework->source bindings, persisted alongside the
+                                       ;; component so code export can map instances to real
+                                       ;; source. Schema map-of string->string (component.cljc).
+                                       (some? code-connect)
+                                       (assoc :code-connect code-connect)
+
+                                       (nil? code-connect)
+                                       (dissoc :code-connect))
 
                             ;; The set of properties that doesn't mark a component as touched
                             diff     (set/difference

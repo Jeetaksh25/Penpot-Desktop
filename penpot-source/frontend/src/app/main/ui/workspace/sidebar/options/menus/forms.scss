@@ -1,0 +1,64 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+@use "../../../sidebar/common/sidebar.scss" as sidebar;
+
+// ALL_APPS_PARITY P1.23 — Native forms builder menu.
+// Reuses the shared .element-set / .element-title / .element-set-content
+// grid structure (same as breakpoints.scss / frame_grid.scss). Coral accent
+// = #f28b82; secondary grey = #7d7d7d. Helvetica Now Display via the global
+// token typography. Reduced-motion guarded (no size/scale transitions —
+// only calm box-shadow / color, per the AI UI overhaul convention).
+
+.element-set {
+  @include sidebar.option-grid-structure;
+}
+
+.element-title {
+  grid-column: span 8;
+}
+
+.element-set-content {
+  @include deprecated.flex-column;
+
+  grid-column: span 8;
+  margin: deprecated.$s-4 0 deprecated.$s-8 0;
+}
+
+// A single field's stacked row group (name+type, required+remove, bound
+// shape, test value). Keeps each field visually contained.
+.forms-field-row {
+  grid-column: span 8;
+  display: flex;
+  flex-direction: column;
+  padding: deprecated.$s-3 deprecated.$s-4;
+  margin-bottom: deprecated.$s-3;
+  border-radius: deprecated.$br-8;
+  background-color: var(--input-details-color);
+  transition: box-shadow 120ms ease;
+
+  &:hover {
+    box-shadow: 0 0 0 1px rgba(242, 139, 130, 0.25);
+  }
+}
+
+// Reuse the shared text-input styling the other menus use (.type-input is
+// defined globally by the options panel). No extra rules needed here —
+// the menu also passes inline styles for layout-only concerns.
+
+.forms-section-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+  color: #f28b82;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forms-field-row {
+    transition: none;
+  }
+}

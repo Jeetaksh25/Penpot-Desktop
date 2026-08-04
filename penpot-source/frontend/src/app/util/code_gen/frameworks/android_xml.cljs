@@ -18,6 +18,7 @@
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
    [app.config :as cfg]
+   [app.util.code-gen.code-connect :as cc]
    [app.util.code-gen.frameworks.common :as fc]
    [cuerdas.core :as str]))
 
@@ -194,6 +195,17 @@
      (cond
        (fc/hidden? shape) nil
 
+       ;; Code Connect binding (P1.08): emit the mapped custom view tag with
+       ;; layout params + authored props instead of a generic element.
+       (when-let [binding (fc/code-connect-binding objects shape)]
+         (let [tag (:tag binding)
+               lattrs (layout-attrs-only objects shape origin)
+               props (cc/format-props-xml binding)
+               attr-str (if (str/blank? props) lattrs
+                            (dm/str lattrs "\n        " props))]
+           (dm/fmt "%<!-- Code Connect: % -->\n%<%\n        xmlns:android=\"http://schemas.android.com/apk/res/android\"%\n        />"
+                   ind tag ind tag attr-str)))
+
        (fc/svg-shape? shape)
        ;; Native SVG: simple shapes become a VectorDrawable in
        ;; `res/drawable/<name>.xml`; complex shapes are rasterized to a
@@ -253,9 +265,10 @@
   (let [roots (fc/root-originals objects shapes)
         origin (fc/selection-origin roots)
         size (fc/selection-size roots)
-        body (->> roots
-                  (keep #(render-shape objects % origin 1))
-                  (str/join "\n"))]
+        body (binding [fc/*framework-type* "android-xml"]
+              (->> roots
+                   (keep #(render-shape objects % origin 1))
+                   (str/join "\n")))]
     (dm/fmt
      "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<FrameLayout\n    xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    xmlns:tools=\"http://schemas.android.com/tools\"\n    android:layout_width=\"%dp\"\n    android:layout_height=\"%dp\"\n    android:clipChildren=\"false\">\n%\n</FrameLayout>\n"
      (fc/fmt-num (:width size))

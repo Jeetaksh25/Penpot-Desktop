@@ -1,0 +1,59 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+//
+// ALL_APPS_PARITY P2.18 — Explicit 4 vector point-type Inspector styles.
+// Mirrors the bool.scss button-row pattern. Honors prefers-reduced-motion
+// (no transitions are applied — the active highlight is pure state).
+
+@use "refactor/common-refactor.scss" as deprecated;
+@use "../../../sidebar/common/sidebar.scss" as sidebar;
+
+.point-type-options {
+  @include sidebar.option-grid-structure;
+
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  min-height: deprecated.$s-32;
+  padding-inline: deprecated.$s-8;
+}
+
+.point-type-label {
+  @include sidebar.option-label;
+
+  flex: 0 0 auto;
+}
+
+.point-type-btn-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+}
+
+.point-type-btn {
+  @extend %button-tertiary;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: deprecated.$s-32;
+  width: deprecated.$s-32;
+  border-radius: deprecated.$br-8;
+  color: var(--icon-foreground);
+
+  // Active state — coral accent (Ovion AI accent #f28b82) marks the
+  // selected node's current point-type. Pure state, no transition.
+  &.active {
+    color: var(--ai-coral, #f28b82);
+    background-color: deprecated.alpha(#f28b82, 0.12);
+  }
+}
+
+.point-type-icon {
+  @extend %button-icon;
+
+  stroke: currentColor;
+}

@@ -487,6 +487,23 @@
         do-offset-vector     #(st/emit! (dwps/offset-vector))
         do-simplify-vector   #(st/emit! (dwps/simplify-vector))
 
+        ;; ALL_APPS_PARITY P2.17 — Expand / Expand Appearance (path-tier).
+        ;; Finalize selected shapes into editable anchor paths: booleans are
+        ;; flattened, rects/ellipses/groups/frames/images/text are converted
+        ;; to paths, and live Offset Path effects are baked. No-op when no
+        ;; selected shape needs expanding (see shapes_to_path.cljs).
+        do-expand-selection  #(st/emit! (dwps/expand-selection))
+
+        ;; Expand is offered whenever a shape of an expandable type is
+        ;; selected (path with a live effect, or a bool/rect/circle/group/
+        ;; frame/image/text). Plain paths with no effect are skipped.
+        has-expandable?
+        (some (fn [s]
+                (let [t (:type s)]
+                  (or (and (= :path t) (some? (:offset-effect s)))
+                      (#{:bool :rect :circle :group :frame :image :text} t))))
+              shapes)
+
         make-do-bool
         (fn [bool-type]
           #(cond
@@ -534,6 +551,11 @@
                          :on-click do-offset-vector}]
         [:> menu-entry* {:title (tr "workspace.shape.menu.simplify-vector")
                          :on-click do-simplify-vector}]])
+
+     ;; ALL_APPS_PARITY P2.17 — Expand / Expand Appearance (path-tier).
+     (when has-expandable?
+       [:> menu-entry* {:title (tr "workspace.shape.menu.expand")
+                        :on-click do-expand-selection}])
 
      (when (and (not has-frame?)
                 (not disable-booleans)

@@ -1,0 +1,219 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+
+// In-design accessibility audit panel (parity gap P2.35). Styles for the
+// `site-audit*` component rendered by `app.main.ui.inspect.site-audit`.
+// The panel mounts as an Inspect tab; it scans the whole page on demand,
+// so every class here is purely additive and never touches the existing
+// inspect layout. Class names mirror the `stl/css` keys in site_audit.cljs.
+//
+// Brand: Ovion coral (#f28b82) accent on the run/rerun button and focus
+// rings; Helvetica Now Display for the title; calm hover/press (no
+// size/scale) consistent with the rest of the rebranded chrome.
+// Reduced-motion: the only animation is a 120ms background tint on hover
+// / focus, which is disabled under prefers-reduced-motion.
+
+.site-audit-section {
+  @include deprecated.flex-column;
+
+  gap: var(--sp-s);
+  padding-block: var(--sp-s);
+  padding-inline: var(--sp-m);
+  font-family: "Helvetica Now Display", var(--font-family-base, sans-serif);
+}
+
+.site-audit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-s);
+}
+
+.site-audit-title {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-primary);
+  font-weight: 600;
+}
+
+.site-audit-run-btn {
+  @include deprecated.body-small-typography;
+
+  display: inline-flex;
+  align-items: center;
+  gap: deprecated.$s-4;
+  padding-block: deprecated.$s-2;
+  padding-inline: deprecated.$s-8;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid color-mix(in srgb, #f28b82 55%, transparent);
+  background-color: color-mix(in srgb, #f28b82 14%, transparent);
+  color: #f28b82;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  &:hover {
+    background-color: color-mix(in srgb, #f28b82 22%, transparent);
+    border-color: #f28b82;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 deprecated.$s-2 color-mix(in srgb, #f28b82 35%, transparent);
+  }
+
+  &:active {
+    background-color: color-mix(in srgb, #f28b82 30%, transparent);
+  }
+}
+
+.site-audit-run-icon {
+  flex: 0 0 auto;
+}
+
+.site-audit-empty {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+  padding-block: deprecated.$s-4;
+  line-height: 1.5;
+}
+
+.site-audit-pass {
+  display: flex;
+  align-items: center;
+  gap: deprecated.$s-4;
+  padding-block: deprecated.$s-4;
+
+  @include deprecated.body-small-typography;
+
+  color: var(--status-color-success-500);
+}
+
+.site-audit-pass-icon {
+  flex: 0 0 auto;
+}
+
+.site-audit-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-s);
+  padding-block: deprecated.$s-2;
+}
+
+// `stl/css-case :site-audit-count true :site-audit-count-error cond
+// :site-audit-count-warn cond` applies :site-audit-count always plus the
+// severity tint when that severity has > 0 issues.
+.site-audit-count {
+  @include deprecated.body-small-typography;
+
+  display: inline-flex;
+  align-items: center;
+  padding-block: deprecated.$s-2;
+  padding-inline: deprecated.$s-8;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid transparent;
+  line-height: 1;
+  color: var(--color-foreground-secondary);
+}
+
+.site-audit-count-error {
+  color: var(--status-color-error-500);
+  border-color: var(--status-color-error-500);
+  background-color: color-mix(in srgb, var(--status-color-error-500) 12%, transparent);
+}
+
+.site-audit-count-warn {
+  color: var(--status-color-warning-500);
+  border-color: var(--status-color-warning-500);
+  background-color: color-mix(in srgb, var(--status-color-warning-500) 12%, transparent);
+}
+
+.site-audit-list {
+  @include deprecated.flex-column;
+
+  gap: deprecated.$s-2;
+  max-block-size: 320px;
+  overflow-y: auto;
+  padding-inline-end: deprecated.$s-2;
+}
+
+.site-audit-item {
+  @include deprecated.flex-column;
+
+  gap: deprecated.$s-2;
+  width: 100%;
+  text-align: start;
+  padding-block: deprecated.$s-4;
+  padding-inline: deprecated.$s-8;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid var(--input-border-color);
+  background-color: var(--input-background-color);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  &:hover {
+    border-color: #f28b82;
+    background-color: color-mix(in srgb, #f28b82 8%, var(--input-background-color));
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: #f28b82;
+    box-shadow: 0 0 0 deprecated.$s-2 color-mix(in srgb, #f28b82 35%, transparent);
+  }
+}
+
+.site-audit-item-head {
+  display: flex;
+  align-items: center;
+  gap: deprecated.$s-4;
+}
+
+// `severity-icon` in site_audit.cljs emits `stl/css :site-audit-icon
+// :site-audit-icon-error` (or :warn). The icon svg uses currentColor, so
+// the color classes below tint it.
+.site-audit-icon {
+  flex: 0 0 auto;
+}
+
+.site-audit-icon-error {
+  color: var(--status-color-error-500);
+}
+
+.site-audit-icon-warn {
+  color: var(--status-color-warning-500);
+}
+
+.site-audit-item-cat {
+  @include deprecated.body-small-typography;
+
+  font-weight: 600;
+  color: var(--color-foreground-primary);
+}
+
+.site-audit-item-msg {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-primary);
+  line-height: 1.4;
+}
+
+.site-audit-item-sug {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-audit-run-btn,
+  .site-audit-item {
+    transition: none;
+  }
+}

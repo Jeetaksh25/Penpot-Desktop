@@ -79,7 +79,15 @@
     :set-error-state
     ;; P0.17: continuous scroll-driven keyframe animation binding. Applied
     ;; by the viewer scroll handler on the #viewer-section container.
-    :scroll-animate})
+    :scroll-animate
+    ;; P1.14: dynamic panels — switch a generic N-state frame to a named
+    ;; panel state. Decoupled from component variants: any frame carrying
+    ;; panel-states plugin-data (:ovion "panel-states") can be a target.
+    :set-panel-state
+    ;; P2.29: per-element multi-state system — switch a shape's active
+    ;; element state (base/active/nested). Decoupled from components; the
+    ;; shape carries its states as :ovion "element-states" plugin-data.
+    :set-element-state})
 
 (def overlay-positioning-types
   #{:manual
@@ -98,7 +106,11 @@
     :ease-out
     :ease-in-out
     ;; Figma #34: custom cubic-bezier easing (4 control points).
-    :custom-bezier})
+    :custom-bezier
+    ;; P2.36: spring physics easing. Carries a :spring-config map
+    ;; {stiffness damping mass} on the animation; the viewer transition
+    ;; runner integrates the spring instead of using a cubic easing.
+    :spring})
 
 (def direction-types
   #{:right
@@ -112,7 +124,10 @@
 (def animation-types
   #{:dissolve :slide :push
     ;; Figma #11: smart animate (matched-property tweening).
-    :smart-animate})
+    :smart-animate
+    ;; P2.36: Flow List transition (stack navigation push/pop with slide+fade).
+    ;; Reuses the overlay/transition system; a stack-aware variant of :push.
+    :flow-list})
 
 ;; Figma #34: the 4 control points of a custom cubic-bezier easing.
 ;; Stored alongside :easing in the animation map when :easing is :custom-bezier.
@@ -169,18 +184,33 @@
    [:easing [::sm/one-of easing-types]]
    [:bezier-ctrl {:optional true} schema:bezier-ctrl]])
 
+;; P2.36: Flow List transition (stack navigation push/pop). A stack-aware
+;; variant of :push — the incoming frame slides in with a fade while the
+;; outgoing frame slides/fades out, modelling the Flow List primitive.
+;; :way is :push (enter) or :pop (exit); :direction is the slide axis.
+(def schema:flow-list-animation
+  [:map {:title "FlowListAnimation"}
+   [:animation-type [:= :flow-list]]
+   [:duration ::sm/safe-int]
+   [:easing [::sm/one-of easing-types]]
+   [:way {:optional true} [::sm/one-of way-types]]
+   [:direction [::sm/one-of direction-types]]
+   [:bezier-ctrl {:optional true} schema:bezier-ctrl]])
+
 (def schema:animation
   [:multi {:dispatch :animation-type
            :title "Animation"
            :gen/gen (sg/one-of (sg/generator schema:dissolve-animation)
                                (sg/generator schema:slide-animation)
                                (sg/generator schema:push-animation)
-                               (sg/generator schema:smart-animate-animation))
+                               (sg/generator schema:smart-animate-animation)
+                               (sg/generator schema:flow-list-animation))
            :decode/json #(update % :animation-type keyword)}
    [:dissolve schema:dissolve-animation]
    [:slide schema:slide-animation]
    [:push schema:push-animation]
-   [:smart-animate schema:smart-animate-animation]])
+   [:smart-animate schema:smart-animate-animation]
+   [:flow-list schema:flow-list-animation]])
 
 (sm/register! ::animation schema:animation)
 
@@ -213,7 +243,22 @@
    ;; Figma #73: scroll-to target shape id (any object within a top-level frame).
    ;; Reuses :destination when the target is a frame; this field allows a
    ;; non-frame shape target that does not fit :destination's frame-oriented semantics.
-   [:scroll-to-target {:optional true} [:maybe ::sm/uuid]]])
+   [:scroll-to-target {:optional true} [:maybe ::sm/uuid]]
+   ;; P2.36: spring physics easing config {stiffness damping mass}. Only
+   ;; meaningful when :easing is :spring; ignored otherwise. Carried on
+   ;; the animation map (see set-spring-config setter).
+   [:spring-config {:optional true}
+    [:maybe [:map {:title "SpringConfig"}
+             [:stiffness {:optional true} ::sm/safe-number]
+             [:damping {:optional true} ::sm/safe-number]
+             [:mass {:optional true} ::sm/safe-number]]]]
+   ;; P1.14: dynamic-panel action target. :panel-id is the frame carrying
+   ;; panel-states; :panel-state is the named state to activate.
+   [:panel-id {:optional true} [:maybe ::sm/uuid]]
+   [:panel-state {:optional true} [:maybe :string]]
+   ;; P2.29: element-state action target. :element-state-name is the state
+   ;; to activate on the shape (a keyword/string naming a stored state).
+   [:element-state-name {:optional true} [:maybe :string]]])
 
 (def schema:navigate-interaction
   [:map {:title "NavigateInteraction"}
@@ -377,6 +422,30 @@
    [:keyframes {:optional true} [:maybe [:vector [:map [:offset ::sm/safe-number] [:props ::sm/any]]]]]
    [:easing {:optional true} [:maybe [::sm/one-of easing-types]]]])
 
+;; P1.14: set-panel-state switches a generic N-state frame to a named
+;; panel state. :panel-id is the frame carrying panel-states plugin-data
+;; (:ovion "panel-states"); :panel-state is the named state to activate.
+;; Decoupled from component variants — any frame can be an N-state panel.
+(def schema:set-panel-state-interaction
+  [:map {:title "SetPanelStateInteraction"}
+   [:action-type [:= :set-panel-state]]
+   [:event-type [::sm/one-of event-types]]
+   [:panel-id {:optional true} [:maybe ::sm/uuid]]
+   [:panel-state {:optional true} [:maybe :string]]
+   [:animation {:optional true} schema:animation]])
+
+;; P2.29: set-element-state switches a shape's active element state
+;; (base/active/nested). :element-state-name is the state to activate.
+;; The shape carries its states as :ovion "element-states" plugin-data.
+;; Shares the plugin-data + viewer-swap machinery with dynamic panels.
+(def schema:set-element-state-interaction
+  [:map {:title "SetElementStateInteraction"}
+   [:action-type [:= :set-element-state]]
+   [:event-type [::sm/one-of event-types]]
+   [:panel-id {:optional true} [:maybe ::sm/uuid]]
+   [:element-state-name {:optional true} [:maybe :string]]
+   [:animation {:optional true} schema:animation]])
+
 (def schema:interaction
   [:schema {:title "Interaction"
             :gen/gen (sg/one-of (sg/generator schema:navigate-interaction)
@@ -395,7 +464,10 @@
                                 ;; P0.16/P0.17/P2.09/P2.21: runtime logic actions.
                                 (sg/generator schema:set-style-interaction)
                                 (sg/generator schema:set-error-state-interaction)
-                                (sg/generator schema:scroll-animate-interaction))}
+                                (sg/generator schema:scroll-animate-interaction)
+                                ;; P1.14/P2.29: dynamic-panel + element-state actions.
+                                (sg/generator schema:set-panel-state-interaction)
+                                (sg/generator schema:set-element-state-interaction))}
    [:and
     schema:generic-interaction-attrs
     [:multi {:dispatch :action-type :title "InteractionAttrs"}
@@ -417,7 +489,10 @@
      ;; new action types; viewer dispatch is additive (deferred runtime).
      [:set-style schema:set-style-interaction]
      [:set-error-state schema:set-error-state-interaction]
-     [:scroll-animate schema:scroll-animate-interaction]]]])
+     [:scroll-animate schema:scroll-animate-interaction]
+     ;; P1.14/P2.29: dynamic-panel + element-state actions.
+     [:set-panel-state schema:set-panel-state-interaction]
+     [:set-element-state schema:set-element-state-interaction]]]])
 
 (def check-interaction
   (sm/check-fn schema:interaction))
@@ -578,7 +653,24 @@
                    :range-start (get interaction :range-start)
                    :range-end (get interaction :range-end)
                    :keyframes (get interaction :keyframes)
-                   :easing (get interaction :easing))))]
+                   :easing (get interaction :easing))
+
+            ;; P1.14: set-panel-state carries the panel-id + panel-state so
+            ;; toggling the action type keeps authored state. May carry an
+            ;; animation (the panel-state swap can transition).
+            :set-panel-state
+            (assoc interaction
+                   :action-type action-type
+                   :panel-id (get interaction :panel-id)
+                   :panel-state (get interaction :panel-state))
+
+            ;; P2.29: set-element-state carries the element-state-name so
+            ;; toggling the action type keeps authored state. May carry an
+            ;; animation (the element-state swap can transition).
+            :set-element-state
+            (assoc interaction
+                   :action-type action-type
+                   :element-state-name (get interaction :element-state-name))))]
 
     (cond-> new-interaction
       (not (allowed-animation? action-type
@@ -1021,6 +1113,68 @@
 
   (assoc interaction :easing easing))
 
+;; P1.14: set-panel-state action predicates + setters. :panel-id is the
+;; frame carrying panel-states; :panel-state is the named state to activate.
+(defn has-set-panel-state?
+  [interaction]
+  (= (:action-type interaction) :set-panel-state))
+
+(defn set-panel-id
+  [interaction panel-id]
+
+  (assert (check-interaction interaction))
+  (assert (or (nil? panel-id) (uuid? panel-id))
+          "expected a uuid (or nil) for `panel-id`")
+  (assert (has-set-panel-state? interaction)
+          "expected compatible interaction map with set-panel-state action")
+
+  (assoc interaction :panel-id panel-id))
+
+(defn set-panel-state-name
+  [interaction panel-state]
+
+  (assert (check-interaction interaction))
+  (assert (or (nil? panel-state) (string? panel-state))
+          "expected a string (or nil) for `panel-state`")
+  (assert (has-set-panel-state? interaction)
+          "expected compatible interaction map with set-panel-state action")
+
+  (assoc interaction :panel-state panel-state))
+
+;; P2.29: set-element-state action predicates + setters. :element-state-name
+;; is the state to activate on the shape (base/active/nested).
+(defn has-set-element-state?
+  [interaction]
+  (= (:action-type interaction) :set-element-state))
+
+(defn set-element-state-name
+  [interaction state-name]
+
+  (assert (check-interaction interaction))
+  (assert (or (nil? state-name) (string? state-name))
+          "expected a string (or nil) for `element-state-name`")
+  (assert (has-set-element-state? interaction)
+          "expected compatible interaction map with set-element-state action")
+
+  (assoc interaction :element-state-name state-name))
+
+;; P2.36: spring physics easing config {stiffness damping mass}. Only
+;; meaningful when :easing is :spring; stored on the animation map.
+(defn has-spring-config?
+  [interaction]
+  (= (-> interaction :animation :easing) :spring))
+
+(defn set-spring-config
+  [interaction spring-config]
+
+  (assert (check-interaction interaction))
+  (assert (map? spring-config)
+          "expected a map with :stiffness :damping :mass for `spring-config`")
+  (assert (has-spring-config? interaction)
+          "expected compatible interaction map with spring easing")
+
+  (update interaction :animation assoc :spring-config spring-config))
+
 ;; Figma #34: cubic-bezier control points, only meaningful when :easing
 ;; is :custom-bezier. Stored in the animation map alongside :easing.
 (defn has-bezier-ctrl?
@@ -1230,7 +1384,9 @@
   (#{:navigate :open-overlay :close-overlay :toggle-overlay
     ;; Figma #73: swap-overlay transitions like an overlay animation.
     ;; Figma #10/#11: change-to may animate (notably with :smart-animate).
-    :swap-overlay :change-to}
+    :swap-overlay :change-to
+    ;; P1.14/P2.29: panel-state + element-state swaps may transition.
+    :set-panel-state :set-element-state}
    (:action-type interaction)))
 
 (defn allow-push?
@@ -1240,20 +1396,32 @@
 
 ;; Figma #11: smart animate is allowed for navigation, change-to (variant
 ;; transitions) and swap-overlay. Other actions fall back to dissolve/slide.
+;; P1.14/P2.29: panel-state + element-state swaps may use smart animate.
 (defn allow-smart-animate?
   [action-type]
-  (#{:navigate :change-to :swap-overlay} action-type))
+  (#{:navigate :change-to :swap-overlay
+    :set-panel-state :set-element-state} action-type))
+
+;; P2.36: flow-list is a stack-navigation transition, allowed for the same
+;; action types that allow push (navigate) plus the panel/element-state
+;; swaps (stack navigation between states).
+(defn allow-flow-list?
+  [action-type]
+  (#{:navigate :set-panel-state :set-element-state} action-type))
 
 (defn allowed-animation?
   [action-type animation-type]
   ; Some specific combinations are forbidden, but may occur if the action type
   ; is changed from a type that allows the animation to another one that doesn't.
-  ; Currently the only cases are an overlay action with push animation, and a
-  ; non-smart-animate-capable action with smart-animate.
+  ; Currently the only cases are an overlay action with push animation, a
+  ; non-smart-animate-capable action with smart-animate, and a non-flow-list
+  ; action with flow-list.
   (and (or (not= animation-type :push)
            (allow-push? action-type))
        (or (not= animation-type :smart-animate)
-           (allow-smart-animate? action-type))))
+           (allow-smart-animate? action-type))
+       (or (not= animation-type :flow-list)
+           (allow-flow-list? action-type))))
 
 (defn set-animation-type
   [interaction animation-type]
@@ -1299,11 +1467,21 @@
         (= animation-type :smart-animate)
         (update :animation assoc
                 :duration (get-in interaction [:animation :duration] 300)
-                :easing (get-in interaction [:animation :easing] :linear))))))
+                :easing (get-in interaction [:animation :easing] :linear))
+
+        ;; P2.36: flow-list transition. Duration + easing + direction + way
+        ;; authored here; the stack push/pop runtime reuses the overlay
+        ;; transition system (see viewer transition runner).
+        (= animation-type :flow-list)
+        (update :animation assoc
+                :duration (get-in interaction [:animation :duration] 300)
+                :easing (get-in interaction [:animation :easing] :linear)
+                :way (get-in interaction [:animation :way] :in)
+                :direction (get-in interaction [:animation :direction] :right))))))
 
 (defn has-duration?
   [interaction]
-  (#{:dissolve :slide :push :smart-animate} (-> interaction :animation :animation-type)))
+  (#{:dissolve :slide :push :smart-animate :flow-list} (-> interaction :animation :animation-type)))
 
 (defn set-duration
   [interaction duration]
@@ -1317,7 +1495,7 @@
 
 (defn has-easing?
   [interaction]
-  (#{:dissolve :slide :push :smart-animate} (-> interaction :animation :animation-type)))
+  (#{:dissolve :slide :push :smart-animate :flow-list} (-> interaction :animation :animation-type)))
 
 (defn set-easing
   [interaction easing]
@@ -1349,7 +1527,7 @@
 
 (defn has-direction?
   [interaction]
-  (#{:slide :push} (-> interaction :animation :animation-type)))
+  (#{:slide :push :flow-list} (-> interaction :animation :animation-type)))
 
 (defn set-direction
   [interaction direction]

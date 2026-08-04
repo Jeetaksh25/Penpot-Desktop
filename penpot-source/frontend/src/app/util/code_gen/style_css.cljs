@@ -19,6 +19,7 @@
    [app.util.code-gen.common :as cgc]
    [app.util.code-gen.style-css-formats :refer [format-value format-shadow->css]]
    [app.util.code-gen.style-css-values :refer [get-value]]
+   [cljs.reader :as reader]
    [cuerdas.core :as str]))
 
 ;;
@@ -47,6 +48,31 @@ body {
 .text-node { background-clip: text !important; -webkit-background-clip: text !important; }
 
 ")
+
+;; ── Ovion authoring: per-shape custom CSS (P0.13) ────────────────────────────
+;;
+;; A shape may carry a freeform custom-CSS block in its plugin-data under the
+;; `:ovion` namespace key `\"custom-css\"` (a pr-str'd string of raw CSS
+;; declarations, authored via the HTML Authoring menu). It is emitted as a
+;; separate rule scoped to the shape's selector, AFTER the generated rule, so
+;; authored declarations override generated ones by source order. No reader
+;; dependency on the workspace data layer.
+
+(defn- read-pd
+  "Read+parse an EDN value from `shape`'s plugin-data under the :ovion
+  namespace for `key`. Returns nil when absent or unreadable."
+  [shape key]
+  (let [raw (get-in shape [:plugin-data :ovion key])]
+    (when (some? raw)
+      (try (reader/read-string raw)
+           (catch :default _ nil)))))
+
+(defn- pd-custom-css
+  "Authored raw custom CSS for `shape` (plugin-data :ovion/\"custom-css\"),
+  as a non-blank string, or nil."
+  [shape]
+  (let [c (read-pd shape "custom-css")]
+    (when (and (string? c) (not (str/blank? c))) c)))
 
 (def shape-wrapper-css-properties
   #{:flex-shrink
@@ -293,7 +319,13 @@ body {
            (when svg?
              (-> shape
                  (shape->svg-props objects)
-                 (format-css-properties options)))]
+                 (format-css-properties options)))
+
+           ;; Ovion per-shape custom CSS (P0.13): raw authored declarations,
+           ;; emitted as a separate rule under the same selector AFTER the
+           ;; generated rule so they win by source order.
+           custom-css
+           (pd-custom-css shape)]
 
        (str/join
         "\n"
@@ -302,7 +334,8 @@ body {
                        (when wrapper? (str/fmt ".%s-wrapper > * {\n%s\n}" selector wrapper-child-properties))
                        (when svg?     (str/fmt ".%s > svg {\n%s\n}" selector svg-child-props))
                        (str/fmt ".%s {\n%s\n}" selector properties)
-                       (when (cfh/text-shape? shape) (generate-text-css shape))]))))))
+                       (when (cfh/text-shape? shape) (generate-text-css shape))
+                       (when custom-css (str/fmt ".%s {\n%s\n}" selector custom-css))]))))))
 
 (defn get-css-property
   ([objects shape property]
@@ -326,9 +359,16 @@ body {
   ([objects root-shapes all-shapes]
    (generate-style objects root-shapes all-shapes nil))
   ([objects root-shapes all-shapes {:keys [with-prelude?] :or {with-prelude? true} :as options}]
-   (let [options (assoc options :root-shapes (into #{} (map :id) root-shapes))]
+   (let [options    (assoc options :root-shapes (into #{} (map :id) root-shapes))
+         ;; Ovion file-level custom CSS (P0.13): an optional raw CSS string a
+         ;; caller with file-data may pass via options. Emitted after the
+         ;; prelude and before per-shape rules so it can define helpers /
+         ;; variables the per-shape rules reference.
+         file-css (:custom-css options)]
      (dm/str
       (if with-prelude? prelude "")
+      (when (and (string? file-css) (not (str/blank? file-css)))
+        (dm/str "\n/* Ovion custom CSS */\n" file-css "\n"))
       (->> all-shapes
            (keep #(get-shape-css-selector % objects options))
            (str/join "\n\n"))))))

@@ -23,6 +23,19 @@ use tauri::AppHandle;
 
 use crate::commands::llm_config_path;
 
+/// The submission request for the native forms builder (P1.23 native-forms
+/// half). `token`/`endpoint` are optional overrides; when absent/empty, Rust
+/// resolves them from `<app-data>/llm.json` — the same resolution path as
+/// `publish_site`. `payload` is the arbitrary JSON the form fields produced.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitFormRequest {
+    pub endpoint: Option<String>,
+    pub form_name: String,
+    pub payload: serde_json::Value,
+    pub token: Option<String>,
+}
+
 /// The Ovion Cloud default endpoint — mirrors `llm.rs::default_ovion_cloud_endpoint`
 /// without importing the private fn. Kept in sync manually.
 const DEFAULT_OVION_CLOUD_ENDPOINT: &str = "https://api.ovion.app/v1";
@@ -83,7 +96,13 @@ fn load_publish_config(app: &AppHandle) -> PublishConfig {
 
 /// Resolve the effective endpoint: request override → config → built-in default.
 fn resolve_endpoint(request: &PublishRequest, cfg: &PublishConfig) -> String {
-    if let Some(ep) = request.endpoint.as_ref() {
+    resolve_endpoint_from(&request.endpoint, cfg)
+}
+
+/// Resolve the endpoint from a raw override Option + config. Shared by
+/// `publish_site` and `submit_form`.
+fn resolve_endpoint_from(override_endpoint: &Option<String>, cfg: &PublishConfig) -> String {
+    if let Some(ep) = override_endpoint.as_ref() {
         let trimmed = ep.trim();
         if !trimmed.is_empty() {
             return trimmed.trim_end_matches('/').to_string();
@@ -98,7 +117,14 @@ fn resolve_endpoint(request: &PublishRequest, cfg: &PublishConfig) -> String {
 
 /// Resolve the effective token: request override → config. Empty → None.
 fn resolve_token(request: &PublishRequest, cfg: &PublishConfig) -> Option<String> {
-    if let Some(t) = request.token.as_ref() {
+    resolve_token_from(&request.token, cfg)
+}
+
+/// Resolve the token from a raw override Option + config. Shared by
+/// `publish_site` and `submit_form` so the forms path does not need to
+/// construct a full `PublishRequest` just to resolve auth.
+fn resolve_token_from(override_token: &Option<String>, cfg: &PublishConfig) -> Option<String> {
+    if let Some(t) = override_token.as_ref() {
         let trimmed = t.trim();
         if !trimmed.is_empty() {
             return Some(trimmed.to_string());
@@ -166,6 +192,65 @@ pub async fn publish_site(
             .map(|s| s.to_string())
             .unwrap_or_else(|| text.clone());
         Ok(serde_json::json!({ "share_url": share_url }))
+    } else {
+        Err(text)
+    }
+}
+
+/// Submit a native form's payload to Ovion Cloud (P1.23 native-forms half).
+///
+/// Mirrors `publish_site`: the same Ovion Cloud Bearer-auth transport, the
+/// same `llm.json` token/endpoint resolution (via `load_publish_config`), and
+/// the same `reqwest::Client::builder()` pattern. POSTs
+/// `{form_name, payload}` as JSON to `{endpoint}/forms/submit`. Returns the
+/// server's parsed JSON response on success, or the response body as the
+/// `Err` string on failure.
+#[tauri::command]
+pub async fn submit_form(
+    app: AppHandle,
+    request: SubmitFormRequest,
+) -> Result<serde_json::Value, String> {
+    let cfg = load_publish_config(&app);
+    let token = resolve_token_from(&request.token, &cfg)
+        .ok_or_else(|| {
+            "Ovion Cloud not configured — add your token in AI Settings.".to_string()
+        })?;
+    let endpoint = resolve_endpoint_from(&request.endpoint, &cfg);
+    let url = format!("{endpoint}/forms/submit");
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(60))
+        .user_agent("OvionDesktop/1.0 (forms)")
+        .build()
+        .map_err(|e| format!("forms client build failed: {e}"))?;
+
+    let body = serde_json::json!({
+        "form_name": request.form_name,
+        "payload": request.payload,
+    });
+
+    let resp = client
+        .post(&url)
+        .bearer_auth(&token)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("form submit request failed: {e}"))?;
+
+    let status = resp.status();
+    let text = resp.text().await.unwrap_or_default();
+
+    if status.is_success() {
+        // Return the server's parsed JSON verbatim (a success envelope the
+        // frontend displays); fall back to a generic confirmation when the
+        // body is not JSON.
+        let parsed: serde_json::Value =
+            serde_json::from_str(&text).unwrap_or(serde_json::Value::Null);
+        if parsed.is_null() {
+            Ok(serde_json::json!({ "ok": true, "message": text }))
+        } else {
+            Ok(parsed)
+        }
     } else {
         Err(text)
     }

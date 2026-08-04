@@ -1066,3 +1066,125 @@
             (p/then (fn [viewport] (-> (run-scout viewport) (p/then begin-loop))))
             (p/catch (fn [_] (begin-loop ""))))
         (rx/of (set-ai-busy true))))))
+
+;; ── P1.13 — Screenshot / Sketch to UI mode prompts ──────────────────────────────
+;;
+;; The AI bar exposes an image-mode segmented control (none / screenshot /
+;; sketch) near the paperclip. When screenshot or sketch is active and the
+;; user generates with an image attached, the bar prepends the matching
+;; mode instruction below to the user prompt BEFORE calling
+;; `generate-design` / `run-agent-design`. The backend already routes image
+;; attachments to the Kimi vision model, so this is purely a prompt +
+;; UI entry-point change — no backend edits.
+
+(defn screenshot-mode-prompt
+  "Return the system instruction prepended to the user prompt when the AI bar
+  is in 'Screenshot to UI' mode. Asks the vision model to treat the attached
+  image as a screenshot of an existing UI and reproduce it as a DesignSpec."
+  []
+  (dm/str
+   "You are converting a SCREENSHOT of an existing user interface into a "
+   "design spec. The attached image is a screenshot of a real UI screen. "
+   "Analyze its layout, spacing, typography hierarchy, colors and components, "
+   "and emit a DesignSpec that reproduces it as faithfully as possible — "
+   "same structure, same visual style, same content text. Preserve the "
+   "relative proportions and the visual hierarchy. Treat the screenshot as "
+   "the source of truth.\n\n"))
+
+(defn sketch-mode-prompt
+  "Return the system instruction prepended to the user prompt when the AI bar
+  is in 'Sketch to UI' mode. Asks the vision model to treat the attached
+  image as a hand-drawn sketch / wireframe and produce a polished DesignSpec,
+  with a clarification preamble that names the inferred style so the user can
+  correct it."
+  []
+  (dm/str
+   "You are converting a HAND-DRAWN SKETCH / wireframe into a polished design "
+   "spec. The attached image is a sketch — it may be rough, monochrome, or "
+   "ambiguous. Infer the intended layout, components and hierarchy, and emit "
+   "a clean, production-ready DesignSpec with sensible styling (modern, clear "
+   "spacing, legible typography, a coherent color palette). "
+   "Begin your reasoning with one short line noting the style you inferred "
+   "(e.g. 'Inferred style: minimal SaaS dashboard'), then emit the spec. "
+   "If the sketch is ambiguous, make reasonable assumptions and proceed — "
+   "do not ask questions.\n\n"))
+
+;; ── P2.28 — Multi-screen size adaptation (one-shot reflow) ────────────────────
+;;
+;; `adapt-screen` is a prompt-driven one-shot reflow of the current selection
+;; to a target viewport size (mobile / tablet / desktop). It reuses the whole
+;; `generate-design` machinery — the selection snippet + bounds are threaded
+;; through `build-request` exactly as a region update, and the result is
+;; applied via the SAME preview → apply-design-spec path the bar already
+;; renders (so Apply / Cancel / Regenerate are identical). No new apply code.
+;;
+;; The prompt instructs the model to reflow the selection for the target
+;; width, preserving content, hierarchy and visual style while adjusting
+;; flex direction, padding, gaps and element sizes. The guard requires a
+;; selection (emits :ai-error when none) since this is inherently a region
+;; update.
+
+(def ^:private adapt-target-widths
+  {"mobile"  390
+   "tablet"  834
+   "desktop" 1440})
+
+(defn adapt-screen-prompt
+  "Build the reflow prompt for `target` (\"mobile\" | \"tablet\" | \"desktop\")."
+  [target]
+  (let [w (get adapt-target-widths target 1440)]
+    (dm/str
+     "Reflow the current selection for a " target " viewport (~" w "px wide). "
+     "Preserve the content text, the visual hierarchy and the component "
+     "structure. Adjust the flex direction, padding, gaps and element sizes "
+     "so the layout reads well at the target width — stack columns vertically "
+     "for narrow widths, use multi-column layouts for wide widths, and resize "
+     "typography and touch targets appropriately. Keep the same color scheme "
+     "and styling. Return a COMPLETE DesignSpec for the reflowed selection "
+     "that fits the " target " width.\n\n")))
+
+(defn adapt-screen
+  "WatchEvent. One-shot AI reflow of the current selection to `target`
+  (\"mobile\" | \"tablet\" | \"desktop\"). Requires a selection; emits
+  :ai-error when none. Otherwise fires `invoke-generate` with the reflow
+  prompt and `target \"update-selection\"`, feeding the result back through
+  the SAME preview slot the bar already renders (byte-identical apply path)."
+  [{:keys [target]}]
+  (ptk/reify ::adapt-screen
+    ptk/WatchEvent
+    (watch [_ state _]
+      (let [bounds (dg/selection-bounds state)]
+        (if-not bounds
+          (rx/of (set-ai-error (tr "workspace.ai.bar.adapt-select")))
+          (let [my-id    (swap! gen-id inc)
+                target-v "update-selection"
+                snippet (or (dg/selection->snippet state) [])
+                selection {:bounds bounds :shapes snippet}
+                file-id  (str (:current-file-id state))
+                prompt   (adapt-screen-prompt target)
+                opts     {:target target-v
+                          :quality "auto"
+                          :frame-preset "auto"
+                          :use-memory true
+                          :file-id file-id
+                          :selection selection}
+                request  (build-request {:prompt prompt :files [] :options opts})
+                handle
+                (fn [result]
+                  (when (= my-id @gen-id)
+                    (let [res (js->clj result :keywordize-keys true)
+                          spec (if (contains? res :specs)
+                                 (first (:specs res))
+                                 res)]
+                      (st/emit! (set-ai-busy false)
+                                (set-ai-error nil)
+                                (set-ai-preview {:spec spec :target target-v})))))
+                handle-err
+                (fn [err]
+                  (when (= my-id @gen-id)
+                    (st/emit! (set-ai-busy false)
+                              (set-ai-error (err->str err)))))]
+            (-> (invoke-generate request)
+                (p/then handle)
+                (p/catch handle-err))
+            (rx/of (set-ai-busy true))))))))

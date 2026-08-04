@@ -13,6 +13,7 @@
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
    [app.config :as cfg]
+   [app.util.code-gen.code-connect :as cc]
    [app.util.code-gen.frameworks.common :as fc]
    [app.util.code-gen.frameworks.components :as fcomp]
    [cuerdas.core :as str]))
@@ -117,6 +118,17 @@
      (cond
        (fc/hidden? shape) nil
 
+       ;; Code Connect binding (P1.08): emit the mapped code component tag
+       ;; with positioning style + authored props instead of a generic View.
+       (when-let [binding (fc/code-connect-binding objects shape)]
+         (let [props (cc/format-props-jsx binding)
+               style-str (style->js (box-style objects shape origin))
+               attrs (cond-> (dm/str "style={{" style-str "}")
+                       (str/not-blank? props) (dm/str " " props))
+               tag (:tag binding)]
+           (dm/fmt "%{/* Code Connect: % */}\n%<% % />"
+                   ind tag ind tag attrs)))
+
        ;; Hoisted component instance → emit a reference instead of recursing.
        (fc/hoisted-instance? shape)
        (let [comp-name (fc/hoisted-name shape)
@@ -207,7 +219,8 @@
         origin (fc/selection-origin roots)
         size (fc/selection-size roots)
         svg? (has-svg? objects roots)
-        body (binding [fc/*hoist-map* hoist-map]
+        body (binding [fc/*hoist-map* hoist-map
+                       fc/*framework-type* "react-native"]
               (->> roots
                    (keep #(render-shape objects % origin 1))
                    (str/join "\n")))
@@ -243,7 +256,8 @@
   instance's own background/border."
   [objects spec]
   (let [{:keys [comp-name def children origin size]} spec
-        body (binding [fc/*hoist-map* nil]
+        body (binding [fc/*hoist-map* nil
+                       fc/*framework-type* "react-native"]
               (->> children
                    (keep #(render-shape objects % origin 1))
                    (str/join "\n")))

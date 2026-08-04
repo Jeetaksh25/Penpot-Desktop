@@ -459,6 +459,126 @@
                 (update next-i #(line->curve point %))))]
         (reduce add-curve content vectors)))))
 
+;; ---------------------------------------------------------------------------
+;; ALL_APPS_PARITY P2.18 — Explicit 4 vector point-type system.
+;;
+;; Four-type enum mirroring Sketch / Illustrator node behavior:
+;;   :straight            — corner, no Bezier handles
+;;   :mirror-angle-length — smooth, symmetric handles (collinear + equal len)
+;;   :mirror-angle        — collinear handles, independent lengths
+;;   :independent         — fully independent handles (non-collinear)
+;;
+;; The type is INFERRED from the current handle geometry by
+;; `infer-point-type` and SET by `set-point-type-point` (which adjusts
+;; handles to match the requested type). Because Penpot's PathData is a
+;; compact ByteBuffer (extra command keys do not survive `from-plain`),
+;; the explicit type is persisted as a `:point-types` map on the SHAPE
+;; (keyed by a rounded coordinate string) — see the
+;; `app.main.data.workspace.path.tools/set-point-type` event. The shape
+;; entry overrides the geometric inference between edits; after a node
+;; move the key changes and the type re-derives from geometry (acceptable
+;; — moving a node resetting its type matches user expectation).
+;;
+;; Governing handle-DRAG behavior (the Illustrator "smooth/asymmetric/
+;; disconnected constrains the opposite handle" semantics) is DEFERRED —
+;; it requires wiring into `start-move-handler` in edition.cljs (the
+;; `match-opposite?` path) which is owned by another group.
+;; ---------------------------------------------------------------------------
+
+(def point-types
+  "Explicit 4-type enum for path nodes (ALL_APPS_PARITY P2.18)."
+  #{:straight :mirror-angle-length :independent :mirror-angle})
+
+(defn- handle-entries
+  "Returns [[index prefix handle-point] ...] for the handles at `point`,
+  excluding degenerate handles that coincide with the point."
+  [content point]
+  (let [idxs (handler-indices content point)]
+    (into []
+          (keep (fn [[index prefix]]
+                  (let [h (get-handler-point content index prefix)]
+                    (when (and (some? h) (not (gpt/close? h point)))
+                      [index prefix h]))))
+          idxs)))
+
+(defn infer-point-type
+  "Derive the point-type enum from current handle geometry at `point`.
+  Returns one of `point-types`:
+    straight             — no non-degenerate handles
+    independent         — one handle (endpoint) OR two non-collinear handles
+    mirror-angle-length  — two collinear handles of equal length
+    mirror-angle         — two collinear handles of unequal length"
+  [content point]
+  (let [hs (handle-entries content point)]
+    (cond
+      (empty? hs) :straight
+      (= (count hs) 1) :independent
+      :else
+      (let [[_ _ h1] (first hs)
+            [_ _ h2] (second hs)
+            v1 (gpt/to-vec point h1)
+            v2 (gpt/to-vec point h2)
+            ang (gpt/angle-with-other v1 v2)]
+        ;; angle-with-other returns degrees in [0,180]; mirror handles sit
+        ;; on opposite sides so the angle between the handle vectors ~= 180.
+        (cond
+          (not (mth/close? ang 180.0 0.5)) :independent
+          (mth/close? (gpt/distance point h1) (gpt/distance point h2) 0.5)
+          :mirror-angle-length
+          :else :mirror-angle)))))
+
+(defn- set-handle!
+  "Returns plain content vector with handle [index prefix] moved to h."
+  [content index prefix h]
+  (let [[cx cy] (if (= prefix :c1) [:c1x :c1y] [:c2x :c2y])]
+    (-> content
+        (assoc-in [index :params cx] (:x h))
+        (assoc-in [index :params cy] (:y h)))))
+
+(defn set-point-type-point
+  "Adjusts the handles at `point` so the node's inferred type matches
+  `ptype`. Returns a PathData (via impl/from-plain). Geometry-only; the
+  caller persists the explicit type in the shape's :point-types map.
+
+  - :straight            -> collapse handles (make-corner-point)
+  - :mirror-angle-length -> symmetric handles (collinear, equal length)
+  - :mirror-angle        -> collinear handles, lengths independent
+  - :independent         -> ensure both handles exist, then leave them
+                            independent (breaks no geometry; the explicit
+                            map is what makes the type sticky)"
+  [content point ptype]
+  (let [content (vec content)]
+    (case ptype
+      :straight
+      (make-corner-point content point)
+
+      (:mirror-angle-length :mirror-angle)
+      (let [content (if (< (count (handle-entries content point)) 2)
+                       (make-curve-point content point)
+                       content)
+            hs (handle-entries content point)]
+        (if (< (count hs) 2)
+          (impl/from-plain content)         ; endpoint: cannot mirror
+          (let [[i1 p1 h1] (first hs)
+                [i2 p2 h2] (second hs)
+                v1 (gpt/to-vec point h1)
+                dir (gpt/negate (gpt/unit v1))
+                len1 (gpt/distance point h1)
+                len2 (gpt/distance point h2)
+                new-len (if (= ptype :mirror-angle-length)
+                          len1                       ; equal lengths
+                          (if (mth/almost-zero? len2) len1 len2))
+                new-h2 (gpt/add point (gpt/scale dir new-len))]
+            (-> content
+                (set-handle! i2 p2 new-h2)
+                (impl/from-plain)))))
+
+      :independent
+      (let [content (if (< (count (handle-entries content point)) 2)
+                       (make-curve-point content point)
+                       content)]
+        (impl/from-plain content)))))
+
 (defn get-segments-with-points
   "Given a content and a set of points return all the segments in the path
   that uses the points"

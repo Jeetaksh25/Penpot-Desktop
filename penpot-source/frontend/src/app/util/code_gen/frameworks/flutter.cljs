@@ -13,6 +13,7 @@
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
    [app.config :as cfg]
+   [app.util.code-gen.code-connect :as cc]
    [app.util.code-gen.frameworks.common :as fc]
    [app.util.code-gen.frameworks.components :as fcomp]
    [cuerdas.core :as str]))
@@ -135,6 +136,18 @@
      (cond
        (fc/hidden? shape) nil
 
+       ;; Code Connect binding (P1.08): emit the mapped code component widget
+       ;; `Tag(props)` wrapped in Positioned for layout, instead of a generic
+       ;; Container/Stack.
+       (when-let [binding (fc/code-connect-binding objects shape)]
+         (let [ci (indent (+ level 1))
+               tag (:tag binding)
+               props (cc/format-props-dart binding)]
+           (positioned objects shape origin
+                       (opacity-wrap
+                        (dm/fmt "%// Code Connect: %\n%%(%)"
+                                ci tag ci tag props)))))
+
        ;; Hoisted component instance → emit a reference instead of recursing.
        (fc/hoisted-instance? shape)
        (positioned objects shape origin
@@ -229,7 +242,8 @@
         imports (dm/str "import 'package:flutter/material.dart';\n"
                         (when svg? "import 'package:flutter_svg/flutter_svg.dart';\n")
                         (str/join "" (map #(dm/str "import 'widgets/" (fc/snake-name %) ".dart';\n") comp-names)))
-        body (binding [fc/*hoist-map* hoist-map]
+        body (binding [fc/*hoist-map* hoist-map
+                       fc/*framework-type* "flutter"]
               (->> shapes
                     (keep #(render-shape objects % origin 2))
                     (map #(str/concat (indent 1) %))

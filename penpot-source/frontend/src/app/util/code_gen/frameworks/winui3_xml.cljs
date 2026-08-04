@@ -15,6 +15,7 @@
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
    [app.config :as cfg]
+   [app.util.code-gen.code-connect :as cc]
    [app.util.code-gen.frameworks.common :as fc]
    [cuerdas.core :as str]))
 
@@ -110,6 +111,17 @@
      (cond
        (fc/hidden? shape) nil
 
+       ;; Code Connect binding (P1.08): emit the mapped custom control tag
+       ;; with Canvas positioning + authored props (PascalCased keys) instead
+       ;; of a generic element.
+       (when-let [binding (fc/code-connect-binding objects shape)]
+         (let [tag (:tag binding)
+               pos (pos-attrs objects shape origin)
+               props (cc/format-props-xaml binding)
+               attrs (if (str/blank? props) pos (dm/str pos " " props))]
+           (dm/fmt "%<!-- Code Connect: % -->\n%<% % />"
+                   ind tag ind tag attrs)))
+
        (cfh/text-shape? shape)
        (let [typo (fc/extract-typography shape)
              txt (fc/extract-text shape)]
@@ -180,9 +192,10 @@
   (let [roots (fc/root-originals objects shapes)
         origin (fc/selection-origin roots)
         size (fc/selection-size roots)
-        body (->> roots
-                  (keep #(render-shape objects % origin 1))
-                  (str/join "\n"))]
+        body (binding [fc/*framework-type* "winui3-xml"]
+              (->> roots
+                   (keep #(render-shape objects % origin 1))
+                   (str/join "\n")))]
     (dm/fmt
      "<!-- WinUI 3 (Windows App SDK) XAML. Place under a Page or UserControl. -->\n<Canvas Width=\"%\" Height=\"%\" Background=\"White\">\n%\n</Canvas>\n"
      (fc/fmt-num (:width size))

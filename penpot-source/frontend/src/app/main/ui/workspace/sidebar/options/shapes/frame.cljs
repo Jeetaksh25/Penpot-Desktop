@@ -13,7 +13,11 @@
    [app.main.ui.workspace.sidebar.options.menus.blur :refer [blur-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.breakpoints :refer [breakpoints-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.cms :refer [cms-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.cms-import :refer [cms-import-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.seo :refer [seo-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.forms :refer [forms-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.dynamic-panels :refer [dynamic-panels-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.plugin-center :refer [plugin-center-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.glass-row :refer [glass-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.noise-row :refer [noise-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.texture-row :refer [texture-menu*]]
@@ -188,7 +192,11 @@
      ;; data/workspace/breakpoints.cljs, collections.cljs, seo.cljs.
      [:> breakpoints-menu* {:shapes shapes}]
      [:> cms-menu* {:shapes shapes}]
+     [:> cms-import-menu* {:shapes shapes}]
      [:> seo-menu* {:shapes shapes}]
+     [:> forms-menu* {:shapes shapes}]
+     [:> dynamic-panels-menu* {:shapes shapes}]
+     [:> plugin-center-menu*]
 
      [:> exports-menu* {:type shape-type
                         :ids ids

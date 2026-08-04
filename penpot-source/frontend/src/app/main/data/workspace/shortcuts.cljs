@@ -15,6 +15,7 @@
    [app.main.data.profile :as du]
    [app.main.data.shortcuts :as ds]
    [app.main.data.workspace :as dw]
+   [app.main.data.workspace.command-bar :as cb]
    [app.main.data.workspace.colors :as mdc]
    [app.main.data.workspace.comments :as dwcm]
    [app.main.data.workspace.drawing :as dwd]
@@ -184,8 +185,8 @@
                           :subsections [:modify-layers]
                           :fn #(emit-when-no-readonly (dw/unmask-group))}
 
-   :create-component-variant {:tooltip (ds/meta "K")
-                              :command (ds/c-mod "k")
+   :create-component-variant {:tooltip (ds/meta-alt "K")
+                              :command (ds/c-mod "alt+k")
                               :subsections [:modify-layers]
                               :fn #(emit-when-no-readonly (dwv/add-component-or-variant))}
 
@@ -544,12 +545,20 @@
                            :fn #(st/emit! (toggle-layout-flag :wireframe-mode))}
 
    ;; Figma-parity command palette (gap #47). Mounts the unified quick-
-   ;; action overlay (command_palette.cljs). Cmd+K is already bound to
-   ;; create-component-variant, so the palette uses Cmd+/ instead.
-   :command-palette      {:tooltip (ds/meta "/")
-                          :command (ds/c-mod "/")
+   ;; action overlay (command_palette.cljs). Cmd+K opens the palette;
+   ;; create-component-variant moved to Cmd+Alt+K (above) to free it.
+   :command-palette      {:tooltip (ds/meta "K")
+                          :command (ds/c-mod "k")
                           :subsections [:main-menu]
                           :fn #(st/emit! (toggle-layout-flag :command-palette))}
+
+   ;; Ovion command-bar component swap (gap P1.14). Opens the swap overlay
+   ;; (command_bar.cljs open-swap!) to replace a selected instance with any
+   ;; other component from the file/linked libraries.
+   :command-bar-swap     {:tooltip (ds/meta-alt "R")
+                          :command (ds/c-mod "alt+r")
+                          :subsections [:main-menu]
+                          :fn #(cb/open-swap!)}
 
    :export-shapes        {:tooltip (ds/meta-shift "E")
                           :command (ds/c-mod "shift+e")

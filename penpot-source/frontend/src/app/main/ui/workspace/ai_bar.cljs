@@ -37,15 +37,20 @@
   `stl/css` needs)."
   (:require
    [cuerdas.core :as str]
+   [app.common.types.design-spec :as cds]
+   [app.common.uuid :as uuid]
    [app.main.data.modal :as modal]
    [app.main.data.workspace.ai-gen :as ai]
+   [app.main.data.workspace.ai-text-ops :as atop]
    [app.main.data.workspace.design-gen :as dg]
    [app.main.refs :as refs]
    [app.main.store :as st]
+   [app.main.ui.workspace.ai-chat-history :as aich]
    [app.main.ui.workspace.ai-design :as ad]
    [app.main.ui.workspace.ai-image]              ; bare require — loads the :ai-image modal registration
    [app.main.ui.workspace.ai-settings]           ; bare require — loads the :ai-settings modal registration (opened from this bar + the titlebar gear)
    [app.main.ui.workspace.ai-motion :as aim]
+   [app.util.code-gen :as cg]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
    [promesa.core :as p]
@@ -297,6 +302,79 @@
   color: var(--ai-ink); font-family: var(--ai-font); }
 .ai-result-score { font-size: 13px; font-weight: 700; color: var(--ai-coral);
   background: var(--ai-coral-faint); padding: 4px 10px; border-radius: var(--ai-radius-sm); }
+
+/* ── P1.13 / P2.28 — segmented control + mini popover ──────────────────────────
+   Reused by the image-mode picker (P1.13) and any small single-choice menu.
+   The segmented control mirrors the variant-count pill: white surface, coral
+   inset ring. The mini popover mirrors the screen popover (.ai-screen-pop). */
+.ai-seg { display: inline-flex; align-items: center; gap: 2px; flex: none;
+  padding: 4px; background: var(--ai-white); border-radius: var(--ai-radius-pill);
+  box-shadow: var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral); }
+.ai-seg-opt { display: inline-flex; align-items: center; justify-content: center;
+  height: 30px; padding: 0 11px; border: none; cursor: pointer;
+  background: transparent; color: var(--ai-grey-2); border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 12.5px; font-weight: 500;
+  transition: background var(--ai-dur-fast) var(--ai-ease-out),
+              color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-seg-opt:hover { color: var(--ai-ink); }
+.ai-seg-opt.is-cur { color: var(--ai-coral); background: var(--ai-coral-faint); }
+.ai-seg-opt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ai-coral-faint); }
+
+.ai-mini-wrap { position: relative; flex: none; }
+.ai-mini-back { position: fixed; inset: 0; z-index: 70; background: transparent; }
+.ai-mini-pop { position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 71;
+  min-width: 188px; background: var(--ai-white); border-radius: var(--ai-radius-md);
+  box-shadow: var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral);
+  padding: 6px; opacity: 0;
+  display: flex; flex-direction: column; gap: 2px; }
+
+/* ── P2.04 — text ops popover ─────────────────────────────────────────────────── */
+.ai-textop-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; }
+.ai-textop-input { flex: 1 1 auto; border: 1px solid #ececec; border-radius: 8px;
+  padding: 6px 8px; font-size: 12px; font-family: var(--ai-font); color: var(--ai-ink);
+  background: var(--ai-white); outline: none; min-width: 90px; }
+.ai-textop-input:focus { border-color: var(--ai-coral);
+  box-shadow: 0 0 0 3px var(--ai-coral-faint); }
+.ai-textop-sep { height: 1px; background: #ececec; margin: 3px 4px; }
+
+/* ── P2.34 — Show Code reveal in the preview modal ──────────────────────────────
+   A toggle in the preview header flips the body between the visual preview
+   and a two-section code view (markup + style), each with a copy button. */
+.ai-code-panel { display: flex; flex-direction: column; gap: 14px; }
+.ai-code-sec { display: flex; flex-direction: column; gap: 6px; }
+.ai-code-head { display: flex; align-items: center; justify-content: space-between; }
+.ai-code-label { font-size: 11px; font-weight: 700; color: var(--ai-grey);
+  text-transform: uppercase; letter-spacing: 0.04em; font-family: var(--ai-font); }
+.ai-code-copy { display: inline-flex; align-items: center; gap: 6px; height: 28px;
+  padding: 0 10px; border: none; cursor: pointer; background: var(--ai-white);
+  color: var(--ai-grey-2); border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 11.5px; font-weight: 600;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral);
+  transition: color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-code-copy:hover { color: var(--ai-ink); }
+.ai-code-copy:focus-visible { outline: none; box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral), 0 0 0 3px var(--ai-coral-faint); }
+.ai-code-copy .ai-i { width: 13px; height: 13px; }
+.ai-code-block { margin: 0; padding: 12px 14px; background: #fafafa;
+  border: 1px solid #ececec; border-radius: var(--ai-radius-sm);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+  line-height: 1.5; color: var(--ai-ink); white-space: pre; overflow: auto;
+  max-height: 240px; }
+.ai-code-empty { font-size: 12px; color: var(--ai-grey-2); font-family: var(--ai-font);
+  padding: 18px; text-align: center; }
+.ai-code-toggle { display: inline-flex; align-items: center; gap: 7px; height: 34px;
+  padding: 0 14px; border: none; cursor: pointer; background: var(--ai-white);
+  color: var(--ai-grey-2); border-radius: var(--ai-radius-pill);
+  font-family: var(--ai-font); font-size: 12.5px; font-weight: 600;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral);
+  transition: color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-code-toggle:hover { color: var(--ai-ink); }
+.ai-code-toggle.is-on { color: var(--ai-coral); }
+.ai-code-toggle:focus-visible { outline: none; box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral), 0 0 0 3px var(--ai-coral-faint); }
+.ai-code-toggle .ai-i { width: 15px; height: 15px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-mini-pop, .aich-pop { opacity: 1 !important; }
+}
 ")
 
 (defn- style-block
@@ -408,6 +486,45 @@
        [:path {:d "M16 17H8"}]
        [:path {:d "M10 9H8"}]]))
 
+;; P2.04 — AI text operations (Translate / Continue / Polish / Summarize).
+(def ^:private lucide-languages
+  (li [[:path {:d "m5 8 6 6"}]
+       [:path {:d "m4 14 6-6 2-3"}]
+       [:path {:d "m2 5 12 12"}]
+       [:path {:d "m9 4 1.5 3"}]
+       [:path {:d "M14 14h6"}]
+       [:path {:d "M14 17h6"}]
+       [:path {:d "M17 14v6"}]
+       [:path {:d "M21 14v5a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-5"}]]))
+
+(def ^:private lucide-type
+  (li [[:path {:d "M4 7V4h16v3"}]
+       [:path {:d "M9 20h6"}]
+       [:path {:d "M12 4v16"}]]))
+
+;; P2.28 — multi-screen adaptation.
+(def ^:private lucide-monitor-smartphone
+  (li [[:path {:d "M2 13a2 2 0 0 0 2 2h6"}]
+       [:path {:d "M2 13V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"}]
+       [:path {:d "M2 13h8"}]
+       [:path {:d "M14 14h8a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2Z"}]
+       [:path {:d "M18 18h.01"}]]))
+
+;; P2.30 — chat history (clock glyph).
+(def ^:private lucide-history
+  (li [[:path {:d "M3 12a9 9 0 1 0 3-6.7L3 8"}]
+       [:path {:d "M3 3v5h5"}]
+       [:path {:d "M12 7v5l3 3"}]]))
+
+;; P2.34 — show code reveal + copy.
+(def ^:private lucide-code
+  (li [[:path {:d "m16 18 6-6-6-6"}]
+       [:path {:d "m8 6-6 6 6 6"}]]))
+
+(def ^:private lucide-copy
+  (li [[:rect {:x 9 :y 9 :width 13 :height 13 :rx 2 :ry 2}]
+       [:path {:d "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"}]]))
+
 ;; ── Small presentational bits ───────────────────────────────────────────────
 
 ;; Frame presets — the Screen selection pill. Each pairs a backend value
@@ -447,6 +564,23 @@
         variant-idx*   (mf/use-state 0)             ; Phase 2 carousel current variant
         variants*      (mf/use-state 1)             ; multi-variant count (Auto only; 1 = off)
 
+        ;; P1.13 — image-mode (none / screenshot / sketch) for screenshot/sketch-to-UI.
+        image-mode*    (mf/use-state "none")
+        ;; P2.04 — text-ops popover.
+        text-ops-open?* (mf/use-state false)
+        translate-lang* (mf/use-state "English")
+        text-ops-ref   (mf/use-ref nil)
+        ;; P2.28 — adapt-screen popover.
+        adapt-open?*   (mf/use-state false)
+        adapt-ref      (mf/use-ref nil)
+        ;; P2.30 — chat history popover + persistent sessions.
+        chat-open?*    (mf/use-state false)
+        chat-ref       (mf/use-ref nil)
+        sessions*      (mf/use-state [])
+        active-session-id* (mf/use-state nil)
+        ;; P2.34 — Show Code toggle in the preview modal.
+        show-code?*    (mf/use-state false)
+
         busy          (mf/deref refs/ai-busy)
         preview       (mf/deref refs/ai-preview)
         error*        (mf/deref refs/ai-error)
@@ -454,6 +588,8 @@
         spec-doc*     (mf/deref refs/ai-spec-doc)    ; Phase 2 spec-doc result slot
         selected      (mf/deref refs/selected-shapes)
         has-sel?      (boolean (seq selected))
+        file-ref      (mf/deref refs/file)
+        file-id       (some-> file-ref :id str)
 
         ;; "Update only the selection" now lives in the AI Settings modal and
         ;; is shared via refs/ai-update-sel. nil => default true (update the
@@ -469,6 +605,14 @@
         stage         (deref stage*)
         variant-idx   (deref variant-idx*)
         variants      (deref variants*)
+        image-mode    (deref image-mode*)
+        text-ops-open? (deref text-ops-open?*)
+        translate-lang (deref translate-lang*)
+        adapt-open?   (deref adapt-open?*)
+        chat-open?    (deref chat-open?*)
+        sessions      (deref sessions*)
+        active-session-id (deref active-session-id*)
+        show-code?    (deref show-code?*)
 
         ;; The input pill drops from a full pill (999px) to a rounded
         ;; rectangle (~22px) when the prompt grows past one line, mirroring
@@ -528,7 +672,8 @@
 
         on-generate
         (mf/use-fn
-         (mf/deps prompt attachments quality preset target variants)
+         (mf/deps prompt attachments quality preset target variants image-mode
+                 sessions active-session-id file-id)
          (fn []
            ;; Reset the carousel to the first variant of the new set so a
            ;; previous position never carries into a fresh generation.
@@ -537,40 +682,66 @@
            ;; the prompt and the backend's extract_urls parses them out.
            (if (and (str/empty? prompt) (empty? attachments))
              (st/emit! (ai/set-ai-error (tr "workspace.ai.bar.need-prompt")))
-             ;; First, make sure the active provider actually has a key (or is
-             ;; keyless local Ollama). If not, send the user to AI Settings to
-             ;; enter one instead of firing a request that will only 401.
-             (-> (ai/invoke-get-config)
-                 (p/then
-                  (fn [cfg-js]
-                    (let [cfg (js->clj cfg-js :keywordize-keys true)]
-                      (if (ai/ai-usable? cfg)
-                        (-> (ai/files->inputs (mapv :file attachments))
-                            (p/then
-                             (fn [inputs]
-                               ;; "max" routes to the native agent loop (tool-calling +
-                               ;; vision scout); "auto" stays on the single-shot spec
-                               ;; path whose model is picked by the DeepSeek V4 Flash
-                               ;; router in the backend. No visual change to the bar.
-                               (let [ev-opts (cond-> {:target       target
-                                                      :quality      quality
-                                                      :frame-preset preset
-                                                      :use-memory   true}
-                                               (and (= quality "auto") (> variants 1))
-                                               (assoc :variants variants))
-                                     event (if (= quality "max")
-                                             (ai/run-agent-design
-                                              {:prompt prompt :files inputs :options ev-opts})
-                                             (ai/generate-design
-                                              {:prompt prompt :files inputs :options ev-opts}))]
-                                 (st/emit! (ai/set-ai-error nil) event))))
-                            (p/catch
-                             (fn [e] (st/emit! (ai/set-ai-error (str e))))))
-                        ;; No key for the active provider → open Settings.
-                        (st/emit! (modal/show {:type :ai-settings})
-                                  (ai/set-ai-error (tr "workspace.ai.bar.need-key")))))))
-                 (p/catch
-                  (fn [e] (st/emit! (ai/set-ai-error (str e)))))))))
+             ;; P1.13 — prepend the image-mode instruction (screenshot / sketch)
+             ;; to the user prompt when an image-mode is active. The backend
+             ;; already routes image attachments to the Kimi vision model.
+             (let [mode-prefix (case image-mode
+                                 "screenshot" (ai/screenshot-mode-prompt)
+                                 "sketch"      (ai/sketch-mode-prompt)
+                                 "")
+                   eff-prompt  (str mode-prefix prompt)
+                   ;; P2.30 — record the user turn into the active chat session.
+                   record-user (fn []
+                                 (when file-id
+                                   (let [active-sess (when active-session-id
+                                                       (some #(when (= (:id %) active-session-id) %)
+                                                             sessions))
+                                         sess (or active-sess (aich/new-session))
+                                         sid (:id sess)
+                                         sess' (aich/append-message
+                                                sess {:role "user" :content prompt})
+                                         sessions' (if active-session-id
+                                                     (into [] (map #(if (= (:id %) sid) sess' %))
+                                                           sessions)
+                                                     (conj (vec sessions) sess'))]
+                                     (reset! sessions* sessions')
+                                     (reset! active-session-id* sid)
+                                     (aich/save-sessions file-id sessions'))))]
+               (record-user)
+               ;; First, make sure the active provider actually has a key (or is
+               ;; keyless local Ollama). If not, send the user to AI Settings to
+               ;; enter one instead of firing a request that will only 401.
+               (-> (ai/invoke-get-config)
+                   (p/then
+                    (fn [cfg-js]
+                      (let [cfg (js->clj cfg-js :keywordize-keys true)]
+                        (if (ai/ai-usable? cfg)
+                          (-> (ai/files->inputs (mapv :file attachments))
+                              (p/then
+                               (fn [inputs]
+                                 ;; "max" routes to the native agent loop (tool-calling +
+                                 ;; vision scout); "auto" stays on the single-shot spec
+                                 ;; path whose model is picked by the DeepSeek V4 Flash
+                                 ;; router in the backend. No visual change to the bar.
+                                 (let [ev-opts (cond-> {:target       target
+                                                        :quality      quality
+                                                        :frame-preset preset
+                                                        :use-memory   true}
+                                                 (and (= quality "auto") (> variants 1))
+                                                 (assoc :variants variants))
+                                       event (if (= quality "max")
+                                               (ai/run-agent-design
+                                                {:prompt eff-prompt :files inputs :options ev-opts})
+                                               (ai/generate-design
+                                                {:prompt eff-prompt :files inputs :options ev-opts}))]
+                                   (st/emit! (ai/set-ai-error nil) event))))
+                              (p/catch
+                               (fn [e] (st/emit! (ai/set-ai-error (str e))))))
+                          ;; No key for the active provider → open Settings.
+                          (st/emit! (modal/show {:type :ai-settings})
+                                    (ai/set-ai-error (tr "workspace.ai.bar.need-key")))))))
+                   (p/catch
+                    (fn [e] (st/emit! (ai/set-ai-error (str e))))))))))
 
         on-cancel
         (mf/use-fn (fn []
@@ -673,7 +844,79 @@
 
         on-close-spec-doc
         (mf/use-fn
-         (fn [] (st/emit! (ai/set-ai-spec-doc nil))))]
+         (fn [] (st/emit! (ai/set-ai-spec-doc nil))))
+
+        ;; ── P1.13 — image-mode picker (none / screenshot / sketch) ──────────
+        on-pick-image-mode
+        (mf/use-fn
+         (fn [m] (reset! image-mode* m)))
+
+        ;; ── P2.04 — text operations popover ─────────────────────────────────
+        on-toggle-text-ops
+        (mf/use-fn (fn [] (swap! text-ops-open?* not)))
+        on-close-text-ops
+        (mf/use-fn (fn [] (reset! text-ops-open?* false)))
+        on-change-translate-lang
+        (mf/use-fn (fn [e] (reset! translate-lang* (.. e -target -value))))
+        on-run-text-op
+        (mf/use-fn
+         (mf/deps translate-lang)
+         (fn [op]
+           (reset! text-ops-open?* false)
+           (st/emit! (ai/set-ai-error nil)
+                     (atop/run-text-op {:op op :lang translate-lang}))))
+
+        ;; ── P2.28 — multi-screen adaptation popover ───────────────────────────
+        on-toggle-adapt
+        (mf/use-fn (fn [] (swap! adapt-open?* not)))
+        on-close-adapt
+        (mf/use-fn (fn [] (reset! adapt-open?* false)))
+        on-run-adapt
+        (mf/use-fn
+         (fn [t]
+           (reset! adapt-open?* false)
+           (st/emit! (ai/set-ai-error nil)
+                     (ai/adapt-screen {:target t}))))
+
+        ;; ── P2.30 — chat history popover + persistence ────────────────────────
+        on-toggle-chat
+        (mf/use-fn (fn [] (swap! chat-open?* not)))
+        on-close-chat
+        (mf/use-fn (fn [] (reset! chat-open?* false)))
+        on-new-chat
+        (mf/use-fn
+         (mf/deps sessions file-id)
+         (fn []
+           (let [ns (aich/new-session)
+                 new-sessions (conj (vec sessions) ns)]
+             (reset! sessions* new-sessions)
+             (reset! active-session-id* (:id ns))
+             (when file-id (aich/save-sessions file-id new-sessions))
+             (reset! chat-open?* false))))
+        on-resume-chat
+        (mf/use-fn
+         (fn [s]
+           (reset! active-session-id* (:id s))
+           (reset! chat-open?* false)))
+        on-delete-chat
+        (mf/use-fn
+         (mf/deps sessions file-id active-session-id)
+         (fn [s]
+           (let [sid (:id s)
+                 new-sessions (into [] (remove #(= (:id %) sid)) sessions)]
+             (reset! sessions* new-sessions)
+             (when (= sid active-session-id)
+               (reset! active-session-id*
+                       (some-> new-sessions first :id)))
+             (when file-id (aich/save-sessions file-id new-sessions)))))
+
+        ;; ── P2.34 — Show Code toggle + copy ──────────────────────────────────
+        on-toggle-show-code
+        (mf/use-fn (fn [] (swap! show-code?* not)))
+        on-copy-code
+        (mf/use-fn
+         (fn [text]
+           (some-> js/navigator .-clipboard (.writeText (str text)))))]
 
     ;; ── Subscribe to backend ai-progress events → local stage text.
     (mf/with-effect
@@ -706,9 +949,64 @@
       (when error* (reset! stage* nil)))
 
     ;; Reset the carousel to the first variant whenever a fresh preview lands.
+    ;; P2.30 — also record an assistant turn into the active chat session so
+    ;; the conversation log captures both sides of each generation.
     (mf/with-effect [preview]
       (reset! variant-idx* 0)
+      (when (and preview file-id active-session-id)
+        (let [nframes (count (:frames (:spec preview)))
+              summary (tr "workspace.ai.bar.chat.assistant-generated"
+                          (max 1 (or nframes 1)))
+              sess (some #(when (= (:id %) active-session-id) %) sessions)]
+          (when sess
+            (let [sess' (aich/append-message sess {:role "assistant" :content summary})
+                  sessions' (into [] (map #(if (= (:id %) active-session-id) sess' %))
+                                  sessions)]
+              (reset! sessions* sessions')
+              (aich/save-sessions file-id sessions')))))
       nil)
+
+    ;; P2.30 — load persisted chat sessions for the current file on mount /
+    ;; when the file changes.
+    (mf/with-effect [file-id]
+      (when file-id
+        (let [loaded (aich/load-sessions file-id)]
+          (reset! sessions* loaded)
+          (when (seq loaded)
+            (reset! active-session-id* (:id (first loaded))))))
+      nil)
+
+    ;; P2.04 / P2.28 / P2.30 — popover anime entrance + Escape-to-close for the
+    ;; text-ops, adapt, and chat-history popovers. Mirrors the screen picker.
+    (mf/with-effect [text-ops-open?]
+      (if text-ops-open?
+        (do
+          (aim/pop-in (mf/ref-val text-ops-ref))
+          (let [on-key (fn [e] (when (= (.-key e) "Escape")
+                                 (reset! text-ops-open?* false)))]
+            (.addEventListener js/document "keydown" on-key)
+            (fn [] (.removeEventListener js/document "keydown" on-key))))
+        (fn [] nil)))
+
+    (mf/with-effect [adapt-open?]
+      (if adapt-open?
+        (do
+          (aim/pop-in (mf/ref-val adapt-ref))
+          (let [on-key (fn [e] (when (= (.-key e) "Escape")
+                                 (reset! adapt-open?* false)))]
+            (.addEventListener js/document "keydown" on-key)
+            (fn [] (.removeEventListener js/document "keydown" on-key))))
+        (fn [] nil)))
+
+    (mf/with-effect [chat-open?]
+      (if chat-open?
+        (do
+          (aim/pop-in (mf/ref-val chat-ref))
+          (let [on-key (fn [e] (when (= (.-key e) "Escape")
+                                 (reset! chat-open?* false)))]
+            (.addEventListener js/document "keydown" on-key)
+            (fn [] (.removeEventListener js/document "keydown" on-key))))
+        (fn [] nil)))
 
     ;; ── Auto-grow the prompt textarea to fit its content (up to 160px),
     ;; so the input pill expands the way the reference's does. Runs on
@@ -766,6 +1064,20 @@
            :on-mouse-down aim/press-white-in
            :on-mouse-up aim/press-white-out}
           lucide-paperclip]
+         ;; P1.13 — Screenshot/Sketch to UI mode picker. A 3-option segmented
+         ;; control next to the paperclip; selects how an attached image is
+         ;; interpreted by the vision model (none / screenshot / sketch).
+         [:div.ai-seg {:role "group"
+                      :aria-label (tr "workspace.ai.bar.image-mode-label")}
+          (for [m [{:v "none" :l (tr "workspace.ai.bar.image-mode-none")}
+                    {:v "screenshot" :l (tr "workspace.ai.bar.image-mode-screenshot")}
+                    {:v "sketch" :l (tr "workspace.ai.bar.image-mode-sketch")}]]
+            [:button.ai-seg-opt
+             {:type "button" :key (:v m)
+              :class (when (= image-mode (:v m)) "is-cur")
+              :aria-pressed (str (= image-mode (:v m)))
+              :on-click #(on-pick-image-mode (:v m))}
+             (:l m)])]
          [:button.ai-circle
           {:type "button" :on-click open-settings
            :title (tr "workspace.ai.bar.settings")
@@ -799,6 +1111,88 @@
            :on-mouse-down aim/press-white-in
            :on-mouse-up aim/press-white-out}
           lucide-file-text]
+
+         ;; P2.04 — AI text operations on the selected text shape. Opens a
+         ;; popover with Translate / Continue / Polish / Summarize + a
+         ;; target-language field for Translate.
+         [:div.ai-mini-wrap
+          [:button.ai-circle
+           {:type "button" :on-click on-toggle-text-ops
+            :title (tr "workspace.ai.bar.text-ops-tooltip")
+            :on-mouse-enter aim/hov-white-in
+            :on-mouse-leave aim/hov-white-out
+            :on-mouse-down aim/press-white-in
+            :on-mouse-up aim/press-white-out}
+           lucide-languages]
+          (when text-ops-open?
+            [:div.ai-mini-back {:on-click on-close-text-ops}
+             [:div.ai-mini-pop {:ref text-ops-ref
+                                :on-click #(.stopPropagation %)}
+              [:div.ai-textop-row
+               [:input.ai-textop-input
+                {:type "text"
+                 :value translate-lang
+                 :placeholder (tr "workspace.ai.bar.text-ops-lang-placeholder")
+                 :on-change on-change-translate-lang}]]
+              [:div.ai-textop-sep]
+              [:button.ai-screen-opt
+               {:type "button" :on-click #(on-run-text-op :translate)}
+               lucide-languages [:span (tr "workspace.ai.bar.text-op-translate")]]
+              [:button.ai-screen-opt
+               {:type "button" :on-click #(on-run-text-op :continue)}
+               lucide-type [:span (tr "workspace.ai.bar.text-op-continue")]]
+              [:button.ai-screen-opt
+               {:type "button" :on-click #(on-run-text-op :polish)}
+               lucide-type [:span (tr "workspace.ai.bar.text-op-polish")]]
+              [:button.ai-screen-opt
+               {:type "button" :on-click #(on-run-text-op :summarize)}
+               lucide-type [:span (tr "workspace.ai.bar.text-op-summarize")]]]])]
+
+         ;; P2.28 — Multi-screen size adaptation. Opens a popover with
+         ;; Mobile / Tablet / Desktop one-shot reflow of the selection.
+         [:div.ai-mini-wrap
+          [:button.ai-circle
+           {:type "button" :on-click on-toggle-adapt
+            :title (tr "workspace.ai.bar.adapt-tooltip")
+            :on-mouse-enter aim/hov-white-in
+            :on-mouse-leave aim/hov-white-out
+            :on-mouse-down aim/press-white-in
+            :on-mouse-up aim/press-white-out}
+           lucide-monitor-smartphone]
+          (when adapt-open?
+            [:div.ai-mini-back {:on-click on-close-adapt}
+             [:div.ai-mini-pop {:ref adapt-ref
+                                :on-click #(.stopPropagation %)}
+              [:button.ai-screen-opt
+               {:type "button" :on-click #(on-run-adapt "mobile")}
+               lucide-smartphone [:span (tr "workspace.ai.bar.adapt-mobile")]]
+              [:button.ai-screen-opt
+               {:type "button" :on-click #(on-run-adapt "tablet")}
+               lucide-tablet [:span (tr "workspace.ai.bar.adapt-tablet")]]
+              [:button.ai-screen-opt
+               {:type "button" :on-click #(on-run-adapt "desktop")}
+               lucide-monitor [:span (tr "workspace.ai.bar.adapt-desktop")]]]])]
+
+         ;; P2.30 — Per-project chat history browser. Opens the history
+         ;; popover (list / new chat / resume / delete).
+         [:div.ai-mini-wrap
+          [:button.ai-circle
+           {:type "button" :on-click on-toggle-chat
+            :title (tr "workspace.ai.bar.chat-tooltip")
+            :on-mouse-enter aim/hov-white-in
+            :on-mouse-leave aim/hov-white-out
+            :on-mouse-down aim/press-white-in
+            :on-mouse-up aim/press-white-out}
+           lucide-history]
+          (when chat-open?
+            [aich/chat-history-popover
+             {:sessions sessions
+              :active-id active-session-id
+              :on-new on-new-chat
+              :on-resume on-resume-chat
+              :on-delete on-delete-chat
+              :pop-ref chat-ref
+              :on-close on-close-chat}])]
 
          ;; attachment thumbnails live inside the cluster so the paperclip's
          ;; result is visible without leaving the primary bar.
@@ -914,7 +1308,32 @@
       (when-let [p preview]
         (let [specs  (:specs p)
               multi? (and (vector? specs) (> (count specs) 1))
-              cur    (if multi? (get specs variant-idx) (:spec p))]
+              cur    (if multi? (get specs variant-idx) (:spec p))
+              ;; P2.34 — code-gen of the just-generated element. Pure: expand
+              ;; the current spec into a shape tree, then run the same Inspect
+              │  Code generators (HTML markup + CSS style) the Inspect panel
+              ;;  uses. Defensive — any failure yields nil so the code panel
+              ;;  shows an "unavailable" message instead of crashing the modal.
+              tree         (try (cds/spec->shape-tree cur) (catch :default _ nil))
+              code-objects (when tree (:objects tree))
+              code-order   (when tree (:order tree))
+              ;; Top-level frames only (parent-id == uuid/zero) — exactly the
+              ;; `root-shapes` the publish/inspect code paths feed to
+              ;; `generate-markup-code` / `generate-style-code`.
+              top-shapes   (when (and code-objects code-order)
+                             (into []
+                                   (keep (fn [id]
+                                           (let [s (get code-objects id)]
+                                             (when (= (:parent-id s) uuid/zero) s))))
+                                   code-order))
+              all-shapes   (when code-objects
+                             (into [] (vals code-objects)))
+              markup-code  (when (seq top-shapes)
+                             (try (cg/generate-markup-code code-objects "html" top-shapes)
+                                  (catch :default _ nil)))
+              style-code   (when (seq top-shapes)
+                             (try (cg/generate-style-code code-objects "css" top-shapes all-shapes)
+                                  (catch :default _ nil)))]
           [:div.ai-overlay {:on-click on-cancel-preview}
            [:div.ai-modal {:on-click #(.stopPropagation %)}
             [:div.ai-modal-head
@@ -926,41 +1345,75 @@
               (when multi?
                 [:span.ai-badge
                  (tr "workspace.ai.bar.variants" (inc variant-idx) (count specs))])]
-             [:button.ai-close {:type "button" :on-click on-cancel-preview
-                                :on-mouse-enter aim/hov-white-in
-                                :on-mouse-leave aim/hov-white-out
-                                :on-mouse-down aim/press-white-in
-                                :on-mouse-up aim/press-white-out}
-              lucide-x]]
+             [:div {:style #js {"display" "flex" "alignItems" "center" "gap" "8px"}}
+              ;; P2.34 — Show Code toggle (alongside the preview).
+              [:button.ai-code-toggle
+               {:type "button"
+                :class (when show-code? "is-on")
+                :aria-pressed (str show-code?)
+                :on-click on-toggle-show-code
+                :title (tr "workspace.ai.bar.show-code-tooltip")}
+               lucide-code
+               (tr "workspace.ai.bar.show-code")]
+              [:button.ai-close {:type "button" :on-click on-cancel-preview
+                                 :on-mouse-enter aim/hov-white-in
+                                 :on-mouse-leave aim/hov-white-out
+                                 :on-mouse-down aim/press-white-in
+                                 :on-mouse-up aim/press-white-out}
+               lucide-x]]]
             [:div.ai-modal-body
-             (if multi?
-               [:div.ai-var-wrap
-                [:div.ai-var-row
-                 [:button.ai-circle.ai-var-arrow
-                  {:type "button" :on-click on-var-prev
-                   :title (tr "workspace.ai.bar.variants-prev")
-                   :on-mouse-enter aim/hov-white-in
-                   :on-mouse-leave aim/hov-white-out
-                   :on-mouse-down aim/press-white-in
-                   :on-mouse-up aim/press-white-out}
-                  lucide-chevron-left]
-                 [:div.ai-var-col (dg/spec->preview cur)]
-                 [:button.ai-circle.ai-var-arrow
-                  {:type "button" :on-click on-var-next
-                   :title (tr "workspace.ai.bar.variants-next")
-                   :on-mouse-enter aim/hov-white-in
-                   :on-mouse-leave aim/hov-white-out
-                   :on-mouse-down aim/press-white-in
-                   :on-mouse-up aim/press-white-out}
-                  lucide-chevron-right]]
-                [:div.ai-dots-ind
-                 (for [i (range (count specs))]
-                   [:button.ai-dot {:key i :type "button"
-                                    :class (when (= i variant-idx) "is-cur")
-                                    :on-click #(on-var-pick i)
-                                    :aria-label (tr "workspace.ai.bar.variants"
-                                                     (inc i) (count specs))}])]]
-               (dg/spec->preview cur))]
+             (if show-code?
+               ;; P2.34 — code panel: HTML markup + CSS style, each with a
+               ;; copy button (Lucide copy, stroke-width 2, currentColor).
+               [:div.ai-code-panel
+                [:div.ai-code-sec
+                 [:div.ai-code-head
+                  [:span.ai-code-label (tr "workspace.ai.bar.code-markup")]
+                  [:button.ai-code-copy
+                   {:type "button" :on-click #(on-copy-code markup-code)}
+                   lucide-copy
+                   (tr "workspace.ai.bar.copy")]]
+                 (if (str/empty? markup-code)
+                   [:div.ai-code-empty (tr "workspace.ai.bar.code-unavailable")]
+                   [:pre.ai-code-block markup-code])]
+                [:div.ai-code-sec
+                 [:div.ai-code-head
+                  [:span.ai-code-label (tr "workspace.ai.bar.code-style")]
+                  [:button.ai-code-copy
+                   {:type "button" :on-click #(on-copy-code style-code)}
+                   lucide-copy
+                   (tr "workspace.ai.bar.copy")]]
+                 (if (str/empty? style-code)
+                   [:div.ai-code-empty (tr "workspace.ai.bar.code-unavailable")]
+                   [:pre.ai-code-block style-code])]]
+               (if multi?
+                 [:div.ai-var-wrap
+                  [:div.ai-var-row
+                   [:button.ai-circle.ai-var-arrow
+                    {:type "button" :on-click on-var-prev
+                     :title (tr "workspace.ai.bar.variants-prev")
+                     :on-mouse-enter aim/hov-white-in
+                     :on-mouse-leave aim/hov-white-out
+                     :on-mouse-down aim/press-white-in
+                     :on-mouse-up aim/press-white-out}
+                    lucide-chevron-left]
+                   [:div.ai-var-col (dg/spec->preview cur)]
+                   [:button.ai-circle.ai-var-arrow
+                    {:type "button" :on-click on-var-next
+                     :title (tr "workspace.ai.bar.variants-next")
+                     :on-mouse-enter aim/hov-white-in
+                     :on-mouse-leave aim/hov-white-out
+                     :on-mouse-down aim/press-white-in
+                     :on-mouse-up aim/press-white-out}
+                    lucide-chevron-right]]
+                  [:div.ai-dots-ind
+                   (for [i (range (count specs))]
+                     [:button.ai-dot {:key i :type "button"
+                                      :class (when (= i variant-idx) "is-cur")
+                                      :on-click #(on-var-pick i)
+                                      :aria-label (tr "workspace.ai.bar.variants"
+                                                       (inc i) (count specs))}])]]
+                 (dg/spec->preview cur)))]
             [:div.ai-modal-foot
              [:button.ai-btn.ai-btn-ghost {:on-click on-regenerate
                                            :on-mouse-enter aim/hov-white-in

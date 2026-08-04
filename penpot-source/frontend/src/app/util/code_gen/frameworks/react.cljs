@@ -16,6 +16,7 @@
    [app.config :as cfg]
    [app.main.ui.shapes.text.html-text :as text]
    [app.util.code-gen.common :as cgc]
+   [app.util.code-gen.code-connect :as cc]
    [app.util.code-gen.frameworks.common :as fc]
    [app.util.code-gen.markup-svg :as markup-svg]
    [cuerdas.core :as str]
@@ -148,6 +149,20 @@
        (fc/hidden? shape)
        nil
 
+       ;; Code Connect binding (P1.08): a component instance with an authored
+       ;; tag+props binding for the current framework emits the mapped code
+       ;; component (self-closing — the code component owns its content) with
+       ;; absolute-positioning style so layout matches the canvas, instead of
+       ;; a generic <div>. Falls through to the generic path when no binding.
+       (when-let [binding (fc/code-connect-binding objects shape)]
+         (let [props (cc/format-props-jsx binding)
+               style-str (style->js (box-style objects shape origin))
+               attrs (cond-> (dm/str "style={{" style-str "}")
+                       (str/not-blank? props) (dm/str " " props))
+               tag (:tag binding)]
+           (dm/fmt "%{/* Code Connect: % */}\n%<% % />"
+                   ind tag ind tag attrs)))
+
        (fc/svg-shape? shape)
        (dm/fmt "%<div style={{%}} dangerouslySetInnerHTML={{__html: %}} />"
                ind style-str (quote-js (or (svg-markup objects shape) "")))
@@ -212,9 +227,10 @@
          _ (when (empty? roots) nil)
          origin (fc/selection-origin roots)
          size (fc/selection-size roots)
-         body (->> roots
-                   (keep #(render-shape objects % origin 1))
-                   (str/join "\n"))
+         body (binding [fc/*framework-type* (if nextjs? "nextjs" "react")]
+               (->> roots
+                    (keep #(render-shape objects % origin 1))
+                    (str/join "\n")))
          comp-name (if nextjs? "Page"
                     (some-> (seq roots) first fc/component-name (or "Component")))]
      (dm/fmt

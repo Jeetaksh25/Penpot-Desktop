@@ -1,0 +1,89 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+@use "../../../sidebar/common/sidebar.scss" as sidebar;
+
+// ALL_APPS_PARITY P1.16 — Effects menu (Appear / Loop / Drag).
+// Reuses the shared .element-set / .element-title / .element-set-content
+// grid structure. Coral accent = #f28b82. Reduced-motion guarded.
+
+.element-set {
+  @include sidebar.option-grid-structure;
+}
+
+.element-title {
+  grid-column: span 8;
+}
+
+.element-set-content {
+  @include deprecated.flex-column;
+
+  grid-column: span 8;
+  margin: deprecated.$s-4 0 deprecated.$s-8 0;
+}
+
+// Type-picker coral buttons (Appear / Loop / Drag). Active = solid coral.
+.effects-type-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: deprecated.$br-6;
+  border: 1px solid rgba(242, 139, 130, 0.4);
+  background: rgba(242, 139, 130, 0.08);
+  color: #f28b82;
+  font-size: deprecated.$fs-11;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease,
+    border-color 120ms ease;
+}
+
+.effects-type-btn-active {
+  background: #f28b82;
+  color: #fff;
+  border-color: #f28b82;
+}
+
+.effects-row {
+  display: flex;
+  align-items: center;
+  gap: deprecated.$s-2;
+}
+
+.effects-label {
+  font-size: deprecated.$fs-11;
+  color: var(--text-foreground-secondary);
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.effects-suffix {
+  font-size: deprecated.$fs-11;
+  color: var(--text-foreground-secondary);
+}
+
+.effects-hint {
+  grid-column: span 8;
+  margin-top: deprecated.$s-4;
+  color: var(--text-foreground-secondary);
+  font-size: deprecated.$fs-11;
+  line-height: 1.4;
+}
+
+.lucide-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .effects-type-btn {
+    transition: none;
+  }
+}

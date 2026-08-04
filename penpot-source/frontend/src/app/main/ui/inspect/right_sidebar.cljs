@@ -19,6 +19,8 @@
    [app.main.ui.ds.product.empty-state :refer [empty-state*]]
    [app.main.ui.inspect.attributes :refer [attributes*]]
    [app.main.ui.inspect.code :refer [code*]]
+   [app.main.ui.inspect.redline :refer [redline*]]
+   [app.main.ui.inspect.site-audit :refer [site-audit*]]
    [app.main.ui.inspect.selection-feedback :refer [resolve-shapes]]
    [app.main.ui.inspect.styles :refer [styles-tab*]]
    [app.util.dom :as dom]
@@ -110,12 +112,24 @@
               :id "computed"}
              {:label (tr "labels.code")
               :data-testid "code"
-              :id "code"}]
+              :id "code"}
+             ;; ALL_APPS_PARITY P1.20: automated redline overlay + share
+             ;; embed. Selecting the tab = redline mode ON for the
+             ;; currently-selected shape.
+             {:label (tr "inspect.redline.tab")
+              :id "redline"}
+             ;; ALL_APPS_PARITY P2.05: in-canvas accessibility & SEO audit.
+             {:label (tr "inspect.audit.tab")
+              :id "audit"}]
             [{:label (tr "labels.info")
               :id "info"}
              {:label (tr "labels.code")
               :data-testid "code"
-              :id "code"}]))]
+              :id "code"}
+             {:label (tr "inspect.redline.tab")
+              :id "redline"}
+             {:label (tr "inspect.audit.tab")
+              :id "audit"}]))]
 
     (mf/use-effect
      (mf/deps shapes handle-change-tab)
@@ -205,7 +219,15 @@
               [:> code* {:frame frame
                          :shapes shapes
                          :on-expand handle-expand
-                         :from from}])]
+                         :from from}]
+
+              :redline
+              [:> redline* {:frame frame
+                            :shapes shapes
+                            :objects objects}]
+
+              :audit
+              [:> site-audit* {:objects objects}])]
            [:> tab-switcher* {:tabs tabs
                               :selected (name @section)
                               :on-change handle-change-tab
@@ -225,7 +247,15 @@
               [:> code* {:frame frame
                          :shapes shapes
                          :on-expand handle-expand
-                         :from from}])])]]
+                         :from from}]
+
+              :redline
+              [:> redline* {:frame frame
+                            :shapes shapes
+                            :objects objects}]
+
+              :audit
+              [:> site-audit* {:objects objects}])])]]
 
        [:*
         [:div {:class (stl/css :empty)}

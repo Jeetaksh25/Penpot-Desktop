@@ -1,0 +1,80 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+
+// DS Versions menu (ALL_APPS_PARITY P2.15).
+// Styles for the panel rendered by
+// `app.main.ui.workspace.sidebar.options.menus.ds-versions`. Shares
+// the `.element-set` / `.element-title` / `.element-set-content` /
+// `.element-group` classes with the surrounding options chrome; only
+// ds-versions-specific classes are declared here. Class names mirror
+// the `stl/css` keys declared in ds_versions.cljs. Coral #f28b82 is
+// the Ovion brand accent; reduced-motion users get instant transitions.
+
+.ds-versions-name-input {
+  @include deprecated.body-small-typography;
+
+  flex: 1;
+  min-block-size: 28px;
+  padding-block: deprecated.$s-4;
+  padding-inline: deprecated.$s-8;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid var(--input-border-color);
+  background-color: var(--input-background-color);
+  color: var(--color-foreground-primary);
+  line-height: 1.4;
+  font-family: inherit;
+
+  &::placeholder {
+    color: var(--color-foreground-secondary);
+  }
+
+  &:hover {
+    border-color: var(--input-border-color-hover);
+    background-color: var(--input-background-color-hover);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #f28b82;
+    box-shadow: 0 0 0 deprecated.$s-2 color-mix(in srgb, #f28b82 35%, transparent);
+  }
+}
+
+.ds-versions-list {
+  // Layout only (flex column with gap) is applied inline via style in
+  // the component; this class scopes any future list-level styling
+  // without touching the surrounding chrome.
+}
+
+.ds-versions-row {
+  // Per-snapshot row. Border + radius are applied inline so the row
+  // reads as a discrete card; this class scopes future row-level
+  // styling. Hover could lift the border toward coral, but the row is
+  // not interactive as a whole, so we keep it calm.
+}
+
+.ds-versions-empty {
+  color: var(--color-foreground-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.ds-versions-create {
+  // Layout (flex row with gap) is applied inline; this class scopes
+  // future create-row styling.
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-versions-name-input,
+  .ds-versions-row,
+  .ds-versions-create {
+    transition: none !important;
+    animation: none !important;
+  }
+}

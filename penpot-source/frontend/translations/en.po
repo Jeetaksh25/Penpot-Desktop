@@ -12516,3 +12516,598 @@ msgstr "AI settings"
 msgid "dashboard.import.figma-coming-soon"
 msgstr "Figma file import is coming soon. For now, export your Figma file to .ovion first, or use the Figma migration tool."
 
+#: ovion/all-apps-parity/half-done
+# Ovion ALL_APPS_PARITY half-done gaps i18n.
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.redline.copy-embed"
+msgstr "Copy embed code"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.redline.embed-hint"
+msgstr "Paste this snippet into your site to embed the redline view."
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.redline.position"
+msgstr "Position"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.redline.title"
+msgstr "Redline"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.redline.tab"
+msgstr "Redline"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.audit.tab"
+msgstr "Audit"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.category.alt-text"
+msgstr "Alt text"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.category.contrast"
+msgstr "Contrast"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.category.hierarchy"
+msgstr "Heading hierarchy"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.category.touch-target"
+msgstr "Touch target size"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.empty"
+msgstr "Run an audit to check the page for accessibility and SEO issues."
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.errors"
+msgstr "Errors"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.no-issues"
+msgstr "No issues found. The page passes all checks."
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.rerun"
+msgstr "Re-run audit"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.run"
+msgstr "Run audit"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.title"
+msgstr "Audit"
+
+#: ovion/all-apps-parity/half-done
+msgid "inspect.site-audit.warnings"
+msgstr "Warnings"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.adapt-desktop"
+msgstr "Desktop"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.adapt-mobile"
+msgstr "Mobile"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.adapt-tablet"
+msgstr "Tablet"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.adapt-tooltip"
+msgstr "Adapt the selection to a breakpoint"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat-tooltip"
+msgstr "Chat history"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat.assistant-generated"
+msgstr "Assistant"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat.delete"
+msgstr "Delete chat"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat.empty"
+msgstr "No conversations yet. Start a new chat from the AI bar."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat.hour-ago"
+msgstr "about an hour ago"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat.just-now"
+msgstr "just now"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat.min-ago"
+msgstr "%s min ago"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat.msg-count"
+msgstr "%s messages"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat.new-chat"
+msgstr "New chat"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.chat.title"
+msgstr "AI chat history"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.code-markup"
+msgstr "HTML"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.code-style"
+msgstr "CSS"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.code-unavailable"
+msgstr "Code unavailable for this selection."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.copy"
+msgstr "Copy"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.image-mode-label"
+msgstr "Image mode"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.image-mode-none"
+msgstr "None"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.image-mode-screenshot"
+msgstr "Screenshot"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.image-mode-sketch"
+msgstr "Sketch"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.show-code"
+msgstr "Show code"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.show-code-tooltip"
+msgstr "Show generated code for the selection"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.text-op-continue"
+msgstr "Continue writing"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.text-op-polish"
+msgstr "Polish"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.text-op-select-text"
+msgstr "Select a text shape to use text tools"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.text-op-summarize"
+msgstr "Summarize"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.text-op-translate"
+msgstr "Translate"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.text-ops-lang-placeholder"
+msgstr "Target language"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.ai.bar.text-ops-tooltip"
+msgstr "AI text tools"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.command-palette.empty"
+msgstr "No matching commands"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.command-palette.insert.empty"
+msgstr "No matching inserts"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.command-palette.placeholder.insert"
+msgstr "Insert..."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.command-palette.placeholder.swap"
+msgstr "Swap component..."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.command-palette.swap.empty"
+msgstr "No matching components"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.command-palette.swap.no-selection"
+msgstr "Select a component instance to swap"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.cms-import.base-url"
+msgstr "Base URL"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.cms-import.coming-soon"
+msgstr "Coming soon"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.cms-import.hint"
+msgstr "Import a collection from a headless CMS platform."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.cms-import.platform"
+msgstr "Platform"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.cms-import.section"
+msgstr "CMS import"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.cms-import.success"
+msgstr "Collection imported successfully."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.cms-import.token"
+msgstr "API token"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.cms-import.token-placeholder"
+msgstr "Paste your read-only API token"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.compare"
+msgstr "Compare"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.create"
+msgstr "Create version"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.current"
+msgstr "Current"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.empty"
+msgstr "No design system versions yet. Create one to snapshot the current component library."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.hint"
+msgstr "Snapshot the component library as a named version. Compare versions to see added, removed, and renamed components."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.name"
+msgstr "Name"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.restore"
+msgstr "Set active"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.section"
+msgstr "DS versions"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.timestamp"
+msgstr "Created"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.ds-versions.title"
+msgstr "Design system versions"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.dynamic-panels.add-state"
+msgstr "Add state"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.dynamic-panels.empty"
+msgstr "No dynamic panel. Make a frame a panel to swap its contents on interaction."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.dynamic-panels.hint"
+msgstr "A dynamic panel swaps its child shapes between named states."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.dynamic-panels.make-panel"
+msgstr "Make panel"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.dynamic-panels.remove"
+msgstr "Remove"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.dynamic-panels.rename"
+msgstr "Rename"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.dynamic-panels.set-active"
+msgstr "Set active state"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.dynamic-panels.title"
+msgstr "Dynamic panels"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.appear.direction"
+msgstr "Direction"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.clear"
+msgstr "Clear effect"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.delay"
+msgstr "Delay (ms)"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.drag.axis"
+msgstr "Drag axis"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.drag.constraint"
+msgstr "Constraint"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.drag.constraint-lock"
+msgstr "Lock to axis"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.drag.constraint-none"
+msgstr "Free"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.duration"
+msgstr "Duration (ms)"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.empty"
+msgstr "No motion effect. Add one to animate this shape on appear, loop, or drag."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.loop.kind"
+msgstr "Loop kind"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.effects.title"
+msgstr "Motion effects"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.add-field"
+msgstr "Add field"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.bound-shape"
+msgstr "Bound frame"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.disabled"
+msgstr "Form disabled"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.enabled"
+msgstr "Form enabled"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.endpoint"
+msgstr "Endpoint"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.endpoint-hint"
+msgstr "Ovion Cloud submits to your configured endpoint. Leave blank to use the default."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.endpoint-ph"
+msgstr "https://api.ovion.app/v1/forms/..."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.error-message"
+msgstr "Error message"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.field-name"
+msgstr "Field name"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.field-type"
+msgstr "Field type"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.form-name"
+msgstr "Form name"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.no-fields"
+msgstr "No fields yet. Add a field to make this form submittable."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.none"
+msgstr "None"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.remove-field"
+msgstr "Remove"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.required"
+msgstr "Required"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.section"
+msgstr "Form"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.submit-error"
+msgstr "Test submit failed. Check your endpoint and token."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.submit-ok"
+msgstr "Test submit succeeded."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.success-message"
+msgstr "Success message"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.test-submit"
+msgstr "Test submit"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.test-value"
+msgstr "Test value"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.forms.test-value-ph"
+msgstr "Sample value to send"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.html-authoring.css-class"
+msgstr "CSS class"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.html-authoring.css-class-hint"
+msgstr "Custom class names added to this element on export."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.html-authoring.custom-css"
+msgstr "Custom CSS"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.html-authoring.custom-css-hint"
+msgstr "Raw CSS declarations emitted under this element's selector on export."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.html-authoring.section"
+msgstr "HTML"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.html-authoring.semantic-tag"
+msgstr "Semantic tag"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.html-authoring.semantic-tag-hint"
+msgstr "The HTML element used for this shape on export (e.g. nav, section, article)."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.html-authoring.title"
+msgstr "HTML authoring"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.notes.copy-spec"
+msgstr "Copy spec"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.notes.hint"
+msgstr "Notes are emitted as an HTML comment in code export."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.notes.spec.empty"
+msgstr "No notes captured yet."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.notes.spec.header"
+msgstr "Widget spec - %s"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.notes.spec.label"
+msgstr "Spec"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.notes.title"
+msgstr "Notes & spec"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.category-all"
+msgstr "All"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.hint"
+msgstr "Browse and install community plugins. Installed plugins run in the Ovion sandbox."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.install"
+msgstr "Install"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.load-failed"
+msgstr "Failed to load the plugin registry. Check your connection."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.loading"
+msgstr "Loading plugins..."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.no-results"
+msgstr "No plugins match your search."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.offline"
+msgstr "Offline"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.refresh"
+msgstr "Refresh"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.search-placeholder"
+msgstr "Search plugins"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.title"
+msgstr "Plugin center"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.toggle-enabled"
+msgstr "Enable"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.uninstall"
+msgstr "Uninstall"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.plugin-center.untitled"
+msgstr "Untitled plugin"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.states.add-state"
+msgstr "Add state"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.states.component-overrides"
+msgstr "Component overrides"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.states.element-states"
+msgstr "Element states"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.states.empty"
+msgstr "No state. Add a state to swap styles on interaction."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.states.hint"
+msgstr "States swap a shape's overrides when triggered by an interaction."
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.states.remove-state"
+msgstr "Remove"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.options.states.title"
+msgstr "States"
+
+#: ovion/all-apps-parity/half-done
+msgid "workspace.path.point-type.label"
+msgstr "Point type"
+

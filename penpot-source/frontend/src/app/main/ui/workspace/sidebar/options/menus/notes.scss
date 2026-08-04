@@ -1,0 +1,79 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+
+// Per-widget Notes / Specifications menu (ALL_APPS_PARITY P2.31).
+// Styles for the notes panel rendered by
+// `app.main.ui.workspace.sidebar.options.menus.notes`. Shares the
+// `.element-set` / `.element-title` / `.element-set-content` /
+// `.element-group` / `.type-input` classes with the surrounding options
+// chrome; only notes-specific classes are declared here. Class names
+// mirror the `stl/css` keys declared in notes.cljs. Coral #f28b82 is the
+// Ovion brand accent; reduced-motion users get instant transitions.
+
+.notes-copy-btn {
+  // The copy-button* component supplies its own layout; this class only
+  // scopes the coral spec-copy affordance so it reads as one chip with the
+  // spec label to its left. Inherits the button reset from copy-button.
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.notes-field {
+  @include deprecated.flex-column;
+
+  gap: var(--sp-xs);
+}
+
+.notes-field-label {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+}
+
+.notes-textarea {
+  @include deprecated.body-small-typography;
+
+  // Coral accent focus ring (Ovion brand) so the notes panel matches the
+  // rebranded chrome (matches .a11y-text-input). Base state uses the
+  // shared input vars.
+  inline-size: 100%;
+  min-block-size: 28px;
+  padding-block: deprecated.$s-4;
+  padding-inline: deprecated.$s-8;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid var(--input-border-color);
+  background-color: var(--input-background-color);
+  color: var(--color-foreground-primary);
+  line-height: 1.4;
+  resize: vertical;
+  font-family: inherit;
+
+  &::placeholder {
+    color: var(--color-foreground-secondary);
+  }
+
+  &:hover {
+    border-color: var(--input-border-color-hover);
+    background-color: var(--input-background-color-hover);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #f28b82;
+    box-shadow: 0 0 0 deprecated.$s-2 color-mix(in srgb, #f28b82 35%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notes-textarea,
+  .notes-copy-btn {
+    transition: none !important;
+  }
+}

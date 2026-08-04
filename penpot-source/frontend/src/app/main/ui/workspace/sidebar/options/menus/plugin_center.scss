@@ -1,0 +1,297 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+@use "../../../sidebar/common/sidebar.scss" as sidebar;
+
+// ALL_APPS_PARITY P1.28 — Plugin Center menu.
+// Reuses the shared .element-set / .element-title / .element-set-content
+// grid structure (same as breakpoints.scss / cms.scss). Coral accent = #f28b82.
+// Secondary grey = #7d7d7d. Reduced-motion guard at the bottom.
+
+.element-set {
+  @include sidebar.option-grid-structure;
+}
+
+.element-title {
+  grid-column: span 8;
+}
+
+.element-set-content {
+  @include deprecated.flex-column;
+
+  grid-column: span 8;
+  margin: deprecated.$s-4 0 deprecated.$s-8 0;
+}
+
+// ── Search + category filter ───────────────────────────────────────────────
+
+.pc-filters {
+  @include deprecated.flex-column;
+
+  gap: deprecated.$s-2;
+  margin-bottom: deprecated.$s-4;
+}
+
+.pc-search {
+  @include deprecated.flex-row;
+
+  align-items: center;
+  gap: deprecated.$s-2;
+  padding: deprecated.$s-2 deprecated.$s-3;
+  border-radius: deprecated.$br-8;
+  background-color: var(--input-details-color);
+  color: #7d7d7d;
+}
+
+.pc-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-foreground);
+  font-size: deprecated.$fs-12;
+  font-family: "Helvetica Now Display", var(--font-family, sans-serif);
+
+  &:focus {
+    outline: none;
+  }
+
+  &::placeholder {
+    color: #7d7d7d;
+  }
+}
+
+.pc-category-select {
+  width: 100%;
+  padding: deprecated.$s-2 deprecated.$s-3;
+  border-radius: deprecated.$br-8;
+  border: 1px solid var(--input-details-color);
+  background-color: var(--app-content-bg-color, transparent);
+  color: var(--text-foreground);
+  font-size: deprecated.$fs-12;
+  font-family: "Helvetica Now Display", var(--font-family, sans-serif);
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #f28b82;
+  }
+}
+
+// ── Status chips ───────────────────────────────────────────────────────────
+
+.pc-status {
+  grid-column: span 8;
+  color: #7d7d7d;
+  font-size: deprecated.$fs-11;
+  padding: deprecated.$s-2 deprecated.$s-3;
+}
+
+.pc-status-error {
+  color: var(--token-color-danger, #e5484d);
+}
+
+.pc-status-fallback {
+  color: #f28b82;
+}
+
+// ── Plugin list + row ───────────────────────────────────────────────────────
+
+.pc-list {
+  @include deprecated.flex-column;
+
+  gap: deprecated.$s-2;
+}
+
+.pc-row {
+  grid-column: span 8;
+  display: flex;
+  align-items: flex-start;
+  gap: deprecated.$s-3;
+  padding: deprecated.$s-3;
+  border-radius: deprecated.$br-8;
+  border: 1px solid transparent;
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  &:hover {
+    background-color: var(--input-details-color);
+  }
+}
+
+.pc-row-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: deprecated.$br-6;
+  background-color: var(--input-details-color);
+  color: #f28b82;
+}
+
+.pc-row-info {
+  @include deprecated.flex-column;
+
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: deprecated.$s-1;
+}
+
+.pc-row-title {
+  @include deprecated.flex-row;
+
+  align-items: baseline;
+  gap: deprecated.$s-2;
+}
+
+.pc-row-name {
+  @include deprecated.text-ellipsis;
+
+  color: var(--text-foreground);
+  font-size: deprecated.$fs-12;
+  font-weight: 600;
+}
+
+.pc-row-author {
+  color: #7d7d7d;
+  font-size: deprecated.$fs-11;
+}
+
+.pc-row-desc {
+  color: var(--text-foreground-secondary);
+  font-size: deprecated.$fs-11;
+  line-height: 1.4;
+}
+
+.pc-row-meta {
+  @include deprecated.flex-row;
+
+  align-items: center;
+  gap: deprecated.$s-2;
+  margin-top: deprecated.$s-1;
+}
+
+.pc-row-version,
+.pc-row-category {
+  color: #7d7d7d;
+  font-size: deprecated.$fs-10;
+  font-variant-numeric: tabular-nums;
+}
+
+.pc-row-actions {
+  @include deprecated.flex-row;
+
+  align-items: center;
+  gap: deprecated.$s-2;
+  flex: 0 0 auto;
+}
+
+// ── Install button ──────────────────────────────────────────────────────────
+
+.pc-install-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: deprecated.$s-1 deprecated.$s-3;
+  border-radius: deprecated.$br-6;
+  border: 1px solid #f28b82;
+  background-color: transparent;
+  color: #f28b82;
+  font-size: deprecated.$fs-11;
+  font-weight: 500;
+  font-family: "Helvetica Now Display", var(--font-family, sans-serif);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    background-color: #f28b82;
+    color: var(--app-content-bg-color, #fff);
+  }
+}
+
+// ── Enable toggle (coral dot, mirrors breakpoints toggle) ───────────────────
+
+.pc-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: deprecated.$br-6;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.pc-toggle-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #7d7d7d;
+  transition: background-color 120ms ease;
+}
+
+.pc-toggle-active {
+  .pc-toggle-dot {
+    background-color: #f28b82;
+  }
+}
+
+// ── Uninstall button ─────────────────────────────────────────────────────────
+
+.pc-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: deprecated.$s-1 deprecated.$s-2;
+  border: none;
+  border-radius: deprecated.$br-6;
+  background: transparent;
+  color: #7d7d7d;
+  font-size: deprecated.$fs-11;
+  font-family: "Helvetica Now Display", var(--font-family, sans-serif);
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease;
+
+  &:hover {
+    color: var(--token-color-danger, #e5484d);
+    background-color: var(--input-details-color);
+  }
+}
+
+// ── Empty + hint ─────────────────────────────────────────────────────────────
+
+.pc-empty {
+  grid-column: span 8;
+  padding: deprecated.$s-4;
+  color: #7d7d7d;
+  font-size: deprecated.$fs-11;
+  text-align: center;
+}
+
+.pc-hint {
+  grid-column: span 8;
+  margin-top: deprecated.$s-4;
+  color: #7d7d7d;
+  font-size: deprecated.$fs-11;
+  line-height: 1.4;
+}
+
+// ── Reduced motion ──────────────────────────────────────────────────────────
+
+@media (prefers-reduced-motion: reduce) {
+  .pc-row,
+  .pc-install-btn,
+  .pc-toggle,
+  .pc-toggle-dot,
+  .pc-remove-btn {
+    transition: none;
+  }
+}

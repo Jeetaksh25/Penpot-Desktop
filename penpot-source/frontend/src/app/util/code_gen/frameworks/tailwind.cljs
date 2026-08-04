@@ -22,6 +22,7 @@
    [app.common.files.helpers :as cfh]
    [app.config :as cfg]
    [app.main.ui.shapes.text.html-text :as text]
+   [app.util.code-gen.code-connect :as cc]
    [app.util.code-gen.frameworks.common :as fc]
    [app.util.code-gen.markup-svg :as markup-svg]
    [cuerdas.core :as str]
@@ -200,6 +201,17 @@
        (fc/hidden? shape)
        nil
 
+       ;; Code Connect binding (P1.08): emit the mapped code component tag
+       ;; with Tailwind positioning classes + authored props instead of a
+       ;; generic <div className="...">.
+       (when-let [binding (fc/code-connect-binding objects shape)]
+         (let [props (cc/format-props-jsx binding)
+               tag (:tag binding)
+               attrs (cond-> (dm/str "className=\"" classes "\"")
+                       (str/not-blank? props) (dm/str " " props))]
+           (dm/fmt "%{/* Code Connect: % */}\n%<% % />"
+                   ind tag ind tag attrs)))
+
        (fc/svg-shape? shape)
        (dm/fmt "%<div className=\"%\" dangerouslySetInnerHTML={{__html: %}} />"
                ind classes (quote-js (or (svg-markup objects shape) "")))
@@ -254,9 +266,10 @@
    (let [roots     (fc/root-originals objects shapes)
          origin    (fc/selection-origin roots)
          size      (fc/selection-size roots)
-         body      (->> roots
+         body      (binding [fc/*framework-type* (if nextjs? "nextjs" "tailwind")]
+                  (->> roots
                        (keep #(render-shape objects % origin 1))
-                       (str/join "\n"))
+                       (str/join "\n")))
          comp-name (if nextjs? "Page"
                      (or (some-> (seq roots) first fc/component-name) "Component"))
          header    (tailwind-header nextjs?)]

@@ -1,0 +1,103 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+@use "../../../sidebar/common/sidebar.scss" as sidebar;
+
+// ALL_APPS_PARITY P2.24 + P2.29 — States menu (element multi-state +
+// component hover/pressed overrides). Reuses the shared .element-set /
+// .element-title / .element-set-content grid structure. Coral = #f28b82.
+// Reduced-motion guarded.
+
+.element-set {
+  @include sidebar.option-grid-structure;
+}
+
+.element-title {
+  grid-column: span 8;
+}
+
+.element-set-content {
+  @include deprecated.flex-column;
+
+  grid-column: span 8;
+  margin: deprecated.$s-4 0 deprecated.$s-8 0;
+}
+
+.states-section-label {
+  font-size: deprecated.$fs-11;
+  font-weight: 600;
+  color: var(--text-foreground-secondary);
+}
+
+.states-row {
+  display: flex;
+  align-items: center;
+  gap: deprecated.$s-2;
+}
+
+.states-label {
+  font-size: deprecated.$fs-11;
+  color: var(--text-foreground-secondary);
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.states-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(242, 139, 130, 0.4);
+  border-radius: deprecated.$br-6;
+  background: rgba(242, 139, 130, 0.08);
+  color: #f28b82;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.states-state-row {
+  border-top: 1px solid var(--token-color-neutral-200, #e5e5e5);
+  padding: deprecated.$s-2 0;
+  margin-top: deprecated.$s-2;
+}
+
+.states-state-name {
+  flex: 1;
+  font-weight: 500;
+  font-size: deprecated.$fs-12;
+}
+
+.states-active {
+  color: #f28b82;
+}
+
+.states-empty {
+  font-size: deprecated.$fs-11;
+  color: var(--text-foreground-secondary);
+}
+
+.states-hint {
+  grid-column: span 8;
+  margin-top: deprecated.$s-4;
+  color: var(--text-foreground-secondary);
+  font-size: deprecated.$fs-11;
+  line-height: 1.4;
+}
+
+.lucide-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .states-add-btn {
+    transition: none;
+  }
+}

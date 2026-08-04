@@ -703,23 +703,42 @@
             pruned (if closed? (conj pruned (first pruned)) pruned)]
         (into [] (for [[a b] (partition 2 1 pruned)] {:type :line :start a :end b}))))))
 
-(defn- offset-content
+(defn offset-content
   "Offset path `content` by `distance`. Curves offset as curves (control
   polygon offset); joins are miter (default) / round / bevel with a
   miter-limit bevel fallback; self-intersecting offset subpaths are
   cleaned up. Returns a PathData or nil for degenerate input.
 
-  Optional kwargs (defaults): :join :miter, :miter-limit 4."
+  Optional kwargs (defaults): :join :miter, :miter-limit 4, :cap nil.
+
+  When `:cap` is non-nil (one of :butt/:round/:square) OPEN subpaths are
+  offset into a closed band: the forward offset + an end cap + the
+  reverse of the negative offset + a start cap (reusing the
+  outline-stroke band builder with half-width = distance). This is the
+  Illustrator 'Offset Path on an open path with caps' behaviour. Closed
+  subpaths and the default (`:cap` nil, open subpath stays open) are
+  byte-identical to the prior implementation."
   ([content distance]
    (offset-content content distance {}))
-  ([content distance {:keys [join miter-limit] :or {join :miter miter-limit 4}}]
+  ([content distance {:keys [join miter-limit cap] :or {join :miter miter-limit 4}}]
    (let [subs (content->subpaths content)]
      (when (seq subs)
        (let [result (into []
-                          (mapcat (fn [{:keys [closed?] :as sp}]
-                                    (let [off     (offset-subpath sp distance join miter-limit)
-                                          cleaned (cleanup-self-intersection off closed?)]
-                                      (segs->plain cleaned closed?))))
+                          (mapcat
+                           (fn [{:keys [closed?] :as sp}]
+                             (cond
+                               ;; Open subpath + cap requested -> closed band
+                               ;; (forward offset + cap + reverse offset + cap).
+                               ;; Flatten all band contours into one command stream.
+                               (and (not closed?) (some? cap))
+                               (mapcat #(segs->plain % true)
+                                       (:contours (build-outline-subpath sp distance cap)))
+
+                               :else
+                               (segs->plain (cleanup-self-intersection
+                                             (offset-subpath sp distance join miter-limit)
+                                             closed?)
+                                            closed?))))
                           subs)]
          (when (seq result)
            (impl/from-plain result)))))))
@@ -828,3 +847,156 @@
                            reduced (rdp points threshold)
                            new-content (path/points->content reduced :close closed?)]
                        (path/update-geometry shape new-content)))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; LIVE OFFSET PATH EFFECT (ALL_APPS_PARITY P1.32)
+;;
+;; A non-destructive Offset Path *effect* stored on the shape ALONGSIDE the
+;; destructive `offset-vector` command above. The shape keeps its original
+;; `:content`; the renderer (`app.main.ui.shapes.path`) applies the offset at
+;; draw time when the `:offset-effect` slot is present, so the effect is
+;; fully reversible (`clear-offset-effect` restores the original outline)
+;; and can be tweaked live (distance/join/miter-limit/cap). `bake-offset-effect`
+;; finalizes it into the path data (the pre-effect content is recoverable via
+;; undo — there is no live copy kept on the shape).
+;;
+;; The `:offset-effect` map: {:distance <num> :join :miter/:round/:bevel
+;;                           :miter-limit <num> :cap nil/:butt/:round/:square}
+;; (`:cap` nil leaves open subpaths open — the default; a non-nil cap thickens
+;; open subpaths into a closed band, reusing the outline-stroke builder).
+;;
+;; Byte-identical when absent: legacy shapes have no `:offset-effect` slot, so
+;; `path-shape` takes the legacy branch and the SVG is unchanged.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn set-offset-effect
+  "Store (or, when `effect` is nil, clear) the live Offset Path effect on
+  each selected path shape. Purely additive: no-op when no path shapes
+  are selected."
+  ([effect]
+   (set-offset-effect nil effect))
+  ([ids effect]
+   (ptk/reify ::set-offset-effect
+     ptk/WatchEvent
+     (watch [_ state _]
+       (let [selected (or ids (dsh/lookup-selected state))
+             objects  (dsh/lookup-page-objects state)
+             path-ids (into [] (filter #(cph/path-shape? (get objects %))) selected)]
+         (when (seq path-ids)
+           (rx/of (dwsh/update-shapes
+                   path-ids
+                   (fn [shape]
+                     (if (some? effect)
+                       (assoc shape :offset-effect effect)
+                       (dissoc shape :offset-effect)))))))))))
+
+(defn clear-offset-effect
+  "Remove the live Offset Path effect from each selected path shape,
+  restoring the original outline. No-op when a selected path has no
+  `:offset-effect`."
+  ([]
+   (clear-offset-effect nil))
+  ([ids]
+   (set-offset-effect ids nil)))
+
+(defn bake-offset-effect
+  "Finalize the live Offset Path effect on each selected path shape:
+  applies the offset to `:content` (destructive path-data rewrite) and
+  removes the `:offset-effect` slot. The pre-effect content is NOT kept
+  on the shape — recover it via undo. No-op when a selected path has no
+  `:offset-effect`."
+  ([]
+   (bake-offset-effect nil))
+  ([ids]
+   (ptk/reify ::bake-offset-effect
+     ptk/WatchEvent
+     (watch [_ state _]
+       (let [selected (or ids (dsh/lookup-selected state))
+             objects  (dsh/lookup-page-objects state)
+             path-ids (into [] (filter #(cph/path-shape? (get objects %))) selected)]
+         (when (seq path-ids)
+           (rx/of (dwsh/update-shapes
+                   path-ids
+                   (fn [shape]
+                     (let [effect (:offset-effect shape)]
+                       (if (nil? effect)
+                         shape
+                         (let [{:keys [distance join miter-limit cap]
+                                :or {join :miter miter-limit 4}} effect
+                               content (:content shape)
+                               offset  (offset-content content distance
+                                        {:join join :miter-limit miter-limit :cap cap})]
+                           (if (some? offset)
+                             (-> shape
+                                 (dissoc :offset-effect)
+                                 (path/update-geometry offset))
+                             (dissoc shape :offset-effect))))))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; EXPAND / EXPAND APPEARANCE (ALL_APPS_PARITY P2.17)
+;;
+;; A unified command that finalizes selected shapes into editable anchor
+;; paths. It reuses the canonical common `convert-to-path` (already wired
+;; through `convert-selected-to-path`) for the shape-tier expansion and
+;; adds a live-effect bake pass for the Offset Path effect:
+;;   - :bool  -> flattened single path (boolean engine) + children removed
+;;   - :rect / :circle / :group / :frame / :image / :text -> converted to
+;;     a path via the common shape->path transform
+;;   - :path with a live :offset-effect -> the offset is baked into the
+;;     path data and the effect slot removed
+;;   - any other shape is left as-is
+;;
+;; The pre-expand shape state is recoverable via undo: both sub-events
+;; (`convert-selected-to-path` and `bake-offset-effect`) record their
+;; changes through `pcb` / `dwsh/update-shapes`, so the history stack holds
+;; the pre-expand shape even though the path data is rewritten in place.
+;; Full Expand Appearance (baking ALL live appearance effects — stroke-to-
+;; fill, blur, shadows, gradients-as-stroke, etc.) is DEFERRED: it waits on
+;; a live-effect stack architecture that does not yet exist; this command
+;; covers the path/bool/offset cases that DO exist today.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn- partition-for-expand
+  "Splits the selected shape ids into the two expansion buckets:
+  `:path-effect-ids` (paths carrying a live Offset Path effect to bake)
+  and `:convert-ids` (bool/rect/circle/group/frame/image/text to convert
+  to an editable path via the common converter). Everything else is
+  dropped (left untouched)."
+  [objects selected]
+  (reduce (fn [acc id]
+            (let [shape (get objects id)]
+              (cond
+                (nil? shape) acc
+                (and (= :path (:type shape))
+                     (some? (:offset-effect shape)))
+                (update acc :path-effect-ids conj id)
+                (#{:bool :rect :circle :group :frame :image :text}
+                 (:type shape))
+                (update acc :convert-ids conj id)
+                :else acc)))
+          {:path-effect-ids [] :convert-ids []}
+          selected))
+
+(defn expand-selection
+  "ALL_APPS_PARITY P2.17 — Expand / Expand Appearance (path-tier). Finalize
+  the selected shapes into editable anchor paths: booleans are flattened,
+  rects/ellipses/groups/frames/images/text are turned into paths, and
+  live Offset Path effects are baked. The pre-expand state is recoverable
+  via undo. Purely additive: no-op when nothing selected needs expanding."
+  ([]
+   (expand-selection nil))
+  ([ids]
+   (ptk/reify ::expand-selection
+     ptk/WatchEvent
+     (watch [_ state _]
+       (let [selected (or ids (dsh/lookup-selected state))
+             objects  (dsh/lookup-page-objects state)
+             {:keys [path-effect-ids convert-ids]}
+             (partition-for-expand objects selected)
+             events (cond-> []
+                      (seq path-effect-ids)
+                      (conj (bake-offset-effect path-effect-ids))
+                      (seq convert-ids)
+                      (conj (convert-selected-to-path convert-ids)))]
+         (when (seq events)
+           (apply rx/of events)))))))

@@ -1,0 +1,109 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+
+// Automated redlines + shareable Inspect (ALL_APPS_PARITY P1.20).
+// Styles for the redline panel rendered by `app.main.ui.inspect.redline`.
+// The panel mounts as a new Inspect tab, so every class here is purely
+// additive and never touches the existing inspect layout. Class names
+// mirror the `stl/css` keys declared in redline.cljs. Coral #f28b82 is
+// the Ovion brand accent for dimension lines; grey #7d7d7d is the shape
+// outline; reduced-motion users get instant transitions.
+
+.redline-section {
+  @include deprecated.flex-column;
+
+  gap: var(--sp-s);
+  padding-block: var(--sp-s);
+  padding-inline: var(--sp-m);
+}
+
+.redline-title-bar {
+  width: 100%;
+}
+
+.redline-diagram-wrap {
+  @include deprecated.flex-column;
+
+  gap: var(--sp-s);
+  align-items: stretch;
+}
+
+.redline-svg {
+  // The SVG is self-contained (viewBox + preserveAspectRatio), so it
+  // scales to the panel width while keeping its aspect ratio. Coral
+  // dimension lines + grey shape outline are drawn inside the SVG; the
+  // wrapper only frames it.
+  inline-size: 100%;
+  max-block-size: 280px;
+}
+
+.redline-pos-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-s);
+}
+
+.redline-pos-label {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+}
+
+.redline-pos-value {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.redline-embed-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xs);
+  margin-block-start: var(--sp-s);
+}
+
+.redline-copy-btn {
+  background: transparent;
+  border: deprecated.$s-1 solid color-mix(in srgb, #f28b82 40%, transparent);
+  border-radius: deprecated.$br-4;
+  padding-block: deprecated.$s-4;
+  padding-inline: deprecated.$s-8;
+  cursor: pointer;
+  color: #f28b82;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  inline-size: 100%;
+
+  &:hover {
+    background: color-mix(in srgb, #f28b82 8%, transparent);
+  }
+}
+
+.redline-copy-label {
+  @include deprecated.body-small-typography;
+
+  color: #f28b82;
+}
+
+.redline-embed-hint {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .redline-copy-btn,
+  .redline-svg {
+    transition: none !important;
+  }
+}
