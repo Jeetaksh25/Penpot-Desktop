@@ -16,6 +16,7 @@
    [app.common.types.shape :refer [stroke-caps-line stroke-caps-marker]]
    [app.common.types.shape.radius :as ctsr]
    [app.main.ui.shapes.filters :as filters]
+   [app.main.ui.shapes.fade :as fade]
    [app.util.object :as obj]
    [clojure.string :as cstr]
    [cuerdas.core :as str]))
@@ -334,7 +335,27 @@
                                        (filters/svg-expressible-preset?
                                         (:shader-preset se)))))
                           (obj/set! props "filter" (dm/fmt "url(#filter-%)" render-id))
-                          props))]
+                          props))
+
+        ;; FADE (#60 fade) — site A of the 2-site MASK lockstep. Sets
+        ;; mask="url(#fade-<render-id>)" on this shape element when :fade
+        ;; is present, non-hidden, AND the shape is not a frame. Site B
+        ;; (fade-mask* mounted in shape.cljs [:defs]) emits the matching
+        ;; <mask id="fade-<rid>"> on the SAME predicate (non-frame AND
+        ;; present AND non-hidden), so absent/hidden/frame -> no attr AND
+        ;; no def (no dangling url(#fade-..) reference). The non-frame gate
+        ;; here MUST mirror shape.cljs's (when-not (cfh/frame-shape?)
+        ;; shape) guard around fade-mask* — frames render via frame.cljs
+        ;; which has no fade-mask* mount, so a frame must NOT get the mask
+        ;; attr either or it would dangle. Fade is a MASK, not a filter: it
+        ;; does NOT touch the :filter gate above and does NOT grow the
+        ;; filter region. The UI hides the Fade control for frames, so a
+        ;; frame never carries :fade — this gate is defense-in-depth.
+        props     (cond-> props
+                     (and (not ^boolean (cfh/frame-shape? shape))
+                          (some? (get shape :fade))
+                          (not ^boolean (:hidden (get shape :fade))))
+                     (obj/set! "mask" (fade/fade-mask-url render-id)))]
 
      (cond
        ;; If the shape comes from an imported SVG (we know because

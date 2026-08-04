@@ -28,6 +28,7 @@
    [app.common.types.shape.background-blur :as ctsbb]
    [app.common.types.shape.blur :as ctsb]
    [app.common.types.shape.export :as ctse]
+   [app.common.types.shape.fade :as ctsf]
    [app.common.types.shape.interactions :as ctsi]
    [app.common.types.shape.layout :as ctsl]
    [app.common.types.shape.polygon :as ctsp]
@@ -292,6 +293,15 @@
     [:vector {:gen/max 1} ctss/schema:shadow]]
    [:blur {:optional true} ctsb/schema:blur]
    [:background-blur {:optional true} ctsbb/schema:background-blur]
+   ;; Figma-parity fade effect (gap #60 fade). A single-map MASK slot
+   ;; (like :blur, NOT a vector). When present and non-hidden the renderer
+   ;; emits a gradient <mask mask-type="alpha"> fading the shape along
+   ;; :direction from :start-opacity to :end-opacity and sets
+   ;; mask="url(#fade-<render-id>)" on the shape element. Fade is a MASK,
+   ;; not a filter, so it bypasses the 3-gate filter lockstep entirely
+   ;; (no bounds.cljc / filters.cljs / filter-str involvement). Absent or
+   ;; :hidden -> no mask attr, no <mask> def -> byte-identical to today.
+   [:fade {:optional true} ctsf/schema:fade]
    ;; Figma-parity advanced effects (gaps #61/#62/#63). These are OPAQUE
    ;; effect-vector slots owned by group V but consumed by group E2.
    ;; Each holds a vector of effect maps; ::sm/any keeps the slot opaque so
@@ -626,7 +636,7 @@
     :remote-synced :shape-ref :touched :blocked :collapsed :locked
     :hidden :masked-group :mask-mode :fills :proportion :proportion-lock :constraints-h
     :constraints-v :fixed-scroll :r1 :r2 :r3 :r4 :corner-smoothing :rotation :opacity :grids :exports
-    :strokes :blend-mode :interactions :shadow :blur :background-blur :grow-type :applied-tokens
+    :strokes :blend-mode :interactions :shadow :blur :background-blur :fade :grow-type :applied-tokens
     :plugin-data
     ;; Figma-parity advanced effects (gaps #61/#62/#63): opaque effect
     ;; vectors owned by group V, consumed by group E2. Round-trip safe.

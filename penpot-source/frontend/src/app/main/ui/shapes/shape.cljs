@@ -15,6 +15,7 @@
    [app.main.ui.hooks :as h]
    [app.main.ui.shapes.attrs :as attrs]
    [app.main.ui.shapes.export :as ed]
+   [app.main.ui.shapes.fade :as fade]
    [app.main.ui.shapes.fills :as fills]
    [app.main.ui.shapes.filters :as filters]
    [app.main.ui.shapes.frame :as frame]
@@ -145,6 +146,18 @@
           [:> filters/filters*       {:shape shape :filter-id filter-id}]
           [:> filters/filters*       {:shape shape-without-blur :filter-id (dm/fmt "filter-shadow-%" render-id)}]
           [:> filters/filters*       {:shape shape-without-shadows :filter-id (dm/fmt "filter-blur-%" render-id)}]])
+
+       ;; FADE (#60 fade) — site B of the 2-site MASK lockstep. Emits the
+       ;; <mask id="fade-<render-id>"> + its <linearGradient> when :fade is
+       ;; present and non-hidden (gate inside fade-mask* mirrors site A in
+       ;; attrs.cljs add-fill-props! exactly). Mounted only for non-frame
+       ;; shapes — frames render via frame.cljs and the fade UI is hidden
+       ;; for frames, so a frame never carries :fade and this is a no-op for
+       ;; them (byte-identical). Fade is a mask, not a filter, so it lives
+       ;; outside the filters* block above and never enters the 3-gate
+       ;; filter lockstep.
+       (when-not (cfh/frame-shape? shape)
+         [:> fade/fade-mask* {:shape shape :render-id render-id}])
 
        [:& frame/frame-clip-def   {:shape shape :render-id render-id}]
 

@@ -11338,6 +11338,23 @@ msgid "workspace.options.blur-options.progressive"
 msgstr "Progressive"
 
 
+#: figma-parity/p2/fade
+msgid "workspace.options.blur-options.fade"
+msgstr "Fade"
+
+#: figma-parity/p2/fade
+msgid "workspace.options.blur-options.fade-direction"
+msgstr "Direction"
+
+#: figma-parity/p2/fade
+msgid "workspace.options.blur-options.fade-start-opacity"
+msgstr "Start opacity"
+
+#: figma-parity/p2/fade
+msgid "workspace.options.blur-options.fade-end-opacity"
+msgstr "End opacity"
+
+
 #: figma-parity/p2/shadow
 msgid "workspace.options.shadow-options.grain"
 msgstr "Grain"

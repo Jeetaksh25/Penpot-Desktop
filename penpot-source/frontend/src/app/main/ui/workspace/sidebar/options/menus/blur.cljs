@@ -68,6 +68,22 @@
      :value 4
      :hidden false}))
 
+;; Figma-parity fade effect (gap #60 fade). A single-map MASK slot on the
+;; shape (:fade, schema app.common.types.shape.fade). Defaults: direction 90
+;; (fade downward), start-opacity 1 (visible at top edge), end-opacity 0
+;; (transparent at bottom edge). The renderer (app.main.ui.shapes.fade) reads
+;; every field defensively with `or`, so a partial map still renders, but the
+;; UI always seeds a full map via create-fade.
+(defn create-fade
+  "Create a new fade effect map (gap #60 fade)."
+  []
+  {:id            (uuid/next)
+   :type          :fade
+   :hidden        false
+   :direction     90
+   :start-opacity 1
+   :end-opacity   0})
+
 (mf/defc blur-menu-content*
   [{:keys [blur-key value change-fn blur-values]}]
   (let [render-wasm?        (features/use-feature "render-wasm/v1")
@@ -440,7 +456,47 @@
         (mf/use-fn
          (mf/deps change!)
          (fn [index value]
-           (change! #(assoc-in % [:blurs index :value] value))))]
+           (change! #(assoc-in % [:blurs index :value] value))))
+
+        ;; Figma-parity fade effect (gap #60 fade). A directional opacity
+        ;; MASK (app.main.ui.shapes.fade) — NOT a filter, so it is LIVE in
+        ;; the renderer (unlike shader/stack which are deferred). Read via
+        ;; the page-objects ref (blur-menu* only receives :blur /
+        ;; :background-blur in `values`). The toggle preserves settings by
+        ;; flipping :hidden (absent -> create; present+hidden -> unhide;
+        ;; present+visible -> hide), so byte-identical-when-inactive holds
+        ;; (hidden/absent -> no mask attr AND no <mask> def). Suppressed for
+        ;; frames (frame fade is a deferred sub-item — no non-functional
+        ;; control, per the "every feature works" mandate).
+        fade         (:fade first-shape)
+        fade-active  (and (some? fade) (not ^boolean (:hidden fade)))
+        fade-disabled? (= :frame (:type first-shape))
+        on-fade-toggle
+        (mf/use-fn
+         (mf/deps ids)
+         (fn []
+           (st/emit! (dwsh/update-shapes ids
+                      (fn [shape]
+                        (let [f (:fade shape)]
+                          (cond
+                            (nil? f)      (assoc shape :fade (create-fade))
+                            (:hidden f)   (assoc-in shape [:fade :hidden] false)
+                            :else         (assoc-in shape [:fade :hidden] true))))))))
+        on-fade-direction
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [v]
+           (st/emit! (dwsh/update-shapes ids #(assoc-in % [:fade :direction] v)))))
+        on-fade-start-opacity
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [v]
+           (st/emit! (dwsh/update-shapes ids #(assoc-in % [:fade :start-opacity] v)))))
+        on-fade-end-opacity
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [v]
+           (st/emit! (dwsh/update-shapes ids #(assoc-in % [:fade :end-opacity] v)))))]
 
     [:section {:class (stl/css :element-set)
                :hidden (not open?)
@@ -506,6 +562,54 @@
      (when (and open? (seq (:shader-effect first-shape)))
        [:> shader-row* {:shader-effect shader-effect
                         :on-change on-shader-change}])
+     ;; Figma-parity fade effect (gap #60 fade) UI. A directional opacity
+     ;; MASK, LIVE in the renderer. Reuses the progressive-blur row CSS
+     ;; (:blur-progressive-row / -toggle / -label / -params) so no new
+     ;; styles are needed. The checkbox toggles :fade active/hidden
+     ;; (preserving settings); when active, three numeric inputs expose
+     ;; direction (deg, 0=right 90=down), start-opacity and end-opacity
+     ;; (0..1). Suppressed for frames (frame fade deferred).
+     (when (and open? (not fade-disabled?))
+       [:div {:class (stl/css :element-set-content)
+              :data-testid "blur.fade"}
+        [:div {:class (stl/css :blur-progressive-row)}
+         [:label {:class (stl/css :blur-progressive-toggle)}
+          [:input {:type "checkbox"
+                   :checked fade-active
+                   :on-change on-fade-toggle}]
+          [:span {:class (stl/css :blur-progressive-label)}
+           (tr "workspace.options.blur-options.fade")]]
+         (when fade-active
+           [:div {:class (stl/css :blur-progressive-params)}
+            [:> numeric-input*
+             {:class (stl/css :numeric-input)
+              :placeholder "--"
+              :min 0
+              :max 360
+              :text-icon "value"
+              :on-change on-fade-direction
+              :name "fade-direction"
+              :value (:direction fade)}]
+            [:> numeric-input*
+             {:class (stl/css :numeric-input)
+              :placeholder "--"
+              :min 0
+              :max 1
+              :step 0.01
+              :text-icon "value"
+              :on-change on-fade-start-opacity
+              :name "fade-start-opacity"
+              :value (:start-opacity fade)}]
+            [:> numeric-input*
+             {:class (stl/css :numeric-input)
+              :placeholder "--"
+              :min 0
+              :max 1
+              :step 0.01
+              :text-icon "value"
+              :on-change on-fade-end-opacity
+              :name "fade-end-opacity"
+              :value (:end-opacity fade)}]])]])
      ;; Figma-parity stacked layer blurs (gap #74). Stack manager UI
      ;; (add / remove / reorder / edit) for the opaque :blurs vector on
      ;; the shape. Renders ONLY when (seq :blurs) is true; absent :blurs =
