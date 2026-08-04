@@ -225,7 +225,7 @@
            (let [dx (+ sx2 16)]
              [:g {:stroke dim-color :stroke-width 1 :fill dim-color}
               [:line {:x1 dx :y1 sy1 :x2 dx :y2 sy2}]
-              [:line {:x1 (- dx 4) :y1 sy1 :x2 (+ dx 4) :y1 sy1}]
+              [:line {:x1 (- dx 4) :y1 sy1 :x2 (+ dx 4) :y2 sy1}]
               [:line {:x1 (- dx 4) :y1 sy2 :x2 (+ dx 4) :y2 sy2}]
               [:text {:x (+ dx 4) :y (+ cy 4)
                       :text-anchor "start"
