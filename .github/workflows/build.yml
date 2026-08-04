@@ -326,12 +326,12 @@ jobs:
             ## Ovion Desktop ${{ github.ref_name }}
 
             Windows installer for Ovion Desktop — a fully offline, native
-            design tool powered by the real Penpot ClojureScript frontend and
+            design tool powered by a real ClojureScript frontend and
             Clojure/JVM backend.
 
             ### What's included
-            - Full Penpot UI (ClojureScript SPA)
-            - Penpot JVM backend
+            - Full Ovion design UI (ClojureScript SPA)
+            - JVM backend
             - Local PostgreSQL 16.4 + Redis 8.8.0 (embedded)
             - ImageMagick 7.1.2 (embedded; required for thumbnails and media processing)
             - SVG renderer (WASM WebGL renderer available with manual build)

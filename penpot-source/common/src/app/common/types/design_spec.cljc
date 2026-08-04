@@ -228,7 +228,7 @@
                           (get spec :animation)                          (assoc :animation (spec->animation (get spec :animation))))]
         ;; `check-interaction` returns falsy on invalid; the try is belt-and-
         ;; braces so a thrown explanation never aborts the whole generation.
-        (when (try (ctsi/check-interaction candidate) (catch :default _ false))
+        (when (try (ctsi/check-interaction candidate) (catch #?(:clj Throwable :cljs :default) _ false))
           candidate)))))
 
 ;; ── Shape construction ──────────────────────────────────────────────────────
@@ -270,7 +270,7 @@
                             :grow-type :auto-width})
           (update :content txt/change-text content styles)
           (dissoc :position-data)))
-    (catch :default _
+    (catch #?(:clj Throwable :cljs :default) _
       nil)))
 
 (defn- build-rect-shape [props]

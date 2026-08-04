@@ -12,7 +12,7 @@
    [app.common.files.helpers :as cfh]
    [app.main.data.helpers :as dsh]
    [app.main.data.workspace.bool :as dwb]
-   [app.main.data.workspace.bool_color :as dwbc]
+   [app.main.data.workspace.bool-color :as dwbc]
    [app.main.data.workspace.colors :as dwc]
    [app.main.data.workspace.path.shapes-to-path :as dwps]
    [app.main.data.workspace.selection :as dws]

@@ -394,6 +394,7 @@
 
 (defn- clear-connector-first
   "Clear the connector tool's pending first-click id."
+  []
   (ptk/reify ::clear-connector-first
     ptk/UpdateEvent
     (update [_ state]

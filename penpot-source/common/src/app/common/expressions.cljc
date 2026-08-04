@@ -226,7 +226,7 @@
         "ceil"  (num-un args math-ceil)
 
         ;; string ops
-        "concat"  (apply dm/str (map #(if (nil? %) "" %) args))
+        "concat"  (apply str (map #(if (nil? %) "" %) args))
         "len"     (let [a (first args)]
                     (cond (string? a) (count a)
                           (vector? a) (count a)
@@ -247,12 +247,12 @@
                         (when (and (string? s) (string? p))
                           (try
                             (some? (re-find (re-pattern p) s))
-                            (catch :default _ false))))
+                            (catch #?(:clj Throwable :cljs :default) _ false))))
         "regex-replace" (let [s (first args) p (second args) r (nth args 2 nil)]
                           (when (and (string? s) (string? p) (string? r))
                             (try
                               (cstr/replace s (re-pattern p) r)
-                              (catch :default _ s))))
+                              (catch #?(:clj Throwable :cljs :default) _ s))))
 
         ;; date ops (CLJS runtime only)
         "now"        (when (empty? args) (now-ms))
@@ -306,7 +306,7 @@
   [s]
   (try
     #?(:clj (Double/parseDouble s) :cljs (js/Number s))
-    (catch :default _ nil)))
+    (catch #?(:clj Throwable :cljs :default) _ nil)))
 
 (defn- read-string-literal
   "i points at the opening quote. Returns [end-idx value] or nil if
@@ -545,7 +545,7 @@
           s
           (let [[node _] (parse-expr tokens 0)]
             (if (some? node) node s))))
-      (catch :default _ s))))
+      (catch #?(:clj Throwable :cljs :default) _ s))))
 
 (defn- format-ref
   [node]

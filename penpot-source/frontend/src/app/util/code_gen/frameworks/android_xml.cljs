@@ -214,10 +214,12 @@
        ;; PNG at `@drawable/<name>` (recorded as a `:raster-request` and
        ;; resolved by the export pipeline). In the Inspect-panel preview
        ;; (`*svg-acc*` unbound) a placeholder `<View>` + comment is emitted.
-       (let [lattrs (layout-attrs-only objects shape origin)]
+       (let [lattrs (layout-attrs-only objects shape origin)
+             sname  (fc/snake-name (or (:name shape) "shape"))]
          (if (nil? *svg-acc*)
-           (dm/fmt "%<!-- SVG shape — export to project to emit res/drawable/%.xml\n     (VectorDrawable if simple, raster PNG if complex) -->\n%<View%\n        android:background=\"#00000000\" />"
-                   (fc/snake-name (or (:name shape) "shape")) ind lattrs)
+           (dm/str ind "<!-- SVG shape " sname " — export to project to emit res/drawable/" sname ".xml\n"
+                   "     (VectorDrawable if simple, raster PNG if complex) -->\n"
+                   ind "<View " lattrs "\n        android:background=\"#00000000\" />")
            (let [dname (register-svg-shape shape)]
              (dm/fmt "%<ImageView\n        xmlns:android=\"http://schemas.android.com/apk/res/android\"%\n        android:src=\"@drawable/%\" />"
                      ind lattrs dname))))

@@ -34,7 +34,7 @@
 ;; `dwb/create-bool` with no `:force-shape-id` — i.e. byte-identical to the
 ;; pre-feature behavior.
 
-(ns app.main.data.workspace.bool_color
+(ns app.main.data.workspace.bool-color
   (:require
    [app.common.data :as d]
    [app.common.files.helpers :as cph]

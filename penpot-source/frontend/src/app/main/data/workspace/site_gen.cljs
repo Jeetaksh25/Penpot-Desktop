@@ -33,7 +33,6 @@
    [app.main.data.changes :as dch]
    [app.main.data.helpers :as dsh]
    [app.main.data.notifications :as ntf]
-   [app.main.data.workspace.design-gen :as dg]
    [app.main.data.workspace.pages :as dwp]
    [app.main.data.workspace.undo :as dwu]
    [app.util.i18n :refer [tr]]
@@ -137,10 +136,12 @@
 ;; ── Public entry point ──────────────────────────────────────────────────────
 
 (defn apply-site-spec
-  "Commit a Site spec to the workspace. `site-spec` is a keywordized
-  DesignSpec that MAY carry a `:site` key. When `:site` is absent, this
-  delegates to the existing single-page `dg/apply-design-spec` (so existing
-  ai_bar.cljs callsites keep working unchanged). When `:site` is present:
+  "Commit a Site spec to the workspace. `opts` carries a keywordized
+  DesignSpec in `:spec` whose `:site` key holds the multi-page bundle. The
+  sole caller is `design-gen/apply-design-spec`, which only invokes this
+  when `:site` IS present — so this namespace does NOT require design-gen
+  (breaking what would otherwise be a compile-time circular dependency:
+  design-gen ↔ site-gen). When `:site` is present:
 
     - the FIRST site-page's `:spec` is applied to the CURRENT page via
       `apply-design-spec-to-page` (targeting the current page id)
@@ -150,16 +151,17 @@
     - the whole sequence is wrapped in ONE undo transaction so the entire
       site is a single undo step
 
-  Options (kept for API parity with `dg/apply-design-spec`; only :spec is
-  consumed in the multi-page path — :target / :select? /
+  Options (kept for API parity with `design-gen/apply-design-spec`; only
+  :spec is consumed in the multi-page path — :target / :select? /
   :design-system-guidelines are ignored for site pages, see the deferral
   note on `apply-design-spec-to-page`):
     :target    \"new-board\" | \"update-selection\" (default \"new-board\")
     :select?   select new top-level frames after commit (default true)
     :design-system-guidelines  forwarded to the single-page path
 
-  Guards: empty `:pages` → `rx/empty` (no-op). Invalid `:site` → invalid-spec
-  toast, no canvas mutation."
+  Guards: nil `:site` (defensive — should not happen via the real call
+  graph) → `rx/empty` no-op. Empty `:pages` → `rx/empty` (no-op).
+  Invalid `:site` → invalid-spec toast, no canvas mutation."
   [{:keys [spec target select? design-system-guidelines]
     :or {target "new-board" select? true}
     :as opts}]
@@ -168,8 +170,11 @@
     (watch [it state _]
       (let [site (get spec :site)]
         (if (nil? site)
-          ;; No site → single-page path, byte-identical to before.
-          (rx/of (dg/apply-design-spec opts))
+          ;; Defensive no-op — the sole caller (design-gen/apply-design-spec)
+          ;; only invokes this when :site is present, so this branch is
+          ;; unreachable in practice. Kept as a guard rather than delegating
+          ;; back to design-gen (which would re-close the circular dep).
+          (rx/empty)
 
           (let [pages (get site :pages)]
             (cond

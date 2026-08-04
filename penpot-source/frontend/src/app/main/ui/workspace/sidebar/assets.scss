@@ -168,8 +168,8 @@
   @include deprecated.button-style;
   @include deprecated.body-small-typography;
 
-  padding: deprecated.$s-2 deprecated.$s-10;
-  border-radius: deprecated.$br-999;
+  padding: deprecated.$s-2 deprecated.$s-12;
+  border-radius: deprecated.$br-circle;
   border: deprecated.$s-1 solid var(--input-border-color-rest);
   background-color: var(--input-background-color-rest);
   color: var(--input-foreground-color-rest);
@@ -342,7 +342,7 @@
   align-items: center;
   gap: deprecated.$s-6;
   width: 100%;
-  padding: deprecated.$s-6 deprecated.$s-10;
+  padding: deprecated.$s-6 deprecated.$s-12;
   border-radius: deprecated.$br-8;
   border: deprecated.$s-1 solid var(--input-border-color-rest);
   background-color: var(--input-background-color-rest);
@@ -398,7 +398,7 @@
   align-items: center;
   gap: deprecated.$s-6;
   width: 100%;
-  padding: deprecated.$s-6 deprecated.$s-10;
+  padding: deprecated.$s-6 deprecated.$s-12;
   border-radius: deprecated.$br-8;
   border: deprecated.$s-1 solid var(--input-border-color-rest);
   background-color: var(--input-background-color-rest);

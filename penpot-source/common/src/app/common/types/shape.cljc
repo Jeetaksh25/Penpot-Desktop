@@ -286,7 +286,7 @@
    ;; Figma-style corner smoothing (superellipse), 0..1. 0 reproduces a
    ;; circular arc; higher values flatten the corner toward the
    ;; rectangle. Whole-shape property (no per-corner smoothing).
-   [:corner-smoothing {:optional true} [::sm/safe-number {:min 0 :max 1}]]
+   [:corner-smoothing {:optional true} [::sm/number {:min 0 :max 1}]]
    [:opacity {:optional true} ::sm/safe-number]
    [:grids {:optional true}
     [:vector {:gen/max 2} ctg/schema:grid]]
@@ -433,7 +433,7 @@
    ;; absent = a 5-point star with inner-radius 0.5, sharp points. See
    ;; shape/polygon.cljc for the shared polygon/star path builder.
    [:point-count {:optional true} [::sm/int {:min 3 :max 60}]]
-   [:inner-radius {:optional true} [::sm/safe-number {:min 0 :max 1}]]
+   [:inner-radius {:optional true} [::sm/number {:min 0 :max 1}]]
    [:corner-radius {:optional true} ::sm/safe-number]])
 
 (def ^:private schema:circle-attrs
@@ -446,7 +446,7 @@
    ;; the radius) turns an arc/pie into a ring/donut.
    [:arc-start {:optional true} ::sm/safe-number]
    [:arc-end {:optional true} ::sm/safe-number]
-   [:inner-radius {:optional true} [::sm/safe-number {:min 0 :max 1}]]])
+   [:inner-radius {:optional true} [::sm/number {:min 0 :max 1}]]])
 
 (def ^:private schema:svg-raw-attrs
   [:map {:title "SvgRawAttrs"}])

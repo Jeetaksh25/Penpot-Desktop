@@ -191,7 +191,7 @@
   (when path-el
     (try
       (let [len (path-length path-el)
-            pt (. path-el -getPointAtLength (* len frac))]
+            pt (. path-el (getPointAtLength (* len frac)))]
         [(.-x pt) (.-y pt)])
       (catch :default _ nil))))
 

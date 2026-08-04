@@ -99,13 +99,13 @@
    ;; optimization path drops them, same as crop/rotation/flip).
    [:adjustments {:optional true}
     [:map {:title "ImageAdjustments" :closed true}
-     [:exposure {:optional true} [::sm/safe-number {:min -1 :max 1}]]
-     [:contrast {:optional true} [::sm/safe-number {:min -1 :max 1}]]
-     [:saturation {:optional true} [::sm/safe-number {:min -1 :max 1}]]
-     [:temperature {:optional true} [::sm/safe-number {:min -1 :max 1}]]
-     [:tint {:optional true} [::sm/safe-number {:min -1 :max 1}]]
-     [:highlights {:optional true} [::sm/safe-number {:min -1 :max 1}]]
-     [:shadows {:optional true} [::sm/safe-number {:min -1 :max 1}]]]]
+     [:exposure {:optional true} [::sm/number {:min -1 :max 1}]]
+     [:contrast {:optional true} [::sm/number {:min -1 :max 1}]]
+     [:saturation {:optional true} [::sm/number {:min -1 :max 1}]]
+     [:temperature {:optional true} [::sm/number {:min -1 :max 1}]]
+     [:tint {:optional true} [::sm/number {:min -1 :max 1}]]
+     [:highlights {:optional true} [::sm/number {:min -1 :max 1}]]
+     [:shadows {:optional true} [::sm/number {:min -1 :max 1}]]]]
    ;; Figma-parity non-destructive image crop. All four are normalized to
    ;; the image's own pixel dimensions (0..1): crop-x/y is the top-left of
    ;; the visible region, crop-w/h its size. Absent = show the whole image.
@@ -914,6 +914,8 @@
 (defn oklab->hex [oklab] (-> oklab oklab->rgb rgb->hex))
 (defn hex->oklch [hex] (-> hex hex->oklab oklab->oklch))
 (defn oklch->hex [oklch] (-> oklch oklch->oklab oklab->rgb rgb->hex))
+(defn rgb->oklch [rgb] (-> rgb rgb->oklab oklab->oklch))
+(defn oklch->rgb [oklch] (-> oklch oklch->oklab oklab->rgb))
 
 ;; --- CIELAB / CIELCH ----------------------------------------------------
 

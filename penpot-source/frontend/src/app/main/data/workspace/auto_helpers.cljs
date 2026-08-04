@@ -48,7 +48,7 @@
    [app.main.data.changes :as dch]
    [app.main.data.event :as-alias ev]
    [app.main.data.helpers :as dsh]
-   [app.main.data.workspace.selection :as dws]
+   [app.main.data.workspace.selection :as-alias dws]
    [app.main.data.workspace.undo :as dwu]
    [beicon.v2.core :as rx]
    [cljs.reader :as reader]

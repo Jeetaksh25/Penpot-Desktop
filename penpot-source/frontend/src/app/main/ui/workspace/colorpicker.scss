@@ -252,7 +252,7 @@
 }
 
 .image-crop-label {
-  @include t.use-typography("caption");
+  @include t.use-typography("body-small");
 
   color: var(--color-foreground-secondary);
   min-width: var(--sp-l);

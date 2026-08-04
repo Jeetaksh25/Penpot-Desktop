@@ -205,20 +205,22 @@
 (defn add-frame-to-prototype-section
   "Add `frame-id` to a section's :frame-ids (idempotent)."
   [sections section-id frame-id]
-  (mapv #(if (= (:id %) section-id)
-           (let [fids (vec (:frame-ids % []))]
-             (if (some #(= % frame-id) fids)
-               %
-               (assoc % :frame-ids (conj fids frame-id))))
-           %)
+  (mapv (fn [section]
+          (if (= (:id section) section-id)
+            (let [fids (vec (:frame-ids section []))]
+              (if (some #(= % frame-id) fids)
+                section
+                (assoc section :frame-ids (conj fids frame-id))))
+            section))
         (or sections [])))
 
 (defn remove-frame-from-prototype-section
   "Remove `frame-id` from a section's :frame-ids."
   [sections section-id frame-id]
-  (mapv #(if (= (:id %) section-id)
-           (assoc % :frame-ids (filterv #(not= % frame-id) (:frame-ids % [])))
-           %)
+  (mapv (fn [section]
+          (if (= (:id section) section-id)
+            (assoc section :frame-ids (filterv #(not= % frame-id) (:frame-ids section [])))
+            section))
         (or sections [])))
 
 (defn frame-in-prototype-section?

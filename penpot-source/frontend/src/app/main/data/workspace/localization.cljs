@@ -5,7 +5,8 @@
 ;; Copyright (c) KALEIDOS INC Sucursal en España SL
 
 (ns app.main.data.workspace.localization
-  "P2.25 — Localization / multi-locale content (ALL_APPS_PARITY).
+  "P2.25 — Localization / multi-locale content — READ/RENDER layer
+  (ALL_APPS_PARITY).
 
   A locale model for designed content (a CMS-style content layer), with
   locale switching and per-locale translated-content rendering for text
@@ -32,31 +33,27 @@
   (nil) also short-circuits to the original render, so a project that never
   switches locale is byte-identical.
 
+  This is the READ/RENDER namespace only — pure functions + the reactive
+  `active-locale-ref`. It deliberately does NOT require
+  `app.main.data.changes` so the render path (`app.main.ui.shapes.text`,
+  pulled transitively by `app.main.data.changes` via features → render-wasm
+  → render-wasm.api) does not close a compile-time circular dependency. The
+  mutation/event half lives in `app.main.data.workspace.localization.events`.
+
   Exported symbols (stable interface — DO NOT rename):
     read-locales                       [file-data] -> vec of kw | [:en]
     read-locale-strings                [shape] -> {kw str} | nil
     locale-string-for                 [shape active default] -> str | nil
     localized-shape                   [shape active default] -> shape | nil
     shape-own-text                     [shape] -> str
-    add-locale-event                   [locale] (one undo, file-level)
-    remove-locale-event                [locale] (one undo, file-level)
-    set-shape-locale-string-event      [shape-id locale text] (one undo)
-    enable-locale-strings-on-shape-event [shape-id] (one undo)
-    clear-locale-strings-on-shape-event [shape-id] (one undo)
-    set-active-locale-event            [locale] (UpdateEvent, no file change)
     active-locale                      [state] -> kw (default :en)
-    active-locale-ref                  okulary derived ref (reactive)"
+    active-locale-ref                  okulary derived ref (reactive)
+    ovion-namespace / locales-key / slot-key / default-locale  (constants)"
   (:require
    [app.common.data.macros :as dm]
-   [app.common.files.changes-builder :as pcb]
-   [app.main.data.changes :as dch]
-   [app.main.data.helpers :as dsh]
-   [app.main.data.workspace.undo :as dwu]
    [app.main.store :as st]
-   [beicon.v2.core :as rx]
    [cljs.reader :as reader]
-   [okulary.core :as l]
-   [potok.v2.core :as ptk]))
+   [okulary.core :as l]))
 
 ;; --- Plugin-data slot constants --------------------------------------------
 
@@ -64,7 +61,7 @@
 (def locales-key "locales")
 (def slot-key "locale-strings")
 
-(def ^:private default-locale :en)
+(def default-locale :en)
 
 ;; --- Read helpers -----------------------------------------------------------
 
@@ -201,165 +198,3 @@
   `active-locale-ref` from React/Rumext components."
   [state]
   (or (:active-locale state) default-locale))
-
-;; --- Pure changes helpers ---------------------------------------------------
-
-(defn- set-locales
-  "Pure changes fn: write the file-level enabled-locales vector. `locales`
-  is a vector of keywords. `changes` must carry file-data (via
-  pcb/with-file-data)."
-  [changes locales]
-  (pcb/set-plugin-data changes ovion-namespace locales-key (pr-str locales)))
-
-(defn- set-shape-locale-strings
-  "Pure changes fn: write the shape-level locale-strings slot on
-  `shape-id` (page `page-id`). `strings` is a map {kw str} or nil to clear.
-  `changes` must carry file-data + page context."
-  [changes shape-id page-id strings]
-  (let [value (if (nil? strings) nil (pr-str strings))]
-    (pcb/set-plugin-data changes :shape shape-id page-id ovion-namespace slot-key value)))
-
-;; --- Event commit helpers (one undo transaction) ----------------------------
-
-(defn- commit-file-locales
-  "Build + commit a file-level locales plugin-data change in one undo
-  transaction. `f` is applied to the current locales vector and must return
-  the new vector."
-  [it state f]
-  (let [file-id   (:current-file-id state)
-        file-data (dsh/lookup-file-data state file-id)]
-    (if (nil? file-data)
-      (rx/empty)
-      (let [undo-id  (js/Symbol)
-            current  (read-locales file-data)
-            new-vec  (f current)]
-        (rx/of (dwu/start-undo-transaction undo-id)
-               (dch/commit-changes
-                (-> (pcb/empty-changes it)
-                    (pcb/with-file-data file-data)
-                    (set-locales new-vec)))
-               (dwu/commit-undo-transaction undo-id))))))
-
-(defn- commit-shape-locale-strings
-  "Build + commit a shape-level locale-strings plugin-data change in one
-  undo transaction. `update-fn` is applied to the existing strings map (or
-  {} when absent) and must return the new map (or nil to clear the slot)."
-  [it state shape-id update-fn]
-  (let [page-id   (:current-page-id state)
-        page      (dsh/lookup-page state)
-        file-id   (:current-file-id state)
-        file-data (dsh/lookup-file-data state file-id)]
-    (if (or (nil? page) (nil? shape-id))
-      (rx/empty)
-      (let [undo-id  (js/Symbol)
-            shape    (get-in page [:objects shape-id])
-            existing (or (read-locale-strings shape) {})
-            new-str  (update-fn existing)
-            value    (if (nil? new-str) nil (pr-str new-str))]
-        (rx/of (dwu/start-undo-transaction undo-id)
-               (dch/commit-changes
-                (-> (pcb/empty-changes it)
-                    (pcb/with-file-data file-data)
-                    (pcb/with-page page)
-                    (pcb/set-plugin-data :shape shape-id page-id
-                                         ovion-namespace slot-key value)))
-               (dwu/commit-undo-transaction undo-id))))))
-
-;; --- Events -----------------------------------------------------------------
-
-(defn add-locale-event
-  "ptk event: add `locale` (a keyword or string) to the file's enabled
-  locales vector in one undo transaction. Idempotent — no-op if already
-  present. Never removes the default `:en`."
-  [locale]
-  (ptk/reify ::add-locale
-    ptk/WatchEvent
-    (watch [it state _]
-      (commit-file-locales
-       it state
-       (fn [current]
-         (let [loc (keyword locale)]
-           (vec (distinct (conj current loc)))))))))
-
-(defn remove-locale-event
-  "ptk event: remove `locale` (a keyword or string) from the file's enabled
-  locales vector in one undo transaction. Never removes `:en` (the default
-  is always retained). No-op if absent."
-  [locale]
-  (ptk/reify ::remove-locale
-    ptk/WatchEvent
-    (watch [it state _]
-      (commit-file-locales
-       it state
-       (fn [current]
-         (let [loc    (keyword locale)
-               next   (vec (remove #(= loc %) current))]
-           (if (empty? next) [:en] next)))))))
-
-(defn set-shape-locale-string-event
-  "ptk event: set the `locale` string on shape `shape-id`'s locale-strings
-  slot to `text` in one undo transaction. When `text` is empty, the locale
-  entry is removed from the map (falling back to default/own-content for
-  that locale). Initializes the slot if absent."
-  [shape-id locale text]
-  (ptk/reify ::set-shape-locale-string
-    ptk/WatchEvent
-    (watch [it state _]
-      (let [loc (keyword locale)]
-        (commit-shape-locale-strings
-         it state shape-id
-         (fn [existing]
-           (let [txt (str text)]
-             (if (empty? txt)
-               (let [next (dissoc existing loc)]
-                 (if (empty? next) nil next))
-               (assoc existing loc txt)))))))))
-
-(defn enable-locale-strings-on-shape-event
-  "ptk event: initialize an empty locale-strings slot on shape `shape-id`,
-  copying the shape's current text into the default locale (the first
-  enabled locale, or `:en`). No-op if the shape already carries a slot.
-  One undo transaction. After this, the shape is locale-managed and the
-  per-locale editors become available."
-  [shape-id]
-  (ptk/reify ::enable-locale-strings
-    ptk/WatchEvent
-    (watch [it state _]
-      (let [page      (dsh/lookup-page state)
-            file-id   (:current-file-id state)
-            file-data (dsh/lookup-file-data state file-id)]
-        (if (nil? page)
-          (rx/empty)
-          (let [shape    (get-in page [:objects shape-id])
-                existing (read-locale-strings shape)]
-            (if (some? existing)
-              (rx/empty)
-              (let [dloc    (first (read-locales file-data))
-                    dloc    (if (nil? dloc) default-locale dloc)
-                    init    {dloc (shape-own-text shape)}]
-                (commit-shape-locale-strings
-                 it state shape-id
-                 (fn [_] init))))))))))
-
-(defn clear-locale-strings-on-shape-event
-  "ptk event: remove the locale-strings slot from shape `shape-id`,
-  returning it to normal (non-locale-managed) text rendering. One undo
-  transaction. The shape's own content is unchanged."
-  [shape-id]
-  (ptk/reify ::clear-locale-strings
-    ptk/WatchEvent
-    (watch [it state _]
-      (commit-shape-locale-strings
-       it state shape-id
-       (fn [_] nil)))))
-
-(defn set-active-locale-event
-  "ptk event: set the canvas-wide active locale to `locale` (a keyword or
-  string). This is an UpdateEvent — it only mutates app-level state, no file
-  change / no undo. Text shapes subscribed via `active-locale-ref` re-render
-  and substitute the new locale's string."
-  [locale]
-  (ptk/reify ::set-active-locale
-    ptk/UpdateEvent
-    (update [_ state]
-      (assoc state :active-locale (keyword locale)))))

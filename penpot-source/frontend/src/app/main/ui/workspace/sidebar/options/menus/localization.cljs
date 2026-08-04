@@ -29,6 +29,7 @@
   (:require-macros [app.main.style :as stl])
   (:require
    [app.main.data.workspace.localization :as l10n]
+   [app.main.data.workspace.localization.events :as l10nev]
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
@@ -217,7 +218,7 @@
         (mf/use-fn
          (mf/deps shape-id locale)
          (fn [e]
-           (st/emit! (l10n/set-shape-locale-string-event
+           (st/emit! (l10nev/set-shape-locale-string-event
                       shape-id locale (.. e -target -value)))))]
     [:div {:style {:display "flex" :flex-direction "column" :gap "4px"
                    :padding "2px 0"}}
@@ -254,28 +255,28 @@
              (fn [e]
                (let [raw (.. e -target -value)]
                  (when (not (empty? raw))
-                   (st/emit! (l10n/set-active-locale-event (keyword raw)))))))
+                   (st/emit! (l10nev/set-active-locale-event (keyword raw)))))))
 
             on-add-locale
             (mf/use-fn
              (fn [loc]
-               (st/emit! (l10n/add-locale-event loc))))
+               (st/emit! (l10nev/add-locale-event loc))))
 
             on-remove-locale
             (mf/use-fn
              (mf/deps locales)
              (fn [loc]
-               (st/emit! (l10n/remove-locale-event loc))))
+               (st/emit! (l10nev/remove-locale-event loc))))
 
             on-enable
             (mf/use-fn
              (mf/deps shape-id)
-             #(st/emit! (l10n/enable-locale-strings-on-shape-event shape-id)))
+             #(st/emit! (l10nev/enable-locale-strings-on-shape-event shape-id)))
 
             on-clear
             (mf/use-fn
              (mf/deps shape-id)
-             #(st/emit! (l10n/clear-locale-strings-on-shape-event shape-id)))]
+             #(st/emit! (l10nev/clear-locale-strings-on-shape-event shape-id)))]
 
         [:div {:class (stl/css :element-set)}
          [:div {:class (stl/css :element-title)}

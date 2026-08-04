@@ -22,7 +22,7 @@
 }
 
 .point-type-label {
-  @include sidebar.option-label;
+  @include deprecated.body-small-typography;
 
   flex: 0 0 auto;
 }
@@ -48,7 +48,7 @@
   // selected node's current point-type. Pure state, no transition.
   &.active {
     color: var(--ai-coral, #f28b82);
-    background-color: deprecated.alpha(#f28b82, 0.12);
+    background-color: color-mix(in srgb, #f28b82 12%, transparent);
   }
 }
 
