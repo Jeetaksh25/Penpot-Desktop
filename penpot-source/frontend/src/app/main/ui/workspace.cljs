@@ -28,6 +28,7 @@
    [app.main.ui.workspace.coordinates :as coordinates]
    [app.main.ui.workspace.libraries]
    [app.main.ui.workspace.nudge]
+   [app.main.ui.workspace.rotate-copies]
    [app.main.ui.workspace.palette :refer [palette*]]
    [app.main.ui.workspace.plugins]
    [app.main.ui.workspace.sidebar :refer [sidebar*]]

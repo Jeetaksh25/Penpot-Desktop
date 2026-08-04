@@ -55,6 +55,26 @@
 (def ^:private paint-bucket-icon
   (deprecated-icon/icon-xref :fill-content (stl/css :merge-nodes-icon :pathbar-icon)))
 
+;; Figma-parity Scissors tool (ALL_APPS_PARITY P2.32). Inline Lucide
+;; "scissors" SVG (stroke-width 2, currentColor) — there is no matching
+;; deprecated-icon xref, so we author the glyph directly per the project
+;; Lucide-icons convention. The tool splits a segment at the nearest point
+;; to a click (see shapes/path/editor.cljs ::on-scissors-pointer-down).
+(def ^:private scissors-icon
+  [:svg {:class (stl/css :pathbar-icon)
+         :viewBox "0 0 24 24"
+         :fill "none"
+         :stroke "currentColor"
+         :stroke-width 2
+         :stroke-linecap "round"
+         :stroke-linejoin "round"
+         :aria-hidden true}
+   [:circle {:cx 6 :cy 6 :r 3}]
+   [:circle {:cx 6 :cy 18 :r 3}]
+   [:line {:x1 20 :y1 4 :x2 8.12 :y2 15.88}]
+   [:line {:x1 14.47 :y1 14.48 :x2 20 :y2 20}]
+   [:line {:x1 8.12 :y1 8.12 :x2 12 :y2 12}]])
+
 ;; Figma-parity Offset vector (#55) / Simplify vector (#56) icons. Reuse
 ;; existing icon xrefs; the offset/simplify math lives in shapes_to_path.cljs.
 (def ^:private offset-vector-icon
@@ -178,6 +198,17 @@
          (fn [_]
            (st/emit! (drp/change-edit-mode :paint-bucket))))
 
+        ;; Figma-parity Scissors tool (ALL_APPS_PARITY P2.32). Toggle the
+        ;; :scissors edit-mode. In that mode a click near any segment snaps
+        ;; to the nearest point and splits it (handled by
+        ;; `on-scissors-pointer-down` in shapes/path/editor.cljs, reusing
+        ;; the existing `path/closest-point` + `drp/create-node-at-position`
+        ;; primitives — no new data model).
+        on-select-scissors
+        (mf/use-fn
+         (fn [_]
+           (st/emit! (drp/change-edit-mode :scissors))))
+
         ;; Figma-parity Offset vector (#55) / Simplify vector (#56). Apply
         ;; the shapes_to_path ops to the edited path's id. NOTE: these
         ;; operate on the committed shape content via dwsh/update-shapes;
@@ -284,7 +315,16 @@
                                       :topbar-btn true)
                 :title (tr "workspace.path.actions.paint-bucket" (sc/get-tooltip :paint-bucket))
                 :on-click on-select-paint-bucket}
-       paint-bucket-icon]]
+       paint-bucket-icon]
+
+      ;; Scissors mode (ALL_APPS_PARITY P2.32) — click a segment to split
+      ;; it at the nearest point. Shift+C keeps it Figma-adjacent without
+      ;; clashing with :make-curve (plain "c").
+      [:button {:class  (stl/css-case :is-toggled (= edit-mode :scissors)
+                                      :topbar-btn true)
+                :title (tr "workspace.path.actions.scissors" (sc/get-tooltip :scissors))
+                :on-click on-select-scissors}
+       scissors-icon]]
 
      ;; Figma-parity Offset vector (#55) / Simplify vector (#56). Apply
      ;; the shapes_to_path ops to the edited path. The simplify threshold

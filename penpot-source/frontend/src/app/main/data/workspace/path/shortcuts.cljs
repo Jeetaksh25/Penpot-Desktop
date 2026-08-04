@@ -55,6 +55,16 @@
                      :subsections [:path-editor]
                      :fn #(st/emit! (drp/change-edit-mode :paint-bucket))}
 
+   ;; Figma-parity Scissors tool (ALL_APPS_PARITY P2.32). Shift+C toggles
+   ;; the :scissors edit-mode (click a segment to split it at the nearest
+   ;; point). Bound to Shift+C rather than plain C because :make-curve
+   ;; already owns "c" in the :path-editor subsection — mousetrap treats
+   ;; "c" and "shift+c" as distinct bindings, so there is no clash.
+   :scissors        {:tooltip (ds/shift "C")
+                     :command "shift+c"
+                     :subsections [:path-editor]
+                     :fn #(st/emit! (drp/change-edit-mode :scissors))}
+
    ;; Figma-parity vector lasso (gap #57). Q toggles a freehand-lasso
    ;; edit-mode in the path editor; the lasso capture + node selection
    ;; lives in shapes/path/editor.cljs (guarded on edit-mode). No global

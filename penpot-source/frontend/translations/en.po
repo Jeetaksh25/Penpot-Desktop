@@ -4199,6 +4199,30 @@ msgstr[1] "Move libraries"
 msgid "modals.nudge-title"
 msgstr "Nudge amount"
 
+#: figma-parity/p2/rotate-copies
+msgid "modals.rotate-copies-title"
+msgstr "Rotate copies"
+
+#: figma-parity/p2/rotate-copies
+msgid "modals.rotate-copies-count"
+msgstr "Number of copies"
+
+#: figma-parity/p2/rotate-copies
+msgid "modals.rotate-copies-center-x"
+msgstr "Center X"
+
+#: figma-parity/p2/rotate-copies
+msgid "modals.rotate-copies-center-y"
+msgstr "Center Y"
+
+#: figma-parity/p2/rotate-copies
+msgid "modals.rotate-copies-cancel"
+msgstr "Cancel"
+
+#: figma-parity/p2/rotate-copies
+msgid "modals.rotate-copies-apply"
+msgstr "Rotate copies"
+
 #: src/app/main/ui/dashboard/team.cljs:461
 msgid "modals.promote-owner-confirm.accept"
 msgstr "Transfer ownership"
@@ -6861,6 +6885,10 @@ msgstr "View"
 #: src/app/main/ui/workspace/main_menu.cljs:559
 msgid "workspace.header.menu.redo"
 msgstr "Redo"
+
+#: figma-parity/p2/rotate-copies
+msgid "workspace.header.menu.rotate-copies"
+msgstr "Rotate copies"
 
 #: src/app/main/ui/workspace/main_menu.cljs:523
 msgid "workspace.header.menu.select-all"
@@ -11155,6 +11183,10 @@ msgstr "Shape builder (%s)"
 #: src/app/main/ui/workspace/viewport/path_actions.cljs
 msgid "workspace.path.actions.paint-bucket"
 msgstr "Paint bucket (%s)"
+
+#: src/app/main/ui/workspace/viewport/path_actions.cljs
+msgid "workspace.path.actions.scissors"
+msgstr "Scissors (%s)"
 
 #: src/app/main/ui/workspace/shapes/path/editor.cljs
 msgid "workspace.path.mode.shape-builder"

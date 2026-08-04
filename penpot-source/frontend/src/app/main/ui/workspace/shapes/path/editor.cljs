@@ -499,6 +499,16 @@
         (or (= edit-mode :shape-builder)
             (= edit-mode :paint-bucket))
 
+        ;; Figma-parity Scissors tool (ALL_APPS_PARITY P2.32). A dedicated
+        ;; path edit-mode where clicking near a segment splits it at the
+        ;; nearest point (inserts a node). The split reuses the existing
+        ;; `path/closest-point` + `drp/create-node-at-position` primitives
+        ;; (the same ones the hover-preview stream / preview-node click
+        ;; already use), so this mode is purely a discoverable "click to
+        ;; cut" affordance + a wide invisible hit path (see the render
+        ;; below) so the user need not hit the tiny preview node precisely.
+        scissors-mode? (= edit-mode :scissors)
+
         builder-arr
         (mf/with-memo [base-content builder-or-bucket?]
           (when builder-or-bucket?
@@ -553,6 +563,33 @@
                                              (rest base-pts)))]
                        (apply st/emit! events)))))
                (reset! lasso-points nil)))))]
+
+        ;; Figma-parity Scissors tool (ALL_APPS_PARITY P2.32). On
+        ;; pointer-down in :scissors mode, find the nearest point on the
+        ;; committed path (`base-content`) to the cursor and, if it is
+        ;; within the same 10px/zoom threshold the hover-preview uses,
+        ;; emit `create-node-at-position` with the closest-point meta
+        ;; `{:t :from-p :to-p}` — that event splits the segment at param
+        ;; `:t` and commits via `save-path-content` (edition.cljs). Uses
+        ;; `last-pos` (the latest cursor position in content coords, kept
+        ;; current by the mouse-position stream) exactly like
+        ;; `on-builder-pointer-down`. Byte-identical to the prior behavior
+        ;; for every non-scissors mode (the fn is a no-op unless
+        ;; `scissors-mode?`).
+        on-scissors-pointer-down
+        (mf/use-fn
+         (mf/deps edit-mode base-content zoom scissors-mode?)
+         (fn [event]
+           (when scissors-mode?
+             (when (dom/left-mouse? event)
+               (dom/stop-propagation event)
+               (dom/prevent-default event)
+               (let [pos (mf/ref-val last-pos)]
+                 (when (some? pos)
+                   (let [point (path/closest-point base-content pos (/ 0.01 zoom))]
+                     (when (and (some? point)
+                                (< (gpt/distance pos point) (/ 10 zoom)))
+                       (st/emit! (drp/create-node-at-position (meta point)))))))))))
 
         ;; Figma-parity Shape Builder (#28) + Paint Bucket (#29).
         ;; pointer-down dispatches by mode + modifier:
@@ -728,6 +765,7 @@
                      :on-pointer-down (cond
                                         lasso-mode?        on-lasso-pointer-down
                                         builder-or-bucket? on-builder-pointer-down
+                                        scissors-mode?     on-scissors-pointer-down
                                         :else nil)}
      ;; The base path outline. In Shape Builder / Paint Bucket mode the
      ;; path is given `pointer-events: all` so the whole shape interior
@@ -739,6 +777,24 @@
                              :stroke accent-color
                              :strokeWidth (/ 1 zoom)}
                       builder-or-bucket? (assoc :pointer-events "all"))}]
+
+     ;; Figma-parity Scissors (ALL_APPS_PARITY P2.32). A wide TRANSPARENT
+     ;; stroke over the path makes the whole segment click-targetable in
+     ;; scissors mode, so the user can click anywhere on a segment (within
+     ;; the 10px/zoom hit radius) to cut it — without needing to hit the
+     ;; tiny hover-preview node precisely. `pointer-events "stroke"` means
+     ;; only the (wide) stroke is hit-testable; clicks bubble to the root
+     ;; group's `:on-pointer-down` -> `on-scissors-pointer-down`, which
+     ;; snaps to the nearest point and splits. strokeWidth 20/zoom = 20px
+     ;; screen diameter = 10px radius each side, matching the closest-point
+     ;; threshold. Additive: rendered ONLY in :scissors edit-mode, so the
+     ;; editor is byte-identical in every other mode.
+     (when scissors-mode?
+       [:path {:d (.toString content)
+               :style {:fill "none"
+                       :stroke "transparent"
+                       :strokeWidth (/ 20 zoom)
+                       :pointer-events "stroke"}}])
 
      ;; Figma-parity variable-width stroke width handles (#53). Rendered
      ;; only when a non-empty per-node segment-widths map is present in the

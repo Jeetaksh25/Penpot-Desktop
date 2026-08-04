@@ -556,6 +556,8 @@
   (let [perms    (mf/use-ctx ctx/permissions)
         can-edit (:can-edit perms)
 
+        selected (mf/deref refs/selected-shapes)
+
         select-all
         (mf/use-fn
          #(st/emit! (dw/select-all)))
@@ -572,7 +574,15 @@
 
         redo
         (mf/use-fn
-         #(st/emit! dwu/redo))]
+         #(st/emit! dwu/redo))
+
+        ;; Figma-parity "Rotate copies" (ALL_APPS_PARITY P2.32). Opens the
+        ;; rotate-copies modal; the modal reads the live selection, collects
+        ;; a count + pivot, and emits `rc/rotate-copies`. Gated on a
+        ;; non-empty selection + edit permission (see the item below).
+        show-rotate-copies
+        (mf/use-fn
+         (fn [] (on-close) (modal/show! {:type :rotate-copies})))]
 
     [:> dropdown-menu* {:show true
                         :class (stl/css :base-menu :sub-menu :pos-2)
@@ -622,7 +632,20 @@
                                 :id          "file-menu-redo"}
         [:span {:class (stl/css :item-name)}
          (tr "workspace.header.menu.redo")]
-        [:> shortcuts* {:id :redo}]])]))
+        [:> shortcuts* {:id :redo}]])
+
+     ;; Figma-parity "Rotate copies" (ALL_APPS_PARITY P2.32). Only shown
+     ;; when something is selected and the user can edit — the modal needs
+     ;; a selection to duplicate.
+     (when (and can-edit (seq selected))
+       [:> dropdown-menu-item* {:class       (stl/css :base-menu-item :submenu-item)
+                                :on-click    show-rotate-copies
+                                :on-key-down (fn [event]
+                                               (when (kbd/enter? event)
+                                                 (show-rotate-copies event)))
+                                :id          "edit-menu-rotate-copies"}
+        [:span {:class (stl/css :item-name)}
+         (tr "workspace.header.menu.rotate-copies")]])]))
 
 (mf/defc file-menu*
   {::mf/private true}
