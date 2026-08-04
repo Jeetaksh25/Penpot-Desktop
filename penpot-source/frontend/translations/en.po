@@ -14063,3 +14063,151 @@ msgstr "Intermediate"
 msgid "workspace.workshop.difficulty.advanced"
 msgstr "Advanced"
 
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.title"
+msgstr "Code component"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.component"
+msgstr "Component"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.none"
+msgstr "None"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.register-new"
+msgstr "Register new component"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.name"
+msgstr "Name"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.bundle-url"
+msgstr "Bundle URL"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.props-schema"
+msgstr "Props schema"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.add-prop"
+msgstr "Add prop"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.remove-prop"
+msgstr "Remove prop"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.register"
+msgstr "Register"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.remove"
+msgstr "Remove"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.options.code-component.unregister"
+msgstr "Unregister"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.ai.bar.codegen-tooltip"
+msgstr "Generate code component"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.ai.bar.codegen-title"
+msgstr "Generate code component"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.ai.bar.codegen-placeholder"
+msgstr "Describe the component to generate (e.g. a pricing card with three tiers)"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.ai.bar.codegen-hint"
+msgstr "Generates a self-contained React component and registers it as a code component. Select a rect or frame to apply it to."
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.ai.bar.codegen-apply-sel"
+msgstr "Applies to the selected shape."
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.ai.bar.codegen-apply-none"
+msgstr "No shape selected — registers the component only. Select a rect or frame to apply it."
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.ai.bar.codegen-generate"
+msgstr "Generate"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.ai.bar.codegen-empty"
+msgstr "The model returned no component source. Try a more specific prompt."
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.ai.bar.codegen-bundle-fail"
+msgstr "Could not build the component bundle."
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook"
+msgstr "Storybook"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook-url-placeholder"
+msgstr "https://storybook.example.com"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook-url-aria"
+msgstr "Storybook base URL"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook-sync-btn"
+msgstr "Sync"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook-sync-aria"
+msgstr "Sync Storybook stories into the design library"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook-syncing"
+msgstr "Syncing…"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook-synced"
+msgstr "Synced %s Storybook stories into the library"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook-empty"
+msgstr "No stories found at that Storybook URL"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook-url-missing"
+msgstr "Enter a Storybook URL to sync"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.assets.storybook-fetch-failed"
+msgstr "Could not fetch the Storybook index — check the URL and network"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.shape.bool.color-source"
+msgstr "Color source"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.shape.bool.color-source.internal"
+msgstr "Auto — use the internal merge rule"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.shape.bool.color-source.inherit-first"
+msgstr "Inherit first selected shape's fill"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.shape.bool.color-source.inherit-second"
+msgstr "Inherit second selected shape's fill"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.shape.bool.color-source.active-swatch"
+msgstr "Use the active swatch color"
+
+#: ovion/all-apps-parity/missing-sweep-wave7
+msgid "workspace.shape.bool.color-source.custom"
+msgstr "Custom color"
+

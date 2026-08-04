@@ -25,6 +25,7 @@
    [app.main.ui.workspace.sidebar.options.drawing :as drawing]
    [app.main.ui.workspace.sidebar.options.menus.align :refer [align-options*]]
    [app.main.ui.workspace.sidebar.options.menus.bool :refer [bool-options*]]
+   [app.main.ui.workspace.sidebar.options.menus.code-component :refer [code-component-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.connectors :refer [connectors-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.vector-sets :refer [vector-sets-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.video :refer [video-menu*]]
@@ -192,6 +193,9 @@
         [:> auto-helpers-menu* {:shapes shapes}]
         [:> connectors-menu* {:shapes shapes}]
         [:> video-menu* {:shapes shapes}]
+        ;; P0.14: code-component host — self-hides unless exactly one
+        ;; rect/frame is selected (or the shape already carries the slot).
+        [:> code-component-menu* {:shapes shapes}]
         [:> scroll-motion-menu* {:shapes shapes}]
         [:> repeaters-menu* {:shapes shapes}]
         [:> css-anim-menu* {:shapes shapes}]])

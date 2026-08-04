@@ -950,6 +950,17 @@
                   (fn [] (.remove style-el)))))
             (fn [] nil))))
 
+      ;; P0.14: code-component runtime. The viewer reuses rect.cljs's render
+      ;; (rect-wrapper = generic-wrapper-factory rect/rect-shape), which
+      ;; already emits the <foreignObject>+<iframe> when the shape carries
+      ;; the `:ovion "code-component"` slot. The iframe is content, not
+      ;; motion, so it renders under prefers-reduced-motion too. No entrance
+      ;; animation is applied. Absent slot -> this effect is a complete no-op
+      ;; -> byte-identical render. (No data-workspace.code-components require
+      ;; is needed here; the slot read lives in rect.cljs.)
+      (mf/with-effect [(:id shape)]
+        (fn [] nil))
+
       ;; P2.24: component hover/pressed state-overrides runtime. Read the
       ;; shape's state-overrides plugin-data (:ovion "state-overrides") and
       ;; attach DOM listeners that emit dv/set-style for each overridden prop

@@ -42,6 +42,7 @@
    [app.main.data.modal :as modal]
    [app.main.data.workspace.ai-gen :as ai]
    [app.main.data.workspace.ai-checklist :as aicl]
+   [app.main.data.workspace.ai-code-components :as acc]
    [app.main.data.workspace.ai-text-ops :as atop]
    [app.main.data.workspace.design-gen :as dg]
    [app.main.data.workspace.prompt-library :as plib]
@@ -537,8 +538,40 @@
 .ai-focus-empty { font-size: 12px; color: var(--ai-grey-2); font-family: var(--ai-font);
   padding: 8px 4px 4px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 
+/* ── P1.35 — Generate code component popover ───────────────────────────────
+   A coral-bordered popover with a prompt input + a coral Generate button.
+   Mirrors .ai-lib-pop surface tokens. Reduced-motion forces opacity:1. */
+.ai-codegen-pop { position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 71;
+  min-width: 300px; max-width: 360px; display: flex; flex-direction: column; gap: 8px;
+  background: var(--ai-white); border-radius: var(--ai-radius-md);
+  box-shadow: var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral);
+  padding: 10px; opacity: 0; }
+.ai-codegen-title { font-size: 12px; font-weight: 700; color: var(--ai-grey);
+  text-transform: uppercase; letter-spacing: 0.04em; font-family: var(--ai-font);
+  display: inline-flex; align-items: center; gap: 7px; }
+.ai-codegen-title .ai-i { width: 15px; height: 15px; color: var(--ai-coral); }
+.ai-codegen-input { width: 100%; border: 1px solid #ececec; border-radius: var(--ai-radius-sm);
+  padding: 8px 10px; font-size: 12.5px; font-family: var(--ai-font); color: var(--ai-ink);
+  background: var(--ai-white); outline: none; min-width: 0; box-sizing: border-box;
+  line-height: 1.4; resize: vertical; min-height: 56px; max-height: 140px; }
+.ai-codegen-input:focus { border-color: var(--ai-coral); box-shadow: 0 0 0 3px var(--ai-coral-faint); }
+.ai-codegen-hint { font-size: 11px; color: var(--ai-grey-2); font-family: var(--ai-font);
+  line-height: 1.4; }
+.ai-codegen-row { display: flex; align-items: center; gap: 8px; }
+.ai-codegen-genbtn { flex: none; height: 32px; padding: 0 14px; border: none; cursor: pointer;
+  background: var(--ai-coral); color: var(--ai-white); border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 12.5px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-white);
+  transition: background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-codegen-genbtn:hover { background: var(--ai-coral-press); }
+.ai-codegen-genbtn:disabled { background: #f3c4be; cursor: not-allowed; }
+.ai-codegen-genbtn .ai-i { width: 14px; height: 14px; }
+.ai-codegen-apply-note { flex: 1 1 auto; font-size: 11px; color: var(--ai-grey-2);
+  font-family: var(--ai-font); line-height: 1.35; }
+
 @media (prefers-reduced-motion: reduce) {
-  .ai-mini-pop, .aich-pop, .ai-lib-pop, .ai-check-pop, .ai-focus-pop { opacity: 1 !important; }
+  .ai-mini-pop, .aich-pop, .ai-lib-pop, .ai-check-pop, .ai-focus-pop, .ai-codegen-pop { opacity: 1 !important; }
   .ai-mic.is-listening .ai-i { animation: none; }
 }
 ")
@@ -687,6 +720,12 @@
   (li [[:path {:d "m16 18 6-6-6-6"}]
        [:path {:d "m8 6-6 6 6 6"}]]))
 
+;; P1.35 — AI code-component generation (code-2 glyph).
+(def ^:private lucide-code-2
+  (li [[:path {:d "m18 2 4 4-4 4"}]
+       [:path {:d "m6 22-4-4 4-4"}]
+       [:path {:d "M14.5 4.5 9.5 19.5"}]]))
+
 (def ^:private lucide-copy
   (li [[:rect {:x 9 :y 9 :width 13 :height 13 :rx 2 :ry 2}]
        [:path {:d "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"}]]))
@@ -818,6 +857,10 @@
         ;; P2.19 — focus-area predictor popover.
         focus-open?*   (mf/use-state false)
         focus-ref      (mf/use-ref nil)
+        ;; P1.35 — Generate code component popover.
+        codegen-open?* (mf/use-state false)
+        codegen-ref    (mf/use-ref nil)
+        codegen-prompt* (mf/use-state "")
         ;; P2.41 — voice input (Web Speech API). listening?* tracks the
         ;; active state; speech-rec* holds the live SpeechRecognition
         ;; instance; interim* buffers the interim transcript so it can be
@@ -883,6 +926,8 @@
         listening?    (deref listening?*)
         check-open?   (deref check-open?*)
         focus-open?   (deref focus-open?*)
+        codegen-open? (deref codegen-open?*)
+        codegen-prompt (deref codegen-prompt*)
 
         ;; The input pill drops from a full pill (999px) to a rounded
         ;; rectangle (~22px) when the prompt grows past one line, mirroring
@@ -1293,6 +1338,23 @@
          (fn []
            (st/emit! (aicl/clear-ai-focus))))
 
+        ;; ── P1.35 — Generate code component popover ───────────────────────
+        on-toggle-codegen
+        (mf/use-fn (fn [] (swap! codegen-open?* not)))
+        on-close-codegen
+        (mf/use-fn (fn [] (reset! codegen-open?* false)))
+        on-change-codegen-prompt
+        (mf/use-fn (fn [e] (reset! codegen-prompt* (.. e -target -value))))
+        on-run-codegen
+        (mf/use-fn
+         (mf/deps codegen-prompt)
+         (fn []
+           (when-not (str/empty? (str/trim codegen-prompt))
+             (reset! codegen-open?* false)
+             (st/emit! (ai/set-ai-error nil)
+                       (acc/run-generate-code-component
+                        {:prompt codegen-prompt})))))
+
         ;; ── P2.41 — voice input (Web Speech API). Interim transcript
         ;; appends to the prompt; the final transcript is committed on
         ;; onresult. Nil-safe: the start fn is only reachable from the
@@ -1477,6 +1539,19 @@
           (aim/pop-in (mf/ref-val focus-ref))
           (let [on-key (fn [e] (when (= (.-key e) "Escape")
                                  (reset! focus-open?* false)))]
+            (.addEventListener js/document "keydown" on-key)
+            (fn [] (.removeEventListener js/document "keydown" on-key))))
+        (fn [] nil)))
+
+    ;; P1.35 — code-component popover: anime.js entrance + Escape-to-close.
+    ;; Mirrors the library/checklist/focus popovers. Reduced-motion forces
+    ;; opacity:1 via the @media block in ai-css.
+    (mf/with-effect [codegen-open?]
+      (if codegen-open?
+        (do
+          (aim/pop-in (mf/ref-val codegen-ref))
+          (let [on-key (fn [e] (when (= (.-key e) "Escape")
+                                 (reset! codegen-open?* false)))]
             (.addEventListener js/document "keydown" on-key)
             (fn [] (.removeEventListener js/document "keydown" on-key))))
         (fn [] nil)))
@@ -1799,6 +1874,44 @@
             :on-mouse-enter aim/hov-white-in :on-mouse-leave aim/hov-white-out
             :on-mouse-down aim/press-white-in :on-mouse-up aim/press-white-out}
            lucide-git-branch]]
+
+         ;; P1.35 — Generate code component. Opens a coral popover with a
+         ;; prompt input + Generate button; on generate, fires
+         ;; run-generate-code-component (serialize scene -> llm_generate ->
+         ;; blob bundle -> register + apply to selection). Coral icon.
+         ;; Reduced-motion popover (pop-in / opacity:1 fallback).
+         [:div.ai-mini-wrap
+          [:button.ai-circle
+           {:type "button" :on-click on-toggle-codegen
+            :class (when codegen-open? "is-max")
+            :title (tr "workspace.ai.bar.codegen-tooltip")
+            :on-mouse-enter aim/hov-white-in :on-mouse-leave aim/hov-white-out
+            :on-mouse-down aim/press-white-in :on-mouse-up aim/press-white-out}
+           lucide-code-2]
+          (when codegen-open?
+            [:div.ai-mini-back {:on-click on-close-codegen}
+             [:div.ai-codegen-pop {:ref codegen-ref
+                                   :on-click #(.stopPropagation %)}
+              [:div.ai-codegen-title lucide-code-2
+               (tr "workspace.ai.bar.codegen-title")]
+              [:textarea.ai-codegen-input
+               {:placeholder (tr "workspace.ai.bar.codegen-placeholder")
+                :value codegen-prompt
+                :on-change on-change-codegen-prompt
+                :rows 3}]
+              [:div.ai-codegen-hint
+               (tr "workspace.ai.bar.codegen-hint")]
+              [:div.ai-codegen-row
+               [:span.ai-codegen-apply-note
+                (if has-sel?
+                  (tr "workspace.ai.bar.codegen-apply-sel")
+                  (tr "workspace.ai.bar.codegen-apply-none"))]
+               [:button.ai-codegen-genbtn
+                {:type "button"
+                 :disabled (or busy (str/empty? (str/trim codegen-prompt)))
+                 :on-click on-run-codegen}
+                lucide-code-2
+                (tr "workspace.ai.bar.codegen-generate")]]]])]
 
          ;; attachment thumbnails live inside the cluster so the paperclip's
          ;; result is visible without leaving the primary bar.

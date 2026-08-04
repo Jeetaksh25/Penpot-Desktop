@@ -25,6 +25,7 @@
    [app.main.ui.workspace.sidebar.assets.common :as cmm]
    [app.main.ui.workspace.sidebar.assets.file-library :refer [file-library*]]
    [app.main.data.workspace.stock-assets :as stock]
+   [app.main.data.workspace.storybook :as sb]
    [app.util.dom :as dom]
    [app.util.dom.dnd :as dnd]
    [app.util.i18n :as i18n :refer [tr]]
@@ -521,6 +522,84 @@
       [:span {:class (stl/css :ecommerce-kit-label)}
        (tr "workspace.assets.ecommerce-add")]]]))
 
+;; ── P0.19: Storybook sync (additive) ─────────────────────────────────────────
+;;
+;; A collapsible section in the Assets panel. A base-URL input + "Sync"
+;; button emits `sb/sync-storybook`, which fetches the Storybook stories
+;; index via the Rust `storybook_fetch` command, parses it, and registers
+;; each story as a code-component entry via the P0.14 host — all in ONE
+;; undo transaction. Purely additive — files that have never been synced are
+;; byte-identical. The last-used base URL is remembered in localStorage
+;; (`ovion.storybook-url`) so a re-sync is one click.
+;;
+;; Lucide `book-open` icon, inline SVG (stroke-width 2, currentColor), coral
+;; accent #f28b82. Reduced-motion: no size/scale transitions — only calm
+;; box-shadow / color swaps. A busy state is shown while the sync is in
+;; flight; the `sync-storybook` event emits an info/error toast with the
+;; real outcome (the busy spinner is "sync initiated" — the toast is
+;; "sync finished", mirroring the fire-and-forget idiom of
+;; `material-kit-section*` / `ecommerce-kit-section*`).
+(mf/defc storybook-section*
+  {::mf/private true}
+  []
+  (let [open*  (mf/use-state false)
+        open?  (deref open*)
+        url*   (mf/use-state (fn [] (sb/load-storybook-url)))
+        url    (deref url*)
+        busy*  (mf/use-state false)
+        busy   (deref busy*)
+        toggle-open (mf/use-fn #(swap! open* not))
+        on-url (mf/use-fn (fn [e] (reset! url* (.. e -target -value))))
+        on-sync
+        (mf/use-fn
+         (mf/deps [busy url])
+         (fn [e]
+           (dom/prevent-default e)
+           (let [u (str/trim url)]
+             (when (and (not ^boolean busy) (not (str/blank? u)))
+               (reset! busy* true)
+               (sb/save-storybook-url u)
+               (st/emit! (sb/sync-storybook u))
+               ;; The event is fire-and-forget (detached promise + toast).
+               ;; Reset the busy spinner after a short grace period so the
+               ;; button recovers; the real result arrives via the event's
+               ;; `ntf/info` / `ntf/error` toast. Mirrors m3-kit-section*.
+               (js/setTimeout #(reset! busy* false) 1500)))))]
+    [:div {:class (stl/css :storybook-section)}
+     [:> title-bar* {:collapsable  true
+                     :collapsed    (not open?)
+                     :on-collapsed toggle-open
+                     :title        (tr "workspace.assets.storybook")
+                     :class        (stl/css :title-bar)}]
+     (when open?
+       [:div {:class (stl/css :storybook-content)}
+        [:form {:class (stl/css :storybook-sync)
+                :on-submit on-sync}
+         [:input {:type        "text"
+                  :class       (stl/css :storybook-input)
+                  :value       url
+                  :placeholder (tr "workspace.assets.storybook-url-placeholder")
+                  :on-change   on-url
+                  :aria-label  (tr "workspace.assets.storybook-url-aria")}]
+         [:button {:type     "submit"
+                   :class    (stl/css-case :storybook-sync-btn true
+                                           :storybook-sync-btn-busy busy)
+                   :disabled (or ^boolean busy (str/blank? (str/trim url)))
+                   :data-testid "sync-storybook"
+                   :aria-label (tr "workspace.assets.storybook-sync-aria")}
+          ;; Lucide `book-open` icon (24x24, stroke-width 2, currentColor).
+          [:svg {:viewBox "0 0 24 24" :width 16 :height 16 :fill "none"
+                 :stroke "currentColor" :stroke-width 2
+                 :stroke-linecap "round" :stroke-linejoin "round"
+                 :aria-hidden true}
+           [:path {:d "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"}]
+           [:path {:d "M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"}]]
+          [:span {:class (stl/css :storybook-sync-label)}
+           (tr "workspace.assets.storybook-sync-btn")]]]
+        (when ^boolean busy
+          [:div {:class (stl/css :storybook-status)}
+           (tr "workspace.assets.storybook-syncing")])])]))
+
 (mf/defc assets-toolbox*
   {::mf/wrap [mf/memo]}
   [{:keys [size file-id]}]
@@ -685,6 +764,10 @@
 
      ;; P1.15: E-commerce design kit injection (additive, idempotent).
      [:> ecommerce-kit-section*]
+
+     ;; P0.19: Storybook sync — register external React component libraries
+     ;; from a Storybook index as code-component entries (additive, opt-in).
+     [:> storybook-section*]
 
      [:& (mf/provider cmm/assets-filters) {:value filters}
       [:& (mf/provider cmm/assets-toggle-ordering) {:value toggle-ordering}
