@@ -99,14 +99,22 @@
     :darken
     :multiply
     :color-burn
+    :linear-burn
     :lighten
     :screen
     :color-dodge
+    :linear-dodge
     :overlay
     :soft-light
     :hard-light
+    :vivid-light
+    :linear-light
+    :pin-light
+    :hard-mix
     :difference
     :exclusion
+    :subtract
+    :divide
     :hue
     :saturation
     :color

@@ -13387,3 +13387,243 @@ msgstr "Off"
 msgid "workspace.options.connectors.delete"
 msgstr "Delete connector"
 
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.checklist-tooltip"
+msgstr "AI design checklist"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.checklist-title"
+msgstr "Design checklist"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.checklist-generate"
+msgstr "Generate checklist"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.checklist-regenerate"
+msgstr "Regenerate"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.checklist-clear"
+msgstr "Clear"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.checklist-empty"
+msgstr "The model returned no checklist items. Try again."
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.checklist-empty-state"
+msgstr "No checklist yet. Generate a tailored design-verification list for the current screen."
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.focus-tooltip"
+msgstr "Predict next focus area"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.focus-title"
+msgstr "Focus area"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.focus-go"
+msgstr "Go to"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.focus-dismiss"
+msgstr "Dismiss"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.focus-predict"
+msgstr "Predict focus"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.focus-empty-state"
+msgstr "No prediction yet. Ask the AI which area of the canvas to focus on next."
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.focus-empty"
+msgstr "The model returned no focus prediction. Try again."
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.focus-not-found"
+msgstr "Couldn’t locate the predicted shape on the current page."
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.stream.title"
+msgstr "Generating…"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.stream.stage-starting"
+msgstr "Starting…"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.stream.stage-fetching"
+msgstr "Fetching reference…"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.stream.stage-routing"
+msgstr "Choosing the right model…"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.stream.stage-generating"
+msgstr "Generating your design…"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.stream.stage-done"
+msgstr "Done"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.stream.stage-thinking"
+msgstr "Thinking…"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.stream.stage-executing"
+msgstr "Executing"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.stream.frame-untitled"
+msgstr "Untitled screen"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.branches.title"
+msgstr "Agent branches"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.branches.close"
+msgstr "Close branches"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.branches.status-active"
+msgstr "Generating…"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.branches.status-done"
+msgstr "Done"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.branches.status-error"
+msgstr "Error"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.branches.untitled-result"
+msgstr "Generated screen"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.branches.rerun"
+msgstr "Re-run this branch"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.branches.discard"
+msgstr "Discard this branch"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.next-screens"
+msgstr "Generate next screens"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.stream-toggle"
+msgstr "Toggle streaming generation"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.ai.bar.branches-toggle"
+msgstr "Agent branches"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.title"
+msgstr "Vector Sets"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.solid"
+msgstr "Solid"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.dashed"
+msgstr "Dashed"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.dotted"
+msgstr "Dotted"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.double"
+msgstr "Double"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.inner-glow"
+msgstr "Inner Glow"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.outer-glow"
+msgstr "Outer Glow"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.sketchy"
+msgstr "Sketchy"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.neon"
+msgstr "Neon"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.empty"
+msgstr "Pick a curated stroke preset or animate a dashed stroke’s flow."
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.flow.toggle"
+msgstr "Flow"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.flow.clear"
+msgstr "Clear stroke flow"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.flow.speed"
+msgstr "Speed"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.flow.direction"
+msgstr "Direction"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.flow.dir-forward"
+msgstr "Forward"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.flow.dir-reverse"
+msgstr "Reverse"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.vector-sets.flow.reduced"
+msgstr "Stroke flow is paused — reduced motion is on."
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.layer-options.blend-mode.linear-burn"
+msgstr "Linear burn"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.layer-options.blend-mode.linear-dodge"
+msgstr "Linear dodge"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.layer-options.blend-mode.vivid-light"
+msgstr "Vivid light"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.layer-options.blend-mode.linear-light"
+msgstr "Linear light"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.layer-options.blend-mode.pin-light"
+msgstr "Pin light"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.layer-options.blend-mode.hard-mix"
+msgstr "Hard mix"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.layer-options.blend-mode.subtract"
+msgstr "Subtract"
+
+#: ovion/all-apps-parity/missing-sweep-wave4
+msgid "workspace.options.layer-options.blend-mode.divide"
+msgstr "Divide"
+

@@ -506,3 +506,120 @@
        (when out-el
          (.to gsap out-el (clj->js {:x (- (* 0.25 width)) :opacity 0 :duration 0.45 :ease "power2.out"})))
        tl))))
+
+;; ── P2.38: stroke-flow (animated dash offset / marching ants) ────────────────
+;;
+;; A motion slot that animates `stroke-dashoffset` on every stroked descendant
+;; of a shape's DOM node so a dashed / dotted / mixed stroke appears to flow
+;; along the path. Stored as plugin-data `:ovion "stroke-anim"`
+;; `{:speed ms-per-cycle :direction :forward/:reverse}` (see
+;; data/workspace/vector_sets.cljs). The viewer runtime calls this helper on
+;; `#shape-<id>`; it queries descendants with a `strokeDasharray` style and
+;; tweens their `strokeDashoffset` from 0 → ±(dash pattern length) infinitely
+;; via GSAP (seamless because the pattern repeats every `len` units).
+;;
+;; Reduced-motion is NON-NEGOTIABLE: under `prefers-reduced-motion` the offset
+;; is forced to 0 on every stroked descendant (a static dash) and NO tween
+;; runs — the stroke renders exactly as it would with no slot. With no gsap,
+;; the static offset is still applied and no tween runs. Returns a teardown
+;; function the caller MUST call on unmount (kills the tweens); nil when there
+;; is nothing to animate.
+
+(defn- ^boolean has-dash?
+  "True if element `n` has a non-empty `strokeDasharray` CSS property (set by
+  app.main.ui.shapes.attrs/add-stroke! for :dashed/:dotted/:mixed styles)."
+  [n]
+  (try
+    (let [st (unchecked-get n "style")]
+      (and (some? st)
+           (let [da (unchecked-get st "strokeDasharray")]
+             (and (string? da) (pos? (count da))))))
+    (catch :default _ false)))
+
+(defn- collect-stroked-descendants
+  "Return a vector of descendant elements of `el` that carry a
+  `strokeDasharray` style. `el` itself is included if it qualifies. Robust
+  against NodeList iteration differences across engines."
+  [el]
+  (if (nil? el)
+    []
+    (loop [i 0
+           nl (.querySelectorAll el "*")
+           acc []]
+      (if (>= i (.-length nl))
+        (if (has-dash? el) (conj acc el) acc)
+        (let [n (.item nl i)]
+          (recur (inc i) nl (if (has-dash? n) (conj acc n) acc)))))))
+
+(defn- parse-dash-len
+  "Parse a `strokeDasharray` CSS string (\"12,8\" / \"12 8\" / \"0,6\") into
+  the sum of its numeric segments — the period over which `stroke-dashoffset`
+  must travel to repeat seamlessly. Returns 0 for nil/empty/unparseable.
+  Uses pure JS interop so no string namespace is required."
+  [da]
+  (if (or (nil? da) (empty? da))
+    0
+    (try
+      (let [parts (-> da
+                      (.replace "," " ")
+                      (.split " "))]
+        (loop [i 0 total 0]
+          (if (>= i (.-length parts))
+            total
+            (let [t (.trim (aget parts i))
+                  v (js/parseFloat t)]
+              (recur (inc i)
+                     (if (js/isNaN v) total (+ total v)))))))
+      (catch :default _ 0))))
+
+(defn run-stroke-flow-effect
+  "P2.38 stroke-flow: animate `stroke-dashoffset` on every stroked descendant
+  of `el` (the shape's DOM node) so a dashed/dotted/mixed stroke appears to
+  flow along the path (marching ants). `config` = `{:speed ms-per-cycle
+  :direction :forward/:reverse}`. Under reduced motion OR missing gsap, the
+  offset is forced to 0 (static dash) and no animation runs — the stroke
+  renders exactly as with no slot. Returns a teardown function the caller
+  MUST call on unmount (kills the tweens); nil when there is nothing to
+  animate (no stroked descendants)."
+  [el config]
+  (when el
+    (let [speed     (or (:speed config) 2000)
+          direction (or (:direction config) :forward)
+          secs      (/ (max 250 speed) 1000)
+          nodes     (collect-stroked-descendants el)]
+      (cond
+        ;; Reduced motion: force a static dash (offset 0) on every stroked
+        ;; descendant, no tween. This is the non-negotiable a11y guarantee.
+        (reduced-motion?)
+        (do (doseq [n nodes]
+              (try (gsap-set n {:strokeDashoffset 0})
+                   (catch :default _ nil)))
+            nil)
+
+        (nil? gsap)
+        (do (doseq [n nodes]
+              (try (gsap-set n {:strokeDashoffset 0})
+                   (catch :default _ nil)))
+            nil)
+
+        (empty? nodes)
+        nil
+
+        :else
+        (let [tweens
+              (into []
+                    (keep (fn [n]
+                            (let [da (unchecked-get (.. n -style) "strokeDasharray")
+                                  len (parse-dash-len da)
+                                  target (if (= direction :reverse) (- len) len)]
+                              (try
+                                (.to gsap n
+                                     (clj->js {:strokeDashoffset target
+                                               :duration secs
+                                               :ease "none"
+                                               :repeat -1}))
+                                (catch :default _ nil)))))
+                    nodes)]
+          (fn teardown []
+            (doseq [tw tweens]
+              (try (.kill tw) (catch :default _ nil)))))))))

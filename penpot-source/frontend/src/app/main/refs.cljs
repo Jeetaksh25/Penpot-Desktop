@@ -271,12 +271,28 @@
 (def ai-image
   (l/derived :ai-image workspace-local))
 
+;; P2.19 — ephemeral focus-area prediction result slot (mirrors ai-review).
+;; Holds the latest {:shape-id :rationale} from predict-focus, or nil.
+(def ai-focus
+  (l/derived :ai-focus workspace-local))
+
 ;; "Update only the selection" generation preference. Lives here (not in the
 ;; AI bar's component state) so the AI Settings modal can host the toggle while
 ;; the AI bar still reads it at generate time. nil => default true (update the
 ;; selection when one exists), matching the bar's previous local default.
 (def ai-update-sel
   (l/derived :ai-update-sel workspace-local))
+
+;; P1.30 — Streaming AI generation. :ai-streaming is a boolean (true while a
+;; streaming generation is in flight); :ai-stream is the live text the stream
+;; preview area reveals (stage text + progressively-revealed spec content).
+;; Both are nil/absent when no streaming generation has run or after it
+;; completes, so the non-streaming path is byte-identical-when-inactive.
+(def ai-streaming
+  (l/derived :ai-streaming workspace-local))
+
+(def ai-stream
+  (l/derived :ai-stream workspace-local))
 
 ;; Figma #72: prototype sections — in-session sections vector edited by
 ;; the interactions panel (see data/workspace/interactions.cljs). Falls

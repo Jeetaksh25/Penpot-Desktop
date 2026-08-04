@@ -18,6 +18,7 @@
    [app.main.data.workspace.dynamic-panels :as dwdp]
    [app.main.data.workspace.element-states :as dwes]
    [app.main.data.workspace.motion-effects :as dwme]
+   [app.main.data.workspace.vector-sets :as dwvs]
    [app.main.refs :as refs]
    [app.main.router :as rt]
    [app.main.store :as st]
@@ -798,6 +799,20 @@
               node   (dom/query (str "#shape-" (str (:id shape))))]
           (if (and (some? effect) (some? node))
             (let [teardown (am/run-motion-effect node effect)]
+              (fn [] (when (fn? teardown) (teardown))))
+            (fn [] nil))))
+
+      ;; P2.38: stroke-flow runtime. Read the shape's stroke-anim plugin-data
+      ;; (:ovion "stroke-anim") and animate stroke-dashoffset on every stroked
+      ;; descendant of #shape-<id> via GSAP (marching-ants / flow). Reduced-
+      ;; motion guarded inside ai-motion (run-stroke-flow-effect forces a static
+      ;; dash offset 0 and no tween). Dispose the returned teardown on unmount.
+      ;; With no slot, read-stroke-anim is nil → no-op → byte-identical render.
+      (mf/with-effect [(:id shape)]
+        (let [anim (dwvs/read-stroke-anim shape)
+              node (dom/query (str "#shape-" (str (:id shape))))]
+          (if (and (some? anim) (some? node))
+            (let [teardown (am/run-stroke-flow-effect node anim)]
               (fn [] (when (fn? teardown) (teardown))))
             (fn [] nil))))
 

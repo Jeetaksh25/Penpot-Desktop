@@ -41,6 +41,7 @@
    [app.common.uuid :as uuid]
    [app.main.data.modal :as modal]
    [app.main.data.workspace.ai-gen :as ai]
+   [app.main.data.workspace.ai-checklist :as aicl]
    [app.main.data.workspace.ai-text-ops :as atop]
    [app.main.data.workspace.design-gen :as dg]
    [app.main.data.workspace.prompt-library :as plib]
@@ -51,6 +52,8 @@
    [app.main.ui.workspace.ai-image]              ; bare require — loads the :ai-image modal registration
    [app.main.ui.workspace.ai-settings]           ; bare require — loads the :ai-settings modal registration (opened from this bar + the titlebar gear)
    [app.main.ui.workspace.ai-motion :as aim]
+   [app.main.ui.workspace.ai-stream :as ais]      ; P1.30 — streaming preview (stream-preview*)
+   [app.main.ui.workspace.ai-branches :as aibr]   ; P2.08 — agent branch-tree viewer (branch-tree*)
    [app.util.code-gen :as cg]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
@@ -445,8 +448,97 @@
   50% { opacity: 0.45; }
 }
 
+/* ── P2.01 — AI design checklist popover ─────────────────────────────────
+   Mirrors .ai-lib-pop but tailored to a tickable checklist: a header
+   row (title + generate/clear), a scrollable item list with coral
+   checkboxes, and a "Generate checklist" call-to-action when empty.
+   Reduced-motion forces opacity:1 (the pop-in anime handles the calm
+   entrance otherwise). */
+.ai-check-pop { position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 71;
+  min-width: 300px; max-width: 360px; max-height: 380px; display: flex; flex-direction: column;
+  background: var(--ai-white); border-radius: var(--ai-radius-md);
+  box-shadow: var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral);
+  padding: 6px; opacity: 0; }
+.ai-check-head { display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px 6px; }
+.ai-check-title { font-size: 12px; font-weight: 700; color: var(--ai-grey);
+  text-transform: uppercase; letter-spacing: 0.04em; font-family: var(--ai-font); }
+.ai-check-actions { display: inline-flex; align-items: center; gap: 4px; }
+.ai-check-actbtn { height: 26px; padding: 0 9px; border: none; cursor: pointer;
+  background: transparent; color: var(--ai-grey); border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 11.5px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 5px;
+  transition: color var(--ai-dur-fast) var(--ai-ease-out),
+              background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-check-actbtn:hover { color: var(--ai-ink); background: var(--ai-coral-faint); }
+.ai-check-actbtn:disabled { color: var(--ai-grey-2); cursor: not-allowed; background: transparent; }
+.ai-check-actbtn .ai-i { width: 14px; height: 14px; }
+.ai-check-list { overflow-y: auto; flex: 1 1 auto; display: flex; flex-direction: column;
+  gap: 1px; padding: 0 2px; }
+.ai-check-item { display: flex; align-items: flex-start; gap: 9px; padding: 7px 8px; border: none;
+  cursor: pointer; background: transparent; border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 12.5px; font-weight: 500; text-align: left;
+  color: var(--ai-ink);
+  transition: background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-check-item:hover { background: var(--ai-coral-faint); }
+.ai-check-item.is-done { color: var(--ai-grey-2); }
+.ai-check-item.is-done .ai-check-label { text-decoration: line-through; }
+.ai-check-box { flex: none; width: 18px; height: 18px; border: 2px solid var(--ai-grey);
+  border-radius: 5px; display: inline-flex; align-items: center; justify-content: center;
+  margin-top: 1px; transition: border-color var(--ai-dur-fast) var(--ai-ease-out),
+                               background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-check-item:hover .ai-check-box { border-color: var(--ai-coral); }
+.ai-check-item.is-done .ai-check-box { border-color: var(--ai-coral);
+  background: var(--ai-coral); }
+.ai-check-box .ai-i { width: 13px; height: 13px; color: var(--ai-white);
+  animation: ai-check-in var(--ai-dur-base) var(--ai-ease-out) both; }
+.ai-check-label { flex: 1 1 auto; min-width: 0; line-height: 1.4; }
+.ai-check-empty { font-size: 12px; color: var(--ai-grey-2); font-family: var(--ai-font);
+  padding: 18px 14px; text-align: center; display: flex; flex-direction: column; gap: 10px;
+  align-items: center; }
+.ai-check-genbtn { height: 30px; padding: 0 12px; border: none; cursor: pointer;
+  background: var(--ai-coral); color: var(--ai-white); border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-white);
+  transition: background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-check-genbtn:hover { background: var(--ai-coral-press); }
+.ai-check-genbtn:disabled { background: #f3c4be; cursor: not-allowed; }
+.ai-check-genbtn .ai-i { width: 14px; height: 14px; }
+
+/* ── P2.19 — focus-area predictor popover ────────────────────────────────
+   A compact popover: a one-line rationale + a coral "Go to" action and
+   a dismiss link. Reuses .ai-check-pop surface tokens. */
+.ai-focus-pop { position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 71;
+  min-width: 280px; max-width: 360px; background: var(--ai-white);
+  border-radius: var(--ai-radius-md);
+  box-shadow: var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral);
+  padding: 10px 12px; opacity: 0; display: flex; flex-direction: column; gap: 8px; }
+.ai-focus-head { display: flex; align-items: center; gap: 7px; }
+.ai-focus-head .ai-i { width: 16px; height: 16px; color: var(--ai-coral); }
+.ai-focus-title { font-size: 12px; font-weight: 700; color: var(--ai-grey);
+  text-transform: uppercase; letter-spacing: 0.04em; font-family: var(--ai-font); }
+.ai-focus-rationale { font-size: 12.5px; font-weight: 500; color: var(--ai-ink);
+  font-family: var(--ai-font); line-height: 1.45; }
+.ai-focus-actions { display: flex; align-items: center; gap: 10px; }
+.ai-focus-go { height: 30px; padding: 0 12px; border: none; cursor: pointer;
+  background: var(--ai-coral); color: var(--ai-white); border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-white);
+  transition: background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-focus-go:hover { background: var(--ai-coral-press); }
+.ai-focus-go:disabled { background: #f3c4be; cursor: not-allowed; }
+.ai-focus-go .ai-i { width: 14px; height: 14px; }
+.ai-focus-dismiss { background: none; border: none; cursor: pointer; color: var(--ai-grey);
+  font-family: var(--ai-font); font-size: 12px; font-weight: 500; text-decoration: underline;
+  padding: 0; transition: color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-focus-dismiss:hover { color: var(--ai-ink); }
+.ai-focus-empty { font-size: 12px; color: var(--ai-grey-2); font-family: var(--ai-font);
+  padding: 8px 4px 4px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+
 @media (prefers-reduced-motion: reduce) {
-  .ai-mini-pop, .aich-pop, .ai-lib-pop { opacity: 1 !important; }
+  .ai-mini-pop, .aich-pop, .ai-lib-pop, .ai-check-pop, .ai-focus-pop { opacity: 1 !important; }
   .ai-mic.is-listening .ai-i { animation: none; }
 }
 ")
@@ -629,6 +721,31 @@
        [:path {:d "M19 10v2a7 7 0 0 1-14 0v-2"}]
        [:path {:d "M12 19v3"}]]))
 
+;; P2.01 — AI design checklist (list-checks glyph).
+(def ^:private lucide-list-checks
+  (li [[:path {:d "M3 17l2 2 4-4"}]
+       [:path {:d "M3 7l2 2 4-4"}]
+       [:path {:d "M13 6h8"}]
+       [:path {:d "M13 11h8"}]
+       [:path {:d "M13 16h8"}]]))
+
+;; P2.19 — focus-area predictor (target glyph).
+(def ^:private lucide-crosshair
+  (li [[:circle {:cx 12 :cy 12 :r 10}]
+       [:circle {:cx 12 :cy 12 :r 6}]
+       [:circle {:cx 12 :cy 12 :r 2}]]))
+
+;; P1.05 — next-screens generation (branch glyph).
+(def ^:private lucide-git-branch
+  (li [[:line {:x1 6 :y1 3 :x2 6 :y2 15}]
+       [:circle {:cx 18 :cy 6 :r 3}]
+       [:circle {:cx 6 :cy 18 :r 3}]
+       [:path {:d "M18 9a9 9 0 0 1-9 9"}]]))
+
+;; P1.30 — streaming generation toggle (zap glyph).
+(def ^:private lucide-zap
+  (li [[:path {:d "M4 14a1 1 0 0 1-.78-1.63l9-9a1 1 0 0 1 1.56 1.36L7.3 9H20a1 1 0 0 1 .9 1.45l-4 8a1 1 0 0 1-.9.55H4"}]]))
+
 ;; ── Small presentational bits ───────────────────────────────────────────────
 
 ;; Frame presets — the Screen selection pill. Each pairs a backend value
@@ -682,6 +799,11 @@
         chat-ref       (mf/use-ref nil)
         sessions*      (mf/use-state [])
         active-session-id* (mf/use-state nil)
+        ;; P1.30 — streaming generation toggle (auto mode only). When true,
+        ;; on-generate fires generate-design-stream so progress streams live.
+        stream?*       (mf/use-state false)
+        ;; P2.08 — agent branch-tree panel toggle.
+        branches-open?* (mf/use-state false)
         ;; P2.34 — Show Code toggle in the preview modal.
         show-code?*    (mf/use-state false)
         ;; P2.03 — prompt library popover + save-preset inline form.
@@ -690,6 +812,12 @@
         lib-ref        (mf/use-ref nil)
         save-group*    (mf/use-state "")
         save-label*    (mf/use-state "")
+        ;; P2.01 — AI design checklist popover.
+        check-open?*   (mf/use-state false)
+        check-ref      (mf/use-ref nil)
+        ;; P2.19 — focus-area predictor popover.
+        focus-open?*   (mf/use-state false)
+        focus-ref      (mf/use-ref nil)
         ;; P2.41 — voice input (Web Speech API). listening?* tracks the
         ;; active state; speech-rec* holds the live SpeechRecognition
         ;; instance; interim* buffers the interim transcript so it can be
@@ -703,14 +831,18 @@
         error*        (mf/deref refs/ai-error)
         review*       (mf/deref refs/ai-review)      ; Phase 2 review result slot
         spec-doc*     (mf/deref refs/ai-spec-doc)    ; Phase 2 spec-doc result slot
+        focus*        (mf/deref refs/ai-focus)        ; P2.19 focus-prediction result slot
         selected      (mf/deref refs/selected-shapes)
         has-sel?      (boolean (seq selected))
         file-ref      (mf/deref refs/file)
         file-id       (some-> file-ref :id str)
 
         ;; P2.03 — file-level plugin-data for user prompt presets.
+        ;; P2.01 / P2.19 — checklist + last focus also live on file-level
+        ;; plugin-data (:ovion namespace) so they survive save/reload.
         file-data     (mf/deref refs/workspace-data)
         user-presets  (plib/read-user-presets file-data)
+        checklist     (aicl/read-checklist file-data)
 
         ;; P2.41 — Web Speech API support. Nil-safe: when neither
         ;; SpeechRecognition nor webkitSpeechRecognition is defined the mic
@@ -749,6 +881,8 @@
         save-group    (deref save-group*)
         save-label    (deref save-label*)
         listening?    (deref listening?*)
+        check-open?   (deref check-open?*)
+        focus-open?   (deref focus-open?*)
 
         ;; The input pill drops from a full pill (999px) to a rounded
         ;; rectangle (~22px) when the prompt grows past one line, mirroring
@@ -898,8 +1032,11 @@
                                        event (if (= quality "max")
                                                (ai/run-agent-design
                                                 {:prompt eff-prompt :files inputs :options ev-opts})
-                                               (ai/generate-design
-                                                {:prompt eff-prompt :files inputs :options ev-opts}))]
+                                               (if @stream?*
+                                                 (ai/generate-design-stream
+                                                  {:prompt eff-prompt :files inputs :options ev-opts})
+                                                 (ai/generate-design
+                                                  {:prompt eff-prompt :files inputs :options ev-opts})))]
                                    (st/emit! (ai/set-ai-error nil) event))))
                               (p/catch
                                (fn [e] (st/emit! (ai/set-ai-error (str e))))))
@@ -1118,6 +1255,44 @@
          (fn [idx]
            (st/emit! (plib/delete-preset {:index idx}))))
 
+        ;; ── P2.01 — AI design checklist popover + generate/toggle/clear ──
+        on-toggle-checklist
+        (mf/use-fn (fn [] (swap! check-open?* not)))
+        on-close-checklist
+        (mf/use-fn (fn [] (reset! check-open?* false)))
+        on-generate-checklist
+        (mf/use-fn
+         (fn []
+           (st/emit! (ai/set-ai-error nil)
+                     (aicl/generate-checklist))))
+        on-toggle-checklist-item
+        (mf/use-fn
+         (fn [id]
+           (st/emit! (aicl/toggle-checklist-item id))))
+        on-clear-checklist
+        (mf/use-fn
+         (fn []
+           (st/emit! (aicl/clear-checklist))))
+
+        ;; ── P2.19 — focus-area predictor popover + Go to ────────────────
+        on-toggle-focus
+        (mf/use-fn (fn [] (swap! focus-open?* not)))
+        on-close-focus
+        (mf/use-fn (fn [] (reset! focus-open?* false)))
+        on-predict-focus
+        (mf/use-fn
+         (fn []
+           (st/emit! (ai/set-ai-error nil)
+                     (aicl/predict-focus))))
+        on-goto-focus
+        (mf/use-fn
+         (fn [shape-id]
+           (st/emit! (aicl/goto-focus shape-id))))
+        on-dismiss-focus
+        (mf/use-fn
+         (fn []
+           (st/emit! (aicl/clear-ai-focus))))
+
         ;; ── P2.41 — voice input (Web Speech API). Interim transcript
         ;; appends to the prompt; the final transcript is committed on
         ;; onresult. Nil-safe: the start fn is only reachable from the
@@ -1228,6 +1403,17 @@
             (reset! active-session-id* (:id (first loaded))))))
       nil)
 
+    ;; P2.19 — hydrate the ephemeral focus-prediction slot from file-level
+    ;; plugin-data (:ovion "ai-focus") on mount / when the file changes, so
+    ;; the last prediction survives reload. Only hydrates when the ephemeral
+    ;; slot is empty (a freshly-predicted result takes precedence).
+    (mf/with-effect [file-id]
+      (when file-id
+        (let [persisted (aicl/read-focus file-data)]
+          (when (and persisted (nil? focus*))
+            (st/emit! (aicl/set-ai-focus persisted)))))
+      nil)
+
     ;; P2.04 / P2.28 / P2.30 — popover anime entrance + Escape-to-close for the
     ;; text-ops, adapt, and chat-history popovers. Mirrors the screen picker.
     (mf/with-effect [text-ops-open?]
@@ -1272,6 +1458,29 @@
             (fn [] (.removeEventListener js/document "keydown" on-key))))
         (fn [] nil)))
 
+    ;; P2.01 / P2.19 — checklist + focus popover anime entrance + Escape.
+    ;; Mirrors the screen/chat/library popovers. Reduced-motion forces
+    ;; opacity:1 via the @media block in ai-css.
+    (mf/with-effect [check-open?]
+      (if check-open?
+        (do
+          (aim/pop-in (mf/ref-val check-ref))
+          (let [on-key (fn [e] (when (= (.-key e) "Escape")
+                                 (reset! check-open?* false)))]
+            (.addEventListener js/document "keydown" on-key)
+            (fn [] (.removeEventListener js/document "keydown" on-key))))
+        (fn [] nil)))
+
+    (mf/with-effect [focus-open?]
+      (if focus-open?
+        (do
+          (aim/pop-in (mf/ref-val focus-ref))
+          (let [on-key (fn [e] (when (= (.-key e) "Escape")
+                                 (reset! focus-open?* false)))]
+            (.addEventListener js/document "keydown" on-key)
+            (fn [] (.removeEventListener js/document "keydown" on-key))))
+        (fn [] nil)))
+
     ;; ── Auto-grow the prompt textarea to fit its content (up to 160px),
     ;; so the input pill expands the way the reference's does. Runs on
     ;; every prompt change, including the regenerate path that re-fills it.
@@ -1298,6 +1507,12 @@
     ;; modal position against the workspace :section / viewport, not this div.
     [:div {:style #js {"display" "contents"}}
      (style-block)
+
+     ;; P1.30 — transient streaming preview (renders nil when not streaming).
+     [:> ais/stream-preview*]
+     ;; P2.08 — agent branch-tree panel (renders nil when no branches).
+     [:> aibr/branch-tree* {:open? @branches-open?*
+                            :on-close #(reset! branches-open?* false)}]
 
      [:div.ai-root
       [:div.ai-dock
@@ -1375,6 +1590,101 @@
            :on-mouse-down aim/press-white-in
            :on-mouse-up aim/press-white-out}
           lucide-file-text]
+
+         ;; P2.01 — AI design checklist. Opens a coral-bordered popover
+         ;; listing the tickable checklist items (or a Generate call-to-
+         ;; action when empty). Coral checkboxes turn filled-coral when
+         ;; checked. Reduced-motion popover (pop-in / opacity:1 fallback).
+         [:div.ai-mini-wrap
+          [:button.ai-circle
+           {:type "button" :on-click on-toggle-checklist
+            :title (tr "workspace.ai.bar.checklist-tooltip")
+            :on-mouse-enter aim/hov-white-in
+            :on-mouse-leave aim/hov-white-out
+            :on-mouse-down aim/press-white-in
+            :on-mouse-up aim/press-white-out}
+           lucide-list-checks]
+          (when check-open?
+            [:div.ai-mini-back {:on-click on-close-checklist}
+             [:div.ai-check-pop {:ref check-ref
+                                 :on-click #(.stopPropagation %)}
+              [:div.ai-check-head
+               [:span.ai-check-title (tr "workspace.ai.bar.checklist-title")]
+               [:div.ai-check-actions
+                [:button.ai-check-actbtn
+                 {:type "button"
+                  :disabled (empty? checklist)
+                  :on-click on-generate-checklist
+                  :title (tr "workspace.ai.bar.checklist-regenerate")}
+                 (if (empty? checklist)
+                   (tr "workspace.ai.bar.checklist-generate")
+                   (tr "workspace.ai.bar.checklist-regenerate"))]
+                [:button.ai-check-actbtn
+                 {:type "button"
+                  :disabled (empty? checklist)
+                  :on-click on-clear-checklist
+                  :title (tr "workspace.ai.bar.checklist-clear")}
+                 (tr "workspace.ai.bar.checklist-clear")]]]
+              [:div.ai-check-list
+               (if (empty? checklist)
+                 [:div.ai-check-empty
+                  (tr "workspace.ai.bar.checklist-empty-state")
+                  [:button.ai-check-genbtn
+                   {:type "button"
+                    :disabled busy
+                    :on-click on-generate-checklist}
+                   lucide-list-checks
+                   (tr "workspace.ai.bar.checklist-generate")]]
+                 (for [item checklist]
+                   [:button.ai-check-item
+                    {:key (:id item)
+                     :type "button"
+                     :class (when (:done? item) "is-done")
+                     :on-click #(on-toggle-checklist-item (:id item))}
+                    [:span.ai-check-box
+                     (when (:done? item) lucide-check)]
+                    [:span.ai-check-label (:label item)]]))]]])]
+
+         ;; P2.19 — Focus-area predictor. Calls predict-focus and, on
+         ;; result, shows a one-line rationale + a "Go to" action that
+         ;; selects + centers the predicted shape via the existing
+         ;; select-shape / zoom-to-selected-shape events. Reduced-motion.
+         [:div.ai-mini-wrap
+          [:button.ai-circle
+           {:type "button" :on-click on-toggle-focus
+            :title (tr "workspace.ai.bar.focus-tooltip")
+            :on-mouse-enter aim/hov-white-in
+            :on-mouse-leave aim/hov-white-out
+            :on-mouse-down aim/press-white-in
+            :on-mouse-up aim/press-white-out}
+           lucide-crosshair]
+          (when focus-open?
+            [:div.ai-mini-back {:on-click on-close-focus}
+             [:div.ai-focus-pop {:ref focus-ref
+                                 :on-click #(.stopPropagation %)}
+              [:div.ai-focus-head
+               lucide-crosshair
+               [:span.ai-focus-title (tr "workspace.ai.bar.focus-title")]]
+              (if focus*
+                [:*
+                 [:div.ai-focus-rationale (:rationale focus* "")]
+                 [:div.ai-focus-actions
+                  [:button.ai-focus-go
+                   {:type "button"
+                    :disabled busy
+                    :on-click #(on-goto-focus (:shape-id focus*))}
+                   (tr "workspace.ai.bar.focus-go")]
+                  [:button.ai-focus-dismiss
+                   {:type "button" :on-click on-dismiss-focus}
+                   (tr "workspace.ai.bar.focus-dismiss")]]]
+                [:div.ai-focus-empty
+                 (tr "workspace.ai.bar.focus-empty-state")
+                 [:button.ai-check-genbtn
+                  {:type "button"
+                   :disabled busy
+                   :on-click on-predict-focus}
+                  lucide-crosshair
+                  (tr "workspace.ai.bar.focus-predict")]])]])]
 
          ;; P2.04 — AI text operations on the selected text shape. Opens a
          ;; popover with Translate / Continue / Polish / Summarize + a
@@ -1457,6 +1767,38 @@
               :on-delete on-delete-chat
               :pop-ref chat-ref
               :on-close on-close-chat}])]
+
+         ;; P1.05 — AI next-screens generation. Fires the next-screens
+         ;; event which asks the model for the next logical screens of the
+         ;; current flow and creates them right of the existing content.
+         [:div.ai-mini-wrap
+          [:button.ai-circle
+           {:type "button" :on-click #(st/emit! (ai/generate-next-screens {}))
+            :title (tr "workspace.ai.bar.next-screens")
+            :on-mouse-enter aim/hov-white-in :on-mouse-leave aim/hov-white-out
+            :on-mouse-down aim/press-white-in :on-mouse-up aim/press-white-out}
+           lucide-git-branch]]
+
+         ;; P1.30 — streaming generation toggle (auto mode only). Coral when
+         ;; active; routes on-generate to generate-design-stream.
+         [:div.ai-mini-wrap
+          [:button.ai-circle
+           {:type "button" :on-click #(swap! stream?* not)
+            :class (when @stream?* "is-max")
+            :title (tr "workspace.ai.bar.stream-toggle")
+            :on-mouse-enter aim/hov-white-in :on-mouse-leave aim/hov-white-out
+            :on-mouse-down aim/press-white-in :on-mouse-up aim/press-white-out}
+           lucide-zap]]
+
+         ;; P2.08 — agent branch-tree panel toggle. Opens the branch viewer.
+         [:div.ai-mini-wrap
+          [:button.ai-circle
+           {:type "button" :on-click #(swap! branches-open?* not)
+            :class (when @branches-open?* "is-max")
+            :title (tr "workspace.ai.bar.branches-toggle")
+            :on-mouse-enter aim/hov-white-in :on-mouse-leave aim/hov-white-out
+            :on-mouse-down aim/press-white-in :on-mouse-up aim/press-white-out}
+           lucide-git-branch]]
 
          ;; attachment thumbnails live inside the cluster so the paperclip's
          ;; result is visible without leaving the primary bar.

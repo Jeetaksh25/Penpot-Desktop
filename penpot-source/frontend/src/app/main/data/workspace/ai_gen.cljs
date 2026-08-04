@@ -20,9 +20,12 @@
    ["@tauri-apps/api/event" :as tevent]
    [cuerdas.core :as str]
    [app.common.data.macros :as dm]
+   [app.common.uuid :as uuid]
    [app.main.data.workspace.ai-agent :as aia]
+   [app.main.data.workspace.ai-branches :as aib]
    [app.main.data.workspace.ai-tools :as ait]
    [app.main.data.workspace.design-gen :as dg]
+   [app.main.data.helpers :as dsh]
    [app.main.store :as st]
    [app.util.i18n :as i18n :refer [tr]]
    [beicon.v2.core :as rx]
@@ -1188,3 +1191,376 @@
                 (p/then handle)
                 (p/catch handle-err))
             (rx/of (set-ai-busy true))))))))
+
+;; ── P1.30 — Streaming AI generation ───────────────────────────────────────────
+;;
+;; `generate-design-stream` is the streaming variant of `generate-design`. It
+;; reuses the SAME backend `llm_generate` invoke (so the wire format + spec
+;; result are byte-identical) and gives the user LIVE progress instead of a
+;; frozen spinner:
+;;
+;;   1. sets :ai-streaming true + :ai-stream to an initial stage string;
+;;   2. subscribes to the backend `ai-progress` event channel (the same one
+;;      `llm_generate` already emits — starting / fetching-url / routing /
+;;      generating / done) and appends each stage's human text to :ai-stream
+;;      as it arrives, so the user sees the pipeline progressing in real time;
+;;   3. when the spec resolves, progressively reveals the generated frames'
+;;      names into :ai-stream via a JS interval (a calm typewriter effect),
+;;      then sets the preview (same `set-ai-preview` the bar already renders)
+;;      and clears the streaming slots.
+;;
+;; Non-streaming fallback (graceful): if no `ai-progress` events arrive (a
+;; fast/errored call, or a provider that doesn't emit stages), step 2 simply
+;; appends nothing and the result is revealed at once in step 3 — identical to
+;; the non-streaming path. If `llm_generate` itself rejects, :ai-error is set
+;; and the streaming slots are cleared, exactly like `generate-design`.
+;;
+;; Byte-identical-when-inactive: this event is OPT-IN. `generate-design` (the
+;; default path the AI bar uses) is untouched. When `generate-design-stream`
+;; is never emitted, :ai-streaming / :ai-stream stay nil and no UI mounts.
+
+(defn set-ai-streaming
+  "Set the :ai-streaming flag (true while a streaming generation is in
+  flight, false/nil when done)."
+  [value]
+  (ptk/reify ::set-ai-streaming
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:workspace-local :ai-streaming] (boolean value)))))
+
+(defn set-ai-stream
+  "Set the live stream text (`nil` clears it)."
+  [text]
+  (ptk/reify ::set-ai-stream
+    ptk/UpdateEvent
+    (update [_ state]
+      (assoc-in state [:workspace-local :ai-stream] text))))
+
+(defn- stage->text
+  "Render a backend `ai-progress` stage payload `{stage detail}` as a short
+  human line for the stream preview area."
+  [stage detail]
+  (case (str stage)
+    "starting"        (tr "workspace.ai.stream.stage-starting")
+    "fetching-url"    (tr "workspace.ai.stream.stage-fetching")
+    "routing"         (tr "workspace.ai.stream.stage-routing")
+    "generating"      (tr "workspace.ai.stream.stage-generating")
+    "done"            (tr "workspace.ai.stream.stage-done")
+    "tool-thinking"   (tr "workspace.ai.stream.stage-thinking")
+    "executing-tool"  (dm/str (tr "workspace.ai.stream.stage-executing")
+                              (when (seq detail) (dm/str ": " detail)))
+    ;; Unknown stage — surface the raw label so progress is never silent.
+    (if (seq detail)
+      (dm/str (str stage) " — " detail)
+      (str stage))))
+
+(defn- reveal-spec-stream
+  "Progressively reveal the frames of a keywordized DesignSpec into
+  :ai-stream via a JS interval (one frame name per tick), then call
+  `finish` (which sets the preview + clears the streaming slots). The
+  interval is guarded by the gen-id so a cancel stops the reveal. `acc` is
+  a closure-owned volatile accumulator so the progress handler and the
+  reveal share one text buffer. Returns nil."
+  [my-id spec target finish acc]
+  (let [frames (vec (or (:frames spec) []))
+        n      (count frames)]
+    (if (zero? n)
+      (finish)
+      (let [interval-id (volatile! nil)
+            idx         (volatile! 0)
+            stop?       (fn [] (or (>= @idx n) (not= my-id @gen-id)))
+            tick        (fn []
+                          (if (stop?)
+                            (do (js/clearInterval @interval-id)
+                                (when (= my-id @gen-id) (finish)))
+                            (let [f    (get frames @idx)
+                                  nm   (or (:name f)
+                                           (tr "workspace.ai.stream.frame-untitled"))
+                                  line (dm/str "• " nm)]
+                              (vswap! acc #(dm/str % (when (seq %) "\n") line))
+                              (st/emit! (set-ai-stream @acc))
+                              (vswap! idx inc))))]
+        (vreset! interval-id (js/setInterval tick 220))))))
+
+(defn generate-design-stream
+  "Streaming variant of `generate-design`. Same keys (:prompt :files
+  :options). Reuses `invoke-generate` (byte-identical spec result) and
+  surfaces live progress via :ai-streaming / :ai-stream. Fallback: when no
+  progress events arrive, the result is revealed at once (identical to the
+  non-streaming path). Opt-in — `generate-design` is unchanged."
+  [{:keys [prompt files options]}]
+  (ptk/reify ::generate-design-stream
+    ptk/WatchEvent
+    (watch [_ state _]
+      (let [my-id      (swap! gen-id inc)
+            target     (:target options "new-board")
+            is-update  (= target "update-selection")
+            bounds     (when is-update (dg/selection-bounds state))
+            selection  (when (and is-update bounds)
+                        {:bounds bounds
+                         :shapes (or (dg/selection->snippet state) [])})
+            file-id    (str (:current-file-id state))
+            opts       (cond-> (assoc options :file-id file-id)
+                         selection (assoc :selection selection))
+            request    (build-request {:prompt prompt :files files :options opts})
+
+            ;; Closure-owned accumulator: the progress handler and the spec
+            ;; reveal both append to this, and each emit overwrites :ai-stream
+            ;; with the full accumulated text (no concurrent-read issue).
+            acc        (volatile! "")
+
+            append
+            (fn [line]
+              (vswap! acc #(dm/str % (when (seq %) "\n") line))
+              (st/emit! (set-ai-stream @acc)))
+
+            unlisten   (volatile! nil)
+
+            finish
+            (fn [spec target-v]
+              (some-> @unlisten (p/then (fn [u] (u))))
+              (st/emit! (set-ai-streaming false)
+                        (set-ai-stream nil)
+                        (set-ai-busy false)
+                        (set-ai-error nil)
+                        (set-ai-preview {:spec spec :target target-v})))
+
+            handle
+            (fn [result]
+              (when (= my-id @gen-id)
+                (let [res   (js->clj result :keywordize-keys true)
+                      specs (if (contains? res :specs)
+                              (vec (:specs res))
+                              [res])
+                      spec  (first specs)]
+                  (if (seq (or (:frames spec) []))
+                    (reveal-spec-stream my-id spec target
+                                        #(finish spec target) acc)
+                    (finish spec target)))))
+
+            handle-err
+            (fn [err]
+              (when (= my-id @gen-id)
+                (some-> @unlisten (p/then (fn [u] (u))))
+                (st/emit! (set-ai-streaming false)
+                          (set-ai-stream nil)
+                          (set-ai-busy false)
+                          (set-ai-error (err->str err)))))]
+        ;; Subscribe to ai-progress events for live stage text.
+        (vreset! unlisten
+                 (subscribe-progress
+                  (fn [payload]
+                    (when (= my-id @gen-id)
+                      (let [p     (js->clj payload :keywordize-keys true)
+                            stage (or (:stage p) "")
+                            detail (or (:detail p) "")
+                            line  (stage->text stage detail)]
+                        (append line))))))
+        ;; Detached promise: fires side-effects via st/emit! when it resolves.
+        (-> (invoke-generate request)
+            (p/then handle)
+            (p/catch handle-err))
+        (rx/of (set-ai-busy true)
+               (set-ai-streaming true)
+               (set-ai-stream (tr "workspace.ai.stream.stage-starting")))))))
+
+;; ── P1.05 — AI Next-screens generation ────────────────────────────────────────
+;;
+;; `generate-next-screens` asks the LLM for the next logical screens of the
+;; current flow, given a summary of the current page's frames, parses a
+;; DesignSpec with one or more frames, and creates each as a new frame via
+;; `dg/apply-design-spec`. The new frames are offset to the RIGHT of the
+;; current page's rightmost edge (+ a gap) so they never overlap existing
+;; content. One undo batch (apply-design-spec already commits one undo
+;; transaction). Shapes are stamped ai-generated by design_gen.
+;;
+;; The prompt instructs the model to infer the logical next screens of the
+;; user's current flow (e.g. a login screen → forgot-password + dashboard),
+;; preserving the visual language. The scene summary is folded in so the
+;; model grounds the new screens in the existing frames.
+
+(defn- page-rightmost-edge
+  "Return the max (x + width) of the current page's top-level frames, or 0
+  when the page has no frames. Used to offset next-screens so they land to
+  the right of existing content."
+  [state]
+  (let [objects (dsh/lookup-page-objects state)]
+    (let [edges (keep (fn [[id s]]
+                        (when (uuid/zero? (:parent-id s))
+                          (let [x (or (:x s) 0)
+                                w (or (:width s) 0)]
+                            (+ x w))))
+                      objects)]
+      (if (seq edges) (apply max edges) 0))))
+
+(def ^:private next-screens-gap 200)
+
+(defn next-screens-prompt
+  "Build the prompt asking the LLM for the next logical screens of the
+  current flow, grounded in `scene-summary` (the output of
+  `dg/serialize-scene`). The model returns a COMPLETE DesignSpec whose
+  frames are the proposed next screens."
+  [scene-summary]
+  (dm/str
+   "You are designing the NEXT LOGICAL SCREENS of the current user flow. "
+   "Given the current screens below, infer the 1–3 screens that should "
+   "naturally come next in the user's journey (e.g. after a login → a "
+   "dashboard and a forgot-password screen; after a product list → a "
+   "product detail and a cart screen). Preserve the visual language, "
+   "color palette, typography hierarchy and component style of the "
+   "existing screens. Each new screen should be a complete frame.\n\n"
+   "Return a COMPLETE DesignSpec with one frame per proposed next screen, "
+   "each frame named with the screen's purpose. Do NOT reproduce the "
+   "existing screens — only the new ones.\n\n"
+   (when (seq scene-summary)
+     (dm/str "--- CURRENT SCREENS (structured) ---\n" scene-summary "\n\n"))
+   "Emit ONLY the JSON DesignSpec object."))
+
+(defn- offset-spec-frames
+  "Translate every frame in a keywordized DesignSpec by `dx` on the x axis
+  so the new screens land to the right of existing content. Returns a new
+  spec. Defensive: leaves non-numeric x untouched."
+  [spec dx]
+  (if (or (nil? spec) (zero? dx))
+    spec
+    (let [shift (fn [frame]
+                  (if (number? (:x frame))
+                    (update frame :x + dx)
+                    frame))]
+      (update spec :frames
+              (fn [frames]
+                (mapv shift (or frames [])))))))
+
+(defn generate-next-screens
+  "WatchEvent. Ask the LLM for the next logical screens of the current flow
+  and commit them as new frames via `dg/apply-design-spec`, offset to the
+  right of the current page's rightmost edge. One undo batch. Reuses the
+  standard `invoke-generate` → `apply-design-spec` pipeline. Byte-identical-
+  when-inactive: opt-in event; never fires from the default generate path."
+  [{:keys [options]}]
+  (ptk/reify ::generate-next-screens
+    ptk/WatchEvent
+    (watch [_ state _]
+      (let [my-id     (swap! gen-id inc)
+            scene     (or (dg/serialize-scene state) "")
+            prompt    (next-screens-prompt scene)
+            file-id   (str (:current-file-id state))
+            opts      (assoc (or options {})
+                        :target       "new-board"
+                        :quality      "auto"
+                        :frame-preset "auto"
+                        :use-memory   true
+                        :file-id      file-id)
+            request   (build-request {:prompt prompt :files [] :options opts})
+            dx        (+ (page-rightmost-edge state) next-screens-gap)
+
+            handle
+            (fn [result]
+              (when (= my-id @gen-id)
+                (let [res   (js->clj result :keywordize-keys true)
+                      spec  (if (contains? res :specs)
+                              (first (:specs res))
+                              res)
+                      spec  (offset-spec-frames spec dx)]
+                  (st/emit! (set-ai-busy false)
+                            (set-ai-error nil)
+                            (dg/apply-design-spec
+                             {:spec spec :target "new-board"})))))
+
+            handle-err
+            (fn [err]
+              (when (= my-id @gen-id)
+                (st/emit! (set-ai-busy false)
+                          (set-ai-error (err->str err)))))]
+        (-> (invoke-generate request)
+            (p/then handle)
+            (p/catch handle-err))
+        (rx/of (set-ai-busy true))))))
+
+;; ── P2.08 — AI Agent branches ─────────────────────────────────────────────────
+;;
+;; `run-agent-branch` is the agentic branching flow. After an initial
+;; generation, the agent may emit follow-up sub-task generations (refine /
+;; expand / variant), tracked as a branch tree persisted on file-level
+;; plugin-data `:ovion "ai-branches"` (see `ai_branches.cljs`).
+;;
+;; The flow:
+;;   1. create a new branch (id caller-owned) via `aib/add-branch`;
+;;   2. fire a standard `invoke-generate` (reuses the whole generation
+;;      pipeline — same prompt → DesignSpec → preview path);
+;;   3. on success, mark the branch :done with a short label (the first
+;;      frame name) and set the preview (same as `generate-design`);
+;;   4. on error, mark the branch :error with the error text.
+;;
+;; `:parent-id` (nil for a root branch) ties the new branch to its parent,
+;; so the branch-tree viewer (`ui/workspace/ai-branches`) can render the
+;; exploration tree. Each branch reuses the standard pipeline; the branch
+;; record is pure metadata (status + label), so the canvas is untouched
+;; until the user Applies a preview — byte-identical to generate-design.
+;;
+;; Byte-identical-when-inactive: when no branch event is emitted, the
+;; `ai-branches` plugin-data slot is absent (`aib/read-branches` → []) and
+;; the viewer renders nothing.
+
+(defn- spec-first-frame-name
+  "Best-effort short label for a branch result: the first frame's name, or
+  a generic fallback. Used as the branch :result so the tree viewer shows a
+  human label without re-rendering the spec."
+  [spec]
+  (let [f (first (or (:frames spec) []))]
+    (or (:name f) (tr "workspace.ai.branches.untitled-result"))))
+
+(defn run-agent-branch
+  "WatchEvent. Run one agent-branch generation. `:prompt` is the branch
+  prompt; `:parent-id` nil for a root branch or the parent branch id for a
+  sub-task (refine / expand / variant); `:options` as in `generate-design`.
+  Creates a branch record, fires the standard generation, and marks the
+  branch done/error when it resolves. The preview is set via the SAME
+  `set-ai-preview` slot the bar renders, so Apply/Cancel is identical."
+  [{:keys [prompt parent-id options]}]
+  (ptk/reify ::run-agent-branch
+    ptk/WatchEvent
+    (watch [_ state _]
+      (let [my-id     (swap! gen-id inc)
+            bid       (str (uuid/next))
+            target    (:target options "new-board")
+            is-update (= target "update-selection")
+            bounds    (when is-update (dg/selection-bounds state))
+            selection (when (and is-update bounds)
+                        {:bounds bounds
+                         :shapes (or (dg/selection->snippet state) [])})
+            file-id   (str (:current-file-id state))
+            opts      (cond-> (assoc options :file-id file-id)
+                        selection (assoc :selection selection))
+            request   (build-request {:prompt prompt :files [] :options opts})
+
+            finish-done
+            (fn [spec]
+              (st/emit! (set-ai-busy false)
+                        (set-ai-error nil)
+                        (set-ai-preview {:spec spec :target target})
+                        (aib/mark-branch-done
+                         {:id bid :result (spec-first-frame-name spec)})))
+
+            handle
+            (fn [result]
+              (when (= my-id @gen-id)
+                (let [res  (js->clj result :keywordize-keys true)
+                      spec (if (contains? res :specs)
+                             (first (:specs res))
+                             res)]
+                  (finish-done spec))))
+
+            handle-err
+            (fn [err]
+              (when (= my-id @gen-id)
+                (st/emit! (set-ai-busy false)
+                          (set-ai-error (err->str err))
+                          (aib/mark-branch-error
+                           {:id bid :result (err->str err)}))))]
+        ;; Record the branch FIRST so the tree shows it as :active immediately.
+        (st/emit! (aib/add-branch {:id bid :prompt prompt :parent-id parent-id}))
+        (-> (invoke-generate request)
+            (p/then handle)
+            (p/catch handle-err))
+        (rx/of (set-ai-busy true))))))

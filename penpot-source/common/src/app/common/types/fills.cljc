@@ -73,7 +73,7 @@
     [::sm/one-of #{:normal :darken :multiply :color-burn
                    :lighten :screen :color-dodge :overlay
                    :soft-light :hard-light :difference :exclusion
-                   :hue :saturation :color :luminosity}]]
+                   :linear-burn :linear-dodge :vivid-light :linear-light :pin-light :hard-mix :subtract :divide :hue :saturation :color :luminosity}]]
    ;; Figma-parity grain on fills (gap #65). Optional grain overlay per
    ;; fill: :intensity (0..1) and :size (cell size). Absent = no grain =
    ;; today's rendering. The renderer grain overlay on the paint is

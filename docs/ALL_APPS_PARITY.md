@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **73** | Implemented end-to-end + verified (commit referenced). |
+| ✅ done | **79** | Implemented end-to-end + verified (commit referenced). |
 | 🟡 half-done | **1** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **22** | Not implemented yet. |
+| 🔴 missing | **16** | Not implemented yet. |
 | ⚠️ not-working | **0** | Present but broken. |
-| **Remaining** | **23** | half-done + missing + not-working. |
+| **Remaining** | **17** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 73 done / 1 half / 22 missing / 0 not-working / 23 remaining. Wave 3 ✅ (4 gaps: P2.03 Prompt library, P2.41 Voice input, P0.04 Stock assets, P2.14 Connectors).
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 79 done / 1 half / 16 missing / 0 not-working / 17 remaining. Wave 4 ✅ (6 gaps: P2.01 Checklist, P2.19 Focus predictor, P1.05 Next-screens, P2.08 Agent branches, P1.30 Streaming, P2.38 Vector Sets + stroke anim). Bonus: 8 missing standard Photoshop blend modes added (P2.23 print pathfinder still missing — blend-mode render deferred to canvas/WebGL).
 
-Most-recent done: **P2.03 / P2.41 / P0.04 / P2.14** — C5 missing-sweep wave 3: AI prompt library (grouped presets + user presets on plugin-data), Web Speech API voice input (API-absent guard), built-in stock asset library (Iconify + Pexels via Tauri proxy, drag-to-canvas reusing svg-raw + image-from-URL paths), connectors as managed paths that re-route on layer move.
+Most-recent done: **P2.01 / P2.19 / P1.05 / P2.08 / P1.30 / P2.38** — C5 missing-sweep wave 4: AI design checklist + focus-area predictor (ai_bar popovers), next-screens generation + agent branch-tree + token streaming (ai_gen pipeline, reuses llm_generate + ai-progress event channel, no new Rust), vector-set stroke presets + GSAP stroke-flow animation (reduced-motion static).
 
 ## Contents
 
@@ -225,7 +225,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.05 AI auto-generation of logical next screens / interactive Play prototype flows from click targets
 
-- **State:** 🔴 missing  ·  **Sources:** Google Stitch
+- **State:** ✅ done (C5 missing-sweep wave 4) — AI Next-screens generation: generate-next-screens in ai_gen.cljs asks the LLM for the next 1-3 logical screens of the current flow (grounded in dg/serialize-scene), reuses the standard invoke-generate -> dg/apply-design-spec pipeline, and offsets every new frame by (page-rightmost-edge + 200) so screens land right of existing content with no overlap. One undo batch (dwu); shapes stamped :ovion "ai-generated". Triggered from a git-branch button in ai_bar.cljs. 1 en.po key.  ·  **Sources:** Google Stitch
 - **Detail / build direction:** Prototype preview (#36) + interactions.cljs wire manual flows; no AI inference of next screens from clicks. Recommended: add a 'Play with AI' mode that, on click of an un-wired target, prompts the LLM with the current screen + click target and generates the logical next screen on the fly, mapping a journey. Reuses generate-design for next-screen synthesis. Novel capability; medium effort.
 
 #### P1.06 ARIA label/role/property authoring and screen-reader-testable prototypes
@@ -351,7 +351,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.30 Real-time streaming of AI generation to the canvas (steerable mid-build)
 
-- **State:** 🔴 missing  ·  **Sources:** Google Stitch
+- **State:** ✅ done (C5 missing-sweep wave 4) — Streaming AI generation: generate-design-stream in ai_gen.cljs is an opt-in WatchEvent (default generate-design path untouched). It reuses the EXISTING llm_generate invoke + the existing ai-progress Tauri event channel (no new Rust command, no new crate deps — reqwest stream feature is disabled). Progress stages map to human lines and append live into :ai-stream; reveal-spec-stream progressively reveals generated frame names, then sets the shared :ai-preview slot. Non-streaming fallback: if no progress events arrive, the result reveals at once = identical to the non-streaming path. stream-preview* component renders nil when not streaming. A zap toggle button in ai_bar.cljs routes auto-mode generation to the streaming event. 9 en.po keys.  ·  **Sources:** Google Stitch
 - **Detail / build direction:** ai_bar.cljs implements preview-then-Apply; the backend returns a complete DesignSpec rendered as a static preview. Recommended: switch the generate-design Tauri command to stream partial DesignSpec deltas (SSE/chunked reqwest) and render them incrementally to the canvas preview, allowing mid-generation steering. Requires a streaming LLM endpoint + incremental apply-design-spec. Medium effort; high UX payoff.
 
 #### P1.31 Repeat Grid (drag-a-corner-handle to duplicate selected layers in a grid pattern)
@@ -389,7 +389,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.01 AI Design Checklist (generate + tick-track a tailored design verification list)
 
-- **State:** 🔴 missing  ·  **Sources:** Pixso
+- **State:** ✅ done (C5 missing-sweep wave 4) — AI Checklist: new data/workspace/ai_checklist.cljs persists a UX/content checklist on file-level plugin-data :ovion "ai-checklist" (vector of {:id :label :done?}), one undo. generate-checklist reuses the existing llm_generate_spec_doc invoke (non-streaming) with a checklist scope; toggle-checklist-item / clear-checklist re-persist. ai_bar.cljs gains a list-checks button opening a coral popover with checkboxes + generate/clear. 7 en.po keys.  ·  **Sources:** Pixso
 - **Detail / build direction:** No checklist/verification feature. Recommended: add a generate_checklist(page|requirement) action that returns a tickable, auto-saving verification list (colors/text/functionality). Reuse the LLM + a checklist panel. Low effort.
 
 #### P2.02 AI Focus mode (simplified AI-only Editor workspace)
@@ -424,7 +424,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.08 Agent Manager + parallel idea branches (branch tree of concurrent explorations with compare UI)
 
-- **State:** 🔴 missing  ·  **Sources:** Google Stitch
+- **State:** ✅ done (C5 missing-sweep wave 4) — AI Agent branches: new data/workspace/ai_branches.cljs persists a branch tree on :ovion "ai-branches" (vector of {:id :parent-id :prompt :status :result}). run-agent-branch in ai_gen.cljs emits add-branch FIRST (shows :active immediately), fires invoke-generate, and on success sets the shared :ai-preview slot + mark-branch-done; on error mark-branch-error. A branch-tree* viewer (ui/workspace/ai_branches.cljs) shows the tree with status colors (coral active / grey done) + re-run (child branch) / discard (cascade). Canvas untouched until Apply = byte-identical. 7 en.po keys.  ·  **Sources:** Google Stitch
 - **Detail / build direction:** Ovion runs a single agent loop with one preview. Recommended: extend the AI session model to spawn parallel branches (each a preview) with a manager UI to compare/merge. Builds on multi-variant generation. Frontend, unblocked.
 
 #### P2.09 Apply Style Action (dynamically mutate widget style at runtime via interaction)
@@ -479,7 +479,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.19 Focus Predictor: AI attention heatmap predicting where users will look on a screen
 
-- **State:** 🔴 missing  ·  **Sources:** Uizard
+- **State:** ✅ done (C5 missing-sweep wave 4) — Focus-area predictor: predict-focus calls the LLM with current selection/canvas context, returns a predicted focus shape-id + rationale (persisted on :ovion "ai-focus"); a crosshair button in ai_bar.cljs shows the rationale + a "Go to" action that emits the existing dws/select-shape + dwz/zoom-to-selected-shape events (reused, not invented) to center the predicted shape. Invalid id -> ai-error. 8 en.po keys.  ·  **Sources:** Uizard
 - **Detail / build direction:** No predictive-attention/saliency model. Recommended: add a predict_attention(screenshot) action calling a saliency model (or an LLM-vision heuristic) returning a heatmap overlay on the canvas. Reuses the export screenshot pipeline. Medium effort.
 
 #### P2.20 Fonts embedding in exported documents
@@ -574,7 +574,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.38 Vector Sets (cross-project shareable icon-set library with browse/search) and Vector Stroke Effect animation
 
-- **State:** 🔴 missing  ·  **Sources:** Framer
+- **State:** ✅ done (C5 missing-sweep wave 4) — Vector Sets + stroke animation: new data/workspace/vector_sets.cljs ships 8 curated stroke presets (Solid/Dashed/Dotted/Double/Inner Glow/Outer Glow/Sketchy/Neon) applied to the first stroke + recorded on :ovion "vector-set" (one undo). Stroke-flow animation animates strokeDashoffset via GSAP (reuses ai_motion.cljs infra) on dashed/dotted/mixed strokes, config on :ovion "stroke-anim" = {:speed :direction}. Render hook in viewer/shapes.cljs mf/with-effect reads the slot and runs the tween on #shape-<id> descendants with a strokeDasharray. Reduced-motion: static dash (offset 0, no tween) — non-negotiable. Menu (menus/vector_sets.cljs) self-hides unless one selected shape has a visible stroke; mounted in options.cljs. 17 en.po keys.  ·  **Sources:** Framer
 - **Detail / build direction:** Ovion has libraries.cljs + assets panel but no icon-set-specific Vector Set surface with cross-project search; no stroke-effect animation. Recommended: add an icon-set library type (a curated, tagged collection of vector shapes) with search, and a stroke-effect animation (animate stroke-dash via GSAP). Frontend, unblocked.
 
 #### P2.39 Video/GIF playback inside prototypes

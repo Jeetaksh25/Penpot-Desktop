@@ -26,6 +26,7 @@
    [app.main.ui.workspace.sidebar.options.menus.align :refer [align-options*]]
    [app.main.ui.workspace.sidebar.options.menus.bool :refer [bool-options*]]
    [app.main.ui.workspace.sidebar.options.menus.connectors :refer [connectors-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.vector-sets :refer [vector-sets-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.pathfinder :refer [pathfinder-options*]]
    [app.main.ui.workspace.sidebar.options.menus.component :refer [component-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.grid-cell :as grid-cell]
@@ -178,6 +179,7 @@
      (when (pos? total-selected)
        [:*
         [:> effects-menu* {:shapes shapes}]
+        [:> vector-sets-menu* {:shapes shapes}]
         [:> states-menu* {:shapes shapes}]
         [:> notes-menu* {:shapes shapes}]
         [:> html-authoring-menu* {:shapes shapes}]

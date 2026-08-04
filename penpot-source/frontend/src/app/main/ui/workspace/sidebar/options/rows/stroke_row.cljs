@@ -32,14 +32,22 @@
    {:value :darken :label (tr "workspace.options.layer-options.blend-mode.darken")}
    {:value :multiply :label (tr "workspace.options.layer-options.blend-mode.multiply")}
    {:value :color-burn :label (tr "workspace.options.layer-options.blend-mode.color-burn")}
+   {:value :linear-burn :label (tr "workspace.options.layer-options.blend-mode.linear-burn")}
    {:value :lighten :label (tr "workspace.options.layer-options.blend-mode.lighten")}
    {:value :screen :label (tr "workspace.options.layer-options.blend-mode.screen")}
    {:value :color-dodge :label (tr "workspace.options.layer-options.blend-mode.color-dodge")}
+   {:value :linear-dodge :label (tr "workspace.options.layer-options.blend-mode.linear-dodge")}
    {:value :overlay :label (tr "workspace.options.layer-options.blend-mode.overlay")}
    {:value :soft-light :label (tr "workspace.options.layer-options.blend-mode.soft-light")}
    {:value :hard-light :label (tr "workspace.options.layer-options.blend-mode.hard-light")}
+   {:value :vivid-light :label (tr "workspace.options.layer-options.blend-mode.vivid-light")}
+   {:value :linear-light :label (tr "workspace.options.layer-options.blend-mode.linear-light")}
+   {:value :pin-light :label (tr "workspace.options.layer-options.blend-mode.pin-light")}
+   {:value :hard-mix :label (tr "workspace.options.layer-options.blend-mode.hard-mix")}
    {:value :difference :label (tr "workspace.options.layer-options.blend-mode.difference")}
    {:value :exclusion :label (tr "workspace.options.layer-options.blend-mode.exclusion")}
+   {:value :subtract :label (tr "workspace.options.layer-options.blend-mode.subtract")}
+   {:value :divide :label (tr "workspace.options.layer-options.blend-mode.divide")}
    {:value :hue :label (tr "workspace.options.layer-options.blend-mode.hue")}
    {:value :saturation :label (tr "workspace.options.layer-options.blend-mode.saturation")}
    {:value :color :label (tr "workspace.options.layer-options.blend-mode.color")}

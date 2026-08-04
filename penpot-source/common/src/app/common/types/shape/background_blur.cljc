@@ -21,7 +21,7 @@
     [::sm/one-of #{:normal :darken :multiply :color-burn
                    :lighten :screen :color-dodge :overlay
                    :soft-light :hard-light :difference :exclusion
-                   :hue :saturation :color :luminosity}]]
+                   :linear-burn :linear-dodge :vivid-light :linear-light :pin-light :hard-mix :subtract :divide :hue :saturation :color :luminosity}]]
    ;; Figma-parity progressive blur (gap #60). Same optional falloff params
    ;; as the layer blur (mirrored for schema symmetry); absent = :value is
    ;; uniform = today's behavior. NOTE: background blur renders via CSS
