@@ -159,6 +159,9 @@
         do-cut            #(st/emit! (dw/copy-selected)
                                      (dw/delete-selected))
         do-paste          #(st/emit! (dw/paste-from-clipboard))
+        do-multi-paste    #(st/emit! (dw/multi-paste))
+        do-paste-over     #(st/emit! (dw/paste-over))
+        do-paste-replace  #(st/emit! (dw/paste-replace))
         do-duplicate      #(st/emit! (dwv/duplicate-or-add-variant))
 
         enabled-paste-props* (mf/use-state false)
@@ -219,6 +222,16 @@
      [:> menu-entry* {:title (tr "workspace.shape.menu.paste")
                       :shortcut (sc/get-tooltip :paste)
                       :on-click do-paste}]
+     [:> menu-entry* {:title (tr "workspace.shape.menu.multi-paste")}
+      [:> menu-entry* {:title (tr "workspace.shape.menu.multi-paste-paste")
+                       :icon i/layers
+                       :on-click do-multi-paste}]
+      [:> menu-entry* {:title (tr "workspace.shape.menu.paste-over")
+                       :icon i/clipboard
+                       :on-click do-paste-over}]
+      [:> menu-entry* {:title (tr "workspace.shape.menu.paste-replace")
+                       :icon i/component-copy
+                       :on-click do-paste-replace}]]
      [:> menu-entry* {:title (tr "workspace.shape.menu.duplicate")
                       :shortcut (sc/get-tooltip :duplicate)
                       :on-click do-duplicate}]

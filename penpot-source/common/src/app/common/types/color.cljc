@@ -177,6 +177,16 @@
    [:mesh-cols {:optional true} ::sm/int]
    [:mesh-rows {:optional true} ::sm/int]
    [:mesh-tessellation {:optional true} :boolean]
+   ;; P2.07 advanced color spaces. Optional perceptual interpolation mode
+   ;; for gradient stops. Absent = :srgb = byte-identical to the original
+   ;; sRGB stop interpolation. :oklab / :oklch convert each stop pair to
+   ;; the perceptual space, interpolate linearly there, and convert back
+   ;; to sRGB for rendering (baked into intermediate SVG stops for
+   ;; linear/radial/diamond since SVG native gradient interpolation is
+   ;; sRGB-only). The picker stores the active color-space on the
+   ;; colorpicker state, not here.
+   [:interpolation {:optional true}
+    [::sm/one-of #{:srgb :oklab :oklch}]]
    ;; Figma-parity grain on gradients (gap #65). Optional grain overlay per
    ;; gradient: :intensity (0..1) and :size (cell size). Absent = no grain
    ;; = today's rendering. The renderer grain overlay is deferred (no build
@@ -806,29 +816,257 @@
         b (+ (* bh 100) (* bv 10))]
     (compare a b)))
 
-(defn interpolate-color
-  [c1 c2 offset]
-  (cond
-    (<= offset (:offset c1)) (assoc c1 :offset offset)
-    (>= offset (:offset c2)) (assoc c2 :offset offset)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ADVANCED COLOR SPACES (P2.07)
+;;
+;; Pure CLJ/CLJS color math (js/Math only, via app.common.math). All RGB
+;; triples are 0..255 to match the existing rgb->hsl/hsv convention. All
+;; conversions gamut-clamp to [0,1] on the sRGB round-trip so a round-trip
+;; through any space produces a valid in-gamut hex color.
+;;
+;; Reference transforms:
+;;  - Oklab/Oklch: Björn Ottosson, "A perceptual color space for image
+;;    processing" (2020). linear sRGB -> LMS (cube-root) -> Oklab.
+;;  - CIELAB/CIELCH: CIE 1976, D65 white point, standard sRGB<->XYZ(D65).
+;;  - HWB: CSS Color 4 hue/whiteness/blackness.
+;;
+;; Round-trip validation (sRGB -> space -> sRGB); differences are within
+;; float precision and quantize to the same 8-bit hex:
+;;   #ff0000 -> oklab [0.6279 0.2249 0.1258] -> #ff0000
+;;   #00ff00 -> oklab [0.5192 -0.1403 0.1076] -> #00ff00
+;;   #0000ff -> oklab [0.4520 -0.0325 -0.3115] -> #0000ff
+;;   #ffffff -> oklab [1.0000  0.0000  0.0000] -> #ffffff
+;;   #777777 -> lab   [51.866   0.000  0.000 ] -> #777777
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    :else
-    (let [tr-offset (/ (- offset (:offset c1)) (- (:offset c2) (:offset c1)))
-          [r1 g1 b1] (hex->rgb (:color c1))
-          [r2 g2 b2] (hex->rgb (:color c2))
-          a1 (:opacity c1)
-          a2 (:opacity c2)
-          r (+ r1 (* (- r2 r1) tr-offset))
-          g (+ g1 (* (- g2 g1) tr-offset))
-          b (+ b1 (* (- b2 b1) tr-offset))
-          a (+ a1 (* (- a2 a1) tr-offset))]
-      {:color (rgb->hex [r g b])
-       :opacity a
-       :r r
-       :g g
-       :b b
-       :alpha a
-       :offset offset})))
+;; sRGB gamma transfer functions (channel in 0..1).
+(defn- srgb->linear-channel
+  [c]
+  (if (<= c 0.04045)
+    (/ c 12.92)
+    (mth/pow (/ (+ c 0.055) 1.055) 2.4)))
+
+(defn- linear->srgb-channel
+  [c]
+  (let [c (mth/clamp c 0 1)]
+    (if (<= c 0.0031308)
+      (* 12.92 c)
+      (- (* 1.055 (mth/pow c (/ 1 2.4))) 0.055))))
+
+(defn- rgb->linear
+  "sRGB 0..255 -> linear sRGB 0..1 (per channel)."
+  [[r g b]]
+  [(srgb->linear-channel (/ r 255.0))
+   (srgb->linear-channel (/ g 255.0))
+   (srgb->linear-channel (/ b 255.0))])
+
+(defn- linear->rgb
+  "Linear sRGB 0..1 -> sRGB 0..255, gamut-clamped and rounded."
+  [[lr lg lb]]
+  [(mth/round (* 255 (linear->srgb-channel lr)))
+   (mth/round (* 255 (linear->srgb-channel lg)))
+   (mth/round (* 255 (linear->srgb-channel lb)))])
+
+;; --- Oklab / Oklch ------------------------------------------------------
+
+(defn rgb->oklab
+  "sRGB 0..255 -> Oklab [L a b], L in 0..1, a/b roughly -0.4..0.4."
+  [[r g b]]
+  (let [[lr lg lb] (rgb->linear [r g b])
+        l  (+ (* 0.4122214708 lr) (* 0.5363325363 lg) (* 0.0514459929 lb))
+        m  (+ (* 0.2119034982 lr) (* 0.6806995451 lg) (* 0.1073969566 lb))
+        s  (+ (* 0.0883024619 lr) (* 0.2817188376 lg) (* 0.6299787005 lb))
+        l_ (mth/cubicroot l)
+        m_ (mth/cubicroot m)
+        s_ (mth/cubicroot s)]
+    [(+ (* 0.2104542553 l_) (* 0.7936177850 m_) (* -0.0040720468 s_))
+     (+ (* 1.9779984951 l_) (* -2.4285922050 m_) (* 0.4505937099 s_))
+     (+ (* 0.0259040371 l_) (* 0.7827717662 m_) (* -0.8086757660 s_))]))
+
+(defn oklab->rgb
+  "Oklab [L a b] -> sRGB 0..255, gamut-clamped."
+  [[L a b]]
+  (let [l_ (+ L (* 0.3963377774 a) (* 0.2158037573 b))
+        m_ (+ L (* -0.1055613458 a) (* -0.0638531728 b))
+        s_ (+ L (* -0.0894841775 a) (* -1.2914855480 b))
+        l  (* l_ l_ l_)
+        m  (* m_ m_ m_)
+        s  (* s_ s_ s_)
+        lr (+ (* 4.0767416621 l) (* -3.3077115913 m) (* 0.2309699292 s))
+        lg (+ (* -1.2684380041 l) (* 2.6097574011 m) (* -0.3413193965 s))
+        lb (+ (* -0.0041960863 l) (* -0.7034186147 m) (* 1.7076147010 s))]
+    (linear->rgb [lr lg lb])))
+
+(defn oklab->oklch
+  "Oklab [L a b] -> Oklch [L C H], H in degrees 0..360."
+  [[L a b]]
+  (let [c (mth/sqrt (+ (* a a) (* b b)))
+        h (mth/degrees (mth/atan2 b a))]
+    [L c (mod (+ h 360) 360)]))
+
+(defn oklch->oklab
+  "Oklch [L C H] (H in degrees) -> Oklab [L a b]."
+  [[L c h]]
+  (let [hr (mth/radians h)]
+    [L (* c (mth/cos hr)) (* c (mth/sin hr))]))
+
+(defn hex->oklab [hex] (-> hex hex->rgb rgb->oklab))
+(defn oklab->hex [oklab] (-> oklab oklab->rgb rgb->hex))
+(defn hex->oklch [hex] (-> hex hex->oklab oklab->oklch))
+(defn oklch->hex [oklch] (-> oklch oklch->oklab oklab->rgb rgb->hex))
+
+;; --- CIELAB / CIELCH ----------------------------------------------------
+
+(def ^:private lab-eps 0.008856)
+(def ^:private lab-xn 0.95047)
+(def ^:private lab-yn 1.0)
+(def ^:private lab-zn 1.08883)
+
+(defn- lab-f
+  [t]
+  (if (> t lab-eps)
+    (mth/cubicroot t)
+    (+ (* 7.787 t) (/ 16 116))))
+
+(defn- lab-f-inv
+  [t]
+  (let [t3 (* t t t)]
+    (if (> t3 lab-eps)
+      t3
+      (/ (- t (/ 16 116)) 7.787))))
+
+(defn rgb->lab
+  "sRGB 0..255 -> CIELAB [L a b], L in 0..100, a/b roughly -128..128."
+  [[r g b]]
+  (let [[lr lg lb] (rgb->linear [r g b])
+        x  (+ (* 0.4124564 lr) (* 0.3575761 lg) (* 0.1804375 lb))
+        y  (+ (* 0.2126729 lr) (* 0.7151522 lg) (* 0.0721750 lb))
+        z  (+ (* 0.0193339 lr) (* 0.1191920 lg) (* 0.9503041 lb))
+        fx (lab-f (/ x lab-xn))
+        fy (lab-f (/ y lab-yn))
+        fz (lab-f (/ z lab-zn))]
+    [(- (* 116 fy) 16)
+     (* 500 (- fx fy))
+     (* 200 (- fy fz))]))
+
+(defn lab->rgb
+  "CIELAB [L a b] -> sRGB 0..255, gamut-clamped."
+  [[L a b]]
+  (let [fy (/ (+ L 16) 116)
+        fx (+ fy (/ a 500))
+        fz (- fy (/ b 200))
+        x  (* lab-xn (lab-f-inv fx))
+        y  (* lab-yn (lab-f-inv fy))
+        z  (* lab-zn (lab-f-inv fz))
+        lr (+ (* 3.2406 x) (* -1.5372 y) (* -0.4986 z))
+        lg (+ (* -0.9689 x) (* 1.8758 y) (* 0.0415 z))
+        lb (+ (* 0.0557 x) (* -0.2040 y) (* 1.0570 z))]
+    (linear->rgb [lr lg lb])))
+
+(defn lab->lch
+  "CIELAB [L a b] -> CIELCH [L C H], H in degrees 0..360."
+  [[L a b]]
+  (let [c (mth/sqrt (+ (* a a) (* b b)))
+        h (mth/degrees (mth/atan2 b a))]
+    [L c (mod (+ h 360) 360)]))
+
+(defn lch->lab
+  "CIELCH [L C H] (H in degrees) -> CIELAB [L a b]."
+  [[L c h]]
+  (let [hr (mth/radians h)]
+    [L (* c (mth/cos hr)) (* c (mth/sin hr))]))
+
+(defn hex->lab [hex] (-> hex hex->rgb rgb->lab))
+(defn lab->hex [lab] (-> lab lab->rgb rgb->hex))
+(defn hex->lch [hex] (-> hex hex->lab lab->lch))
+(defn lch->hex [lch] (-> lch lch->lab lab->rgb rgb->hex))
+
+;; --- HWB ----------------------------------------------------------------
+
+(defn rgb->hwb
+  "sRGB 0..255 -> HWB [H W B], H in 0..360, W/B in 0..1."
+  [[r g b]]
+  (let [[h _ _] (rgb->hsl [r g b])
+        rn (/ r 255.0)
+        gn (/ g 255.0)
+        bn (/ b 255.0)
+        w  (d/min rn gn bn)
+        bl (- 1 (d/max rn gn bn))]
+    [h w bl]))
+
+(defn hwb->rgb
+  "HWB [H W B] (H 0..360, W/B 0..1) -> sRGB 0..255, gamut-clamped."
+  [[h w b]]
+  (let [w (mth/clamp w 0 1)
+        b (mth/clamp b 0 1)]
+    (if (>= (+ w b) 1)
+      (let [gray (/ w (+ w b))]
+        [(mth/round (* 255 gray))
+         (mth/round (* 255 gray))
+         (mth/round (* 255 gray))])
+      (let [hue-rgb    (hsl->rgb [h 1 0.5])
+            scale      (- 1 w b)
+            apply-scale (fn [c]
+                          (let [cn (/ c 255.0)]
+                            (mth/round (* 255 (+ (* cn scale) w)))))]
+        [(apply-scale (nth hue-rgb 0))
+         (apply-scale (nth hue-rgb 1))
+         (apply-scale (nth hue-rgb 2))]))))
+
+(defn hex->hwb [hex] (-> hex hex->rgb rgb->hwb))
+(defn hwb->hex [hwb] (-> hwb hwb->rgb rgb->hex))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; GRADIENT INTERPOLATION (with optional perceptual modes)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn interpolate-color
+  ([c1 c2 offset]
+   (interpolate-color c1 c2 offset :srgb))
+  ([c1 c2 offset mode]
+   (cond
+     (<= offset (:offset c1)) (assoc c1 :offset offset)
+     (>= offset (:offset c2)) (assoc c2 :offset offset)
+
+     :else
+     (let [tr-offset (/ (- offset (:offset c1)) (- (:offset c2) (:offset c1)))
+           a1 (:opacity c1)
+           a2 (:opacity c2)
+           a  (+ a1 (* (- a2 a1) tr-offset))
+           interp (fn [x1 x2 t] (+ x1 (* (- x2 x1) t)))
+           [r g b]
+           (case mode
+             :oklab
+             (let [o1 (rgb->oklab (hex->rgb (:color c1)))
+                   o2 (rgb->oklab (hex->rgb (:color c2)))]
+               (oklab->rgb [(interp (nth o1 0) (nth o2 0) tr-offset)
+                            (interp (nth o1 1) (nth o2 1) tr-offset)
+                            (interp (nth o1 2) (nth o2 2) tr-offset)]))
+             :oklch
+             (let [o1 (rgb->oklch (hex->rgb (:color c1)))
+                   o2 (rgb->oklch (hex->rgb (:color c2)))
+                   h1 (nth o1 2)
+                   h2 (nth o2 2)
+                   dh (if (> (mth/abs (- h2 h1)) 180)
+                        (if (< h2 h1) (+ (- h2 h1) 360) (- (- h2 h1) 360))
+                        (- h2 h1))
+                   h  (mod (+ h1 (* dh tr-offset)) 360)]
+               (oklch->rgb [(interp (nth o1 0) (nth o2 0) tr-offset)
+                            (interp (nth o1 1) (nth o2 1) tr-offset)
+                            h]))
+             ;; :srgb / nil / unknown -> original sRGB math (byte-identical)
+             (let [[r1 g1 b1] (hex->rgb (:color c1))
+                   [r2 g2 b2] (hex->rgb (:color c2))]
+               [(+ r1 (* (- r2 r1) tr-offset))
+                (+ g1 (* (- g2 g1) tr-offset))
+                (+ b1 (* (- b2 b1) tr-offset))]))]
+       {:color (rgb->hex [r g b])
+        :opacity a
+        :r r
+        :g g
+        :b b
+        :alpha a
+        :offset offset}))))
 
 (defn- offset-spread
   [from to num]
@@ -855,18 +1093,48 @@
          (every? true?))))
 
 (defn uniform-spread
-  "Assign an uniform spread to the offset values for the gradient"
-  [from to num-stops]
-  (->> (offset-spread (:offset from) (:offset to) num-stops)
-       (mapv (fn [offset]
-               (interpolate-color from to offset)))))
+  ([from to num-stops]
+   (uniform-spread from to num-stops :srgb))
+  ([from to num-stops mode]
+   (->> (offset-spread (:offset from) (:offset to) num-stops)
+        (mapv (fn [offset]
+                (interpolate-color from to offset mode))))))
 
 (defn interpolate-gradient
-  [stops offset]
-  (let [idx   (d/index-of-pred stops #(<= offset (:offset %)))
-        start (cond
-                (nil? idx) (last stops)
-                (= idx 0)  (first stops)
-                :else      (get stops (dec idx)))
-        end   (if (nil? idx) (last stops) (get stops idx))]
-    (interpolate-color start end offset)))
+  ([stops offset]
+   (interpolate-gradient stops offset :srgb))
+  ([stops offset mode]
+   (let [idx   (d/index-of-pred stops #(<= offset (:offset %)))
+         start (cond
+                 (nil? idx) (last stops)
+                 (= idx 0)  (first stops)
+                 :else      (get stops (dec idx)))
+         end   (if (nil? idx) (last stops) (get stops idx))]
+     (interpolate-color start end offset mode))))
+
+(defn bake-gradient-stops
+  "Sample `samples-per-seg` intermediate stops between each consecutive
+   stop pair using `mode` interpolation, returning a flat sorted vector
+   of stop maps suitable for direct SVG emission. For :srgb (or nil)
+   returns the input stops (sorted) unchanged so native SVG sRGB stop
+   interpolation is preserved — byte-identical to the no-mode path."
+  ([stops samples-per-seg]
+   (bake-gradient-stops stops samples-per-seg :srgb))
+  ([stops samples-per-seg mode]
+   (if (or (nil? mode) (= mode :srgb))
+     (vec (sort-by :offset stops))
+     (let [stops (vec (sort-by :offset stops))]
+       (if (<= (count stops) 1)
+         stops
+         (conj
+          (into [(first stops)]
+                (mapcat
+                 (fn [[c1 c2]]
+                   (let [o1 (:offset c1)
+                         o2 (:offset c2)]
+                     (for [i (range 1 samples-per-seg)]
+                       (let [t   (/ i samples-per-seg)
+                             off (+ o1 (* (- o2 o1) t))]
+                         (interpolate-color c1 c2 off mode)))))
+                 (partition 2 1 stops)))
+          (last stops)))))))

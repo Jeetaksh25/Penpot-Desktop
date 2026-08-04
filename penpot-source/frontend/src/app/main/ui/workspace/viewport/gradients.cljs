@@ -125,6 +125,7 @@
            zoom
            editing
            stops
+           interpolation
            on-change-start on-change-finish on-change-width]}]
   (let [moving-point (mf/use-var nil)
         angle        (+ 90 (gpt/angle from-p to-p))
@@ -179,7 +180,7 @@
 
         points-on-pointer-down
         (mf/use-fn
-         (mf/deps stops)
+         (mf/deps stops interpolation)
          (fn [e]
            (dom/prevent-default e)
            (dom/stop-propagation e)
@@ -190,7 +191,7 @@
                    nv (gpt/normal-left lv)
                    offset (-> (gsp/project-t position [from-p to-p] nv)
                               (mth/precision 2))
-                   new-stop (cc/interpolate-gradient stops offset)
+                   new-stop (cc/interpolate-gradient stops offset interpolation)
                    stops (conj stops new-stop)
                    stops (->> stops (sort-by :offset) (into []))]
                (st/emit! (dc/update-colorpicker-stops stops))))))
@@ -510,6 +511,7 @@
       :to-p to-p
       :width-p (when (= :radial (:type gradient)) width-p)
       :stops stops
+      :interpolation (:interpolation gradient)
       :zoom zoom
       :on-change-start on-change-start
       :on-change-finish on-change-finish

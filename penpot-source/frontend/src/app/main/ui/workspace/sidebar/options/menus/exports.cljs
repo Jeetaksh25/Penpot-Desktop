@@ -174,6 +174,15 @@
                                            (fn [shape]
                                              (assoc-in shape [:exports index :type] type)))))))
 
+        on-embed-fonts-toggle
+        (mf/use-fn
+         (mf/deps ids)
+         (fn [index event]
+           (let [checked (.. event -target -checked)]
+             (st/emit! (dwsh/update-shapes ids
+                                           (fn [shape]
+                                             (assoc-in shape [:exports index :embed-fonts] checked)))))))
+
         on-remove-all
         (mf/use-fn
          (mf/deps ids)
@@ -263,6 +272,15 @@
                          :data-value (str index)
                          :on-change on-suffix-change
                          :on-key-down manage-key-down}]]]
+
+              (when (= :svg (:type export))
+                [:label {:class (stl/css :embed-fonts-row)}
+                 [:input {:class (stl/css :embed-fonts-check)
+                          :type "checkbox"
+                          :checked (true? (:embed-fonts export))
+                          :on-change (partial on-embed-fonts-toggle index)}]
+                 [:span {:class (stl/css :embed-fonts-label)}
+                  (tr "workspace.options.export.embed-fonts")]])
 
               [:> icon-button* {:variant "ghost"
                                 :aria-label (tr "workspace.options.export.remove-export")

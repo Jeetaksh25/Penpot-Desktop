@@ -909,13 +909,16 @@
     ptk/UpdateEvent
     (update [_ state]
       (update state :colorpicker
-              (fn [{:keys [stops editing-stop] :as state}]
+              (fn [{:keys [stops editing-stop gradient] :as state}]
                 (let [cap-stops?    (features/active-feature? state "render-wasm/v1")
-                      can-add-stop? (or (not cap-stops?) (< (count stops) types.fills/MAX-GRADIENT-STOPS))]
+                      can-add-stop? (or (not cap-stops?) (< (count stops) types.fills/MAX-GRADIENT-STOPS))
+                      ;; P2.07: thread perceptual interpolation mode from
+                      ;; the gradient map. nil -> :srgb -> byte-identical.
+                      mode          (get gradient :interpolation)]
                   (if can-add-stop?
                     (if (clr/uniform-spread? stops)
                       ;; Add to uniform
-                      (let [stops (->> (clr/uniform-spread (first stops) (last stops) (inc (count stops)))
+                      (let [stops (->> (clr/uniform-spread (first stops) (last stops) (inc (count stops)) mode)
                                        (mapv split-color-components))]
                         (-> state
                             (assoc :current-color (get stops editing-stop))
@@ -936,7 +939,7 @@
                             half-point-offset
                             (+ from-offset (/ (- to-offset from-offset) 2))
 
-                            new-stop (-> (clr/interpolate-gradient stops half-point-offset)
+                            new-stop (-> (clr/interpolate-gradient stops half-point-offset mode)
                                          (split-color-components))
 
                             stops (conj stops new-stop)
@@ -961,10 +964,14 @@
                       (features/active-feature? state "render-wasm/v1")
 
                       can-add-stop?
-                      (or (not cap-stops?) (< (count stops) types.fills/MAX-GRADIENT-STOPS))]
+                      (or (not cap-stops?) (< (count stops) types.fills/MAX-GRADIENT-STOPS))
+
+                      ;; P2.07: thread perceptual interpolation mode.
+                      ;; nil -> :srgb -> byte-identical.
+                      mode (get-in state [:gradient :interpolation])]
 
                   (if can-add-stop?
-                    (let [new-stop (-> (clr/interpolate-gradient stops offset)
+                    (let [new-stop (-> (clr/interpolate-gradient stops offset mode)
                                        (split-color-components))
                           stops (conj stops new-stop)
                           stops (into [] (sort-by :offset stops))

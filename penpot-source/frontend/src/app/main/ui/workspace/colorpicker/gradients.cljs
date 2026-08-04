@@ -42,15 +42,22 @@
   [{:keys [r g b offset]}]
   (str/ffmt "rgb(%1, %2, %3) %4%%" r g b (* offset 100)))
 
-(defn- gradient->string [stops]
-  (->> stops
-       (sort-by :offset)
-       (map (fn [{:keys [color opacity offset]}]
-              (let [[r g b] (cc/hex->rgb color)]
-                {:r r :g g :b b :alpha opacity :offset offset})))
-       (map format-rgb)
-       (str/join ", ")
-       (str/ffmt "linear-gradient(90deg, %1)")))
+(defn- gradient->string
+  ([stops] (gradient->string stops :srgb))
+  ([stops mode]
+   ;; P2.07: bake intermediate stops for perceptual modes so the preview
+   ;; bar reflects the chosen interpolation. :srgb/nil keeps the original
+   ;; sorted-stop emission (byte-identical preview).
+   (let [stops (if (or (nil? mode) (= mode :srgb))
+                 (sort-by :offset stops)
+                 (cc/bake-gradient-stops stops 24 mode))]
+     (->> stops
+          (map (fn [{:keys [color opacity offset]}]
+                 (let [[r g b] (cc/hex->rgb color)]
+                   {:r r :g g :b b :alpha opacity :offset offset})))
+          (map format-rgb)
+          (str/join ", ")
+          (str/ffmt "linear-gradient(90deg, %1)")))))
 
 (defn- stop->hex-color
   [stop]
@@ -172,8 +179,10 @@
   [{:keys [type
            stops
            editing-stop
+           interpolation
            on-select-stop
            on-change-type
+           on-change-interpolation
            on-change-stop
            on-add-stop-preview
            on-add-stop-auto
@@ -314,7 +323,7 @@
      [:div {:class (stl/css :gradient-preview)}
       [:div {:class (stl/css :gradient-background)
              :ref background-ref
-             :style {:background (gradient->string stops)}
+             :style {:background (gradient->string stops interpolation)}
              :on-pointer-enter handle-preview-enter
              :on-pointer-leave handle-preview-leave
              :on-pointer-move handle-preview-move
@@ -356,6 +365,17 @@
                   ;; selecting it is a guarded no-op (see handle-change-type).
                   {:value :mesh-gradient :label (tr "workspace.gradients.mesh")}]
         :on-change handle-change-type
+        :class (stl/css :gradient-options-select)}]
+
+      ;; P2.07 advanced color spaces: perceptual gradient interpolation
+      ;; mode selector. Default :srgb is byte-identical to the original;
+      ;; :oklab / :oklch are opt-in. Absent on legacy gradients.
+      [:& select
+       {:default-value (or interpolation :srgb)
+        :options [{:value :srgb :label (tr "workspace.gradients.interpolation.srgb")}
+                  {:value :oklab :label (tr "workspace.gradients.interpolation.oklab")}
+                  {:value :oklch :label (tr "workspace.gradients.interpolation.oklch")}]
+        :on-change on-change-interpolation
         :class (stl/css :gradient-options-select)}]
 
       [:div {:class (stl/css :gradient-options-buttons)}

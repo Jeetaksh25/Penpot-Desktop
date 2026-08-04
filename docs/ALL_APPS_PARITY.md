@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **65** | Implemented end-to-end + verified (commit referenced). |
+| ✅ done | **69** | Implemented end-to-end + verified (commit referenced). |
 | 🟡 half-done | **1** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **30** | Not implemented yet. |
+| 🔴 missing | **26** | Not implemented yet. |
 | ⚠️ not-working | **0** | Present but broken. |
-| **Remaining** | **31** | half-done + missing + not-working. |
+| **Remaining** | **27** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 65 done / 1 half / 30 missing / 0 not-working / 31 remaining.
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 69 done / 1 half / 26 missing / 0 not-working / 27 remaining. Wave 2 ✅ (4 gaps: P2.40 Visual comments, P2.20 Fonts embedding, P2.07 Oklab/Oklch, P2.27 Multi-Paste).
 
-Most-recent done: **P1.21 / P2.10 / P2.33 / P1.07** — C5 missing-sweep wave 1: Jetpack Compose exporter, Boolean Add (open-path merge), Selection Colors panel, Auto smart helpers (auto-color/z-index/text-color + auto-refresh on duplicate).
+Most-recent done: **P2.40 / P2.20 / P2.07 / P2.27** — C5 missing-sweep wave 2: visual comment attachments, SVG font embedding, Oklab/Oklch gradient interpolation + multi-space color picker, Multi-Paste (Paste Over / Paste & Replace / Multi-Paste).
 
 ## Contents
 
@@ -419,7 +419,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.07 Advanced color spaces (Oklab/Oklch perceptual gradient interpolation; LCH/OKLCH/LAB/OKLAB/HWB in the color picker)
 
-- **State:** 🔴 missing  ·  **Sources:** Sketch, Lunacy
+- **State:** ✅ done (C5 missing-sweep wave 2) — Advanced color spaces: extended common/types/color.cljc with sRGB<->Oklab/Oklch (Ottosson) + CIELAB/LCH + HWB pure CLJS math (js/Math only, gamut-clamped, round-trip-validated). Gradient :interpolation :srgb|:oklab|:oklch (optional, absent=sRGB=byte-identical) threaded through gradients.cljs render + viewport gradient handlers + colors.cljs + colorpicker. Picker space switcher (sRGB/HSL/HWB/LAB/LCH/OKLAB/OKLCH) in color_inputs.cljs (default sRGB = byte-identical). 3 en.po keys.  ·  **Sources:** Sketch, Lunacy
 - **Detail / build direction:** Ovion gradients use sRGB interpolation; the picker is sRGB/HEX-based. Recommended: add Oklab/Oklch gradient interpolation modes in gradients.cljs and LCH/OKLCH/LAB/OKLAB/HWB space options in the color picker (pixel_overlay.cljs loupe) with conversion to/from sRGB. Pure frontend math, unblocked.
 
 #### P2.08 Agent Manager + parallel idea branches (branch tree of concurrent explorations with compare UI)
@@ -484,7 +484,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.20 Fonts embedding in exported documents
 
-- **State:** 🔴 missing  ·  **Sources:** Lunacy
+- **State:** ✅ done (C5 missing-sweep wave 2) — Fonts embedding in SVG export: new data/exports/font-embed.cljs collects font refs via fonts/get-content-fonts, fetches @font-face urls through the existing gfonts proxy (http/fetch-data-uri, base64), injects <style>@font-face{src:url(data:font/woff2;base64,…)}</style> after the root <svg> tag. Coral "Embed fonts" toggle in the Exports menu (SVG-only, default OFF -> byte-identical). PDF embedding honestly deferred (binary CMap rebuild out of no-build scope; toggle is SVG-only so PDF byte-identical). 1 en.po key.  ·  **Sources:** Lunacy
 - **Detail / build direction:** Export emits png/jpeg/webp/svg/pdf without font embedding. Recommended: add a fonts-embedding step in the export pipeline (subset + embed WOFF2 in SVG/PDF exports). Frontend/export, unblocked.
 
 #### P2.21 Form error-state system (Error style effects, Set Error State action, error-state-triggered interactions)
@@ -519,7 +519,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.27 Multi-Paste (Paste, Paste Over, Paste & Replace across multiple selected layers simultaneously)
 
-- **State:** 🔴 missing  ·  **Sources:** Sketch
+- **State:** ✅ done (C5 missing-sweep wave 2) — Multi-Paste: paste-over (patch props/fills/strokes/content across selection), paste-replace (clone clipboard per target at target origin, delete target), multi-paste (clone per target inside containers / sibling after leaves) — all one undo, no-op (rx/empty) on empty clipboard/selection, single-selection falls back to normal paste (byte-identical). Reuses existing :paste-replace shortcut (Cmd+Shift+V) + new :paste-over (Cmd+Alt+Shift+O) + :multi-paste (Cmd+Alt+Shift+M); Multi-Paste submenu in context_menu. 4 en.po keys.  ·  **Sources:** Sketch
 - **Detail / build direction:** Clipboard operates on the current selection only. Recommended: extend clipboard.cljs with Paste Over (replace content) and Paste & Replace across each selected layer. Context-menu entries. Frontend, unblocked.
 
 #### P2.28 Multi-screen size adaptation as a one-shot AI action (mobile -> tablet reflow)
@@ -584,7 +584,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.40 Visual comments (image/emoji/sketch attachments in comment threads)
 
-- **State:** 🔴 missing  ·  **Sources:** Pixso
+- **State:** ✅ done (C5 missing-sweep wave 2) — Visual comments: optional :attachments vector on the comment schema (malli :image/:emoji/:sketch + data + meta), carried through create/update RPC only when (seq attachments) (byte-identical when absent). comments.cljs gains an attachment bar (emoji popover + image FileReader data-uri + canvas freehand sketch -> SVG path) + lightbox render in the thread bubble. 5 en.po keys.  ·  **Sources:** Pixso
 - **Detail / build direction:** workspace/comments.cljs + data/comments.cljs provide text threads only. Recommended: extend the comment schema with image/sketch/emoji attachments and render them in the comment thread UI. Frontend + schema, unblocked.
 
 #### P2.41 Voice input for design ('vibe design')

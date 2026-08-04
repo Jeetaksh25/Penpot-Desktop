@@ -42,6 +42,20 @@
    [:count-unread-comments {:optional true} :int]
    [:count-comments {:optional true} :int]])
 
+(def ^:private schema:comment-attachment
+  "Optional visual attachment on a comment. `:type` is one of
+  `:image` (data-uri in `:data`), `:emoji` (a single unicode char/short
+  string in `:data`) or `:sketch` (an SVG path `d` string in `:data`).
+  `:meta` carries optional intrinsic dimensions + caption."
+  [:map {:title "CommentAttachment"}
+   [:type [:enum :image :emoji :sketch]]
+   [:data :string]
+   [:meta {:optional true}
+    [:map
+     [:w {:optional true} :int]
+     [:h {:optional true} :int]
+     [:caption {:optional true} :string]]]])
+
 (def ^:private schema:comment
   [:map {:title "Comment"}
    [:id ::sm/uuid]
@@ -52,7 +66,10 @@
    [:owner-email {:optional true} ::sm/email]
    [:created-at ::ct/inst]
    [:modified-at ::ct/inst]
-   [:content :string]])
+   [:content :string]
+   ;; P2.40 — visual attachments. Optional + maybe so a comment with no
+   ;; attachments (the common case) is byte-identical to the pre-P2.40 shape.
+   [:attachments {:optional true} [:maybe [:vector schema:comment-attachment]]]])
 
 (def check-comment-thread!
   (sm/check-fn schema:comment-thread))
@@ -110,7 +127,8 @@
    [:page-id ::sm/uuid]
    [:file-id ::sm/uuid]
    [:position ::gpt/point]
-   [:content :string]])
+   [:content :string]
+   [:attachments {:optional true} [:maybe [:vector schema:comment-attachment]]]])
 
 (defn create-thread-on-workspace
   ([params]
@@ -169,7 +187,8 @@
    [:file-id ::sm/uuid]
    [:frame-id ::sm/uuid]
    [:position ::gpt/point]
-   [:content :string]])
+   [:content :string]
+   [:attachments {:optional true} [:maybe [:vector schema:comment-attachment]]]])
 
 (defn create-thread-on-viewer
   [params]
@@ -236,46 +255,50 @@
               (rx/ignore)))))))
 
 (defn add-comment
-  [thread content]
+  ([thread content] (add-comment thread content nil))
+  ([thread content attachments]
 
-  (dm/assert!
-   "expected valid comment thread"
-   (check-comment-thread! thread))
+   (dm/assert!
+    "expected valid comment thread"
+    (check-comment-thread! thread))
 
-  (dm/assert!
-   "expected valid content"
-   (string? content))
+   (dm/assert!
+    "expected valid content"
+    (string? content))
 
-  (ptk/reify ::create-comment
-    ev/Event
-    (-data [_]
-      {:thread-id (:id thread)
-       :file-id (:file-id thread)
-       :content-size (count content)})
+   (ptk/reify ::create-comment
+     ev/Event
+     (-data [_]
+       {:thread-id (:id thread)
+        :file-id (:file-id thread)
+        :content-size (count content)})
 
-    ptk/WatchEvent
-    (watch [_ state _]
-      (let [share-id (-> state :viewer-local :share-id)
-            created  (fn [comment state]
-                       (update-in state [:comments (:id thread)] assoc (:id comment) comment))
+     ptk/WatchEvent
+     (watch [_ state _]
+       (let [share-id (-> state :viewer-local :share-id)
+             created  (fn [comment state]
+                        (update-in state [:comments (:id thread)] assoc (:id comment) comment))
 
-            params
-            (-> {:thread-id (:id thread)
-                 :content content
-                 :share-id share-id}
-                (update-mentions))]
-        (rx/concat
-         (->> (rp/cmd! :create-comment params)
-              (rx/map (fn [comment] (partial created comment)))
-              (rx/catch (fn [{:keys [type code] :as cause}]
-                          (if (and (= type :restriction)
-                                   (= code :max-quote-reached))
-                            (rx/throw cause)
-                            (rx/throw {:type :comment-error})))))
-         (rx/of (refresh-comment-thread thread)))))))
+             params
+             (-> {:thread-id (:id thread)
+                  :content content
+                  :share-id share-id}
+                 (update-mentions)
+                 ;; P2.40 — only carry attachments when non-empty, so a
+                 ;; reply with no attachments is byte-identical to pre-P2.40.
+                 (cond-> (seq attachments) (assoc :attachments attachments)))]
+         (rx/concat
+          (->> (rp/cmd! :create-comment params)
+               (rx/map (fn [comment] (partial created comment)))
+               (rx/catch (fn [{:keys [type code] :as cause}]
+                           (if (and (= type :restriction)
+                                    (= code :max-quote-reached))
+                             (rx/throw cause)
+                             (rx/throw {:type :comment-error})))))
+          (rx/of (refresh-comment-thread thread))))))))
 
 (defn update-comment
-  [{:keys [id content thread-id file-id] :as comment}]
+  [{:keys [id content thread-id file-id attachments] :as comment}]
   (dm/assert!
    "expected valid comment"
    (check-comment! comment))
@@ -289,13 +312,19 @@
 
     ptk/UpdateEvent
     (update [_ state]
-      (d/update-in-when state [:comments thread-id id] assoc :content content))
+      ;; P2.40 — only assoc :attachments into state when present, so an
+      ;; edit of a comment with no attachments is byte-identical to before.
+      (let [merge-fn (fn [c]
+                        (cond-> (assoc c :content content)
+                          (seq attachments) (assoc :attachments attachments)))]
+        (d/update-in-when state [:comments thread-id id] merge-fn)))
 
     ptk/WatchEvent
     (watch [_ state _]
       (let [share-id (-> state :viewer-local :share-id)
-            params   {:id id :content content :share-id share-id}
-            params   (update-mentions params)]
+            params   (-> {:id id :content content :share-id share-id}
+                         (update-mentions)
+                         (cond-> (seq attachments) (assoc :attachments attachments)))]
         (->> (rp/cmd! :update-comment params)
              (rx/catch #(rx/throw {:type :comment-error}))
              (rx/map #(retrieve-comment-threads file-id)))))))

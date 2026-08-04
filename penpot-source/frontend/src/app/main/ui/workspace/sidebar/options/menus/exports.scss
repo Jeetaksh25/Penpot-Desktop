@@ -81,6 +81,34 @@
   @include deprecated.body-small-typography;
 }
 
+// P2.20 — "Embed fonts" toggle (SVG exports only). Native checkbox
+// themed with the coral accent via accent-color so it reads as native
+// to the warm-coral design language in both light and dark themes.
+.embed-fonts-row {
+  grid-column: 1 / -1;
+
+  display: flex;
+  align-items: center;
+  gap: deprecated.$s-2;
+  padding-left: deprecated.$s-2;
+  cursor: pointer;
+}
+
+.embed-fonts-check {
+  width: deprecated.$s-4;
+  height: deprecated.$s-4;
+  margin: 0;
+  accent-color: var(--color-accent-primary);
+  cursor: pointer;
+}
+
+.embed-fonts-label {
+  @include deprecated.body-small-typography;
+
+  color: var(--color-foreground-secondary);
+  user-select: none;
+}
+
 .export-btn {
   @extend %button-secondary;
   @include deprecated.uppercase-title-typography;

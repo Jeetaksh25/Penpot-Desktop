@@ -13187,3 +13187,55 @@ msgstr "Apply now"
 msgid "workspace.options.auto-helpers.hint"
 msgstr "Toggle ambient helpers, then click Apply now to run them on the selection."
 
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "labels.clear"
+msgstr "Clear"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "labels.comment.sketch-title"
+msgstr "Sketch a quick doodle"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "labels.comment.add-emoji"
+msgstr "Add emoji"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "labels.comment.add-image"
+msgstr "Attach image"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "labels.comment.add-sketch"
+msgstr "Add sketch"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "workspace.options.export.embed-fonts"
+msgstr "Embed fonts"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "workspace.gradients.interpolation.srgb"
+msgstr "sRGB"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "workspace.gradients.interpolation.oklab"
+msgstr "Oklab"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "workspace.gradients.interpolation.oklch"
+msgstr "Oklch"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "workspace.shape.menu.multi-paste"
+msgstr "Multi-Paste"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "workspace.shape.menu.multi-paste-paste"
+msgstr "Paste"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "workspace.shape.menu.paste-over"
+msgstr "Paste Over"
+
+#: ovion/all-apps-parity/missing-sweep-wave2
+msgid "workspace.shape.menu.paste-replace"
+msgstr "Paste & Replace"
+

@@ -37,6 +37,15 @@
                       (gsh/transform-matrix shape nil (gpt/point 0.5 0.5))))
 
         metadata? (mf/use-ctx ed/include-metadata-ctx)
+        ;; P2.07: for :srgb/nil emit the user's stops directly so the
+        ;; browser's native SVG gradient interpolation is byte-identical
+        ;; to the no-mode path. For :oklab/:oklch we bake intermediate
+        ;; stops (SVG only interpolates sRGB between adjacent stops).
+        mode      (:interpolation gradient)
+        raw-stops (:stops gradient)
+        stops     (if (or (nil? mode) (= mode :srgb))
+                    (sort-by :offset raw-stops)
+                    (clr/bake-gradient-stops raw-stops 24 mode))
         props     #js {:id id
                        :x1 (:start-x gradient)
                        :y1 (:start-y gradient)
@@ -48,7 +57,7 @@
       (add-metadata! props gradient))
 
     [:> :linearGradient props
-     (for [[index {:keys [offset color opacity]}] (d/enumerate (sort-by :offset (:stops gradient)))]
+     (for [[index {:keys [offset color opacity]}] (d/enumerate stops)]
        [:stop {:key (dm/str id "-stop-" index)
                :offset (d/nilv offset 0)
                :stop-color color
@@ -100,6 +109,15 @@
 
         metadata?     (mf/use-ctx ed/include-metadata-ctx)
 
+        ;; P2.07: bake intermediate stops for perceptual modes; for
+        ;; :srgb/nil emit the user's stops unsorted, byte-identical to
+        ;; the original (radial historically did not sort stops).
+        mode          (:interpolation gradient)
+        raw-stops     (:stops gradient)
+        stops         (if (or (nil? mode) (= mode :srgb))
+                        raw-stops
+                        (clr/bake-gradient-stops raw-stops 24 mode))
+
         props         #js {:id id
                            :cx start-x
                            :cy start-y
@@ -110,7 +128,7 @@
       (add-metadata! props gradient))
 
     [:> :radialGradient props
-     (for [[index {:keys [offset color opacity]}] (d/enumerate (:stops gradient))]
+     (for [[index {:keys [offset color opacity]}] (d/enumerate stops)]
        [:stop {:key (dm/str id "-stop-" index)
                :offset (d/nilv offset 0)
                :stop-color color
@@ -141,6 +159,9 @@
         r      (js/Math.sqrt (+ (* w w) (* h h)))
         steps  90
         stops  (vec (sort-by :offset (:stops gradient)))
+        ;; P2.07: thread perceptual interpolation mode into the wedge
+        ;; color sampling. nil/:srgb -> byte-identical sRGB interpolation.
+        mode   (:interpolation gradient)
 
         wedge (fn [a1 a2]
                 (let [x1 (+ cx (* r (js/Math.cos a1)))
@@ -156,7 +177,7 @@
            :let [a1   (+ start (* i (/ (* 2 js/Math.PI) steps)))
                  a2   (+ start (* (inc i) (/ (* 2 js/Math.PI) steps)))
                  off  (/ (+ i 0.5) steps)
-                 col  (clr/interpolate-gradient stops off)]]
+                 col  (clr/interpolate-gradient stops off mode)]]
        [:path {:key (dm/str id "-w-" i)
                :d (wedge a1 a2)
                :fill (:color col)

@@ -321,6 +321,13 @@
          (fn [type]
            (st/emit! (dc/activate-colorpicker-gradient type))))
 
+        ;; P2.07: perceptual gradient interpolation mode selector.
+        ;; Stored on the gradient map; absent = :srgb = byte-identical.
+        handle-change-gradient-interpolation
+        (mf/use-fn
+         (fn [mode]
+           (st/emit! (dc/update-colorpicker-gradient {:interpolation mode}))))
+
         handle-gradient-change-stop
         (mf/use-fn
          (mf/deps state)
@@ -488,10 +495,12 @@
             {:type (:type state)
              :stops (if render-wasm? (vec (take types.fills/MAX-GRADIENT-STOPS (:stops state))) (:stops state))
              :editing-stop (:editing-stop state)
+             :interpolation (get-in state [:gradient :interpolation])
              :on-stop-edit-start handle-stop-edit-start
              :on-stop-edit-finish handle-stop-edit-finish
              :on-select-stop handle-change-gradient-selected-stop
              :on-change-type handle-change-gradient-type
+             :on-change-interpolation handle-change-gradient-interpolation
              :on-change-stop handle-gradient-change-stop
              :on-add-stop-auto handle-gradient-add-stop-auto
              :on-add-stop-preview handle-gradient-add-stop-preview

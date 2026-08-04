@@ -1131,6 +1131,331 @@
                       :position position}]
         (rx/of (dwm/upload-media-workspace params))))))
 
+;; ---------------------------------------------------------------------------
+;; Multi-Paste (P2.27) — Paste, Paste Over and Paste & Replace applied
+;; across every selected layer simultaneously. The plain Paste (Cmd+V)
+;; behavior is left byte-identical: these are NEW events that only fan
+;; the clipboard out over the current selection when more than one shape
+;; is selected; with zero or one selection they fall back to the normal
+;; paste path.
+;; ---------------------------------------------------------------------------
+
+(defn- read-clipboard-transit
+  "Read the system clipboard once and emit the decoded transit paste-data
+  map when it holds valid `:copied-shapes` or `:copied-props` content.
+  Emits nothing when the clipboard holds unrelated content or when the
+  clipboard API is unavailable."
+  []
+  (->> (clipboard/from-navigator default-options)
+       (rx/mapcat #(.text %))
+       (rx/map (fn [s]
+                 (try (t/decode-str s)
+                      (catch :default _ nil))))
+       (rx/filter (fn [data]
+                    (and (map? data) (paste-data-valid? data))))
+       (rx/take 1)
+       (rx/catch on-clipboard-permission-error)))
+
+(defn- multi-paste-shapes
+  "Internal event: paste the clipboard shapes once per selected target,
+  in a single undo transaction. When `replace?` is true each target is
+  deleted after the clipboard shapes are cloned at its position (Paste &
+  Replace); otherwise the clones are pasted inside containers or as
+  siblings of leaves (Multi-Paste). No-op when the clipboard holds no
+  shapes or the selection is empty."
+  [pdata replace?]
+  (ptk/reify ::multi-paste-shapes
+    ptk/WatchEvent
+    (watch [it state _]
+      (when-not (-> state :workspace-global :read-only?)
+        (let [selected (dsh/lookup-selected state)]
+          (if (or (empty? selected)
+                  (empty? (:objects pdata))
+                  (empty? (:selected pdata)))
+            (rx/empty)
+            (let [_ (cfeat/check-paste-features! (get state :features) (:features pdata))
+                  _ (when-not (paste-data-valid? pdata)
+                      (ex/raise :type :validation
+                                :code :invalid-paste-data
+                                :hint "invalid paste data found"))]
+              (letfn [(upload-media [file-id imgpart]
+                        (->> (http/send! {:uri (:data imgpart)
+                                          :response-type :blob
+                                          :method :get})
+                             (rx/map :body)
+                             (rx/map (fn [blob]
+                                       {:name (:name imgpart)
+                                        :file-id file-id
+                                        :content blob
+                                        :is-local true}))
+                             (rx/mapcat (partial rp/cmd! :upload-file-media-object))
+                             (rx/map #(assoc % :prev-id (:id imgpart)))))
+
+                      (build-events [pdata']
+                        (let [file-id        (:current-file-id state)
+                              page           (dsh/lookup-page state)
+                              page-objects   (:objects page)
+                              libraries      (dsh/lookup-libraries state)
+                              ldata          (dsh/lookup-file-data state file-id)
+
+                              pobjects       (:objects pdata')
+                              root-ids       (vec (:selected pdata'))
+                              root-set       (set root-ids)
+                              media-idx      (->> (:images pdata') (d/index-by :prev-id))
+                              variant-props  (:variant-properties pdata')
+
+                              wrapper        (gsh/shapes->rect (map (d/getf pobjects) root-ids))
+                              wrapper-origin (gpt/point (:x1 wrapper) (:y1 wrapper))
+                              wrapper-center (grc/rect->center wrapper)
+
+                              reparent-roots
+                              (fn [parent-id frame-id]
+                                (update-vals pobjects
+                                             (fn [s]
+                                               (cond-> s
+                                                 (contains? root-set (:id s))
+                                                 (assoc :parent-id parent-id
+                                                        :frame-id frame-id)))))
+
+                              target-params
+                              (fn [objects target]
+                                (let [t (get objects target)]
+                                  (cond
+                                    (nil? t)
+                                    nil
+
+                                    (and (not replace?) (cfh/frame-shape? t))
+                                    {:parent-id (:id t)
+                                     :frame-id  (:id t)
+                                     :index     (count (:shapes t))
+                                     :anchor    (gsh/shape->center t)
+                                     :center?   true}
+
+                                    :else
+                                    (let [pos (cfh/get-position-on-parent objects target)]
+                                      {:parent-id (:parent-id t)
+                                       :frame-id  (:frame-id t)
+                                       :index     (when (some? pos)
+                                                    (if replace? pos (inc pos)))
+                                       :anchor    (gpt/point (:x t) (:y t))
+                                       :center?   false}))))
+
+                              translate-media
+                              (fn [mdata attr]
+                                (let [id   (-> (get mdata attr) :id)
+                                      mobj (get media-idx id)]
+                                  (if mobj
+                                    (update mdata attr assoc :id (:id mobj))
+                                    mdata)))
+
+                              process-rchange-shape
+                              (fn [obj]
+                                (let [translate-fill   (fn [f] (translate-media f :fill-image))
+                                      translate-stroke (fn [s] (translate-media s :stroke-image))]
+                                  (-> obj
+                                      (update :fills #(mapv translate-fill %))
+                                      (update :strokes #(mapv translate-stroke %))
+                                      (d/update-when :content
+                                                     #(txt/transform-nodes
+                                                       (fn [n]
+                                                         (d/update-when n :fills
+                                                                        (fn [fills]
+                                                                          (mapv translate-fill fills))))
+                                                       %))
+                                      (dissoc :position-data))))
+
+                              process-rchange
+                              (fn [change]
+                                (if (= :add-obj (:type change))
+                                  (update change :obj process-rchange-shape)
+                                  change))
+
+                              amend-new-root-indices
+                              (fn [changes before-cnt root-set index]
+                                (let [redo  (:redo-changes changes)
+                                      after (count redo)
+                                      head  (subvec redo 0 before-cnt)
+                                      tail  (subvec redo before-cnt after)
+                                      tail' (mapv (fn [ch]
+                                                    (if (and (= :add-obj (:type ch))
+                                                             (contains? root-set (:old-id ch)))
+                                                      (assoc ch :index index)
+                                                      ch))
+                                                  tail)
+                                      redo' (into head tail')]
+                                  (assoc changes :redo-changes redo')))]
+
+                        (let [init-changes (-> (pcb/empty-changes it)
+                                               (pcb/with-page page)
+                                               (pcb/with-library-data ldata)
+                                               (pcb/with-objects page-objects))
+
+                              result
+                              (reduce
+                               (fn [{:keys [changes accum-objects new-root-ids]} target]
+                                 (let [tp (target-params accum-objects target)]
+                                   (if (nil? tp)
+                                     {:changes        changes
+                                      :accum-objects  accum-objects
+                                      :new-root-ids   new-root-ids}
+                                     (let [parent-id   (:parent-id tp)
+                                           frame-id    (:frame-id tp)
+                                           index       (:index tp)
+                                           delta       (gpt/subtract (:anchor tp)
+                                                                     (if (:center? tp)
+                                                                       wrapper-center
+                                                                       wrapper-origin))
+                                           t-objects   (reparent-roots parent-id frame-id)
+                                           all-objects (merge accum-objects t-objects)
+                                           page'       (assoc page :objects all-objects)
+                                           before-cnt  (count (:redo-changes changes))
+                                           changes'    (cll/generate-duplicate-changes
+                                                        changes all-objects page' root-ids delta
+                                                        libraries ldata file-id
+                                                        {:variant-props variant-props})
+                                           changes'    (amend-new-root-indices
+                                                        changes' before-cnt root-set index)
+                                           changes'    (if replace?
+                                                          (second (cls/generate-delete-shapes
+                                                                   changes' #{target} {}))
+                                                          changes')
+                                           after-cnt   (count (:redo-changes changes'))
+                                           new-tail    (subvec (:redo-changes changes') before-cnt after-cnt)
+                                           new-roots   (into new-root-ids
+                                                             (comp (filter #(= :add-obj (:type %)))
+                                                                   (filter #(contains? root-set (:old-id %)))
+                                                                   (map #(-> % :obj :id)))
+                                                             new-tail)]
+                                       {:changes        changes'
+                                        :accum-objects  (pcb/get-objects changes')
+                                        :new-root-ids   new-roots}))))
+                               {:changes        init-changes
+                                :accum-objects  page-objects
+                                :new-root-ids   []}
+                               (vec selected))
+
+                              changes       (:changes result)
+                              accum-objects (:accum-objects result)
+                              new-root-ids  (:new-root-ids result)
+                              changes       (pcb/amend-changes changes process-rchange)
+                              changes       (pcb/resize-parents changes new-root-ids)
+                              undo-id       (js/Symbol)
+                              frame-ids     (into #{}
+                                                  (comp (map #(get accum-objects %))
+                                                        (keep :frame-id))
+                                                  new-root-ids)]
+                          (rx/of (dwu/start-undo-transaction undo-id)
+                                 (dch/commit-changes changes)
+                                 (dws/select-shapes (set new-root-ids))
+                                 (ptk/data-event :layout/update {:ids frame-ids})
+                                 (dwu/commit-undo-transaction undo-id)))))]
+
+                (if (= (:current-file-id state) (:file-id pdata))
+                  (build-events (assoc pdata :images []))
+                  (->> (rx/from (:images pdata))
+                       (rx/merge-map (partial upload-media (:current-file-id state)))
+                       (rx/reduce conj [])
+                       (rx/mapcat (fn [imgs]
+                                    (build-events (assoc pdata :images imgs))))))))))))))
+
+(defn paste-over
+  "Paste Over — overwrite each selected layer's content (fills/strokes
+  and, for text shapes, text content) with the clipboard's content,
+  keeping each target's position and size. Falls back to the normal
+  paste when zero or one shape is selected. One undo transaction for
+  the batch."
+  []
+  (ptk/reify ::paste-over
+    ptk/WatchEvent
+    (watch [_ state _]
+      (when-not (-> state :workspace-global :read-only?)
+        (let [selected (dsh/lookup-selected state)]
+          (cond
+            (empty? selected)
+            (rx/empty)
+
+            (= 1 (count selected))
+            (rx/of (paste-from-clipboard))
+
+            :else
+            (->> (read-clipboard-transit)
+                 (rx/mapcat
+                  (fn [pdata]
+                    (case (:type pdata)
+                      :copied-props
+                      (rx/of (paste-selected-props))
+
+                      :copied-shapes
+                      (let [objs    (:objects pdata)
+                            root-id (first (:selected pdata))
+                            shape   (get objs root-id)]
+                        (if-not shape
+                          (rx/empty)
+                          (let [props   (cts/extract-props shape)
+                                undo-id (js/Symbol)]
+                            (rx/of (dwu/start-undo-transaction undo-id)
+                                   (dwsh/update-shapes
+                                    (vec selected)
+                                    (fn [s objects]
+                                      (cts/patch-props s props objects))
+                                    {:with-objects? true})
+                                   (ptk/data-event :layout/update {:ids (vec selected)})
+                                   (dwu/commit-undo-transaction undo-id)))))
+
+                      (rx/empty)))))))))))
+
+(defn paste-replace
+  "Paste & Replace — replace each selected layer with a clone of the
+  clipboard shape, inheriting each target's position. Falls back to the
+  normal paste-replace when zero or one shape is selected. One undo
+  transaction for the batch."
+  []
+  (ptk/reify ::paste-replace
+    ptk/WatchEvent
+    (watch [_ state _]
+      (when-not (-> state :workspace-global :read-only?)
+        (let [selected (dsh/lookup-selected state)]
+          (cond
+            (empty? selected)
+            (rx/empty)
+
+            (= 1 (count selected))
+            (rx/of (paste-from-clipboard {:replace? true}))
+
+            :else
+            (->> (read-clipboard-transit)
+                 (rx/mapcat
+                  (fn [pdata]
+                    (if (= :copied-shapes (:type pdata))
+                      (rx/of (multi-paste-shapes pdata true))
+                      (rx/of (paste-from-clipboard {:replace? true}))))))))))))
+
+(defn multi-paste
+  "Multi-Paste — paste the clipboard shape as a new sibling inside each
+  selected container or next to each selected leaf. Falls back to the
+  normal paste when zero or one shape is selected. One undo transaction
+  for the batch."
+  []
+  (ptk/reify ::multi-paste
+    ptk/WatchEvent
+    (watch [_ state _]
+      (when-not (-> state :workspace-global :read-only?)
+        (let [selected (dsh/lookup-selected state)]
+          (cond
+            (empty? selected)
+            (rx/empty)
+
+            (= 1 (count selected))
+            (rx/of (paste-from-clipboard))
+
+            :else
+            (->> (read-clipboard-transit)
+                 (rx/mapcat
+                  (fn [pdata]
+                    (if (= :copied-shapes (:type pdata))
+                      (rx/of (multi-paste-shapes pdata false))
+                      (rx/of (paste-from-clipboard))))))))))))
+
 (defn copy-link-to-clipboard
   []
   (ptk/reify ::copy-link-to-clipboard

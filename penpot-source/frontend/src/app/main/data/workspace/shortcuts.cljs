@@ -109,7 +109,20 @@
    :paste-replace        {:tooltip (ds/meta (ds/shift "V"))
                           :command (ds/c-mod "shift+v")
                           :subsections [:edit]
-                          :fn #(emit-when-no-readonly (dw/paste-from-clipboard {:replace? true}))}
+                          :fn #(emit-when-no-readonly (dw/paste-replace))}
+
+   ;; Multi-Paste (P2.27) — batch paste across every selected layer.
+   ;; :paste-replace above is the multi Replace; plain Paste (Cmd+V) is
+   ;; left byte-identical and untouched.
+   :paste-over           {:tooltip (ds/meta (ds/alt-shift "O"))
+                          :command (ds/c-mod "alt+shift+o")
+                          :subsections [:edit]
+                          :fn #(emit-when-no-readonly (dw/paste-over))}
+
+   :multi-paste          {:tooltip (ds/meta (ds/alt-shift "M"))
+                          :command (ds/c-mod "alt+shift+m")
+                          :subsections [:edit]
+                          :fn #(emit-when-no-readonly (dw/multi-paste))}
 
    :copy-props           {:tooltip (ds/meta (ds/alt "c"))
                           :command (ds/c-mod "alt+c")

@@ -603,6 +603,397 @@
                                 :is-toggled @display-mentions*)
       :icon i/at}]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; P2.40 — Visual comment attachments (image / emoji / sketch)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Self-contained: Lucide glyphs inlined (stroke-width 2, currentColor),
+;; styling injected via a <style> block (no scss-pipeline dependency, so it
+;; compiles without the build-generated .css.json that `stl/css` needs).
+;; Coral #f28b82 accent, grey #7d7d7d at rest — matches the AI surfaces.
+;; Reduced motion is honored via a `prefers-reduced-motion` media query.
+;; A comment with no attachments renders EXACTLY as before: the bar is only
+;; mounted inside the compose forms, and the per-bubble render component is
+;; only mounted when `(seq (:attachments comment))` is true.
+
+;; ── Lucide icons (one family, stroke-width 2, currentColor) ──────────────────
+
+(defn- li
+  "Wrap a seq of SVG children in a Lucide 24×24 icon frame — matches the
+  ai_bar.cljs idiom."
+  [body]
+  [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+         :aria-hidden "true"} body])
+
+(def ^:private lucide-smile
+  (li [[:circle {:cx 12 :cy 12 :r 10}]
+       [:path {:d "M8 14s1.5 2 4 2 4-2 4-2"}]
+       [:line {:x1 9 :y1 9 :x2 9.01 :y2 9}]
+       [:line {:x1 15 :y1 9 :x2 15.01 :y2 9}]]))
+
+(def ^:private lucide-image
+  (li [[:rect {:x 3 :y 3 :width 18 :height 18 :rx 2 :ry 2}]
+       [:circle {:cx 9 :cy 9 :r 2}]
+       [:path {:d "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"}]]))
+
+(def ^:private lucide-pencil
+  (li [[:path {:d "M12 20h9"}]
+       [:path {:d "M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"}]]))
+
+(def ^:private lucide-x
+  (li [[:path {:d "M18 6 6 18"}]
+       [:path {:d "m6 6 12 12"}]]))
+
+(def ^:private lucide-trash
+  (li [[:path {:d "M3 6h18"}]
+       [:path {:d "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"}]]))
+
+;; ── Curated emoji set (no dependency, plain unicode) ─────────────────────────
+
+(def ^:private emoji-set
+  ["😀" "😍" "😂" "👍" "🎉" "🔥" "❤️" "👏"
+   "🤔" "👀" "✅" "❌" "⭐" "💡" "🚀" "🎯"])
+
+;; ── Inline styles ─────────────────────────────────────────────────────────────
+
+(def ^:private attachment-css
+  ".cmt-att-bar { display:flex; align-items:center; gap:4px; padding:6px 0 0; flex-wrap:wrap; position:relative; }
+.cmt-att-btn { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border:none; border-radius:6px; background:transparent; color:#7d7d7d; cursor:pointer; transition:background .15s, color .15s; padding:0; }
+.cmt-att-btn:hover { background:rgba(242,139,130,0.12); color:#f28b82; }
+.cmt-att-btn.is-active { color:#f28b82; background:rgba(242,139,130,0.14); }
+.cmt-att-btn svg { width:16px; height:16px; display:block; }
+.cmt-att-pop { position:absolute; bottom:100%; left:0; margin-bottom:6px; background:#fff; border:1px solid #e6e6e6; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.12); padding:8px; display:grid; grid-template-columns:repeat(8,1fr); gap:4px; z-index:20; }
+.cmt-att-emoji { font-size:18px; line-height:1; padding:4px; border:none; background:transparent; cursor:pointer; border-radius:4px; }
+.cmt-att-emoji:hover { background:rgba(242,139,130,0.14); }
+.cmt-att-chips { display:flex; flex-wrap:wrap; gap:6px; padding:6px 0 0; width:100%; }
+.cmt-att-chip { position:relative; display:inline-flex; align-items:center; gap:4px; padding:4px 6px; border-radius:6px; background:#f4f4f4; font-size:13px; color:#444; max-width:200px; }
+.cmt-att-chip img { width:32px; height:32px; object-fit:cover; border-radius:4px; display:block; }
+.cmt-att-chip-sketch { width:40px; height:32px; display:block; }
+.cmt-att-chip-sketch path { stroke:#f28b82; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.cmt-att-chip-emoji { font-size:18px; line-height:1; }
+.cmt-att-rm { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border:none; background:transparent; color:#7d7d7d; cursor:pointer; border-radius:50%; padding:0; }
+.cmt-att-rm:hover { color:#f28b82; background:rgba(242,139,130,0.14); }
+.cmt-att-rm svg { width:12px; height:12px; display:block; }
+.cmt-att-render { display:flex; flex-wrap:wrap; gap:8px; padding-top:6px; }
+.cmt-att-thumb { width:120px; height:auto; max-height:160px; object-fit:cover; border-radius:6px; cursor:zoom-in; border:1px solid #e6e6e6; transition:border-color .15s; display:block; }
+.cmt-att-thumb:hover { border-color:#f28b82; }
+.cmt-att-emoji-inline { font-size:20px; line-height:1; }
+.cmt-att-sketch-inline { width:120px; height:80px; border:1px solid #e6e6e6; border-radius:6px; background:#fafafa; display:block; }
+.cmt-att-sketch-inline path { stroke:#f28b82; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.cmt-att-sketch-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.cmt-att-sketch-panel { background:#fff; border-radius:10px; padding:14px; box-shadow:0 8px 32px rgba(0,0,0,0.25); display:flex; flex-direction:column; gap:10px; }
+.cmt-att-sketch-title { font-size:13px; color:#333; font-weight:600; }
+.cmt-att-sketch-canvas { border:1px solid #e6e6e6; border-radius:6px; background:#fff; cursor:crosshair; touch-action:none; display:block; }
+.cmt-att-sketch-actions { display:flex; justify-content:flex-end; gap:8px; }
+.cmt-att-lightbox { position:fixed; inset:0; background:rgba(0,0,0,0.78); display:flex; align-items:center; justify-content:center; z-index:1001; padding:24px; box-sizing:border-box; }
+.cmt-att-lightbox-img { max-width:90vw; max-height:88vh; border:3px solid #f28b82; border-radius:6px; box-shadow:0 8px 40px rgba(0,0,0,0.5); display:block; }
+.cmt-att-lightbox-close { position:fixed; top:18px; right:18px; width:36px; height:36px; border:none; border-radius:50%; background:rgba(255,255,255,0.12); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.cmt-att-lightbox-close:hover { background:rgba(242,139,130,0.5); }
+.cmt-att-lightbox-close svg { width:18px; height:18px; display:block; }
+.cmt-att-lightbox-cap { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); color:#fff; font-size:13px; background:rgba(0,0,0,0.4); padding:6px 12px; border-radius:6px; max-width:80vw; text-align:center; }
+@media (prefers-reduced-motion: reduce) {
+  .cmt-att-btn, .cmt-att-thumb, .cmt-att-rm, .cmt-att-lightbox-img { transition:none !important; }
+}")
+
+(mf/defc attachment-style-block*
+  {::mf/private true}
+  []
+  [:style {:dangerouslySetInnerHTML #js {:__html attachment-css}}])
+
+;; ── Helpers ───────────────────────────────────────────────────────────────────
+
+(defn- strokes->svg-path
+  "Serialize a vector of strokes (each a vector of {:x :y} points) into a
+  single SVG path `d` string: `M x1 y1 L x2 y2 L x3 y3 M x4 y4 ...`."
+  [strokes]
+  (let [coords (fn [p] (dm/str (:x p) " " (:y p)))
+        stroke->d
+        (fn [stroke]
+          (let [head (first stroke)
+                tail (rest stroke)]
+            (dm/str "M " (coords head)
+                    (apply str (map #(dm/str " L " (coords %)) tail)))))]
+    (apply str (interpose " " (map stroke->d strokes)))))
+
+(defn- remove-at
+  "Return `v` without the element at index `idx` (non-destructive)."
+  [v idx]
+  (vec (concat (subvec v 0 idx) (subvec v (inc idx)))))
+
+;; ── Sketch overlay (minimal freehand canvas → SVG path) ───────────────────────
+
+(mf/defc comment-sketch-overlay*
+  {::mf/private true}
+  [{:keys [on-confirm on-cancel]}]
+  (let [canvas-ref (mf/use-ref nil)
+        strokes*   (mf/use-state [])
+        drawing*   (mf/use-ref false)
+        w          280
+        h          180
+
+        get-pos
+        (mf/use-fn
+         (fn [e]
+           (let [c    (mf/ref-val canvas-ref)
+                 rect (.getBoundingClientRect ^js c)]
+             {:x (- (.-clientX ^js e) (.-left ^js rect))
+              :y (- (.-clientY ^js e) (.-top ^js rect))})))
+
+        begin-stroke
+        (mf/use-fn
+         (fn [e]
+           (dom/prevent-default e)
+           (mf/set-ref-val! drawing* true)
+           (let [p    (get-pos e)
+                 c    (mf/ref-val canvas-ref)
+                 ctx  (.getContext ^js c "2d")]
+             (set! (.-strokeStyle ^js ctx) "#f28b82")
+             (set! (.-lineWidth ^js ctx) 2)
+             (set! (.-lineCap ^js ctx) "round")
+             (set! (.-lineJoin ^js ctx) "round")
+             (.beginPath ^js ctx)
+             (.moveTo ^js ctx (:x p) (:y p))
+             (swap! strokes* conj [p]))))
+
+        extend-stroke
+        (mf/use-fn
+         (fn [e]
+           (when (mf/ref-val drawing*)
+             (let [p   (get-pos e)
+                   c   (mf/ref-val canvas-ref)
+                   ctx (.getContext ^js c "2d")]
+               (.lineTo ^js ctx (:x p) (:y p))
+               (.stroke ^js ctx)
+               (swap! strokes* (fn [s]
+                                 (let [n (count s)]
+                                   (assoc s (dec n) (conj (s (dec n)) p)))))))))
+
+        end-stroke
+        (mf/use-fn
+         (fn []
+           (mf/set-ref-val! drawing* false)))
+
+        on-clear
+        (mf/use-fn
+         (fn []
+           (let [c   (mf/ref-val canvas-ref)
+                 ctx (.getContext ^js c "2d")]
+             (.clearRect ^js ctx 0 0 w h))
+           (reset! strokes* [])))
+
+        on-confirm*
+        (mf/use-fn
+         (mf/deps @strokes*)
+         (fn []
+           (let [d (strokes->svg-path @strokes*)]
+             (on-confirm d w h))))
+
+        on-cancel*
+        (mf/use-fn
+         (fn []
+           (on-cancel)))
+
+        on-backdrop
+        (mf/use-fn
+         (fn []
+           (on-cancel)))]
+
+    [:div.cmt-att-sketch-overlay {:on-click on-backdrop}
+     [:div.cmt-att-sketch-panel {:on-click dom/stop-propagation}
+      [:div.cmt-att-sketch-title (tr "labels.comment.sketch-title")]
+      [:canvas.cmt-att-sketch-canvas
+       {:ref canvas-ref
+        :width w
+        :height h
+        :on-pointer-down begin-stroke
+        :on-pointer-move extend-stroke
+        :on-pointer-up end-stroke
+        :on-pointer-leave end-stroke}]
+      [:div.cmt-att-sketch-actions
+       [:> button* {:variant "ghost" :type "button" :on-click on-clear}
+        (tr "labels.clear")]
+       [:> button* {:variant "ghost" :type "button" :on-click on-cancel*}
+        (tr "ds.confirm-cancel")]
+       [:> button* {:variant "primary" :type "button"
+                    :on-click on-confirm* :disabled (empty? @strokes*)}
+        (tr "labels.post")]]]]))
+
+;; ── Attachment compose bar (emoji / image / sketch) ───────────────────────────
+
+(mf/defc comment-attachments-bar*
+  {::mf/private true}
+  [{:keys [attachments on-change]}]
+  (let [file-ref    (mf/use-ref nil)
+        emoji-open* (mf/use-state false)
+        sketch-open* (mf/use-state false)
+
+        add-att
+        (mf/use-fn
+         (mf/deps on-change attachments)
+         (fn [att]
+           (on-change (conj attachments att))))
+
+        remove-att
+        (mf/use-fn
+         (mf/deps on-change attachments)
+         (fn [idx]
+           (on-change (remove-at attachments idx))))
+
+        open-file
+        (mf/use-fn
+         (fn []
+           (when-let [n (mf/ref-val file-ref)]
+             (.click ^js n))))
+
+        on-file
+        (mf/use-fn
+         (mf/deps add-att)
+         (fn [e]
+           (let [file (first (array-seq (.. e -target -files)))]
+             (when file
+               ;; Mirrors wapi/read-file-as-data-url but inline so the
+               ;; handler is self-contained (no rx subscription lifecycle).
+               (let [reader (js/FileReader.)]
+                 (set! (.-onload ^js reader)
+                       (fn []
+                         (add-att {:type :image :data (.-result ^js reader)})))
+                 (.readAsDataURL ^js reader file))))
+           (when-let [n (mf/ref-val file-ref)]
+             (set! (.-value ^js n) ""))))
+
+        on-toggle-emoji
+        (mf/use-fn
+         (mf/deps @emoji-open*)
+         (fn [e]
+           (dom/stop-propagation e)
+           (dom/prevent-default e)
+           (swap! emoji-open* not)))
+
+        on-pick-emoji
+        (mf/use-fn
+         (mf/deps add-att)
+         (fn [e char]
+           (dom/stop-propagation e)
+           (add-att {:type :emoji :data char})
+           (reset! emoji-open* false)))
+
+        on-open-sketch
+        (mf/use-fn
+         (fn []
+           (reset! sketch-open* true)))
+
+        on-sketch-confirm
+        (mf/use-fn
+         (mf/deps add-att)
+         (fn [d w h]
+           (add-att {:type :sketch :data d :meta {:w w :h h}})
+           (reset! sketch-open* false)))
+
+        on-sketch-cancel
+        (mf/use-fn
+         (fn []
+           (reset! sketch-open* false)))]
+
+    [:div.cmt-att-bar
+     [:> attachment-style-block*]
+     [:button.cmt-att-btn
+      {:type "button"
+       :aria-label (tr "labels.comment.add-emoji")
+       :on-click on-toggle-emoji
+       :class (when @emoji-open* "is-active")}
+      lucide-smile]
+     [:button.cmt-att-btn
+      {:type "button"
+       :aria-label (tr "labels.comment.add-image")
+       :on-click open-file}
+      lucide-image]
+     [:button.cmt-att-btn
+      {:type "button"
+       :aria-label (tr "labels.comment.add-sketch")
+       :on-click on-open-sketch}
+      lucide-pencil]
+     [:input {:type "file" :accept "image/*" :ref file-ref
+              :style #js {"display" "none"} :on-change on-file}]
+     (when @emoji-open*
+       [:div.cmt-att-pop {:on-click dom/stop-propagation}
+        (for [ch emoji-set]
+          [:button.cmt-att-emoji
+           {:key ch :type "button" :on-click #(on-pick-emoji % ch)}
+           ch])])
+     (when @sketch-open*
+       [:> comment-sketch-overlay*
+        {:on-confirm on-sketch-confirm :on-cancel on-sketch-cancel}])
+     (when (seq attachments)
+       [:div.cmt-att-chips
+        (for [[idx att] (d/enumerate attachments)]
+          [:div.cmt-att-chip {:key idx}
+           (case (:type att)
+             :image [:img {:src (:data att)}]
+             :emoji [:span.cmt-att-chip-emoji (:data att)]
+             :sketch [:svg.cmt-att-chip-sketch
+                      {:viewBox (dm/str "0 0 " (:w (:meta att) 120) " " (:h (:meta att) 80))}
+                      [:path {:d (:data att)}]]
+             nil)
+           [:button.cmt-att-rm
+            {:type "button"
+             :aria-label (tr "labels.remove")
+             :on-click #(remove-att idx)}
+            lucide-trash]])])]))
+
+;; ── Attachment lightbox (coral-bordered, reduced-motion via CSS) ──────────────
+
+(mf/defc attachment-lightbox*
+  {::mf/private true}
+  [{:keys [src caption on-close]}]
+  (let [on-key
+        (mf/use-fn
+         (mf/deps on-close)
+         (fn [e]
+           (when (kbd/esc? e) (on-close))))]
+    (mf/with-effect []
+      (js/document.addEventListener "keydown" on-key)
+      #(js/document.removeEventListener "keydown" on-key))
+    [:div.cmt-att-lightbox {:on-click on-close}
+     [:img.cmt-att-lightbox-img {:src src}]
+     [:button.cmt-att-lightbox-close
+      {:type "button" :aria-label (tr "labels.close") :on-click on-close}
+      lucide-x]
+     (when (d/not-empty? caption)
+       [:div.cmt-att-lightbox-cap caption])]))
+
+;; ── Attachment render (inside a comment bubble) ───────────────────────────────
+
+(mf/defc comment-attachments-render*
+  {::mf/private true}
+  [{:keys [attachments]}]
+  (let [lightbox* (mf/use-state nil)]
+    [:*
+     [:> attachment-style-block*]
+     [:div.cmt-att-render
+      (for [[idx att] (d/enumerate attachments)]
+        (case (:type att)
+          :image
+          [:img.cmt-att-thumb
+           {:key idx :src (:data att)
+            :on-click #(reset! lightbox* att)}]
+          :emoji
+          [:span.cmt-att-emoji-inline {:key idx} (:data att)]
+          :sketch
+          (let [meta (:meta att)
+                w    (:w meta 120)
+                h    (:h meta 80)]
+            [:svg.cmt-att-sketch-inline
+             {:key idx :viewBox (dm/str "0 0 " w " " h)
+              :preserveAspectRatio "xMidYMid meet"}
+             [:path {:d (:data att)}]])
+          nil))]
+     (when-let [lb @lightbox*]
+       [:> attachment-lightbox*
+        {:src (:data lb)
+         :caption (-> lb :meta :caption)
+         :on-close #(reset! lightbox* nil)}])]))
+
 (def ^:private schema:comment-avatar
   [:map
    [:class {:optional true} :string]
@@ -704,6 +1095,7 @@
   {::mf/private true}
   [{:keys [on-submit on-cancel]}]
   (let [content       (mf/use-state "")
+        attachments   (mf/use-state [])
 
         disabled? (or (blank-content? @content)
                       (exceeds-length? @content))
@@ -722,12 +1114,17 @@
         (mf/use-fn
          #(reset! content %))
 
+        on-attachments-change
+        (mf/use-fn
+         #(reset! attachments %))
+
         on-submit*
         (mf/use-fn
-         (mf/deps @content)
+         (mf/deps @content @attachments)
          (fn []
-           (on-submit @content)
-           (reset! content "")))]
+           (on-submit @content @attachments)
+           (reset! content "")
+           (reset! attachments [])))]
 
     [:div {:class (stl/css :form)}
      [:> comment-input*
@@ -736,6 +1133,8 @@
        :autofocus true
        :on-ctrl-enter on-submit*
        :on-change on-change}]
+     [:> comment-attachments-bar*
+      {:attachments @attachments :on-change on-attachments-change}]
      (when (exceeds-length? @content)
        [:div {:class (stl/css :error-text)}
         (tr "errors.character-limit-exceeded")])
@@ -804,6 +1203,11 @@
                     (gpt/transform position-modifier))
         content   (:content draft)
 
+        ;; P2.40 — attachments live as local compose state; they are only
+        ;; merged into the draft at submit time, and only when non-empty, so
+        ;; a draft with no attachments is byte-identical to pre-P2.40.
+        attachments* (mf/use-state [])
+
         ;; Keep the draft bubble centered on the comment position (matching a
         ;; created bubble) while the input box is offset to the side.
         bubble-margin (gpt/point 24 24)
@@ -835,11 +1239,16 @@
          (fn [content]
            (st/emit! (dcm/update-draft-thread {:content content}))))
 
+        on-attachments-change
+        (mf/use-fn
+         #(reset! attachments* %))
+
         on-submit*
         (mf/use-fn
-         (mf/deps draft)
+         (mf/deps draft @attachments*)
          (fn []
-           (on-submit draft)))]
+           (on-submit (cond-> draft (seq @attachments*) (assoc :attachments @attachments*)))
+           (reset! attachments* [])))]
 
     [:> (mf/provider mentions-context) {:value mentions-s}
      [:div {:class (stl/css :floating-preview-wrapper :floating-preview-bubble)
@@ -865,6 +1274,8 @@
          :on-esc on-esc
          :on-change on-change
          :on-ctrl-enter on-submit*}]
+       [:> comment-attachments-bar*
+        {:attachments @attachments* :on-change on-attachments-change}]
        (when (exceeds-length? content)
          [:div {:class (stl/css :error-text)}
           (tr "errors.character-limit-exceeded")])
@@ -1006,8 +1417,15 @@
          [:> comment-edit-form* {:content (:content comment)
                                  :on-submit on-submit
                                  :on-cancel on-cancel}]
-         [:span {:class (stl/css :text)}
-          [:> comment-content* {:content (:content comment)}]])]]
+         ;; P2.40 — only mount the attachments render when the comment
+         ;; actually has attachments, so an attachmentless comment is
+         ;; byte-identical to the pre-P2.40 text-only render.
+         [:*
+          [:span {:class (stl/css :text)}
+           [:> comment-content* {:content (:content comment)}]]
+          (when (seq (:attachments comment))
+            [:> comment-attachments-render*
+             {:attachments (:attachments comment)}])])]]
 
      [:& dropdown {:show (= options (:id comment))
                    :on-close on-hide-options}
@@ -1062,8 +1480,8 @@
         on-submit
         (mf/use-fn
          (mf/deps thread)
-         (fn [content]
-           (st/emit! (dcm/add-comment thread content))))
+         (fn [content attachments]
+           (st/emit! (dcm/add-comment thread content attachments))))
 
         on-cancel
         (mf/use-fn #(st/emit! (dcm/close-thread)))]

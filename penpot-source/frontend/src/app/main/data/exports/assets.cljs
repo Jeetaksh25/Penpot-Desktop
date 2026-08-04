@@ -10,6 +10,7 @@
    [app.common.uuid :as uuid]
    [app.config :as cf]
    [app.main.data.event :as ev]
+   [app.main.data.exports.font-embed :as font-embed]
    [app.main.data.exports.wasm :as wasm.exports]
    [app.main.data.helpers :as dsh]
    [app.main.data.modal :as modal]
@@ -19,6 +20,8 @@
    [app.main.store :as st]
    [app.util.code-gen :as cg]
    [app.util.dom :as dom]
+   [app.util.http :as http]
+   [app.util.webapi :as wapi]
    [app.util.websocket :as ws]
    [beicon.v2.core :as rx]
    [potok.v2.core :as ptk]))
@@ -264,22 +267,58 @@
 
         :else
         (let [profile-id (:profile-id state)
-              params     {:exports [export]
+              ;; Strip the client-only :embed-fonts flag so the backend
+              ;; receives exactly the export spec it did before this
+              ;; feature (keeps the backend payload — and thus the
+              ;; toggle-OFF output — byte-identical, and avoids any
+              ;; backend schema rejection of the new key).
+              params     {:exports [(dissoc export :embed-fonts)]
                           :profile-id profile-id
                           :cmd :export-shapes
                           :wait true
-                          :is-wasm (wasm-export-enabled? state)}]
+                          :is-wasm (wasm-export-enabled? state)}
+              embed-fonts? (and (= :svg (:type export))
+                                (true? (:embed-fonts export)))]
           (rx/concat
            (dwp/force-persist-and-wait 400)
 
-           (->> (rp/cmd! :export params)
-                (rx/map (fn [{:keys [filename mtype uri]}]
-                          (dom/trigger-download-uri filename mtype uri)
-                          (clear-export-state uuid/zero)))
-                (rx/catch (fn [cause]
-                            (rx/concat
-                             (rx/of (clear-export-state uuid/zero))
-                             (rx/throw cause)))))))))))
+           (if embed-fonts?
+             ;; P2.20 — SVG export with "Embed fonts" ON: fetch the
+             ;; backend SVG, inject base64 @font-face for every font
+             ;; used in the exported subtree, then download the
+             ;; rewritten blob. When the toggle is OFF we take the
+             ;; other branch below, which is byte-identical to the
+             ;; pre-feature behaviour.
+             (->> (rp/cmd! :export params)
+                  (rx/merge-map
+                   (fn [{:keys [filename mtype uri] :as resource}]
+                     (let [objects (resolve-export-objects state export)
+                           shape   (export-root-shape objects export)]
+                       (->> (http/fetch-text uri)
+                            (rx/merge-map
+                             (fn [svg-text]
+                               (font-embed/embed-fonts-in-svg
+                                svg-text [shape] objects)))
+                            (rx/map
+                             (fn [svg-text]
+                               (let [blob (wapi/create-blob svg-text mtype)
+                                     url  (wapi/create-uri blob)]
+                                 (dom/trigger-download-uri filename mtype url)
+                                 (js/queueMicrotask #(wapi/revoke-uri url))
+                                 (clear-export-state uuid/zero))))))))
+                  (rx/catch (fn [cause]
+                              (rx/concat
+                               (rx/of (clear-export-state uuid/zero))
+                               (rx/throw cause)))))
+
+             (->> (rp/cmd! :export params)
+                  (rx/map (fn [{:keys [filename mtype uri]}]
+                            (dom/trigger-download-uri filename mtype uri)
+                            (clear-export-state uuid/zero)))
+                  (rx/catch (fn [cause]
+                              (rx/concat
+                               (rx/of (clear-export-state uuid/zero))
+                               (rx/throw cause))))))))))))
 
 (defn request-multiple-export
   [{:keys [exports cmd name]
