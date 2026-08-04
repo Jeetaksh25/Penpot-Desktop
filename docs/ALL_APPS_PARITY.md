@@ -226,7 +226,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.09 Color-blindness simulator (vision-deficiency canvas preview: deuteranopia/protanopia/tritanopia)
 
-- **State:** 🔴 missing  ·  **Sources:** UXPin
+- **State:** ✅ done (C3 6d92069)  ·  **Sources:** UXPin
 - **Detail / build direction:** ui/inspect/a11y.cljs is contrast-only; no vision-deficiency filter anywhere. Recommended: add a canvas preview mode (viewport menu) applying SVG color-matrix filters for deuteranopia/protanopia/tritanopia/achromatopsia over the viewport overlay. Pure SVG, unblocked. Pair with the contrast checker in a unified a11y panel.
 
 #### P1.10 Compound Shape with per-child shape-mode overrides + Expand-to-finalize button
