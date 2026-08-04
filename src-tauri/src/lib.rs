@@ -20,6 +20,7 @@ mod mcp_server;
 mod publish;
 mod plugin_registry;
 mod cms_import;
+mod stock_assets;
 
 /// Hide the console window for a spawned process. The Tauri app uses the
 /// `windows` subsystem (GUI, no parent console), so without this every
@@ -779,6 +780,8 @@ pub fn run() {
             publish::submit_form,
             plugin_registry::fetch_plugin_registry,
             cms_import::import_cms_platform,
+            stock_assets::stock_search_icons,
+            stock_assets::stock_search_photos,
         ])
         .setup(|app| {
             let handle = app.handle().clone();

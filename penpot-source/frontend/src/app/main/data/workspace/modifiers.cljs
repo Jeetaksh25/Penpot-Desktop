@@ -26,6 +26,7 @@
    [app.common.uuid :as uuid]
    [app.main.data.helpers :as dsh]
    [app.main.data.workspace.comments :as-alias dwcm]
+   [app.main.data.workspace.connectors :as dwconn]
    [app.main.data.workspace.guides :as-alias dwg]
    [app.main.data.workspace.shapes :as dwsh]
    [app.main.data.workspace.undo :as dwu]
@@ -844,7 +845,12 @@
             ;; path in WASM once per bool shape just to find that out.
             (dwsh/update-shapes bool-ids path/update-bool-shape (assoc options
                                                                        :with-objects? true
-                                                                       :update-layout? false)))
+                                                                       :update-layout? false))
+            ;; P2.14 Connectors: re-route any connector whose endpoint is
+            ;; one of the just-moved shapes. No-op (rx/empty) when no
+            ;; connector references a moved id; folds into the enclosing
+            ;; undo transaction.
+            (dwconn/reconnect-all ids))
 
            (if undo-transation?
              (rx/of (dwu/commit-undo-transaction undo-id))
@@ -975,7 +981,13 @@
 
         (rx/of (ptk/event ::dwg/move-frame-guides {:ids ids-with-children :modifiers object-modifiers})
                (ptk/event ::dwcm/move-frame-comment-threads ids-with-children)
-               (dwsh/update-shapes ids update-shape options))))))
+               (dwsh/update-shapes ids update-shape options)
+               ;; P2.14 Connectors: re-route any connector whose endpoint
+               ;; is one of the just-moved shapes. `reconnect-all` is a
+               ;; no-op (rx/empty) when no connector references a moved
+               ;; id, so non-connector documents are byte-identical-when-
+               ;; inactive. Folded into the enclosing undo transaction.
+               (dwconn/reconnect-all ids))))))
 
 (defn apply-modifiers
   ([]

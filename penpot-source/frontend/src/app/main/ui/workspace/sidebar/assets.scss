@@ -142,3 +142,186 @@
   display: flex;
   gap: deprecated.$s-4;
 }
+
+// ── P0.04: Stock asset library (Iconify icons + Pexels photos) ───────────────
+// Coral-accented, calm (no size/scale motion — only box-shadow + opacity).
+// `--color-accent` resolves to the coral #f28b82 in both light + dark
+// (set in ds/colors.scss). Reduced-motion users get instant transitions.
+.stock-section {
+  padding: 0 deprecated.$s-12 deprecated.$s-8;
+}
+
+.stock-content {
+  display: flex;
+  flex-direction: column;
+  gap: deprecated.$s-8;
+  padding-top: deprecated.$s-4;
+}
+
+.stock-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: deprecated.$s-4;
+}
+
+.stock-chip {
+  @include deprecated.button-style;
+  @include deprecated.body-small-typography;
+
+  padding: deprecated.$s-2 deprecated.$s-10;
+  border-radius: deprecated.$br-999;
+  border: deprecated.$s-1 solid var(--input-border-color-rest);
+  background-color: var(--input-background-color-rest);
+  color: var(--input-foreground-color-rest);
+  transition: box-shadow 120ms ease, background-color 120ms ease,
+              border-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+}
+
+.stock-chip-active {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+
+  &:hover {
+    color: #fff;
+  }
+}
+
+.stock-search {
+  display: flex;
+  gap: deprecated.$s-4;
+}
+
+.stock-input {
+  flex: 1;
+  height: deprecated.$s-32;
+  padding: 0 deprecated.$s-8;
+  border-radius: deprecated.$br-8;
+  border: deprecated.$s-1 solid var(--input-border-color-rest);
+  background-color: var(--input-background-color-rest);
+  color: var(--input-foreground-color-rest);
+  @include deprecated.body-small-typography;
+
+  &:focus {
+    outline: 0;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+}
+
+.stock-search-btn {
+  @extend %button-secondary;
+  @include deprecated.body-small-typography;
+
+  height: deprecated.$s-32;
+  padding: 0 deprecated.$s-12;
+  border-radius: deprecated.$br-8;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.stock-key-row {
+  display: flex;
+  gap: deprecated.$s-4;
+}
+
+.stock-key-manage {
+  @include deprecated.button-style;
+  @include deprecated.body-small-typography;
+
+  align-self: flex-start;
+  color: var(--color-accent);
+  text-decoration: underline;
+  padding: 0;
+}
+
+.stock-status {
+  @include deprecated.body-small-typography;
+
+  color: var(--text-foreground-secondary);
+  padding: deprecated.$s-12 deprecated.$s-4;
+  text-align: center;
+}
+
+.stock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: deprecated.$s-4;
+  padding-bottom: deprecated.$s-8;
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.stock-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: deprecated.$br-8;
+  border: deprecated.$s-1 solid var(--input-border-color-rest);
+  background-color: var(--input-background-color-rest);
+  cursor: grab;
+  transition: box-shadow 120ms ease, border-color 120ms ease,
+              background-color 120ms ease;
+
+  &:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+  }
+
+  &:active {
+    cursor: grabbing;
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+}
+
+.stock-icon-tile {
+  padding: deprecated.$s-4;
+  color: var(--icon-foreground);
+
+  svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+.stock-photo-tile {
+  overflow: hidden;
+
+  .stock-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stock-chip,
+  .stock-tile,
+  .stock-input {
+    transition: none;
+  }
+}

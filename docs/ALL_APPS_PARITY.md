@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **69** | Implemented end-to-end + verified (commit referenced). |
+| ✅ done | **73** | Implemented end-to-end + verified (commit referenced). |
 | 🟡 half-done | **1** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **26** | Not implemented yet. |
+| 🔴 missing | **22** | Not implemented yet. |
 | ⚠️ not-working | **0** | Present but broken. |
-| **Remaining** | **27** | half-done + missing + not-working. |
+| **Remaining** | **23** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 69 done / 1 half / 26 missing / 0 not-working / 27 remaining. Wave 2 ✅ (4 gaps: P2.40 Visual comments, P2.20 Fonts embedding, P2.07 Oklab/Oklch, P2.27 Multi-Paste).
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 73 done / 1 half / 22 missing / 0 not-working / 23 remaining. Wave 3 ✅ (4 gaps: P2.03 Prompt library, P2.41 Voice input, P0.04 Stock assets, P2.14 Connectors).
 
-Most-recent done: **P2.40 / P2.20 / P2.07 / P2.27** — C5 missing-sweep wave 2: visual comment attachments, SVG font embedding, Oklab/Oklch gradient interpolation + multi-space color picker, Multi-Paste (Paste Over / Paste & Replace / Multi-Paste).
+Most-recent done: **P2.03 / P2.41 / P0.04 / P2.14** — C5 missing-sweep wave 3: AI prompt library (grouped presets + user presets on plugin-data), Web Speech API voice input (API-absent guard), built-in stock asset library (Iconify + Pexels via Tauri proxy, drag-to-canvas reusing svg-raw + image-from-URL paths), connectors as managed paths that re-route on layer move.
 
 ## Contents
 
@@ -122,7 +122,7 @@ Sorted P0 → P1 → P2.
 
 #### P0.04 Built-in stock asset library (1M+ icons, illustrations, photos, OS UI kits, keyword/theme filtering)
 
-- **State:** 🔴 missing  ·  **Sources:** Lunacy
+- **State:** ✅ done (C5 missing-sweep wave 3) — Built-in stock asset library: new Tauri commands stock_search_icons (Iconify, keyless) + stock_search_photos (Pexels, key-gated) in src-tauri/src/stock_assets.rs (reqwest blocking, session Mutex caches for offline reuse), registered in lib.rs. data/workspace/stock_assets.cljs invoke wrappers + localStorage Pexels-key (ovion.pexels-key). assets.cljs Stock section: keyword search + theme chips (Icons/Photos/Illustrations) + results grid; drag-to-canvas reuses the existing svg-raw path (data:image/svg+xml URI) for icons and the existing image-from-URL path for photos — no new shape-creation code. Pexels degrades to icons-only until the user supplies a key. 15 en.po keys.  ·  **Sources:** Lunacy
 - **Detail / build direction:** Ovion has Penpot-native shared libraries + a gfonts proxy but no embedded stock catalog. Recommended: add a browsable asset catalog panel (sidebar/assets) backed by an Icons8-style or open aggregator API (e.g. Iconify's 200k+ icon JSON API + Unsplash/Pexels for photos), with keyword/theme filters and drag-to-canvas. Cache responses locally for offline use (consistent with the offline-desktop strategy). Start with Iconify (free, JSON, no key) for icons and Pexels for photos.
 
 #### P0.05 CMS: Collections with typed content fields, dynamic page templates, references, CMS-bound elements, on-page editing
@@ -399,7 +399,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.03 AI Prompt Library (grouped example prompts picker in the AI bar)
 
-- **State:** 🔴 missing  ·  **Sources:** UXPin
+- **State:** ✅ done (C5 missing-sweep wave 3) — AI Prompt Library: new data/workspace/prompt_library.cljs ships 6 default groups (Layout/Components/Color/Content/Wireframe/Polish, 18 prompts) + user presets persisted on file-level plugin-data :ovion "prompt-library" (3-arg set-plugin-data, one undo). ai_bar.cljs gains a library button (Lucide book-marked) opening a coral popover with search + grouped presets + save-current-as-preset inline form; picking a preset fills the prompt input. Byte-identical when the popover is closed. 7 en.po keys.  ·  **Sources:** UXPin
 - **Detail / build direction:** ai_bar.cljs prompt input is free-text with no preset menu. Recommended: add a prompt-library data structure + a grouped picker UI in the AI bar, with user-savable presets. Frontend, unblocked.
 
 #### P2.04 AI Smart Text operations (Translate, Continue Writing, Polish, Summarize) on selected canvas text with layout-preserving translation
@@ -454,7 +454,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.14 Connectors (visual layer-to-layer relationship/flow lines independent of prototype navigation)
 
-- **State:** 🔴 missing  ·  **Sources:** Lunacy
+- **State:** ✅ done (C5 missing-sweep wave 3) — Connectors (layer-to-layer relationship lines, independent of prototype nav): a connector is a managed :path shape carrying :ovion "connector" plugin-data = pr-str {:from :to :style} (NO new core shape type). data/workspace/connectors.cljs: connector->geometry (straight / orthogonal elbow, cross-frame absolute projection), create-connector / reconnect-all / delete-connector / set-connector-style / connector-click state machine. reconnect-all (rx/empty when no connector references a moved id — byte-identical) emitted from both transform chokepoints in modifiers.cljs (apply-modifiers* + apply-wasm-modifiers) so connectors re-route on any endpoint move. Connector tool in top_toolbar.cljs (Lucide curve) + X shortcut; click-A-then-click-B in viewport/actions.cljs. Inspector menu (color/width/dash/arrow/elbow/delete) self-hides unless the selected shape is a connector. 13 en.po keys.  ·  **Sources:** Lunacy
 - **Detail / build direction:** Ovion has prototype interactions + sections (#72) but no dedicated Connectors layer type. Recommended: add a Connector shape type that draws visual relationship lines between two layers, re-rendering on layer move. Schema + renderer, unblocked.
 
 #### P2.15 Design-system-scoped version control with shareable DS versions
@@ -589,7 +589,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.41 Voice input for design ('vibe design')
 
-- **State:** 🔴 missing  ·  **Sources:** Google Stitch
+- **State:** ✅ done (C5 missing-sweep wave 3) — Voice input: ai_bar.cljs mic button (Lucide mic) using the Web Speech API (SpeechRecognition/webkitSpeechRecognition, continuous=false, interimResults=true, en-US) -> interim + final transcript appended to the prompt input. Component-level use-memo guard hides the mic button entirely when the API is absent (no nil-deref). Coral pulse while listening (reduced-motion: solid coral, no pulse). Byte-identical when unsupported / not listening. 2 en.po keys.  ·  **Sources:** Google Stitch
 - **Detail / build direction:** AI input is text + image/URL only. Recommended: add a microphone control in the AI bar using the Web Speech API (browser-native, no Rust) -> speech-to-text -> prompt. Frontend, unblocked.
 
 

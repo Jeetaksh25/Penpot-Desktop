@@ -88,6 +88,11 @@
     ;; entry toggles a :brush-mode layout flag (lasso-style, no shape
     ;; creation) so selecting it is a safe no-op until the renderer lands.
     :brush   (tr "workspace.toolbar.brush"   (sc/get-tooltip :brush))
+    ;; P2.14 Connectors: visual layer-to-layer relationship/flow lines
+    ;; independent of prototype navigation. A click-A then click-B tool
+    ;; (see data/workspace/connectors.cljs + viewport.actions/on-pointer-down
+    ;; intercept). Uses i/curve as the glyph (closest existing asset).
+    :connector (tr "workspace.toolbar.connector" (sc/get-tooltip :draw-connector))
     :debug   "Debugging tool"
     (name tool)))
 
@@ -537,6 +542,20 @@
                          :group (get grouped-tools :free-draw)
                          :drawtool selected-drawing-tool
                          :on-select-tool on-select-tool}]
+
+        ;; P2.14 Connectors: click-A then click-B to draw a relationship
+        ;; line between two layers. Routed through dw/select-for-drawing
+        ;; :connector; the viewport pointer-down intercept emits
+        ;; connector-click (see viewport.actions/on-pointer-down). Uses
+        ;; i/curve as the glyph (closest existing icon asset).
+        [:li {:class (stl/css :toolbar-option)}
+         [:> icon-button* {:variant "ghost"
+                           :tooltip-placement "bottom"
+                           :aria-pressed (= selected-drawing-tool :connector)
+                           :aria-label (tool-label :connector)
+                           :icon i/curve
+                           :on-click on-select-tool
+                           :data-tool "connector"}]]
 
         [:li {:class (stl/css :toolbar-option)}
          [:> icon-button* {:variant "ghost"

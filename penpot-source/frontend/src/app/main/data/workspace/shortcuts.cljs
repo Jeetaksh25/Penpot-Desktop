@@ -390,6 +390,15 @@
                                         (dwdc/clear-drawing)
                                         (toggle-layout-flag :brush-mode))}
 
+   ;; P2.14 Connectors: visual layer-to-layer relationship/flow lines
+   ;; independent of prototype navigation. Click-A then click-B to draw a
+   ;; connector between two layers (see data/workspace/connectors.cljs).
+   ;; X is a free bare-letter binding (no existing shortcut uses it).
+   :draw-connector       {:tooltip "X"
+                          :command "x"
+                          :subsections [:tools]
+                          :fn #(emit-when-no-readonly (dwd/select-for-drawing :connector))}
+
    ;; Figma-parity scale tool (gap #37). Selects the :scale tool; the
    ;; canvas drag-to-scale interaction is deferred, the actionable
    ;; scaling lives in the measures sidebar scale-factor input. Uses the

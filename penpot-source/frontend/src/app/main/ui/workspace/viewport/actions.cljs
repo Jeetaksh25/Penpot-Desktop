@@ -14,6 +14,7 @@
    [app.common.uuid :as uuid]
    [app.config :as cfg]
    [app.main.data.workspace :as dw]
+   [app.main.data.workspace.connectors :as dwconn]
    [app.main.data.workspace.drawing :as dd]
    [app.main.data.workspace.libraries :as dwl]
    [app.main.data.workspace.media :as dwm]
@@ -106,7 +107,16 @@
 
                    drawing-tool
                    (when-not read-only?
-                     (st/emit! (dd/start-drawing drawing-tool)))
+                     (if (= drawing-tool :connector)
+                       ;; P2.14 Connectors: click-A then click-B tool. The
+                       ;; viewport already tracks the hovered shape id
+                       ;; (`id`), so emit connector-click directly with it
+                       ;; instead of routing through the press-and-drag
+                       ;; start-drawing flow (which would lock after the
+                       ;; first click). No-op when the click hits no shape
+                       ;; (nil id) — connector-click handles that.
+                       (st/emit! (dwconn/connector-click {:shape-id id}))
+                       (st/emit! (dd/start-drawing drawing-tool))))
 
                    (or (not id) mod?)
                    (st/emit! (dw/handle-area-selection shift? (and shift? mod?) mod?))

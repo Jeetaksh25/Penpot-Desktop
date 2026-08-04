@@ -25,6 +25,7 @@
    [app.main.ui.workspace.sidebar.options.drawing :as drawing]
    [app.main.ui.workspace.sidebar.options.menus.align :refer [align-options*]]
    [app.main.ui.workspace.sidebar.options.menus.bool :refer [bool-options*]]
+   [app.main.ui.workspace.sidebar.options.menus.connectors :refer [connectors-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.pathfinder :refer [pathfinder-options*]]
    [app.main.ui.workspace.sidebar.options.menus.component :refer [component-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.grid-cell :as grid-cell]
@@ -172,6 +173,8 @@
      ;; component states, widget notes/spec, and HTML authoring (semantic tag,
      ;; CSS class, custom CSS) — all-shape menus (frame-mount not needed).
      ;; P2.33 Selection Colors (self-hides when <2 selected) + P1.07 Auto helpers.
+     ;; P2.14 Connectors: self-hides unless the selected shape carries the
+     ;; connector plugin-data slot (see menus/connectors.cljs).
      (when (pos? total-selected)
        [:*
         [:> effects-menu* {:shapes shapes}]
@@ -179,7 +182,8 @@
         [:> notes-menu* {:shapes shapes}]
         [:> html-authoring-menu* {:shapes shapes}]
         [:> selection-colors-menu* {:shapes shapes}]
-        [:> auto-helpers-menu* {:shapes shapes}]])
+        [:> auto-helpers-menu* {:shapes shapes}]
+        [:> connectors-menu* {:shapes shapes}]])
 
      (cond
        (and edit-grid? (d/not-empty? selected-cells))

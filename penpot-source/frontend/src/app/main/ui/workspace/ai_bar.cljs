@@ -43,6 +43,7 @@
    [app.main.data.workspace.ai-gen :as ai]
    [app.main.data.workspace.ai-text-ops :as atop]
    [app.main.data.workspace.design-gen :as dg]
+   [app.main.data.workspace.prompt-library :as plib]
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.workspace.ai-chat-history :as aich]
@@ -372,8 +373,81 @@
 .ai-code-toggle:focus-visible { outline: none; box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral), 0 0 0 3px var(--ai-coral-faint); }
 .ai-code-toggle .ai-i { width: 15px; height: 15px; }
 
+/* ── P2.03 — Prompt library popover ──────────────────────────────────────
+   Mirrors .ai-mini-pop but wider: a search input, grouped preset rows,
+   and a "save current as preset" inline form at the bottom. Reduced-motion
+   forces opacity:1 (the pop-in anime handles the calm entrance otherwise). */
+.ai-lib-pop { position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 71;
+  min-width: 320px; max-width: 380px; max-height: 360px; display: flex; flex-direction: column;
+  background: var(--ai-white); border-radius: var(--ai-radius-md);
+  box-shadow: var(--ai-shadow-soft), inset 0 0 0 2px var(--ai-coral);
+  padding: 6px; opacity: 0; }
+.ai-lib-search-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px 8px; }
+.ai-lib-search { flex: 1 1 auto; border: 1px solid #ececec; border-radius: var(--ai-radius-sm);
+  padding: 6px 8px; font-size: 12.5px; font-family: var(--ai-font); color: var(--ai-ink);
+  background: var(--ai-white); outline: none; min-width: 0; }
+.ai-lib-search:focus { border-color: var(--ai-coral); box-shadow: 0 0 0 3px var(--ai-coral-faint); }
+.ai-lib-search .ai-i { width: 15px; height: 15px; color: var(--ai-grey); flex: none; }
+.ai-lib-list { overflow-y: auto; flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; }
+.ai-lib-group { font-size: 11px; font-weight: 700; color: var(--ai-grey);
+  text-transform: uppercase; letter-spacing: 0.04em; font-family: var(--ai-font);
+  padding: 8px 10px 3px; }
+.ai-lib-item { display: flex; align-items: flex-start; gap: 9px; padding: 7px 10px; border: none;
+  cursor: pointer; background: transparent; color: var(--ai-grey-2); border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 12.5px; font-weight: 500; text-align: left;
+  transition: background var(--ai-dur-fast) var(--ai-ease-out), color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-lib-item:hover { background: var(--ai-coral-faint); color: var(--ai-ink); }
+.ai-lib-item .ai-lib-label { font-weight: 600; flex: 1 1 auto; min-width: 0; }
+.ai-lib-item .ai-lib-prompt { font-size: 11px; font-weight: 400; color: var(--ai-grey-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }
+.ai-lib-del { flex: none; width: 22px; height: 22px; border: none; cursor: pointer;
+  background: transparent; color: var(--ai-grey); border-radius: 50%;
+  display: none; align-items: center; justify-content: center; transition: color var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-lib-item:hover .ai-lib-del { display: inline-flex; }
+.ai-lib-del:hover { color: #b3261e; }
+.ai-lib-del .ai-i { width: 13px; height: 13px; }
+.ai-lib-sep { height: 1px; background: #ececec; margin: 4px 4px; }
+.ai-lib-save-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; }
+.ai-lib-save-input { flex: 1 1 auto; border: 1px solid #ececec; border-radius: var(--ai-radius-sm);
+  padding: 6px 8px; font-size: 12px; font-family: var(--ai-font); color: var(--ai-ink);
+  background: var(--ai-white); outline: none; min-width: 0; }
+.ai-lib-save-input:focus { border-color: var(--ai-coral); box-shadow: 0 0 0 3px var(--ai-coral-faint); }
+.ai-lib-save-btn { flex: none; height: 30px; padding: 0 10px; border: none; cursor: pointer;
+  background: var(--ai-coral); color: var(--ai-white); border-radius: var(--ai-radius-sm);
+  font-family: var(--ai-font); font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 5px;
+  box-shadow: var(--ai-shadow-btn), var(--ai-inset-white);
+  transition: background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-lib-save-btn:hover { background: var(--ai-coral-press); }
+.ai-lib-save-btn:disabled { background: #f3c4be; cursor: not-allowed; }
+.ai-lib-save-btn .ai-i { width: 13px; height: 13px; }
+.ai-lib-empty { font-size: 12px; color: var(--ai-grey-2); font-family: var(--ai-font);
+  padding: 14px 10px; text-align: center; }
+
+/* ── P2.41 — Voice input (Web Speech API) ────────────────────────────────
+   The mic + library buttons sit inside the input pill as compact ghost
+   circles (.ai-inpill): grey at rest, coral on active. The mic adds a
+   coral + pulse state while listening. The pulse is a calm opacity
+   breathe (NO size change), matching the bar's calm-motion language.
+   Under reduced motion the mic is solid coral with no pulse. */
+.ai-inpill { width: 32px; height: 32px; flex: none; border: none; cursor: pointer;
+  background: transparent; color: var(--ai-grey); border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: color var(--ai-dur-fast) var(--ai-ease-out), background var(--ai-dur-fast) var(--ai-ease-out); }
+.ai-inpill:hover { color: var(--ai-ink); background: var(--ai-coral-faint); }
+.ai-inpill:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ai-coral-faint); }
+.ai-inpill .ai-i { width: 18px; height: 18px; }
+.ai-inpill.is-active { color: var(--ai-coral); }
+.ai-mic.is-listening { color: var(--ai-coral); box-shadow: var(--ai-shadow-btn), var(--ai-inset-coral), 0 0 0 4px var(--ai-coral-faint); }
+.ai-mic.is-listening .ai-i { animation: ai-mic-pulse 1.6s var(--ai-ease-in-out) infinite; }
+@keyframes ai-mic-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ai-mini-pop, .aich-pop { opacity: 1 !important; }
+  .ai-mini-pop, .aich-pop, .ai-lib-pop { opacity: 1 !important; }
+  .ai-mic.is-listening .ai-i { animation: none; }
 }
 ")
 
@@ -525,6 +599,36 @@
   (li [[:rect {:x 9 :y 9 :width 13 :height 13 :rx 2 :ry 2}]
        [:path {:d "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"}]]))
 
+;; P2.03 — prompt library + save-preset glyphs.
+(def ^:private lucide-book-marked
+  (li [[:path {:d "M19 21V5a2 2 0 0 0-2-2H4"}]
+       [:path {:d "M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14"}]
+       [:path {:d "M12 3v18"}]
+       [:path {:d "M12 8h4"}]
+       [:path {:d "M12 12h4"}]]))
+
+(def ^:private lucide-bookmark-plus
+  (li [[:path {:d "M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l7-3 7 3z"}]
+       [:path {:d "M12 7v6"}]
+       [:path {:d "M9 10h6"}]]))
+
+(def ^:private lucide-search
+  (li [[:circle {:cx 11 :cy 11 :r 8}]
+       [:path {:d "m21 21-4.3-4.3"}]]))
+
+(def ^:private lucide-trash-2
+  (li [[:path {:d "M3 6h18"}]
+       [:path {:d "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"}]
+       [:path {:d "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"}]
+       [:path {:d "M10 11v6"}]
+       [:path {:d "M14 11v6"}]]))
+
+;; P2.41 — voice input (microphone).
+(def ^:private lucide-mic
+  (li [[:path {:d "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"}]
+       [:path {:d "M19 10v2a7 7 0 0 1-14 0v-2"}]
+       [:path {:d "M12 19v3"}]]))
+
 ;; ── Small presentational bits ───────────────────────────────────────────────
 
 ;; Frame presets — the Screen selection pill. Each pairs a backend value
@@ -580,6 +684,19 @@
         active-session-id* (mf/use-state nil)
         ;; P2.34 — Show Code toggle in the preview modal.
         show-code?*    (mf/use-state false)
+        ;; P2.03 — prompt library popover + save-preset inline form.
+        lib-open?*     (mf/use-state false)
+        lib-search*    (mf/use-state "")
+        lib-ref        (mf/use-ref nil)
+        save-group*    (mf/use-state "")
+        save-label*    (mf/use-state "")
+        ;; P2.41 — voice input (Web Speech API). listening?* tracks the
+        ;; active state; speech-rec* holds the live SpeechRecognition
+        ;; instance; interim* buffers the interim transcript so it can be
+        ;; appended to the prompt without clobbering the user's typed text.
+        listening?*    (mf/use-state false)
+        speech-rec*    (mf/use-ref nil)
+        interim*       (mf/use-ref nil)
 
         busy          (mf/deref refs/ai-busy)
         preview       (mf/deref refs/ai-preview)
@@ -590,6 +707,20 @@
         has-sel?      (boolean (seq selected))
         file-ref      (mf/deref refs/file)
         file-id       (some-> file-ref :id str)
+
+        ;; P2.03 — file-level plugin-data for user prompt presets.
+        file-data     (mf/deref refs/workspace-data)
+        user-presets  (plib/read-user-presets file-data)
+
+        ;; P2.41 — Web Speech API support. Nil-safe: when neither
+        ;; SpeechRecognition nor webkitSpeechRecognition is defined the mic
+        ;; button is hidden entirely (see the render guard below).
+        speech-supported?
+        (mf/use-memo
+         (mf/deps)
+         (fn []
+           (or (some? (.-SpeechRecognition js/window))
+               (some? (.-webkitSpeechRecognition js/window)))))
 
         ;; "Update only the selection" now lives in the AI Settings modal and
         ;; is shared via refs/ai-update-sel. nil => default true (update the
@@ -613,11 +744,46 @@
         sessions      (deref sessions*)
         active-session-id (deref active-session-id*)
         show-code?    (deref show-code?*)
+        lib-open?     (deref lib-open?*)
+        lib-search    (deref lib-search*)
+        save-group    (deref save-group*)
+        save-label    (deref save-label*)
+        listening?    (deref listening?*)
 
         ;; The input pill drops from a full pill (999px) to a rounded
         ;; rectangle (~22px) when the prompt grows past one line, mirroring
         ;; the reference's 169px -> 48px radius shift.
         expanded?     (or (str/includes? prompt "\n") (> (count prompt) 48))
+
+        ;; P2.03 — merged + filtered + grouped prompt library for the picker.
+        ;; Defaults are always present; user presets are tagged with their
+        ;; index in the user vector so delete-preset targets the right row.
+        lib-defaults   (plib/default-presets)
+        lib-user       user-presets
+        lib-merged     (into (vec lib-defaults)
+                             (map-indexed (fn [i p]
+                                            (assoc p :user-idx i :user? true))
+                                          lib-user))
+        lib-q          (.. (str lib-search) toLowerCase)
+        lib-filtered   (if (str/empty? lib-search)
+                         lib-merged
+                         (filterv
+                          (fn [p]
+                            (let [lab (.. (str (:label p "")) toLowerCase)
+                                  pr  (.. (str (:prompt p "")) toLowerCase)
+                                  gr  (.. (str (:group p "")) toLowerCase)]
+                              (or (str/includes? lab lib-q)
+                                  (str/includes? pr lib-q)
+                                  (str/includes? gr lib-q))))
+                          lib-merged))
+        lib-groups     (let [seen (volatile! #{})
+                             acc  (volatile! [])]
+                         (doseq [p lib-filtered
+                                 :let [g (:group p)]
+                                 :when (not (contains? @seen g))]
+                           (vswap! seen conj g)
+                           (vswap! acc conj g))
+                         @acc)
 
         ;; Effective target: region update only when something is selected
         ;; AND the user hasn't disabled it (in AI Settings). Otherwise
@@ -916,7 +1082,93 @@
         on-copy-code
         (mf/use-fn
          (fn [text]
-           (some-> js/navigator .-clipboard (.writeText (str text)))))]
+           (some-> js/navigator .-clipboard (.writeText (str text)))))
+
+        ;; ── P2.03 — prompt library popover + save-preset ───────────────────
+        on-toggle-lib
+        (mf/use-fn
+         (fn []
+           (swap! lib-open?* not)
+           (reset! lib-search* "")))
+        on-close-lib
+        (mf/use-fn (fn [] (reset! lib-open?* false)))
+        on-change-lib-search
+        (mf/use-fn (fn [e] (reset! lib-search* (.. e -target -value))))
+        on-change-save-group
+        (mf/use-fn (fn [e] (reset! save-group* (.. e -target -value))))
+        on-change-save-label
+        (mf/use-fn (fn [e] (reset! save-label* (.. e -target -value))))
+        on-pick-preset
+        (mf/use-fn
+         (fn [preset]
+           (reset! prompt* (plib/use-preset preset))
+           (reset! lib-open?* false)
+           (reset! lib-search* "")))
+        on-save-preset
+        (mf/use-fn
+         (mf/deps prompt save-group save-label)
+         (fn []
+           (when-not (str/empty? prompt)
+             (st/emit! (plib/add-preset
+                        {:group save-group :label save-label :prompt prompt}))
+             (reset! save-group* "")
+             (reset! save-label* ""))))
+        on-delete-user-preset
+        (mf/use-fn
+         (fn [idx]
+           (st/emit! (plib/delete-preset {:index idx}))))
+
+        ;; ── P2.41 — voice input (Web Speech API). Interim transcript
+        ;; appends to the prompt; the final transcript is committed on
+        ;; onresult. Nil-safe: the start fn is only reachable from the
+        ;; render guard, which hides the mic button when the API is absent.
+        on-start-listening
+        (mf/use-fn
+         (mf/deps prompt speech-supported?)
+         (fn []
+           (when speech-supported?
+             (let [Ctor (or (.-SpeechRecognition js/window)
+                            (.-webkitSpeechRecognition js/window))
+                   rec  (new Ctor)]
+               (set! (.-lang rec) "en-US")
+               (set! (.-continuous rec) false)
+               (set! (.-interimResults rec) true)
+               (mf/set-ref-val! interim* nil)
+               (let [base prompt]
+                 (set! (.-onresult rec)
+                       (fn [e]
+                         (let [final-str (volatile! "")
+                               interim-str (volatile! "")
+                               results (.-results e)
+                               n (.-length results)]
+                           (doseq [i (range n)]
+                             (let [res (aget results i)
+                                   alt (aget res 0)
+                                   txt (.-transcript alt)]
+                               (if (.-isFinal res)
+                                 (vswap! final-str str txt)
+                                 (vswap! interim-str str txt))))
+                           (reset! prompt*
+                                   (str base @final-str @interim-str)))))
+                 (set! (.-onerror rec)
+                       (fn [_]
+                         (reset! listening?* false)
+                         (mf/set-ref-val! interim* nil)))
+                 (set! (.-onend rec)
+                       (fn []
+                         (reset! listening?* false)
+                         (mf/set-ref-val! interim* nil))))
+               (mf/set-ref-val! speech-rec* rec)
+               (reset! listening?* true)
+               (try (.start rec) (catch :default _ (reset! listening?* false)))))))
+        on-toggle-voice
+        (mf/use-fn
+         (mf/deps listening? on-start-listening)
+         (fn []
+           (if listening?
+             (when-let [rec (mf/ref-val speech-rec*)]
+               (try (.stop rec) (catch :default _ nil)))
+             (on-start-listening))))]
 
     ;; ── Subscribe to backend ai-progress events → local stage text.
     (mf/with-effect
@@ -1004,6 +1256,18 @@
           (aim/pop-in (mf/ref-val chat-ref))
           (let [on-key (fn [e] (when (= (.-key e) "Escape")
                                  (reset! chat-open?* false)))]
+            (.addEventListener js/document "keydown" on-key)
+            (fn [] (.removeEventListener js/document "keydown" on-key))))
+        (fn [] nil)))
+
+    ;; P2.03 — prompt library popover: anime.js entrance + Escape-to-close.
+    ;; Mirrors the screen/chat popovers. Reduced-motion forces opacity:1.
+    (mf/with-effect [lib-open?]
+      (if lib-open?
+        (do
+          (aim/pop-in (mf/ref-val lib-ref))
+          (let [on-key (fn [e] (when (= (.-key e) "Escape")
+                                 (reset! lib-open?* false)))]
             (.addEventListener js/document "keydown" on-key)
             (fn [] (.removeEventListener js/document "keydown" on-key))))
         (fn [] nil)))
@@ -1238,7 +1502,7 @@
                            "justifyContent" "center"}}
               (str n)])])
 
-        ;; input pill: [prompt textarea | coral send disc]
+        ;; input pill: [prompt textarea | library + mic | coral send disc]
         [:div.ai-input-pill {:class (when expanded? "is-expanded")}
          [:textarea.ai-prompt
           {:ref prompt-ref
@@ -1246,6 +1510,81 @@
            :value prompt
            :on-change on-prompt
            :rows 1}]
+         ;; P2.03 — prompt library button + grouped popover. Sits inside
+         ;; the input pill as a compact ghost circle (coral when open).
+         [:div.ai-mini-wrap
+          [:button.ai-inpell
+           {:type "button"
+            :class (when lib-open? "is-active")
+            :on-click on-toggle-lib
+            :aria-expanded (str lib-open?)
+            :aria-haspopup "listbox"
+            :title (tr "workspace.ai.bar.prompt-library-tooltip")}
+           lucide-book-marked]
+          (when lib-open?
+            [:div.ai-mini-back {:on-click on-close-lib}
+             [:div.ai-lib-pop {:ref lib-ref :role "listbox"
+                               :on-click #(.stopPropagation %)}
+              [:div.ai-lib-search-row
+               lucide-search
+               [:input.ai-lib-search
+                {:type "text"
+                 :value lib-search
+                 :placeholder (tr "workspace.ai.bar.prompt-library-search")
+                 :on-change on-change-lib-search}]]
+              [:div.ai-lib-list
+               (if (empty? lib-filtered)
+                 [:div.ai-lib-empty (tr "workspace.ai.bar.prompt-library-empty")]
+                 (for [g lib-groups]
+                   [:div {:key g}
+                    [:div.ai-lib-group g]
+                    (for [p (filter #(= (:group %) g) lib-filtered)]
+                      [:div.ai-lib-item
+                       {:key (str g "|" (:label p) "|" (:user-idx p -1))
+                        :type "button"
+                        :role "option"
+                        :on-click #(on-pick-preset p)}
+                       [:span.ai-lib-label (:label p)]
+                       [:span.ai-lib-prompt (:prompt p)]
+                       (when (:user? p)
+                         [:button.ai-lib-del
+                          {:type "button"
+                           :title (tr "workspace.ai.bar.prompt-library-delete")
+                           :on-click (fn [e]
+                                       (.stopPropagation e)
+                                       (on-delete-user-preset (:user-idx p)))}
+                          lucide-trash-2])])]))]
+              [:div.ai-lib-sep]
+              [:div.ai-lib-save-row
+               [:input.ai-lib-save-input
+                {:type "text"
+                 :value save-group
+                 :placeholder (tr "workspace.ai.bar.prompt-library-save-group")
+                 :on-change on-change-save-group}]
+               [:input.ai-lib-save-input
+                {:type "text"
+                 :value save-label
+                 :placeholder (tr "workspace.ai.bar.prompt-library-save-label")
+                 :on-change on-change-save-label}]
+               [:button.ai-lib-save-btn
+                {:type "button"
+                 :disabled (str/empty? prompt)
+                 :on-click on-save-preset}
+                lucide-bookmark-plus
+                (tr "workspace.ai.bar.prompt-library-save")]]]])]
+         ;; P2.41 — voice input button. Hidden entirely when the Web Speech
+         ;; API is unsupported (nil-safe). Coral + pulse while listening;
+         ;; reduced-motion makes it solid coral with no pulse (CSS).
+         (when speech-supported?
+           [:button.ai-inpell.ai-mic
+            {:type "button"
+             :class (when listening? "is-listening")
+             :on-click on-toggle-voice
+             :aria-pressed (str listening?)
+             :title (tr (if listening?
+                          "workspace.ai.bar.voice-stop"
+                          "workspace.ai.bar.voice-start"))}
+            lucide-mic])
          [:button.ai-send
           {:type "button"
            :on-click on-generate

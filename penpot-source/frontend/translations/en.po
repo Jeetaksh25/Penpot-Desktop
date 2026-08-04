@@ -13239,3 +13239,151 @@ msgstr "Paste Over"
 msgid "workspace.shape.menu.paste-replace"
 msgstr "Paste & Replace"
 
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.ai.bar.prompt-library-tooltip"
+msgstr "Prompt library"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.ai.bar.prompt-library-search"
+msgstr "Search prompts"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.ai.bar.prompt-library-empty"
+msgstr "No prompts match your search"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.ai.bar.prompt-library-delete"
+msgstr "Delete preset"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.ai.bar.prompt-library-save-group"
+msgstr "Group"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.ai.bar.prompt-library-save-label"
+msgstr "Label"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.ai.bar.prompt-library-save"
+msgstr "Save"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.ai.bar.voice-start"
+msgstr "Start voice input"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.ai.bar.voice-stop"
+msgstr "Stop voice input"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock"
+msgstr "Stock library"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-icons"
+msgstr "Icons"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-illustrations"
+msgstr "Illustrations"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-photos"
+msgstr "Photos"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-search-placeholder"
+msgstr "Search stock assets…"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-search-btn"
+msgstr "Search"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-loading"
+msgstr "Loading…"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-error"
+msgstr "Couldn’t reach the stock library. Try again."
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-empty"
+msgstr "Search for icons or photos to drag onto the canvas."
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-no-results"
+msgstr "No results."
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-pexels-key-placeholder"
+msgstr "Paste your Pexels API key"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-pexels-key-done"
+msgstr "Done"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-pexels-key-change"
+msgstr "Change Pexels key"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-pexels-key-missing"
+msgstr "Add your Pexels API key to search photos."
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.assets.stock-pexels-key-invalid"
+msgstr "Your Pexels key was rejected (401/403). Check and re-enter it."
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.toolbar.connector"
+msgstr "Connector"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.title"
+msgstr "Connector"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.color"
+msgstr "Color"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.width"
+msgstr "Width"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.dash.label"
+msgstr "Style"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.dash.solid"
+msgstr "Solid"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.dash.dashed"
+msgstr "Dashed"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.dash.dotted"
+msgstr "Dotted"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.arrow"
+msgstr "Arrow end"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.orthogonal"
+msgstr "Elbow"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.on"
+msgstr "On"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.off"
+msgstr "Off"
+
+#: ovion/all-apps-parity/missing-sweep-wave3
+msgid "workspace.options.connectors.delete"
+msgstr "Delete connector"
+
