@@ -66,6 +66,11 @@
         vport       (mf/deref refs/workspace-vport)
         {:keys [options-mode]} wglobal
 
+        ;; Focus mode (P2.02): when active the canvas is isolated on the
+        ;; selection and the workspace chrome is collapsed to a
+        ;; distraction-free layout. Off by default — byte-identical to the
+        ;; prior render when false.
+        focus-mode? (mf/deref refs/focus-mode?)
 
         ;; FIXME: pass this down to viewport and reuse it from here
         ;; instead of making an other deref on viewport for the same
@@ -76,6 +81,9 @@
         colorpalette?  (:colorpalette layout)
         textpalette?   (:textpalette layout)
         hide-ui?       (:hide-ui layout)
+
+        exit-focus
+        (mf/use-fn #(st/emit! (dw/toggle-focus-mode)))
 
         on-resize
         (mf/use-fn
@@ -98,7 +106,8 @@
 
      [:section
       {:key (dm/str "workspace-" page-id)
-       :class (stl/css :workspace-content)
+       :class (stl/css-case :workspace-content true
+                            :focus-mode focus-mode?)
        :ref node-ref}
 
       [:section {:class (stl/css :workspace-viewport)}
@@ -118,7 +127,34 @@
          :layout layout
          :palete-size
          (when (and (or colorpalette? textpalette?) (not hide-ui?))
-           @palete-size)}]]]
+           @palete-size)}]
+
+       ;; Floating "Exit focus" indicator — the only chrome overlay shown on
+       ;; the canvas while focus mode is active. Reuses the existing
+       ;; toggle-focus-mode event. Coral accent (#f28b82), Lucide focus icon
+       ;; (stroke-width 2, currentColor). Hidden when focus mode is OFF.
+       (when (and ^boolean focus-mode? (not ^boolean hide-ui?))
+         [:button {:type "button"
+                   :class (stl/css :focus-mode-exit-button)
+                   :title (tr "workspace.focus.exit")
+                   :aria-label (tr "workspace.focus.exit")
+                   :on-click exit-focus}
+          [:svg {:xmlns "http://www.w3.org/2000/svg"
+                 :width "20"
+                 :height "20"
+                 :viewBox "0 0 24 24"
+                 :fill "none"
+                 :stroke "currentColor"
+                 :stroke-width 2
+                 :stroke-linecap "round"
+                 :stroke-linejoin "round"
+                 :aria-hidden "true"}
+           [:path {:d "M3 7V5a2 2 0 0 1 2-2h2"}]
+           [:path {:d "M17 3h2a2 2 0 0 1 2 2v2"}]
+           [:path {:d "M21 17v2a2 2 0 0 1-2 2h-2"}]
+           [:path {:d "M7 21H5a2 2 0 0 1-2-2v-2"}]]
+          [:span {:class (stl/css :focus-mode-exit-label)}
+           (tr "workspace.focus.exit")]])]]
 
      (when-not hide-ui?
        [:> sidebar* {:layout layout
@@ -128,7 +164,8 @@
                      :file file
                      :selected selected
                      :section options-mode
-                     :drawing-tool (get drawing :tool)}])]))
+                     :drawing-tool (get drawing :tool)
+                     :focus-mode? focus-mode?}])]))
 
 (mf/defc workspace-loader*
   {::mf/private true}

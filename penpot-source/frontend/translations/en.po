@@ -13627,3 +13627,255 @@ msgstr "Subtract"
 msgid "workspace.options.layer-options.blend-mode.divide"
 msgstr "Divide"
 
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.video.title"
+msgstr "Video"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.video.add"
+msgstr "Add video"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.video.src"
+msgstr "Source"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.video.poster"
+msgstr "Poster"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.video.loop"
+msgstr "Loop"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.video.muted"
+msgstr "Muted"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.video.controls"
+msgstr "Controls"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.video.autoplay"
+msgstr "Autoplay"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.video.clear"
+msgstr "Remove"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.scroll-motion.title"
+msgstr "Scroll motion"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.scroll-motion.path-draw.title"
+msgstr "Path draw on scroll"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.scroll-motion.path-draw.add"
+msgstr "Add path-draw"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.scroll-motion.path-draw.direction"
+msgstr "Direction"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.scroll-motion.path-draw.duration"
+msgstr "Duration"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.scroll-motion.scroll-video.title"
+msgstr "Video on scroll"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.scroll-motion.scroll-video.add"
+msgstr "Add scroll-video"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.scroll-motion.scroll-video.trigger"
+msgstr "Trigger"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.scroll-motion.clear"
+msgstr "Remove"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.title"
+msgstr "Data Sets"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.import"
+msgstr "Import CSV"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.importing"
+msgstr "Importing…"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.imported"
+msgstr "CSV imported"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.import-error"
+msgstr "Could not read the CSV file"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.import-hint"
+msgstr "Choose a .csv file to import as a named data set"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.rename"
+msgstr "Rename"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.delete"
+msgstr "Delete"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.rows"
+msgstr "rows"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.data-binding.empty"
+msgstr "No data sets yet. Import a CSV to bind repeaters to data."
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.title"
+msgstr "Repeater"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.data-set"
+msgstr "Data set"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.none"
+msgstr "— none —"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.field-binding"
+msgstr "Bind fields to columns"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.no-column"
+msgstr "— none —"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.gap-w"
+msgstr "Gap X"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.gap-h"
+msgstr "Gap Y"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.apply"
+msgstr "Apply"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.clear"
+msgstr "Clear"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.no-data-sets"
+msgstr "Import a CSV data set first (Data Sets menu)."
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.repeaters.no-fields"
+msgstr "Tag at least one text child with a field key to bind columns."
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.title"
+msgstr "Animation"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset"
+msgstr "Preset"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.none"
+msgstr "— none —"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.duration"
+msgstr "Duration"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.delay"
+msgstr "Delay"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.iteration"
+msgstr "Repeat"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.infinite"
+msgstr "Infinite"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.clear"
+msgstr "Clear"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.empty"
+msgstr "Pick a preset to add a CSS-keyframe animation to this shape."
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.reduced-motion-note"
+msgstr "Animations are disabled under prefers-reduced-motion."
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.fade-in"
+msgstr "Fade In"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.slide-up"
+msgstr "Slide Up"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.slide-down"
+msgstr "Slide Down"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.slide-left"
+msgstr "Slide Left"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.slide-right"
+msgstr "Slide Right"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.pulse"
+msgstr "Pulse"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.bounce-soft"
+msgstr "Bounce Soft"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.spin"
+msgstr "Spin"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.shake"
+msgstr "Shake"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.options.css-anim.preset.zoom-in"
+msgstr "Zoom In"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.assets.m3-add"
+msgstr "Add Material 3 kit"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.assets.m3-add-aria"
+msgstr "Add Material 3 design kit"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.assets.m3-already-added"
+msgstr "Material 3 kit already added to this file"
+
+#: ovion/all-apps-parity/missing-sweep-wave5
+msgid "workspace.focus.exit"
+msgstr "Exit focus"
+

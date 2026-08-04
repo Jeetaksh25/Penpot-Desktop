@@ -577,7 +577,17 @@
             focus (cfh/clean-loops objects focus)]
 
         (-> state
-            (assoc :workspace-focus-selected focus))))))
+            (assoc :workspace-focus-selected focus))))
+
+    ptk/WatchEvent
+    (watch [_ state _]
+      ;; Auto-exit focus mode when every isolated shape has been deleted
+      ;; (the focus set becomes empty). We emit toggle-focus-mode so the
+      ;; existing exit path restores the saved viewport/selection and the
+      ;; toggle-focus-mode watch stopper tears down this subscription.
+      (when (and (contains? state :workspace-pre-focus)
+                 (empty? (:workspace-focus-selected state)))
+        (rx/of (toggle-focus-mode))))))
 
 (defn toggle-focus-mode
   "Zoom in on and center viewport on selection;
@@ -594,7 +604,10 @@
     (update [_ state]
       (let [selected (dsh/lookup-selected state)
             have-selection? (d/not-empty? selected)
-            in-mode? (d/not-empty? (:workspace-focus-selected state))]
+            ;; :workspace-pre-focus is set on enter and removed on exit, so
+            ;; it is the reliable in-mode signal even when the focus set has
+            ;; been emptied by shape deletion (the auto-exit path).
+            in-mode? (contains? state :workspace-pre-focus)]
 
         (if in-mode?
           ;; Exit focus, restoring previous viewport, selection, etc

@@ -12,6 +12,7 @@
    [app.main.data.modal :as modal]
    [app.main.data.workspace :as dw]
    [app.main.data.workspace.assets :as dwa]
+   [app.main.data.workspace.material-kit :as m3kit]
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.context-menu-a11y :refer [context-menu*]]
@@ -427,6 +428,52 @@
                            :width "100%" :height "100%"
                            :dangerouslySetInnerHTML #js {:__html (or body "")}}]])))]))])]))
 
+;; ── P2.11: Material 3 design kit injection (additive) ───────────────────────
+;;
+;; A single action row in the Assets panel. Clicking it emits
+;; `m3kit/inject-material-kit`, which adds the M3 color-role tokens as
+;; library color styles + a 'Material 3' board of M3 components via the
+;; existing `design-gen/apply-design-spec` pipeline, in one undo batch.
+;; Purely additive — files without the kit are byte-identical. The
+;; idempotency guard in the event skips a second injection.
+;;
+;; Lucide `package` icon, inline SVG (stroke-width 2, currentColor), coral
+;; accent #f28b82. Reduced-motion: no size/scale transitions on hover/press
+;; — only a calm box-shadow / color swap.
+(mf/defc material-kit-section*
+  {::mf/private true}
+  []
+  (let [busy* (mf/use-state false)
+        busy  (deref busy*)
+        on-add (mf/use-fn
+                (mf/deps [busy])
+                (fn []
+                  (when-not ^boolean busy
+                    (reset! busy* true)
+                    (st/emit! (m3kit/inject-material-kit))
+                    ;; Reset after a tick so the button can recover; the
+                    ;; event is fire-and-forget (no completion signal).
+                    (js/setTimeout #(reset! busy* false) 600))))]
+    [:div {:class (stl/css :m3-kit-section)}
+     [:button {:type           "button"
+               :class          (stl/css-case :m3-kit-button true
+                                                 :m3-kit-button-busy busy)
+               :disabled       ^boolean busy
+               :on-click       on-add
+               :data-testid    "add-material-3-kit"
+               :aria-label     (tr "workspace.assets.m3-add-aria")}
+      ;; Lucide `package` icon (24x24, stroke-width 2, currentColor).
+      [:svg {:viewBox "0 0 24 24" :width 18 :height 18 :fill "none"
+             :stroke "currentColor" :stroke-width 2
+             :stroke-linecap "round" :stroke-linejoin "round"
+             :aria-hidden true}
+       [:path {:d "M16.5 9.4 7.55 4.24"}]
+       [:path {:d "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"}]
+       [:polyline {:points "3.27 6.96 12 12.01 20.73 6.96"}]
+       [:line {:x1 12 :y1 22.08 :x2 12 :y2 12}]]
+      [:span {:class (stl/css :m3-kit-label)}
+       (tr "workspace.assets.m3-add")]]]))
+
 (mf/defc assets-toolbox*
   {::mf/wrap [mf/memo]}
   [{:keys [size file-id]}]
@@ -585,6 +632,9 @@
 
      ;; P0.04: built-in stock asset library (Iconify + Pexels), additive.
      [:> stock-section* {:file-id file-id}]
+
+     ;; P2.11: Material 3 design kit injection (additive, idempotent).
+     [:> material-kit-section*]
 
      [:& (mf/provider cmm/assets-filters) {:value filters}
       [:& (mf/provider cmm/assets-toggle-ordering) {:value toggle-ordering}

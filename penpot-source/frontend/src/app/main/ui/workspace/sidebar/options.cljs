@@ -27,6 +27,11 @@
    [app.main.ui.workspace.sidebar.options.menus.bool :refer [bool-options*]]
    [app.main.ui.workspace.sidebar.options.menus.connectors :refer [connectors-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.vector-sets :refer [vector-sets-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.video :refer [video-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.scroll-motion :refer [scroll-motion-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.repeaters :refer [repeaters-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.css-anim :refer [css-anim-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.data-binding :refer [data-binding-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.pathfinder :refer [pathfinder-options*]]
    [app.main.ui.workspace.sidebar.options.menus.component :refer [component-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.grid-cell :as grid-cell]
@@ -185,7 +190,11 @@
         [:> html-authoring-menu* {:shapes shapes}]
         [:> selection-colors-menu* {:shapes shapes}]
         [:> auto-helpers-menu* {:shapes shapes}]
-        [:> connectors-menu* {:shapes shapes}]])
+        [:> connectors-menu* {:shapes shapes}]
+        [:> video-menu* {:shapes shapes}]
+        [:> scroll-motion-menu* {:shapes shapes}]
+        [:> repeaters-menu* {:shapes shapes}]
+        [:> css-anim-menu* {:shapes shapes}]])
 
      (cond
        (and edit-grid? (d/not-empty? selected-cells))
@@ -211,7 +220,9 @@
         [:> page/options*]
         ;; P2.15: design-system-scoped version control — file-level menu,
         ;; mounted when nothing is selected (library concern).
-        [:> ds-versions-menu*]]
+        [:> ds-versions-menu*]
+        ;; P1.12/P2.06: file-level CSV data sets (bound to repeaters).
+        [:> data-binding-menu*]]
 
        :else
        [:> shape-options*

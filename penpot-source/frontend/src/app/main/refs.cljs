@@ -503,6 +503,12 @@
 (def workspace-focus-selected
   (l/derived :workspace-focus-selected st/state))
 
+(def focus-mode?
+  "True when focus mode is active (one or more shapes are isolated on the
+  canvas and the workspace chrome is collapsed to a distraction-free
+  layout). Derived from the non-emptiness of :workspace-focus-selected."
+  (l/derived #(d/not-empty? (:workspace-focus-selected %)) st/state))
+
 (defn workspace-get-flex-child
   [ids]
   (l/derived

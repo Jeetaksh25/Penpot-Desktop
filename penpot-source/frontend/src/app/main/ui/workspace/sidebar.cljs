@@ -358,7 +358,7 @@
             [:> options-toolbox* props]))]]]]))
 
 (mf/defc sidebar*
-  [{:keys [layout file file-id page-id section drawing-tool selected]}]
+  [{:keys [layout file file-id page-id section drawing-tool selected focus-mode?]}]
   (let [tokens-lib
         (mf/deref refs/tokens-lib)
 
@@ -394,16 +394,21 @@
         (sd/use-resolved-tokens* active-tokens-force-set)]
 
     [:*
-     (if (:collapse-left-sidebar layout)
-       [:> collapsed-button*]
-       [:> left-sidebar* {:layout layout
-                          :file file
-                          :page-id page-id
-                          :tokens-lib tokens-lib
-                          :active-tokens active-tokens-force-set
-                          :resolved-active-tokens (if tokenscript?
-                                                    tokenscript-resolved-active-tokens-force-set
-                                                    resolved-active-tokens-force-set)}])
+     ;; Focus mode hides the left sidebar (layers/assets/tokens tree) for a
+     ;; distraction-free canvas; the right sidebar (inspector) is kept so the
+     ;; selection remains editable. When focus mode is OFF the left sidebar
+     ;; renders exactly as before (byte-identical-when-inactive).
+     (when-not ^boolean focus-mode?
+       (if (:collapse-left-sidebar layout)
+         [:> collapsed-button*]
+         [:> left-sidebar* {:layout layout
+                            :file file
+                            :page-id page-id
+                            :tokens-lib tokens-lib
+                            :active-tokens active-tokens-force-set
+                            :resolved-active-tokens (if tokenscript?
+                                                      tokenscript-resolved-active-tokens-force-set
+                                                      resolved-active-tokens-force-set)}]))
      [:> right-sidebar* {:section section
                          :selected selected
                          :drawing-tool drawing-tool

@@ -18,6 +18,8 @@
    [app.main.data.workspace.dynamic-panels :as dwdp]
    [app.main.data.workspace.element-states :as dwes]
    [app.main.data.workspace.motion-effects :as dwme]
+   [app.main.data.workspace.scroll-motion :as dwsm]
+   [app.main.data.workspace.css-anim :as dwca]
    [app.main.data.workspace.vector-sets :as dwvs]
    [app.main.refs :as refs]
    [app.main.router :as rt]
@@ -814,6 +816,138 @@
           (if (and (some? anim) (some? node))
             (let [teardown (am/run-stroke-flow-effect node anim)]
               (fn [] (when (fn? teardown) (teardown))))
+            (fn [] nil))))
+
+      ;; P1.34: path-draw-on-scroll runtime. Read the shape's path-draw
+      ;; plugin-data (:ovion "path-draw" = {:duration ms :direction
+      ;; :forward/:reverse}) and animate the first <path> descendant's
+      ;; stroke-dashoffset from hidden → fully drawn as it scrolls into view
+      ;; (IntersectionObserver rooted at #viewer-section when present, else the
+      ;; browser viewport). :forward draws on enter; :reverse erases on enter.
+      ;; Reduced-motion NON-NEGOTIABLE: under prefers-reduced-motion OR missing
+      ;; gsap the effect is a no-op — the path renders fully drawn (its normal
+      ;; state, no dasharray/dashoffset injected) = byte-identical to no slot.
+      ;; Absent slot → no-op. Dispose disconnects the observer + kills the tween
+      ;; + clears the injected dash props so the path returns to its base render.
+      (mf/with-effect [(:id shape)]
+        (let [cfg  (dwsm/read-path-draw shape)
+              node (dom/query (str "#shape-" (str (:id shape))))]
+          (if (and (some? cfg) (some? node) (not (am/reduced-motion?)) (am/gsap-ready?))
+            (let [path-el (dom/query node "path")
+                  forward? (not= :reverse (or (:direction cfg) :forward))
+                  duration (/ (max 100 (or (:duration cfg) 1200)) 1000)
+                  section  (dom/get-element "viewer-section")
+                  ;; pathLen: 0 when path-el is missing/unresolvable → we skip
+                  ;; (no dash animation); the path renders normally.
+                  path-len (try
+                             (if (some? path-el) (.getTotalLength ^js path-el) 0)
+                             (catch :default _ 0))]
+              (if (or (nil? path-el) (<= path-len 0))
+                (fn [] nil)
+                (let [hidden-off (if forward? path-len 0)
+                      shown-off  (if forward? 0 path-len)
+                      _          (am/gsap-set path-el
+                                              {:strokeDasharray path-len
+                                               :strokeDashoffset hidden-off})
+                      io-opts    #js {:root section
+                                      :threshold 0.25}
+                      observer   (js/IntersectionObserver.
+                                  (fn [entries _]
+                                    (let [ent (aget entries 0)
+                                          inter? (.-isIntersecting ent)]
+                                      (am/kill-tweens! path-el)
+                                      (am/to! path-el
+                                              {:strokeDashoffset (if inter? shown-off hidden-off)
+                                               :duration duration
+                                               :ease "power2.out"})))
+                                  io-opts)]
+                  (.observe observer path-el)
+                  (fn []
+                    (try (.disconnect observer) (catch :default _ nil))
+                    (am/kill-tweens! path-el)
+                    ;; restore the path to its natural render (no dash props)
+                    (try
+                      (am/gsap-set path-el {:strokeDasharray "none" :strokeDashoffset 0})
+                      (catch :default _ nil))))))
+            (fn [] nil))))
+
+      ;; P1.34: scroll-video runtime. Read the shape's scroll-video plugin-data
+      ;; (:ovion "scroll-video" = {:trigger :scrub/:in-view :start :end}) and
+      ;; drive the <video> descendant: :in-view plays on enter / pauses on leave;
+      ;; :scrub binds a scroll listener on #viewer-section that maps scroll
+      ;; progress to video.currentTime. Reduced-motion NON-NEGOTIABLE: under
+      ;; prefers-reduced-motion the effect is a no-op — the <video> element's
+      ;; own autoplay/muted/controls attrs (from the video slot) handle static
+      ;; playback, no scroll-scrub. Absent slot → no-op. Dispose removes the
+      ;; listener / disconnects the observer.
+      (mf/with-effect [(:id shape)]
+        (let [cfg  (dwsm/read-scroll-video shape)
+              node (dom/query (str "#shape-" (str (:id shape))))]
+          (if (and (some? cfg) (some? node) (not (am/reduced-motion?)))
+            (let [video-el (dom/query node "video")
+                  trigger  (or (:trigger cfg) :in-view)]
+              (if (nil? video-el)
+                (fn [] nil)
+                (if (= :scrub trigger)
+                  ;; scrub: drive currentTime by scroll position.
+                  (let [section (dom/get-element "viewer-section")]
+                    (if (nil? section)
+                      (fn [] nil)
+                      (let [on-scroll
+                            (fn [_]
+                              (try
+                                (let [rect  (.getBoundingClientRect ^js video-el)
+                                      vh    (.-height section)
+                                      top   (.-top rect)
+                                      ;; progress 0 when the video top is at
+                                      ;; the bottom of the viewport, 1 when its
+                                      ;; top is at the top; clamp 0..1.
+                                      prog  (max 0 (min 1 (/ (- vh top) (max 1 vh))))
+                                      dur   (.-duration ^js video-el)]
+                                  (when (and (number? dur) (pos? dur) (not (js/isNaN dur)))
+                                    (aset video-el "currentTime" (* prog dur))))
+                                (catch :default _ nil)))]
+                        (.addEventListener ^js section "scroll" on-scroll #js {"passive" true})
+                        ;; pause so the scroll-scrub is the sole time source
+                        (try (.pause ^js video-el) (catch :default _ nil))
+                        (fn []
+                          (.removeEventListener ^js section "scroll" on-scroll)
+                          (try (.pause ^js video-el) (catch :default _ nil))))))
+                  ;; in-view: play on enter, pause on leave.
+                  (let [section (dom/get-element "viewer-section")
+                        io-opts #js {:root section :threshold 0.25}
+                        observer (js/IntersectionObserver.
+                                  (fn [entries _]
+                                    (let [ent (aget entries 0)
+                                          inter? (.-isIntersecting ent)]
+                                      (try
+                                        (if inter? (.play ^js video-el) (.pause ^js video-el))
+                                        (catch :default _ nil))))
+                                  io-opts)]
+                    (.observe observer video-el)
+                    (fn []
+                      (try (.disconnect observer) (catch :default _ nil))
+                      (try (.pause ^js video-el) (catch :default _ nil)))))))
+            (fn [] nil))))
+
+      ;; P2.06: CSS-keyframe animation runtime. Read the shape's css-anim
+      ;; plugin-data (:ovion "css-anim" = {:preset :duration :delay :iteration})
+      ;; and inject a <style> with the @keyframes + add the preset class on
+      ;; #shape-<id>. Reduced-motion guarded: emit nothing under
+      ;; prefers-reduced-motion. No slot -> no-op -> byte-identical render.
+      (mf/with-effect [(:id shape)]
+        (let [cfg  (dwca/read-css-anim shape)
+              node (dom/query (str "#shape-" (str (:id shape))))]
+          (if (and (some? cfg) (some? node))
+            (let [css (dwca/css-for-anim cfg)
+                  reduced (dom/query "(prefers-reduced-motion: reduce)")]
+              (if (or (nil? css) reduced)
+                (fn [] nil)
+                (let [style-el (.createElement js/document "style")]
+                  (set! (.-textContent style-el) css)
+                  (.appendChild (.-head js/document) style-el)
+                  (.add (.-classList node) (dwca/class-name-for (:preset cfg)))
+                  (fn [] (.remove style-el)))))
             (fn [] nil))))
 
       ;; P2.24: component hover/pressed state-overrides runtime. Read the

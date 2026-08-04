@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **79** | Implemented end-to-end + verified (commit referenced). |
+| ✅ done | **85** | Implemented end-to-end + verified (commit referenced). |
 | 🟡 half-done | **1** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **16** | Not implemented yet. |
+| 🔴 missing | **10** | Not implemented yet. |
 | ⚠️ not-working | **0** | Present but broken. |
-| **Remaining** | **17** | half-done + missing + not-working. |
+| **Remaining** | **11** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 79 done / 1 half / 16 missing / 0 not-working / 17 remaining. Wave 4 ✅ (6 gaps: P2.01 Checklist, P2.19 Focus predictor, P1.05 Next-screens, P2.08 Agent branches, P1.30 Streaming, P2.38 Vector Sets + stroke anim). Bonus: 8 missing standard Photoshop blend modes added (P2.23 print pathfinder still missing — blend-mode render deferred to canvas/WebGL).
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 85 done / 1 half / 10 missing / 0 not-working / 11 remaining. Wave 5 ✅ (6 gaps: P2.39 Video/GIF, P1.34 Path-draw + video-on-scroll, P1.12 Repeaters, P2.06 CSV + CSS anim, P2.11 Material 3 kit, P2.02 Focus mode completed).
 
-Most-recent done: **P2.01 / P2.19 / P1.05 / P2.08 / P1.30 / P2.38** — C5 missing-sweep wave 4: AI design checklist + focus-area predictor (ai_bar popovers), next-screens generation + agent branch-tree + token streaming (ai_gen pipeline, reuses llm_generate + ai-progress event channel, no new Rust), vector-set stroke presets + GSAP stroke-flow animation (reduced-motion static).
+Most-recent done: **P2.39 / P1.34 / P1.12 / P2.06 / P2.11 / P2.02** — C5 missing-sweep wave 5: video/GIF playback (foreignObject + <video>), path-draw + scroll-video motion slots, data-bound repeaters (CSV -> grid of duplicates), CSV import + 10 CSS-keyframe presets, Material 3 design kit (32 tokens + 12 components via apply-design-spec), focus mode completed (chrome-hide + auto-exit reusing existing isolation).
 
 ## Contents
 
@@ -260,7 +260,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.12 Data-bound Repeaters (dataset -> repeated widgets, filter match any/all/smart, sort, floating data editor)
 
-- **State:** 🔴 missing  ·  **Sources:** Axure
+- **State:** ✅ done (C5 missing-sweep wave 5) — Data-bound Repeaters: a shape carrying :ovion "repeater" = pr-str {:data-set :fields :gap-w :gap-h} expands into a grid of duplicates (reuses cll/generate-duplicate-changes + the grid layout + gsh/transform-shape move-modifiers), each copy's text fields (tagged :ovion "field") filled from the bound CSV row via txt/change-text. One undo batch (dwu); generated child ids tracked on :ovion "repeater-children"; clear-repeater removes them. Inspector menu (menus/repeaters.cljs). 11 en.po keys.  ·  **Sources:** Axure
 - **Detail / build direction:** No Repeater widget type; no dataset binding. Recommended: add a Repeater shape type that binds a dataset (CSV/JSON) to widget properties and renders repeated instances via auto-layout, with filter/sort controls and a floating data editor. Overlaps with CMS collection-lists — implement once as a data-bound repeatable region shared by both. Medium effort.
 
 #### P1.13 Dedicated screenshot / sketch / wireframe-to-UI entry flow (vision-based reconstruction into editable shape tree)
@@ -371,7 +371,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.34 Vector path animation and video-playback-on-scroll triggers
 
-- **State:** 🔴 missing  ·  **Sources:** Framer
+- **State:** ✅ done (C5 missing-sweep wave 5) — Path-draw + video-on-scroll: two scroll-triggered motion slots on the viewer render path. :ovion "path-draw" animates strokeDashoffset (hidden->drawn) via GSAP + IntersectionObserver; :ovion "scroll-video" drives <video> currentTime by scroll (scrub) or play/pause in-view. Both complete no-ops under prefers-reduced-motion (path renders fully drawn; video uses its own autoplay/muted). Inspector menu (menus/scroll_motion.cljs). 9 en.po keys.  ·  **Sources:** Framer
 - **Detail / build direction:** No path-animation timeline; no video-fill animation trigger (video fill #22 is schema+UI DONE-v1, renderer deferred). Recommended: add a stroke-effect path animation (animate stroke-dashoffset/dasharray via GSAP) and a scroll-triggered video-playback interaction. The path animation is frontend-achievable; video playback needs the video-fill renderer (deferred). Stage path-anim first.
 
 #### P1.35 Workshop: AI-generated React code components that render on canvas and inherit site style
@@ -394,7 +394,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.02 AI Focus mode (simplified AI-only Editor workspace)
 
-- **State:** 🔴 missing  ·  **Sources:** UXPin
+- **State:** ✅ done (C5 missing-sweep wave 5) — Focus mode (completed from partial): the existing toggle-focus-mode (F shortcut) + viewport isolation (with-focus-objects / cpf/is-in-focus? / WASM set-focus-mode) were already present but missing chrome-hide + auto-exit. Added: refs/focus-mode? ref; left-sidebar hidden in focus mode (inspector kept); floating coral "Exit focus" button on the canvas; hardened in-mode? to (contains? state :workspace-pre-focus) so deleting all focused shapes no longer leaves the user stuck; auto-exit via update-focus-shapes WatchEvent when the focus set empties. Reuses the existing isolation render (no viewer hook needed). Reduced-motion guard on the exit-button transitions. 1 en.po key.  ·  **Sources:** UXPin
 - **Detail / build direction:** No AI-only workspace toggle. Recommended: add a Focus mode that hides non-AI panels when the AI bar is active. Frontend layout toggle, unblocked.
 
 #### P2.03 AI Prompt Library (grouped example prompts picker in the AI bar)
@@ -414,7 +414,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.06 AI structured real-content input (CSV for tables) + AI-generated CSS state animations
 
-- **State:** 🔴 missing  ·  **Sources:** UXPin
+- **State:** ✅ done (C5 missing-sweep wave 5) — CSV import + CSS-keyframe animations: new data_binding.cljs ships a pure-CLJS CSV parser (quoted fields, embedded commas/newlines, CRLF/LF/CR) + named data sets on file-level :ovion "data-sets". css_anim.cljs ships 10 keyframe presets (fade-in/slide-*/pulse/bounce-soft/spin/shake/zoom-in) applied via :ovion "css-anim" = {:preset :duration :delay :iteration}; the viewer injects a <style> + class on #shape-<id> (reduced-motion: emit nothing). Inspector menus (menus/data_binding.cljs file-level + menus/css_anim.cljs per-shape). 30 en.po keys.  ·  **Sources:** UXPin
 - **Detail / build direction:** ai_gen.cljs build-request sends presets + prompt + image/URL; no CSV/structured-data input for table generation; ai_motion.cljs handles motion but not LLM-emitted CSS hover/transition state animations. Recommended: add a CSV/JSON structured-data attachment type consumed by the agent for table/list generation, and a generate_css_animations action emitting hover/transition CSS. Prompt + attachment changes, unblocked.
 
 #### P2.07 Advanced color spaces (Oklab/Oklch perceptual gradient interpolation; LCH/OKLCH/LAB/OKLAB/HWB in the color picker)
@@ -439,7 +439,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.11 Built-in Material Design 3 component kit + Material theming
 
-- **State:** 🔴 missing  ·  **Sources:** Google Stitch
+- **State:** ✅ done (C5 missing-sweep wave 5) — Material 3 design kit: new material_kit.cljs ships 32 M3 color-role tokens (light+dark, as library color styles grouped Material 3/Light|Dark) + 12 M3 component specs (Button/Outlined/Text/FAB/Card/FilledCard/TextField/OutlinedTextField/Switch/Checkbox/AppBar/NavigationBar). inject-material-kit adds the color styles + creates each component as a group on a "Material 3" board via the EXISTING design_gen/apply-design-spec pipeline (no new shape-creation path), one undo (dwu). Idempotent (plugin-data :ovion "m3-tokens" guard + token-name dedupe). "Add Material 3 kit" action in assets.cljs. 3 en.po keys.  ·  **Sources:** Google Stitch
 - **Detail / build direction:** No bundled M3 kit or Material-theme generator. Recommended: ship a bundled M3 component library (Penpot-native components + M3 token set) in the assets panel and a Material-theme generator consuming the design-system generation gap. Content + tokens, unblocked.
 
 #### P2.12 Color application during merge (Pick Color From Artwork / Swatches, Cursor Swatch Preview)
@@ -579,7 +579,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.39 Video/GIF playback inside prototypes
 
-- **State:** 🔴 missing  ·  **Sources:** Pixso, Framer
+- **State:** ✅ done (C5 missing-sweep wave 5) — Video/GIF playback: a rect carrying :ovion "video" plugin-data (pr-str {:src :poster :loop? :muted? :controls? :autoplay?}) renders an HTML5 <video> via <foreignObject> (or <img> for .gif) in both the viewer + workspace canvas (rect.cljs reads the slot; byte-identical when nil). Inspector menu (menus/video.cljs) sets URL/poster/loop/muted/controls/autoplay. 9 en.po keys.  ·  **Sources:** Pixso, Framer
 - **Detail / build direction:** Video fill (#22) is schema+UI DONE-v1 with renderer deferred; no video/GIF playback in prototype play mode. Recommended: render video fill as an HTML5 <video> element in the viewer play mode (frontend, unblocked); GIF playback via the same path. Pairs with the video-fill renderer work.
 
 #### P2.40 Visual comments (image/emoji/sketch attachments in comment threads)

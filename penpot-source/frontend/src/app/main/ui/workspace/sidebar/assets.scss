@@ -325,3 +325,59 @@
     transition: none;
   }
 }
+
+// ── P2.11: Material 3 design kit injection (additive) ───────────────────────
+// A single coral-accented action row. Calm motion (no size/scale) — only
+// box-shadow + color/border swaps on hover/press. Reduced-motion users get
+// instant transitions.
+.m3-kit-section {
+  padding: 0 deprecated.$s-12 deprecated.$s-8;
+}
+
+.m3-kit-button {
+  @include deprecated.button-style;
+  @include deprecated.body-small-typography;
+
+  display: inline-flex;
+  align-items: center;
+  gap: deprecated.$s-6;
+  width: 100%;
+  padding: deprecated.$s-6 deprecated.$s-10;
+  border-radius: deprecated.$br-8;
+  border: deprecated.$s-1 solid var(--input-border-color-rest);
+  background-color: var(--input-background-color-rest);
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: box-shadow 120ms ease, background-color 120ms ease,
+              border-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+  }
+
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+}
+
+.m3-kit-button-busy {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.m3-kit-label {
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-kit-button {
+    transition: none;
+  }
+}
