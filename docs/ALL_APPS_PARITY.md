@@ -495,8 +495,8 @@ Sorted P0 → P1 → P2.
 
 #### P2.26 Low-fidelity / wireframe fidelity toggle for generated and edited designs
 
-- **State:** 🔴 missing  ·  **Sources:** Uizard
-- **Detail / build direction:** Ovion has outline mode (#45, CSS deferred) and pixel preview (#46) but no low-fidelity wireframe mode for AI output. Recommended: add a wireframe fidelity render mode (grayscale boxes + strokes, no fills/images) toggleable on generated output. Frontend render mode, unblocked.
+- **State:** ✅ done (C3 16ad261)  ·  **Sources:** Uizard
+- **Detail / build direction:** DONE. A `:wireframe-mode` layout flag (View menu, Shift+W, command palette) drives a CSS-hook render mode mirroring `:outline-mode`: a scoped `.wireframe-mode` class on the `#render` SVG and a `#render.wireframe-mode` viewport.scss block flatten every shape to a neutral-gray box (`--wireframe-gray #7d7d7d`, fixed/theme-independent) with a 1px solid gray stroke — fills, images, filters, masks, fades, glass, blend modes all suppressed; text + HTML text grayed; image placeholders get a centered white Lucide "image" glyph (`--wireframe-icon #fff`, ~4.1:1). Inner/outer-stroke `<use>` clones grayed via a gated `custom_stroke.cljs` def unset. Byte-identical when the flag is off. Verified by 4 adversarial audit rounds (ship_ready, 0 blockers). Known accepted limitations: imported-SVG `<symbol>`/`<g>` referenced by `<use>` with explicitly-filled children, and imported leaves with inline `!important` styles, can retain color (CSS cannot pierce `<use>` shadow DOM / beat inline `!important`) — edge cases; directly-rendered imported graphics and all native shapes are fully flattened.
 
 #### P2.27 Multi-Paste (Paste, Paste Over, Paste & Replace across multiple selected layers simultaneously)
 
