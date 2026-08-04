@@ -261,6 +261,14 @@
         ;; canvas infra; that rasterization overlay is DEFERRED.
         outline-mode?            (contains? layout :outline-mode)
         pixel-preview?           (contains? layout :pixel-preview)
+        ;; Figma-parity wireframe / low-fidelity mode (ALL_APPS_PARITY P2.26).
+        ;; Flattens the canvas to neutral-gray fills + 1px gray strokes,
+        ;; images as gray placeholder boxes (+ a Lucide image-icon overlay
+        ;; in image.cljs), text grayed, and all blur/shadow/glass/fade
+        ;; effects suppressed — via a `.wireframe-mode` CSS hook on #render
+        ;; (mirrors :outline-mode) and the wireframe-mode? provider. Default
+        ;; off = no class, no provider value change = byte-identical rendering.
+        wireframe-mode?          (contains? layout :wireframe-mode)
         ;; Figma-parity lasso / freeform selection (gap #51). Drives the
         ;; lasso widget in viewport/widgets.cljs, which captures a freehand
         ;; path and selects intersecting shapes. Default off = no widget.
@@ -419,6 +427,7 @@
       {:id "render"
        :class (stl/css-case :render-shapes true
                             :outline-mode outline-mode?
+                            :wireframe-mode wireframe-mode?
                             :pixel-preview pixel-preview?)
        :xmlns "http://www.w3.org/2000/svg"
        :xmlnsXlink "http://www.w3.org/1999/xlink"
@@ -472,8 +481,19 @@
       (when (dbg/enabled? :show-export-metadata)
         [:> use/export-page* {:page page}])
 
-      ;; We need a "real" background shape so layer transforms work properly in firefox
-      [:rect {:width (:width vbox 0)
+      ;; We need a "real" background shape so layer transforms work properly in firefox.
+      ;; The scoped `.canvas-background` class is a wireframe-mode hook (ALL_APPS_PARITY
+      ;; P2.26): viewport.scss `#render.wireframe-mode :is(rect,...):not(.canvas-
+      ;; background)` excludes this rect from the gray-fill rule so the page backdrop
+      ;; keeps its real color and gray shapes read against it. The block is anchored on
+      ;; the #render id (not a bare class) so its rules outrank imported-SVG inline
+      ;; `<style>` blocks scoped under `#shape-<id>` with !important. The class is gated
+      ;; on `wireframe-mode?` (nil -> no class attribute) so the inactive DOM is
+      ;; byte-identical to before the feature; the matching `.canvas-background` anchor
+      ;; rule lives nested under `#render.wireframe-mode` in viewport.scss, so it too is
+      ;; inert when the flag is off.
+      [:rect {:class (when wireframe-mode? (stl/css :canvas-background))
+              :width (:width vbox 0)
               :height (:height vbox 0)
               :x (:x vbox 0)
               :y (:y vbox 0)
@@ -501,14 +521,15 @@
             (:name section)]]))
 
       [:& (mf/provider ctx/outline-mode?) {:value outline-mode?}
-       [:& (mf/provider ctx/current-vbox) {:value vbox'}
+       [:& (mf/provider ctx/wireframe-mode?) {:value wireframe-mode?}
+        [:& (mf/provider ctx/current-vbox) {:value vbox'}
         [:& (mf/provider use/include-metadata-ctx) {:value (dbg/enabled? :show-export-metadata)}
          ;; Render root shape
          [:& shapes/root-shape {:key (str page-id)
                                 :objects base-objects
                                 :active-frames @active-frames
                                 ;; disable thumbnails when previewing a version
-                                :disable-thumbnails (some? preview-id)}]]]]]
+                                :disable-thumbnails (some? preview-id)}]]]]]]
 
      [:svg.viewport-controls
       {:xmlns "http://www.w3.org/2000/svg"

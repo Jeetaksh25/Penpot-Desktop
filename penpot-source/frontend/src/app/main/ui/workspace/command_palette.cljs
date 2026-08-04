@@ -33,6 +33,7 @@
    {:id :zoom-out      :label (tr "workspace.command-palette.zoom-out")              :run #(st/emit! (dw/decrease-zoom))}
    {:id :outline-mode  :label (tr "workspace.command-palette.toggle-outline-mode")    :run #(st/emit! (dw/toggle-layout-flag :outline-mode))}
    {:id :pixel-preview :label (tr "workspace.command-palette.toggle-pixel-preview")   :run #(st/emit! (dw/toggle-layout-flag :pixel-preview))}
+   {:id :wireframe-mode :label (tr "workspace.command-palette.toggle-wireframe-mode") :run #(st/emit! (dw/toggle-layout-flag :wireframe-mode))}
    {:id :snap-pixel    :label (tr "workspace.command-palette.toggle-snap-pixel-grid") :run #(st/emit! (dw/toggle-layout-flag :snap-pixel-grid))}
    {:id :lasso         :label (tr "workspace.command-palette.toggle-lasso")          :run #(st/emit! (dw/toggle-layout-flag :lasso-mode))}])
 

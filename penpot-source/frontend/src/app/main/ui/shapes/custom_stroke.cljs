@@ -371,6 +371,32 @@
 
         style        (obj/set! style "strokeWidth" (* stroke-width 2))
 
+        ;; Figma-parity wireframe render mode (ALL_APPS_PARITY P2.26). The
+        ;; inner-stroke def below is cloned via <use>, and a <use> clone's
+        ;; geometry inherits fill/stroke from the <use> host ONLY when the
+        ;; cloned element does not set them itself. This def is built by
+        ;; cloning the child's style (L362) which carries the shape's
+        ;; ORIGINAL fill + stroke colors, so the clone SETS those and blocks
+        ;; the `.wireframe-mode use { fill: gray !important; stroke: gray
+        ;; !important }` rule from flowing in — an inner-stroked shape would
+        ;; leak its original colors (at 2x width) in wireframe. CSS cannot
+        ;; pierce <use> shadow DOM, so when wireframe? is true we unset the
+        ;; color properties on the def (mirroring outer-stroke L318-325); the
+        ;; clone then inherits gray from the <use> host via the CSS rule.
+        ;; strokeWidth is KEPT — the 2x value is required for the inner-
+        ;; stroke clip math. Gated on wireframe? so normal rendering is
+        ;; byte-identical with today.
+        wireframe?   (mf/use-ctx muc/wireframe-mode?)
+        style        (if ^boolean wireframe?
+                       (-> style
+                           (obj/unset! "fill")
+                           (obj/unset! "fillOpacity")
+                           (obj/unset! "stroke")
+                           (obj/unset! "strokeOpacity")
+                           (obj/unset! "strokeStyle")
+                           (obj/unset! "strokeDasharray"))
+                       style)
+
         props        (-> props
                          (obj/set! "id" (dm/str shape-id))
                          (obj/set! "style" style)

@@ -11209,6 +11209,16 @@ msgstr "Disable pixel preview"
 
 
 #: figma-parity/p2/main-menu
+msgid "workspace.header.menu.enable-wireframe-mode"
+msgstr "Enable wireframe mode"
+
+
+#: figma-parity/p2/main-menu
+msgid "workspace.header.menu.disable-wireframe-mode"
+msgstr "Disable wireframe mode"
+
+
+#: figma-parity/p2/main-menu
 msgid "workspace.header.menu.command-palette"
 msgstr "Command palette"
 
@@ -11276,6 +11286,11 @@ msgstr "Toggle outline mode"
 #: figma-parity/p2/command-palette
 msgid "workspace.command-palette.toggle-pixel-preview"
 msgstr "Toggle pixel preview"
+
+
+#: figma-parity/p2/command-palette
+msgid "workspace.command-palette.toggle-wireframe-mode"
+msgstr "Toggle wireframe mode"
 
 
 #: figma-parity/p2/command-palette

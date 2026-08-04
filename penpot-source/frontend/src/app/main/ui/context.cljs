@@ -41,6 +41,18 @@
 ;; layout flag value. Mirrors is-render?.
 (def outline-mode?        (mf/create-context false))
 
+;; Figma-parity wireframe render mode (ALL_APPS_PARITY P2.26). Default false
+;; — every non-workspace render path (thumbnails, exports, viewer) never
+;; mounts the provider, so `mf/use-ctx` here returns false and the per-shape
+;; image-icon overlay in image.cljs emits nothing (byte-identical with
+;; today). Only the workspace viewport provider sets this to the
+;; :wireframe-mode layout flag value. The bulk of the wireframe look (gray
+;; fills/strokes, hidden images, grayed text, suppressed effects) is driven
+;; by the `.wireframe-mode` CSS hook on #render (viewport.scss) so it applies
+;; uniformly to every shape type without per-renderer branching; this context
+;; only gates the recognizable image-placeholder icon overlay in image.cljs.
+(def wireframe-mode?       (mf/create-context false))
+
 (def sidebar
   "A context that intends to store the current sidebar position,
   useful for components that behaves distinctly if they are showed in

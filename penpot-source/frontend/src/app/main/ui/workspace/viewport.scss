@@ -65,3 +65,270 @@
     fill: transparent !important;
   }
 }
+
+// Figma-parity wireframe render mode (ALL_APPS_PARITY P2.26). A low-fidelity
+// "wireframe" view of the canvas: every shape becomes a neutral-gray box with
+// a 1px gray stroke, images collapse to gray placeholders (the image-icon
+// overlay in image.cljs provides a recognizable image glyph on top), text is
+// grayed but stays legible, and all decorative effects (blur/shadow/glass/
+// fade/filter/mask/blend/inner+outer stroke clones) are suppressed. Driven
+// entirely by a `.wireframe-mode` class on the #render SVG (set from the
+// :wireframe-mode layout flag in viewport.cljs), so it applies uniformly to
+// every shape type with no per-renderer branching — CSS `!important` overrides
+// the SVG presentation attributes (and inline styles) the renderers emit, the
+// same trust the `.outline-mode` rule above relies on. Additive: when the flag
+// is off no class is set and the canvas-background hook class is absent, so
+// rendering is byte-identical with today. The neutral gray is a FIXED
+// theme-independent value (--wireframe-gray, #7d7d7d), NOT a theme token,
+// because the page canvas is user-set and independent of the UI theme — a
+// chrome-tuned token like --color-foreground-secondary reads ~2.3:1 (below
+// WCAG 3:1) in the dark-UI + light-canvas combo; #7d7d7d reads ≥3:1 on both
+// common light (#E8E9EA) and dark (#18181a) canvases. Reduced-motion is
+// unaffected (no motion is introduced).
+// Anchored on `#render.wireframe-mode` rather than bare `.wireframe-mode`.
+// #render is the literal id of the workspace render SVG (viewport.cljs
+// :id "render"); CSS-modules does NOT scope ids (only classes), and the
+// scoped `.wireframe-mode` class is on that same <svg>. Anchoring on the id
+// lifts EVERY rule below by one id of specificity (the leaf rule goes from
+// (0,2,1) to (1,2,1)), which is REQUIRED to beat imported-SVG inline <style>
+// blocks: svg_raw.cljs scopes imported styles under `#shape-<id>` and some
+// imported SVGs carry `!important` declarations — an id selector (1,0,1)
+// outranks ANY number of classes, so a bare `.wireframe-mode` leaf (0,2,1)
+// would LOSE to those even with !important on both sides. With the #render
+// anchor the leaf becomes (1,2,1) > (1,0,1) and wins. Byte-identical-when-
+// inactive is preserved: #render only gains the .wireframe-mode class when
+// the flag is on, so when the flag is off this whole block matches nothing.
+#render.wireframe-mode {
+  // Fixed neutral mid-gray. See the block comment above for why this is not
+  // a theme token. Declared on the anchor so it cascades to every descendant
+  // rule below via var(--wireframe-gray).
+  --wireframe-gray: #7d7d7d;
+  // Fixed high-contrast white for the image-placeholder icon ONLY. The image
+  // rect fill is forced to --wireframe-gray (#7d7d7d) by the leaf rule, so an
+  // icon stroked in the SAME gray would be 1:1 contrast and invisible.
+  // --wireframe-icon (#ffffff) on #7d7d7d reads ~4.1:1 (WCAG rel-luminance:
+  // L(#7d7d7d)≈0.205, (1.05)/(0.255)≈4.11) on BOTH common light and dark
+  // canvases (the box itself is the backdrop for the icon, not the page),
+  // clearing the 3:1 UI-component threshold (WCAG 1.4.11) so the Lucide glyph
+  // stays legible regardless of the user's canvas color. Theme-independent
+  // for the same reason --wireframe-gray is.
+  --wireframe-icon: #ffffff;
+
+  // Hook anchor for the canvas background rect (viewport.cljs applies the
+  // scoped `.canvas-background` class ONLY when wireframe-mode? is true, so
+  // the inactive DOM is unchanged). The page backdrop must keep its REAL
+  // fill (so gray shapes read against it), so this rule does NOT touch
+  // fill/stroke — the leaf rule's :not(.canvas-background) excludes it from
+  // the gray-fill. But the rect should still be flattened for EFFECTS: an
+  // opacity/filter/mask/mix-blend-mode added to the page backdrop would
+  // otherwise leak (the :not() drops every suppression for this one rect).
+  // So force the effect properties off here while leaving fill intact.
+  // opacity:1 is also the no-op that makes `.canvas-background` a standalone
+  // selector in this module's CSS-modules mapping (for `stl/css` resolution).
+  // Nested under the anchor so it never leaks into the inactive cascade.
+  .canvas-background {
+    opacity: 1 !important;
+    filter: none !important;
+    mask: none !important;
+    mix-blend-mode: normal !important;
+  }
+
+  // All vector primitives EXCEPT the canvas background rect: gray fill +
+  // 1px gray SOLID gray stroke, and suppress any inline filter (drop-shadow/
+  // blur) and any fade/mask alpha mask the renderer emitted on the leaf.
+  // The canvas background rect is excluded via :not() so the page backdrop
+  // keeps its real fill and gray shapes read against it — without this,
+  // background + fills + strokes would all be the same gray and the canvas
+  // would be a flat field with zero contrast. fill-opacity/stroke-opacity
+  // are forced to 1 so semi-transparent fills/strokes (alpha < 1, set inline
+  // or by an imported-SVG style) do not render as faint gray — every shape
+  // becomes a solid gray box. stroke-dasharray is forced to none so dashed/
+  // dotted strokes become a uniform solid 1px gray outline (consistent with
+  // custom_stroke.cljs, which unsets strokeDasharray on inner/outer-stroke
+  // defs when wireframe? — the design intent is solid strokes). This also
+  // covers arrowhead/endpoint markers, whose <path>/<rect>/<circle> marker
+  // children are matched by this :is(...).
+  :is(rect, circle, ellipse, line, polygon, polyline, path):not(.canvas-background) {
+    fill: var(--wireframe-gray) !important;
+    stroke: var(--wireframe-gray) !important;
+    stroke-width: 1 !important;
+    fill-opacity: 1 !important;
+    stroke-opacity: 1 !important;
+    stroke-dasharray: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    mask: none !important;
+    mix-blend-mode: normal !important;
+  }
+
+  // <g> wrappers AND SVG <a> hyperlink wrappers (svg_text.cljs wraps
+  // hyperlinked text blocks in <a>) carry frame/group layer-blur, glass,
+  // stacked-blur and drop-shadow (set as a `filter` attr on the wrapper <g>
+  // in frame.cljs / shape.cljs), frame/group `opacity`, fade / mask-group
+  // alpha masks, and mix-blend-mode. None of those match the leaf :is(...)
+  // selector above, so they would leak through. `<a>` is a container like
+  // `<g>` (native Penpot's <a> only sets href/key today, but an imported
+  // SVG or future renderer may place effects on it). Force them off so the
+  // wireframe flattens EVERY effect: no blurred backdrops, no shadows, no
+  // fade ramps, no reduced-opacity compositing, no blend-mode darkening.
+  // `clip-path` and `transform` are intentionally NOT forced off — clip-path
+  // so frame overflow clipping still contains child gray boxes (and inner-
+  // stroke clip-paths keep stroke alignment), and transform because every
+  // shape uses it for canvas positioning (resetting it would scramble the
+  // layout). backdrop-filter is forced off too so a future CSS-based
+  // glass/frost implementation (vs today's SVG-filter glass, already
+  // covered by filter:none) cannot leak a full-color blurred backdrop.
+  g, a {
+    filter: none !important;
+    opacity: 1 !important;
+    mask: none !important;
+    mix-blend-mode: normal !important;
+    backdrop-filter: none !important;
+  }
+
+  // Inner/outer-stroke shapes (custom_stroke.cljs) render the stroke as a
+  // <use> clone of a stroke-shape def, with an inline `style` carrying the
+  // stroke color + a 2x stroke-width (and, for outer strokes, a mask). <use>
+  // is not in the leaf :is(...) selector and not a <g>, so it would leak its
+  // original color and double-width stroke. `!important` here beats the
+  // <use>'s inline `style` (stylesheet !important > inline non-important),
+  // and the cloned geometry inherits fill/stroke from the <use> host (the
+  // stroke-shape def unsets its own fill/stroke), so the gray flows in.
+  // filter/opacity are forced off too so an imported <use> carrying a
+  // drop-shadow filter or fade opacity on the clone cannot leak.
+  // fill-opacity/stroke-opacity are forced to 1 so a <use> whose referenced
+  // def carried semi-transparent fill/stroke does not render as a faint gray
+  // (mirroring the leaf rule's solid-gray guarantee for real shapes).
+  // stroke-dasharray:none makes outer-stroke dashes solid (inner-stroke
+  // already unsets it on the def), matching the leaf rule's uniform-stroke
+  // intent. backdrop-filter:none future-proofs against CSS-glass <use>.
+  use {
+    fill: var(--wireframe-gray) !important;
+    stroke: var(--wireframe-gray) !important;
+    stroke-width: 1 !important;
+    fill-opacity: 1 !important;
+    stroke-opacity: 1 !important;
+    stroke-dasharray: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    mask: none !important;
+    mix-blend-mode: normal !important;
+    backdrop-filter: none !important;
+  }
+
+  // Nested <svg> elements appear inside imported-SVG shapes (svg_raw.cljs
+  // can render an <svg> child for an imported file) and may carry their own
+  // filter/opacity/mask/blend. The descendant combinator (`#render.wireframe-
+  // mode svg`) matches ONLY nested <svg> descendants, never the #render host
+  // itself, so the workspace render SVG's own (color-blindness) inline
+  // filter is untouched — only imported nested-SVG effects are flattened.
+  // backdrop-filter:none future-proofs against CSS-glass on a nested <svg>.
+  svg {
+    filter: none !important;
+    opacity: 1 !important;
+    mask: none !important;
+    mix-blend-mode: normal !important;
+    backdrop-filter: none !important;
+  }
+
+  // Images: hide the raster, leaving the gray rect + the image-icon overlay
+  // from image.cljs as a recognizable placeholder.
+  image {
+    visibility: hidden !important;
+  }
+
+  // WebGL2 shader output rendered via <canvas> inside <foreignObject>
+  // (filters.cljs shader-canvas*, the planned mount for non-SVG shader
+  // presets). Latent today (no call site) but hidden here so a live shader
+  // never leaks full color over the gray wireframe when it is wired up.
+  canvas {
+    visibility: hidden !important;
+  }
+
+  // SVG text stays in place and legible, just grayed. filter/opacity/mask
+  // are forced off so imported-SVG text carrying a drop-shadow or fade does
+  // not leak (the fill rule alone does not reach those effects), and
+  // fill-opacity:1 so semi-transparent text renders solid. stroke + stroke-
+  // opacity are grayed too so imported-SVG <text stroke="..."> does not keep
+  // its colored outline (native Penpot text strokes render via <use> clones
+  // covered by the `use` rule above, so this only matters for imported SVGs;
+  // on native text with no stroke attr, stroke:gray is invisible since the
+  // fill is the same gray). <textPath> is included because it is text content
+  // addressed by `fill`, not matched by the leaf :is(...) geometry selector,
+  // and an explicit fill on it would otherwise leak.
+  text, tspan, textPath {
+    fill: var(--wireframe-gray) !important;
+    fill-opacity: 1 !important;
+    stroke: var(--wireframe-gray) !important;
+    stroke-opacity: 1 !important;
+    filter: none !important;
+    opacity: 1 !important;
+    mask: none !important;
+    mix-blend-mode: normal !important;
+  }
+
+  // The <foreignObject> element itself can carry an inline filter/opacity/
+  // mask/mix-blend-mode (an imported SVG or a future renderer may place
+  // effects here instead of on the wrapper <g>). Native fo_text applies
+  // opacity/blur/shadow/blend on the wrapper <g> (covered by the `g` rule
+  // above), so this only matters for imports/future code, but flatten it
+  // here for completeness so a foreignObject-level effect never leaks over
+  // the grayed HTML content inside. backdrop-filter:none future-proofs
+  // against CSS-glass on a foreignObject.
+  foreignObject {
+    filter: none !important;
+    opacity: 1 !important;
+    mask: none !important;
+    mix-blend-mode: normal !important;
+    backdrop-filter: none !important;
+  }
+
+  // HTML text rendered via <foreignObject> (the fo_text renderer) uses CSS
+  // `color`, not SVG `fill`, so the text/tspan rule above does not reach it.
+  // Gray it via `color` + `-webkit-text-fill-color`; !important beats the
+  // inline color styles fo_text emits. background-color is cleared and
+  // border-color grayed so colored text-highlight backgrounds and borders
+  // (which fo_text can set inline) do not leak full color over the
+  // wireframe — the text flattens to gray-on-transparent like everything
+  // else. background-image is cleared too so a non-text-clipped gradient/
+  // image background (e.g. a highlighted paragraph) cannot leak full color;
+  // gradient TEXT fills are already painted over by -webkit-text-fill-color:
+  // gray, so this is both robustness and the flatten intent. text-decoration-
+  // color is grayed so a fo_text span with a custom underline/strikethrough
+  // color does not keep that color (text-decoration-color is a separately-set
+  // inline property that `color` does not cascade into). Other inline type
+  // styles (size, weight) are intentionally left intact.
+  foreignObject :is(span, p, div, h1, h2, h3, h4, h5, h6, li, a, strong, em, b, i, u) {
+    color: var(--wireframe-gray) !important;
+    -webkit-text-fill-color: var(--wireframe-gray) !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border-color: var(--wireframe-gray) !important;
+    text-decoration-color: var(--wireframe-gray) !important;
+  }
+
+  // The recognizable Lucide "image" glyph overlayed on image placeholders
+  // by image.cljs (global class `.wireframe-image-icon`, applied only when
+  // the wireframe-mode? context is true). Without this restoration the
+  // leaf rule above would force-fill the icon's sub-shapes to solid gray
+  // (fill:gray !important) and crush the outline to 1px, turning the icon
+  // into an unreadable gray blob. The icon is stroked in --wireframe-icon
+  // (white), NOT --wireframe-gray, because the image rect underneath is
+  // forced to --wireframe-gray by the leaf rule — a gray-on-gray glyph
+  // would be 1:1 contrast and invisible. White on #7d7d7d reads ~4.1:1 so
+  // the glyph is legible. Specificity: the leaf rule is now
+  // `#render.wireframe-mode :is(...):not(.canvas-background)` = (1,2,1).
+  // This restoration is `#render.wireframe-mode :global(.wireframe-image-
+  // icon.wireframe-image-icon) :is(rect, circle, path)` = (1,3,1) — the
+  // doubled global class gives a genuine one-class win (1,3,1) > (1,2,1),
+  // independent of rule source order, so the glyph stays a crisp 2px
+  // white outline regardless of future edits between the two rules.
+  // (.a.a matches any element with class a; this is a standard
+  // specificity-boost idiom.)
+  :global(.wireframe-image-icon.wireframe-image-icon) :is(rect, circle, path) {
+    fill: none !important;
+    stroke: var(--wireframe-icon) !important;
+    stroke-width: 2 !important;
+    opacity: 1 !important;
+  }
+}

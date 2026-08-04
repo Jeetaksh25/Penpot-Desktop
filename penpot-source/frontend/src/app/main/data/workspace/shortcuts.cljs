@@ -534,6 +534,15 @@
                           :subsections [:main-menu]
                           :fn #(st/emit! (toggle-layout-flag :pixel-preview))}
 
+   ;; Figma-parity wireframe render mode (ALL_APPS_PARITY P2.26). Flattens
+   ;; the canvas to a low-fidelity wireframe (neutral-gray fills + 1px gray
+   ;; strokes, images as gray placeholders, text grayed, effects suppressed)
+   ;; via a CSS hook on #render (guarded in viewport.cljs; default off).
+   :toggle-wireframe-mode {:tooltip (ds/meta-shift "W")
+                           :command (ds/c-mod "shift+w")
+                           :subsections [:main-menu]
+                           :fn #(st/emit! (toggle-layout-flag :wireframe-mode))}
+
    ;; Figma-parity command palette (gap #47). Mounts the unified quick-
    ;; action overlay (command_palette.cljs). Cmd+K is already bound to
    ;; create-component-variant, so the palette uses Cmd+/ instead.

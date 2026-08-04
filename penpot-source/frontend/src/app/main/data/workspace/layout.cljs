@@ -34,14 +34,20 @@
     :snap-ruler-guides
     :show-pixel-grid
     :snap-pixel-grid
-    ;; Figma-parity viewport render modes (gaps #45/#46/#51). All three
+    ;; Figma-parity viewport render modes (gaps #45/#46/#51 + P2.26). All
     ;; default to absent (byte-identical rendering/interaction when the
     ;; flag is off). :outline-mode renders shapes as stroked outlines
     ;; only; :pixel-preview rasterizes the canvas at device pixels;
-    ;; :lasso-mode enables the freehand lasso selection widget.
+    ;; :lasso-mode enables the freehand lasso selection widget;
+    ;; :wireframe-mode flattens the canvas to a low-fidelity wireframe
+    ;; (neutral-gray fills + 1px gray strokes, images as gray placeholder
+    ;; boxes, text grayed, all blur/shadow/glass/fade effects suppressed)
+    ;; via a CSS hook on #render (mirrors :outline-mode) — see viewport.scss
+    ;; `.wireframe-mode` + the image-icon overlay in image.cljs.
     :outline-mode
     :pixel-preview
     :lasso-mode
+    :wireframe-mode
     ;; Figma-parity command palette (gap #47). When set, the
     ;; command-palette overlay mounts.
     :command-palette

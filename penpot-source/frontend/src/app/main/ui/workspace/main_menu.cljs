@@ -504,6 +504,26 @@
          (tr "workspace.header.menu.enable-pixel-preview"))]
       [:> shortcuts* {:id :toggle-pixel-preview}]]
 
+     ;; Figma-parity wireframe render mode (ALL_APPS_PARITY P2.26). Flattens
+     ;; the canvas to a low-fidelity wireframe — neutral-gray fills + 1px gray
+     ;; strokes, images as gray placeholders (+ image-icon overlay), text
+     ;; grayed, all blur/shadow/glass/fade effects suppressed — via a CSS
+     ;; hook on #render (guarded in viewport.cljs; default off). The
+     ;; `toggle-flag` dispatcher reads `data-testid` and emits
+     ;; `dw/toggle-layout-flag`, so this item auto-toggles :wireframe-mode.
+     [:> dropdown-menu-item* {:class (stl/css :base-menu-item :submenu-item)
+                              :on-click    toggle-flag
+                              :on-key-down (fn [event]
+                                             (when (kbd/enter? event)
+                                               (toggle-flag event)))
+                              :data-testid "wireframe-mode"
+                              :id          "file-menu-wireframe-mode"}
+      [:span {:class (stl/css :item-name)}
+       (if (contains? layout :wireframe-mode)
+         (tr "workspace.header.menu.disable-wireframe-mode")
+         (tr "workspace.header.menu.enable-wireframe-mode"))]
+      [:> shortcuts* {:id :toggle-wireframe-mode}]]
+
      ;; Figma-parity command palette (gap #47). Mounts the unified quick-
      ;; action overlay (command_palette.cljs). Cmd+K is already bound to
      ;; create-component-variant, so the palette uses Cmd+/ here too.
