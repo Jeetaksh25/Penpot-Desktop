@@ -13879,3 +13879,187 @@ msgstr "Material 3 kit already added to this file"
 msgid "workspace.focus.exit"
 msgstr "Exit focus"
 
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.assets.ecommerce-add"
+msgstr "Add E-commerce kit"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.assets.ecommerce-add-aria"
+msgstr "Add E-commerce design kit"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.assets.ecommerce-already-added"
+msgstr "E-commerce kit already added to this file"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.shape.pathfinder.print"
+msgstr "Print"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.shape.pathfinder.hard-mix"
+msgstr "Hard Mix"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.shape.pathfinder.soft-mix"
+msgstr "Soft Mix"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.shape.pathfinder.trap"
+msgstr "Trap"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.title"
+msgstr "Import file"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.menu-label"
+msgstr "Import Sketch/Figma…"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.tab-sketch"
+msgstr "Sketch"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.tab-figma"
+msgstr "Figma"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.sketch-hint"
+msgstr "Choose a .sketch file to import its artboards and layers."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.pick-sketch"
+msgstr "Choose .sketch file…"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.selected"
+msgstr "Selected"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.figma-hint"
+msgstr "Paste a Figma file URL or key and your Figma personal access token."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.figma-file-key"
+msgstr "Figma file key or URL"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.figma-token-label"
+msgstr "Figma personal access token"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.figma-token-placeholder"
+msgstr "figd_… (stored locally only)"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.loading"
+msgstr "Importing…"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.import"
+msgstr "Import"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.pick-file"
+msgstr "Pick a .sketch file first."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.empty"
+msgstr "No importable layers were found in the file."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.failed"
+msgstr "Import failed"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.figma-key-missing"
+msgstr "Enter a Figma file key or URL."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.figma-token-missing"
+msgstr "Enter your Figma token (stored locally only)."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.figma-token-invalid"
+msgstr "Your Figma token was rejected (401/403). Check it and try again."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.import.images-uploaded"
+msgstr "Imported %s image(s) as media assets."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.open"
+msgstr "Workshop"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.title"
+msgstr "Workshop"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.subtitle"
+msgstr "Guided tutorials & design courses"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.runner.subtitle"
+msgstr "Tutorial in progress"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.close"
+msgstr "Close"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.library"
+msgstr "Library"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.back"
+msgstr "Back"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.next"
+msgstr "Next"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.finish"
+msgstr "Finish"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.restart"
+msgstr "Restart"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.step.of"
+msgstr "Step %s of %s"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.search.placeholder"
+msgstr "Search tutorials..."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.section.tutorials"
+msgstr "Tutorials"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.empty"
+msgstr "No tutorials match your search."
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.completed"
+msgstr "Completed"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.in.progress"
+msgstr "In progress"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.difficulty.beginner"
+msgstr "Beginner"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.difficulty.intermediate"
+msgstr "Intermediate"
+
+#: ovion/all-apps-parity/missing-sweep-wave6
+msgid "workspace.workshop.difficulty.advanced"
+msgstr "Advanced"
+

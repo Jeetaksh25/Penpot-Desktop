@@ -24,6 +24,11 @@
    [app.main.ui.components.window-titlebar :refer [window-titlebar*]]
    [app.main.ui.error-boundary :refer [error-boundary*]]
    [app.main.ui.exports.files]
+   ;; P1.22 — side-effect require: registers the :import-dialog modal
+   ;; component into `data.modal/components` so `(modal/show! :import-dialog
+   ;; {})` resolves. The namespace only defines the modal; no other symbols
+   ;; are consumed here.
+   [app.main.ui.workspace.import-dialog]
    [app.main.ui.frame-preview :as frame-preview]
    [app.main.ui.nitrate.entry :as nitrate-entry]
    [app.main.ui.notifications :as notifications]

@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **85** | Implemented end-to-end + verified (commit referenced). |
-| 🟡 half-done | **1** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **10** | Not implemented yet. |
+| ✅ done | **87** | Implemented end-to-end + verified (commit referenced). |
+| 🟡 half-done | **2** | Partial / stubbed / runtime-no-op — needs finishing. |
+| 🔴 missing | **7** | Not implemented yet. |
 | ⚠️ not-working | **0** | Present but broken. |
-| **Remaining** | **11** | half-done + missing + not-working. |
+| **Remaining** | **9** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 85 done / 1 half / 10 missing / 0 not-working / 11 remaining. Wave 5 ✅ (6 gaps: P2.39 Video/GIF, P1.34 Path-draw + video-on-scroll, P1.12 Repeaters, P2.06 CSV + CSS anim, P2.11 Material 3 kit, P2.02 Focus mode completed).
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 87 done / 2 half / 7 missing / 0 not-working / 9 remaining. Wave 6 ✅ (2 gaps done: P1.22 .sketch/.fig import, P2.23 print pathfinder; 1 gap to half-done: P1.15 e-commerce design kit; 1 bonus: Workshop learning center). P1.35 stays 🔴 missing — it is AI-generated React code components (depends on P0.14 code-component host), NOT a learning center; the Workshop learning center built this wave is an unrelated bonus feature.
 
-Most-recent done: **P2.39 / P1.34 / P1.12 / P2.06 / P2.11 / P2.02** — C5 missing-sweep wave 5: video/GIF playback (foreignObject + <video>), path-draw + scroll-video motion slots, data-bound repeaters (CSV -> grid of duplicates), CSV import + 10 CSS-keyframe presets, Material 3 design kit (32 tokens + 12 components via apply-design-spec), focus mode completed (chrome-hide + auto-exit reusing existing isolation).
+Most-recent done: **P1.22 / P2.23** — C5 missing-sweep wave 6: native .sketch (ZIP+JSON via the `zip` crate) + .fig (Figma REST API, key-gated) import through the existing apply-design-spec pipeline; Hard Mix / Soft Mix / Trap print pathfinder effects (pure-CLJC CMYK math + path offset, reuses bool/content-bool-pair :intersection). Bonus: Workshop learning center (9 guided tutorials + localStorage progress). P1.15 e-commerce moved to half-done (design kit done; commerce backend staged after P0.14 + hosting).
 
 ## Contents
 
@@ -275,7 +275,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.15 E-commerce suite (products, variants, cart, checkout, payments, inventory, tax, shipping)
 
-- **State:** 🔴 missing  ·  **Sources:** Framer, Webflow
+- **State:** 🟡 half-done (C5 missing-sweep wave 6) — E-commerce design kit done: new data/workspace/ecommerce_kit.cljs ships 8 commerce component specs (Hero Banner, Category Nav, Product Grid, Product Card, Cart Item, Cart Summary, Checkout Form, Order Summary) injected as a group on an "E-commerce" board via the EXISTING design_gen/apply-design-spec (no new shape-creation path), one undo (dwu), idempotent (:ovion "ecommerce-kit" plugin-data guard); "Add E-commerce kit" action in assets.cljs (Lucide shopping-bag, coral). DEFERRED per the doc build direction: the full commerce backend (payments/inventory/tax/shipping via Stripe/Shopify plugin integrations) is staged after hosting + the code-component host (P0.14) — explicitly out-of-scope for a desktop design tool per the doc. 3 en.po keys.  ·  **Sources:** Framer, Webflow
 - **Detail / build direction:** No commerce code anywhere. Recommended: largely out of scope for a design tool, but a pragmatic path is Stripe/Shopify plugin integrations (reusing the plugin runtime) that embed checkout components as code components on a published site. Stage after hosting + code-component host. Low priority for a desktop design tool.
 
 #### P1.16 Effects system: Appear, Loop, Drag as first-class design-time effect types (beyond hover/press)
@@ -310,7 +310,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.22 Native .sketch file open/edit/save and first-class .fig import (and broad native file import: Axure/XD)
 
-- **State:** 🔴 missing  ·  **Sources:** Lunacy, Pixso
+- **State:** ✅ done (C5 missing-sweep wave 6) — Native .sketch + .fig import: new Tauri file_import.rs (import_sketch opens the .sketch ZIP via the existing `zip` crate, extracts document.json + page JSONs + image refs -> normalized tree; import_figma calls the Figma REST API v1/files/<key> with X-Figma-Token, key-gated via localStorage ovion.figma-token, sentinels figma-token-missing/figma-token-invalid mirroring the Pexels pattern). CLJS file_import.cljs converts the layer tree to a design-gen DesignSpec (frame/rect/text/group/image) and applies it via the EXISTING design_gen/apply-design-spec (no new shape-creation path); images uploaded via the existing media-object command then stripped from the spec so base64 never reaches spec->shape-tree. Unknown layer types skipped (nil-safe). Import dialog modal (import_dialog.cljs) registered via ui.cljs side-effect require + File-menu entry in main_menu.cljs. Deferred: .sketch edit/save round-trip + Axure/XD (the headline open + .fig import are done). 20 en.po keys.  ·  **Sources:** Lunacy, Pixso
 - **Detail / build direction:** Ovion's format is .ovion; Penpot importers handle SVG and limited Figma via plugin; no native .sketch reader/writer, no first-class .fig importer in desktop. Recommended: add a .sketch reader (the .sketch format is a documented zip+JSON) mapping layers to Penpot shapes, and a Sketch-compatible writer for round-trip; integrate a Figma importer (the Penpot plugin Figma importer exists upstream — bundle it as a first-class desktop import menu). Prioritize .fig import (largest user base) over .sketch round-trip.
 
 #### P1.23 Native forms (form builder with submissions) and SEO metadata generation
@@ -499,7 +499,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.23 Hard Mix / Soft Mix / Trap pathfinder effects (per-face CMYK primary mixing, print registration)
 
-- **State:** 🔴 missing  ·  **Sources:** Adobe Illustrator
+- **State:** ✅ done (C5 missing-sweep wave 6) — Hard Mix / Soft Mix / Trap pathfinder effects (print production): new common/print/trap.cljc ships pure-CLJC rgb<->cmyk + hard-mix-cmyk (per-channel threshold) + soft-mix-cmyk (smoothstep S-curve) + trap-path (centroid-based path offset, spread/choke by trap-width). pathfinder.cljs adds a coral "Print" row with Hard Mix / Soft Mix / Trap buttons: Hard/Soft Mix compute the bottom∩top overlap via the existing bool/content-bool-pair :intersection and add a new path shape with the CMYK-mixed fill; Trap offsets the foreground path outward (spread) filled with the foreground color, inserted behind the foreground. Reuses the existing pcb/dch/commit-changes pipeline (no new boolean content op; bool.cljc untouched). All three no-op when <2 eligible shapes; nil-safe (nil fill -> black, nil content -> nil). sRGB approximation per the doc build-direction fallback. 4 en.po keys.  ·  **Sources:** Adobe Illustrator
 - **Detail / build direction:** No effect-stack architecture for per-face CMYK mixing; Penpot uses sRGB. Recommended: niche print-production feature; low priority for a screen-design desktop app. If needed, implement as pathfinder effects over the face-graph with sRGB approximations. Defer.
 
 #### P2.24 Hover/Pressed states directly on components without separate variants

@@ -789,7 +789,22 @@
          (mf/deps on-export-frames)
          (fn [event]
            (when (kbd/enter? event)
-             (on-export-frames event))))]
+             (on-export-frames event))))
+
+        ;; P1.22 — Import .sketch / .fig files. Opens the import modal
+        ;; (registered in `ui.workspace.import-dialog`); the modal handles
+        ;; the Tauri open dialog + Figma token + conversion + commit.
+        on-import-file
+        (mf/use-fn
+         (fn [_]
+           (st/emit! (modal/show :import-dialog {}))))
+
+        on-import-file-key-down
+        (mf/use-fn
+         (mf/deps on-import-file)
+         (fn [event]
+           (when (kbd/enter? event)
+             (on-import-file event))))]
 
     [:> dropdown-menu* {:show true
                         :class (stl/css :base-menu :sub-menu :pos-1)
@@ -832,6 +847,18 @@
          [:> shortcuts* {:id :toggle-history}]]
 
         [:div {:class (stl/css :separator)}]])
+
+     ;; P1.22 — Import .sketch / .fig files. Sits above the Export block in
+     ;; the File menu; opens the import modal (Sketch file picker + Figma
+     ;; key/token). Coral accent via the modal itself.
+     [:> dropdown-menu-item* {:class (stl/css :base-menu-item :submenu-item)
+                              :on-click    on-import-file
+                              :on-key-down on-import-file-key-down
+                              :id          "file-menu-import-file"}
+      [:span {:class (stl/css :item-name)}
+       (tr "workspace.import.menu-label")]]
+
+     [:div {:class (stl/css :separator)}]
 
      [:> dropdown-menu-item* {:class (stl/css :base-menu-item :submenu-item)
                               :on-click    on-export-shapes

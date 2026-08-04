@@ -47,6 +47,8 @@
    [app.main.data.workspace.mcp-server]
    [app.main.ui.workspace.viewport :refer [viewport*]]
    [app.main.ui.workspace.webgl-unavailable-modal]
+   [app.main.ui.workspace.workshop :refer [workshop-panel*]]
+   [app.main.data.workspace.workshop :as wsp]
    [app.util.debug :as dbg]
    [app.util.dom :as dom]
    [app.util.globals :as globals]
@@ -260,13 +262,30 @@
         read-only?       (mf/deref refs/workspace-read-only?)
         read-only?       (or read-only? (not (:can-edit permissions)))
 
+        ;; Workshop (P1.35) — opt-in learning-center overlay. Off by
+        ;; default; when false the workspace renders exactly as today.
+        workshop-open?   (mf/deref refs/workshop-open?)
+
         design-tokens?   (features/use-feature "design-tokens/v1")
 
         wasm-renderer-enabled? (features/use-feature "render-wasm/v1")
 
         first-frame-rendered?  (mf/use-state false)
 
-        background-color (:background-color wglobal)]
+        background-color (:background-color wglobal)
+
+        ;; Workshop entry button hover state (reduced-motion-safe: no
+        ;; transition, just a swapped background on hover).
+        ws-entry-hover? (mf/use-state false)
+
+        toggle-workshop
+        (mf/use-fn #(st/emit! (wsp/toggle-workshop)))
+
+        on-ws-entry-enter
+        (mf/use-fn #(reset! ws-entry-hover? true))
+
+        on-ws-entry-leave
+        (mf/use-fn #(reset! ws-entry-hover? false))]
 
     (mf/with-effect []
       (st/emit! (dps/initialize-persistence)
@@ -322,6 +341,46 @@
           ;; AI design bar (Feature 3 + 4) — floats above the viewport.
           (when (and file-loaded? page-id)
             [:> ai-bar*])
+          ;; Workshop (P1.35) — floating entry button (top-right). A single
+          ;; unobtrusive header icon; emits `toggle-workshop`. Inline styles
+          ;; keep it SCSS-pipeline-free; hover swaps the background (no
+          ;; transition = reduced-motion-safe). Hidden while the overlay is
+          ;; open (the overlay's own close button takes over).
+          (when (and file-loaded? page-id (not ^boolean workshop-open?))
+            [:button
+             {:type "button"
+              :on-click toggle-workshop
+              :on-mouse-enter on-ws-entry-enter
+              :on-mouse-leave on-ws-entry-leave
+              :title (tr "workspace.workshop.open")
+              :aria-label (tr "workspace.workshop.open")
+              :style
+              {:position "fixed"
+               :top "56px"
+               :right "14px"
+               :width "34px"
+               :height "34px"
+               :border "none"
+               :border-radius "10px"
+               :cursor "pointer"
+               :z-index 90
+               :display "flex"
+               :align-items "center"
+               :justify-content "center"
+               :background (if @ws-entry-hover? "#f28b82" "rgba(242,139,130,0.12)")
+               :color (if @ws-entry-hover? "#ffffff" "#f28b82")
+               :box-shadow (when @ws-entry-hover? "0 2px 8px rgba(242,139,130,0.4)")}}
+             [:svg {:xmlns "http://www.w3.org/2000/svg"
+                    :width "20" :height "20" :viewBox "0 0 24 24"
+                    :fill "none" :stroke "currentColor" :stroke-width 2
+                    :stroke-linecap "round" :stroke-linejoin "round"
+                    :aria-hidden "true"}
+              [:path {:d "M22 10v6M2 10l10-5 10 5-10 5z"}]
+              [:path {:d "M6 12v5c3 3 9 3 12 0v-5"}]]])
+          ;; Workshop overlay — rendered ONLY when open, so the closed path
+          ;; emits nothing (byte-identical-when-inactive).
+          (when ^boolean workshop-open?
+            [:> workshop-panel*])
           (when (or (not (and file-loaded? page-id))
                     ;; in wasm renderer, extend the pixel loader until the first frame is rendered
                     ;; but do not apply it when switching pages

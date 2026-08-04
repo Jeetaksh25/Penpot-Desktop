@@ -12,6 +12,7 @@
    [app.main.data.modal :as modal]
    [app.main.data.workspace :as dw]
    [app.main.data.workspace.assets :as dwa]
+   [app.main.data.workspace.ecommerce-kit :as eckit]
    [app.main.data.workspace.material-kit :as m3kit]
    [app.main.refs :as refs]
    [app.main.store :as st]
@@ -474,6 +475,52 @@
       [:span {:class (stl/css :m3-kit-label)}
        (tr "workspace.assets.m3-add")]]]))
 
+;; ── P1.15: E-commerce design kit injection (additive) ───────────────────────
+;;
+;; A single action row in the Assets panel. Clicking it emits
+;; `eckit/inject-ecommerce-kit`, which adds an 'E-commerce' board of
+;; commerce components (hero, nav, product grid, cart, checkout, order
+;; summary) via the existing `design-gen/apply-design-spec` pipeline, in
+;; one undo batch. Purely additive — files without the kit are
+;; byte-identical. The idempotency guard in the event skips a second
+;; injection.
+;;
+;; Lucide `shopping-bag` icon, inline SVG (stroke-width 2, currentColor),
+;; coral accent #f28b82. Reduced-motion: no size/scale transitions on
+;; hover/press — only a calm box-shadow / color swap.
+(mf/defc ecommerce-kit-section*
+  {::mf/private true}
+  []
+  (let [busy* (mf/use-state false)
+        busy  (deref busy*)
+        on-add (mf/use-fn
+                (mf/deps [busy])
+                (fn []
+                  (when-not ^boolean busy
+                    (reset! busy* true)
+                    (st/emit! (eckit/inject-ecommerce-kit))
+                    ;; Reset after a tick so the button can recover; the
+                    ;; event is fire-and-forget (no completion signal).
+                    (js/setTimeout #(reset! busy* false) 600))))]
+    [:div {:class (stl/css :ecommerce-kit-section)}
+     [:button {:type           "button"
+               :class          (stl/css-case :ecommerce-kit-button true
+                                                 :ecommerce-kit-button-busy busy)
+               :disabled       ^boolean busy
+               :on-click       on-add
+               :data-testid    "add-ecommerce-kit"
+               :aria-label     (tr "workspace.assets.ecommerce-add-aria")}
+      ;; Lucide `shopping-bag` icon (24x24, stroke-width 2, currentColor).
+      [:svg {:viewBox "0 0 24 24" :width 18 :height 18 :fill "none"
+             :stroke "currentColor" :stroke-width 2
+             :stroke-linecap "round" :stroke-linejoin "round"
+             :aria-hidden true}
+       [:path {:d "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"}]
+       [:line {:x1 3 :y1 6 :x2 21 :y2 6}]
+       [:path {:d "M16 10a4 4 0 0 1-8 0"}]]
+      [:span {:class (stl/css :ecommerce-kit-label)}
+       (tr "workspace.assets.ecommerce-add")]]]))
+
 (mf/defc assets-toolbox*
   {::mf/wrap [mf/memo]}
   [{:keys [size file-id]}]
@@ -635,6 +682,9 @@
 
      ;; P2.11: Material 3 design kit injection (additive, idempotent).
      [:> material-kit-section*]
+
+     ;; P1.15: E-commerce design kit injection (additive, idempotent).
+     [:> ecommerce-kit-section*]
 
      [:& (mf/provider cmm/assets-filters) {:value filters}
       [:& (mf/provider cmm/assets-toggle-ordering) {:value toggle-ordering}

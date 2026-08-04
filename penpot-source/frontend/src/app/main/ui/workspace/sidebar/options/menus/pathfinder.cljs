@@ -26,6 +26,7 @@
    [app.common.data.macros :as dm]
    [app.common.files.changes-builder :as pcb]
    [app.common.files.helpers :as cfh]
+   [app.common.print.trap :as trap]
    [app.common.types.component :as ctc]
    [app.common.types.container :as ctn]
    [app.common.types.path :as path]
@@ -106,6 +107,37 @@
    [:rect {:x 7 :y 3 :width 14 :height 14 :rx 1}]
    [:line {:x1 3 :y1 21 :x2 21 :y2 21}]])
 
+;; Print-production pathfinder icons (P2.23). Same Lucide style as above.
+;; Hard Mix = two overlapping squares with a hard diagonal split through
+;; the overlap region (posterised look).  Soft Mix = same overlap with a
+;; soft dot at the blend centre.  Trap = a square with an inset dashed
+;; outline (the trap contour behind the foreground).
+(def ^:private hard-mix-icon
+  [:svg {:class (stl/css :pathfinder-icon)
+         :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
+         :stroke "currentColor" :stroke-width "2"
+         :stroke-linecap "round" :stroke-linejoin "round"}
+   [:rect {:x 3 :y 3 :width 14 :height 14 :rx 1}]
+   [:rect {:x 7 :y 7 :width 14 :height 14 :rx 1}]
+   [:line {:x1 7 :y1 17 :x2 17 :y2 7}]])
+
+(def ^:private soft-mix-icon
+  [:svg {:class (stl/css :pathfinder-icon)
+         :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
+         :stroke "currentColor" :stroke-width "2"
+         :stroke-linecap "round" :stroke-linejoin "round"}
+   [:rect {:x 3 :y 3 :width 14 :height 14 :rx 1}]
+   [:rect {:x 7 :y 7 :width 14 :height 14 :rx 1}]
+   [:circle {:cx 12 :cy 12 :r 2.5}]])
+
+(def ^:private trap-icon
+  [:svg {:class (stl/css :pathfinder-icon)
+         :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
+         :stroke "currentColor" :stroke-width "2"
+         :stroke-linecap "round" :stroke-linejoin "round"}
+   [:rect {:x 4 :y 4 :width 16 :height 16 :rx 1}]
+   [:rect {:x 7 :y 7 :width 10 :height 10 :stroke-dasharray "2 2"}]])
+
 ;; ---------------------------------------------------------------------------
 ;; Shape selection + path-content helpers
 ;; ---------------------------------------------------------------------------
@@ -178,6 +210,41 @@
           (reduce-kv (fn [ch idx shape]
                        (pcb/add-object ch shape {:index (+ base-idx idx)}))
                      ch (vec new-shapes)))]
+    (rx/of (dch/commit-changes changes)
+           (dws/select-shapes new-ids))))
+
+;; ---------------------------------------------------------------------------
+;; P2.23 print-production helpers (Hard Mix / Soft Mix / Trap)
+;; ---------------------------------------------------------------------------
+
+;; Default trap width in canvas units (px).  A typical print trap is
+;; ~0.25pt; 0.5px is a visible-on-screen default that maps cleanly to a
+;; 1pt trap at 2x zoom.  The trap shape is the foreground path offset
+;; outward by this amount so it underlaps the backdrop.
+(def ^:private default-trap-width 0.5)
+
+(defn- first-solid-fill-hex
+  "Hex `#rrggbb` of the first solid (flat-color) fill on `shape`, or nil
+  when the shape has no solid fill (gradient/image/pattern only or no
+  fills at all).  Handles both the legacy vector fills form and the
+  binary-fills `Fills` record (both are seqable).  Nil-safe."
+  [shape]
+  (some #(when (:fill-color %) (:fill-color %))
+        (into [] (:fills shape))))
+
+(defn- commit-insert-shapes
+  "Build + return the rx stream that INSERTS `new-shapes` (without
+  removing the existing selection) starting at `base-index` in the
+  head's parent, then selects the new shapes.  Used by the additive
+  print pathfinders (Hard/Soft Mix add the overlap on top; Trap adds
+  the trap shape just behind the foreground)."
+  [it page-id objects new-shapes base-index]
+  (let [new-ids (into (d/ordered-set) (map :id) new-shapes)
+        changes (as-> (pcb/empty-changes it page-id) ch
+                  (pcb/with-objects ch objects)
+                  (reduce-kv (fn [ch idx shape]
+                               (pcb/add-object ch shape {:index (+ base-index idx)}))
+                             ch (vec new-shapes)))]
     (rx/of (dch/commit-changes changes)
            (dws/select-shapes new-ids))))
 
@@ -375,6 +442,76 @@
             (commit-replace-selection it page-id objects ids [new-shape] head)))))))
 
 ;; ---------------------------------------------------------------------------
+;; P2.23 print-production pathfinder ops
+;; ---------------------------------------------------------------------------
+
+;; Hard Mix / Soft Mix -- given two (or more) selected shapes, compute
+;; the overlap region of the bottom-most and top-most shapes (reusing
+;; the existing `:intersection` content-bool) and ADD a new path shape
+;; on top of the selection filled with the CMYK-primary-mix of the two
+;; shapes' first solid fills.  Hard Mix = per-channel threshold (>=1.0
+;; -> full ink); Soft Mix = per-channel smoothstep average.  Non-solid
+;; fills (gradient/image/pattern) fall back to black for the mix.  The
+;; originals are kept; only the mixed overlap is added + selected.
+(defn- mix-selection
+  [mode label]
+  (ptk/reify ::mix-selection
+    ptk/WatchEvent
+    (watch [it state _]
+      (let [page-id (:current-page-id state)
+            objects (dsh/lookup-page-objects state)
+            ids     (dsh/get-selected-ids state)
+            shapes  (pathfinder-shapes objects ids)]
+        (when (and shapes (seq (rest shapes)))
+          (let [vshapes        (vec shapes)
+                bottom         (first vshapes)
+                top            (peek vshapes)
+                bottom-content (shape-content bottom objects)
+                top-content    (shape-content top objects)
+                overlap        (bool/content-bool-pair
+                                :intersection bottom-content top-content)
+                hex1           (first-solid-fill-hex bottom)
+                hex2           (first-solid-fill-hex top)
+                mixed          (trap/mix-fills-hex hex1 hex2 mode)
+                fill           {:fill-color mixed :fill-opacity 1}
+                new-shape      (make-path-shape overlap bottom [fill] [] label)
+                base-idx       (inc (cfh/get-position-on-parent objects (:id top)))]
+            (commit-insert-shapes it page-id objects [new-shape] base-idx)))))))
+
+(defn- hard-mix-selection [] (mix-selection :hard-mix "Hard Mix"))
+(defn- soft-mix-selection [] (mix-selection :soft-mix "Soft Mix"))
+
+;; Trap -- build a choke/spread trap for the topmost (foreground) shape
+;; against the shape below it.  The trap is a thin outline of the
+;; foreground path offset outward by `default-trap-width` (spread),
+;; filled with the foreground's first solid fill colour, inserted JUST
+;; BEHIND the foreground (at the foreground's parent index, pushing it
+;; up by one) so it underlaps the backdrop by the trap width and hides
+;; minor misregistration white gaps.  Originals are kept; the trap
+;; shape is selected.  Falls back to black when the foreground has no
+;; solid fill.
+(defn- trap-selection
+  []
+  (ptk/reify ::trap-selection
+    ptk/WatchEvent
+    (watch [it state _]
+      (let [page-id (:current-page-id state)
+            objects (dsh/lookup-page-objects state)
+            ids     (dsh/get-selected-ids state)
+            shapes  (pathfinder-shapes objects ids)]
+        (when (and shapes (seq (rest shapes)))
+          (let [vshapes      (vec shapes)
+                top          (peek vshapes)
+                top-content  (shape-content top objects)
+                trap-content (trap/trap-path top-content default-trap-width :spread)]
+            (when (seq trap-content)
+              (let [hex       (or (first-solid-fill-hex top) "#000000")
+                    fill      {:fill-color hex :fill-opacity 1}
+                    trap-shape (make-path-shape trap-content top [fill] [] "Trap")
+                    base-idx  (cfh/get-position-on-parent objects (:id top))]
+                (commit-insert-shapes it page-id objects [trap-shape] base-idx)))))))))
+
+;; ---------------------------------------------------------------------------
 ;; Component
 ;; ---------------------------------------------------------------------------
 
@@ -442,7 +579,10 @@
         on-merge      (mf/use-fn #(st/emit! (merge-selection)))
         on-crop       (mf/use-fn #(st/emit! (crop-selection)))
         on-outline    (mf/use-fn #(st/emit! (outline-selection)))
-        on-minus-back (mf/use-fn #(st/emit! (minus-back-selection)))]
+        on-minus-back (mf/use-fn #(st/emit! (minus-back-selection)))
+        on-hard-mix   (mf/use-fn #(st/emit! (hard-mix-selection)))
+        on-soft-mix   (mf/use-fn #(st/emit! (soft-mix-selection)))
+        on-trap       (mf/use-fn #(st/emit! (trap-selection)))]
 
     (when (or (not disabled-shape-modes) (not disabled-pathfinders))
       [:div {:class (stl/css :pathfinder-options)}
@@ -526,4 +666,35 @@
                                         :disabled disabled-pathfinders)
                    :disabled disabled-pathfinders
                    :on-click on-minus-back}
-          minus-back-icon]]]])))
+          minus-back-icon]]]
+       ;; P2.23 print-production row (Hard Mix / Soft Mix / Trap).  Coral
+       ;; accent on the label marks it as a print pathfinder; buttons reuse
+       ;; the shared `:pathfinder-btn` class so hover/press behaviour is
+       ;; identical to the other pathfinder rows (pure CSS, no JS motion ->
+       ;; reduced-motion-safe by construction).
+       [:div {:class (stl/css :pathfinder-row)}
+        [:span {:class (stl/css :pathfinder-label)
+                :style {:color "#f28b82"}}
+         (tr "workspace.shape.pathfinder.print")]
+        [:div {:class (stl/css :pathfinder-btn-group)}
+         [:button {:type "button"
+                   :title (tr "workspace.shape.pathfinder.hard-mix")
+                   :class (stl/css-case :pathfinder-btn true
+                                        :disabled disabled-pathfinders)
+                   :disabled disabled-pathfinders
+                   :on-click on-hard-mix}
+          hard-mix-icon]
+         [:button {:type "button"
+                   :title (tr "workspace.shape.pathfinder.soft-mix")
+                   :class (stl/css-case :pathfinder-btn true
+                                        :disabled disabled-pathfinders)
+                   :disabled disabled-pathfinders
+                   :on-click on-soft-mix}
+          soft-mix-icon]
+         [:button {:type "button"
+                   :title (tr "workspace.shape.pathfinder.trap")
+                   :class (stl/css-case :pathfinder-btn true
+                                        :disabled disabled-pathfinders)
+                   :disabled disabled-pathfinders
+                   :on-click on-trap}
+          trap-icon]]]])))

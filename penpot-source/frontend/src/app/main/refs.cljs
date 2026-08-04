@@ -509,6 +509,12 @@
   layout). Derived from the non-emptiness of :workspace-focus-selected."
   (l/derived #(d/not-empty? (:workspace-focus-selected %)) st/state))
 
+(def workshop-open?
+  "True when the Workshop learning-center overlay (P1.35) is open. Off by
+  default — when false the workspace renders exactly as today. A top-level
+  app-state boolean (not workspace-local) so it survives page switches."
+  (l/derived :workshop-open? st/state))
+
 (defn workspace-get-flex-child
   [ids]
   (l/derived

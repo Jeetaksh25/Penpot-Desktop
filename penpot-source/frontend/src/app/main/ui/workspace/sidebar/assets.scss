@@ -381,3 +381,59 @@
     transition: none;
   }
 }
+
+// ── P1.15: E-commerce design kit injection (additive) ───────────────────────
+// A single coral-accented action row. Calm motion (no size/scale) — only
+// box-shadow + color/border swaps on hover/press. Reduced-motion users get
+// instant transitions.
+.ecommerce-kit-section {
+  padding: 0 deprecated.$s-12 deprecated.$s-8;
+}
+
+.ecommerce-kit-button {
+  @include deprecated.button-style;
+  @include deprecated.body-small-typography;
+
+  display: inline-flex;
+  align-items: center;
+  gap: deprecated.$s-6;
+  width: 100%;
+  padding: deprecated.$s-6 deprecated.$s-10;
+  border-radius: deprecated.$br-8;
+  border: deprecated.$s-1 solid var(--input-border-color-rest);
+  background-color: var(--input-background-color-rest);
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: box-shadow 120ms ease, background-color 120ms ease,
+              border-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+  }
+
+  &:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+}
+
+.ecommerce-kit-button-busy {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.ecommerce-kit-label {
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecommerce-kit-button {
+    transition: none;
+  }
+}
