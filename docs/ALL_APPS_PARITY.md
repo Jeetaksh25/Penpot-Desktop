@@ -271,8 +271,8 @@ Sorted P0 → P1 → P2.
 
 #### P1.18 Glass effect rendering (Liquid Glass for iOS 26 / macOS 26)
 
-- **State:** 🟡 half-done  ·  **Sources:** Sketch
-- **Detail / build direction:** Figma-parity #61 glass is DONE-v1 (schema+UI+authoring in glass_row.cljs) but the visual renderer is DEFERRED under no-build; authorable, not rendering. Recommended: implement a frontend SVG/CSS glass approximation (backdrop-filter blur + saturate + a subtle inner highlight overlay) in the shape renderer; a full shader version waits on render-wasm. The backdrop-filter approach is unblocked and gives a credible Liquid Glass on the SVG renderer.
+- **State:** ✅ done (C3 625eed6)  ·  **Sources:** Sketch
+- **Detail / build direction:** Figma-parity #61 glass: schema+UI+authoring (glass_row.cljs) were already DONE-v1; the visual renderer was DEFERRED. Implemented as a frontend SVG-filter approximation in `glass-filter*` (filters.cljs) — fractal-noise frost (feTurbulence), backdrop refraction (feDisplacementMap on BackgroundImage), chromatic dispersion (R/G/B split + offset + screen-blend), specular highlight (feSpecularLighting + fePointLight by light-angle). All 7 schema params now render: frost, refraction, dispersion, light-angle, light-intensity, splay (feMorphology edge dilate, x3), depth (feDisplacementMap thickness, x4). Fixed a 3-site vector-vs-map plumbing bug (bounds.cljc dropped an erroneous `list`; filters.cljs + attrs.cljs gates made vector+hidden+type-aware for true 3-gate lockstep) + frame.cljs shadow-dissoc; byte-identical-when-inactive holds. 3 adversarial audit rounds converged. A full GPU-shader version (true backdrop sampling) waits on render-wasm.
 
 #### P1.19 Image cutout tool (scissors / freeform lasso / polygonal lasso on raster images -> new image layer)
 
