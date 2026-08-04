@@ -50,8 +50,24 @@
             ;; items)) inner (when (seq radii)) gate. Absent/empty/all-
             ;; hidden/all-nil-value -> guard false -> no url -> byte-identical.
             (seq (keep :value (remove :hidden (:blurs shape))))
-            (and (:glass shape)
-                 (-> shape :glass :hidden not))
+            ;; GLASS (#61) — :glass is a VECTOR slot. Gate MUST match
+            ;; bounds.cljc shape->filters EXACTLY, including the
+            ;; :type=:glass predicate apply-filters applies: at least one
+            ;; non-hidden entry whose :type is :glass. (The shape slot is
+            ;; [:vector ::sm/any] — opaque — and valid-glass-effect? is
+            ;; defined but never called on the write path, so the schema
+            ;; does NOT enforce :type=:glass; only create-glass sets it.
+            ;; Without this predicate, a schema-invalid entry with
+            ;; :type!=:glass would make this gate emit a url while bounds
+            ;; appends no <filter> -> dangling :filter attr. The predicate
+            ;; is a no-op for valid data and gives true 3-gate lockstep
+            ;; independent of the permissive slot.) A hidden-only slot
+            ;; must NOT trigger a url — otherwise bounds appends no entry
+            ;; (apply-filters does (remove :hidden) -> count stays 2 -> no
+            ;; <filter>) while filter-str returns a url -> dangling
+            ;; :filter attr. Absent/empty/all-hidden/non-glass-type ->
+            ;; guard false -> no url -> byte-identical.
+            (seq (filter #(= :glass (:type %)) (remove :hidden (:glass shape))))
             ;; SHADER (#64) — :shader-effect VECTOR slot, gated on the
             ;; first non-hidden item's :shader-preset being SVG-expressible.
             ;; The shape->filters append in bounds.cljc uses the same
@@ -282,6 +298,8 @@
         dispersion       (or (:dispersion params) 0)
         light-angle      (or (:light-angle params) 45)
         light-intensity  (or (:light-intensity params) 0.5)
+        splay            (or (:splay params) 0)
+        depth            (or (:depth params) 0)
         ang              (* (/ js/Math.PI 180) light-angle)
         lx               (* (js/Math.cos ang) 100)
         ly               (* (js/Math.sin ang) 100)]
@@ -308,16 +326,32 @@
                           :scale refraction
                           :result "refracted"}]
 
-     ;; (3) dispersion (approx): split refracted into R/G/B via three
+     ;; depth (#61): extra frost-noise displacement of the refracted
+     ;; backdrop, approximating glass thickness — deeper glass bends the
+     ;; seen content more. scale = depth * 4 (the UI/schema bound is 0..1,
+     ;; so a raw depth would be sub-pixel and imperceptible; the x4 brings
+     ;; the max to a visible ~4px wobble). depth = 0 -> scale 0 -> a
+     ;; pixel-identical no-op per the SVG spec and the chain is unchanged;
+     ;; the create-glass default :depth 0.5 yields a ~2px wobble on top of
+     ;; refraction. Reuses frostBlur (already produced) so no new noise
+     ;; pass. The x4 multiplier MUST match bounds.cljc's :glass grow term
+     ;; (depth*4) or the filter region would clip the displaced content.
+     ;; Downstream dispersion reads "refractedD".
+     [:feDisplacementMap {:in "refracted"
+                          :in2 "frostBlur"
+                          :scale (* depth 4)
+                          :result "refractedD"}]
+
+     ;; (3) dispersion (approx): split refractedD into R/G/B via three
      ;; feColorMatrix (mirroring color-matrix*'s feColorMatrix shape),
      ;; offset R by -dispersion and B by +dispersion, screen-blend back.
-     [:feColorMatrix {:in "refracted" :type "matrix"
+     [:feColorMatrix {:in "refractedD" :type "matrix"
                       :values "1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
                       :result "chanR"}]
-     [:feColorMatrix {:in "refracted" :type "matrix"
+     [:feColorMatrix {:in "refractedD" :type "matrix"
                       :values "0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
                       :result "chanG"}]
-     [:feColorMatrix {:in "refracted" :type "matrix"
+     [:feColorMatrix {:in "refractedD" :type "matrix"
                       :values "0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
                       :result "chanB"}]
      [:feOffset {:in "chanR" :dx (- dispersion) :dy 0 :result "chanRoff"}]
@@ -327,14 +361,27 @@
 
      ;; (4) light/splay: specular highlight from a point light positioned
      ;; by light-angle, intensity-modulated via specularConstant, masked
-     ;; to SourceAlpha and screen-blended over the dispersed backdrop.
-     [:feSpecularLighting {:in "SourceAlpha"
+     ;; to the (splayed) alpha and screen-blended over the dispersed backdrop.
+     ;; splay (#61): dilate the alpha that drives the specular highlight so
+     ;; the glass edge highlight spreads outward (thickens). radius = splay
+     ;; * 3 (UI/schema bound 0..1; raw splay is sub-pixel, the x3 brings the
+     ;; max to a visible ~3px edge spread). splay = 0 -> radius 0 -> a
+     ;; pixel-identical no-op per the SVG spec -> splayedAlpha = SourceAlpha
+     ;; -> the specular highlight is byte-identical to the pre-splay chain.
+     ;; create-glass defaults :splay 0, so nothing changes unless the user
+     ;; raises it. The x3 multiplier MUST match bounds.cljc's :glass grow
+     ;; term (splay*3) or the filter region would clip the dilated edge.
+     [:feMorphology {:in "SourceAlpha"
+                     :operator "dilate"
+                     :radius (* splay 3)
+                     :result "splayedAlpha"}]
+     [:feSpecularLighting {:in "splayedAlpha"
                            :specularExponent 20
                            :specularConstant light-intensity
                            :lighting-color "white"
                            :result "specOut"}
       [:fePointLight {:x lx :y ly :z 50}]]
-     [:feComposite {:in "specOut" :in2 "SourceAlpha" :operator "in" :result "specMasked"}]
+     [:feComposite {:in "specOut" :in2 "splayedAlpha" :operator "in" :result "specMasked"}]
      ;; Compose over filter-in (the prior filter chain) so preceding
      ;; effects (drop-shadow / blur / texture / etc.) are NOT discarded
      ;; when glass is the last entry. Glass refraction (dispersed) is

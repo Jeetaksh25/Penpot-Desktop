@@ -302,8 +302,24 @@
                                 ;; -> dangling :filter attr. (keep :value ..)
                                 ;; mirrors bounds' inner (when (seq radii)).
                                 (some? (->> (get shape :blurs) (remove :hidden) (keep :value) seq))
-                                (and (some? (get shape :glass))
-                                     (not ^boolean (-> shape :glass :hidden)))
+                                ;; GLASS (#61) — :glass VECTOR slot. Gate
+                                ;; MUST match bounds.cljc shape->filters and
+                                ;; filters.cljs filter-str EXACTLY, incl. the
+                                ;; :type=:glass predicate apply-filters applies:
+                                ;; at least one non-hidden entry whose :type is
+                                ;; :glass. (Slot is [:vector ::sm/any] — opaque
+                                ;; — and valid-glass-effect? is never called on
+                                ;; the write path, so the schema does NOT enforce
+                                ;; :type=:glass; the predicate is a no-op for
+                                ;; valid data and gives true 3-gate lockstep
+                                ;; independent of the permissive slot.) A
+                                ;; hidden-only slot must NOT set :filter —
+                                ;; otherwise bounds appends no entry (no
+                                ;; <filter>) while this sets url(#filter-..) ->
+                                ;; dangling :filter attr. Absent/empty/all-
+                                ;; hidden/non-glass-type -> guard false -> no
+                                ;; :filter attr -> byte-identical.
+                                (some? (->> (get shape :glass) (remove :hidden) (filter #(= :glass (:type %))) seq))
                                 ;; SHADER (#64) — :shader-effect VECTOR slot
                                 ;; gated on the first non-hidden item's
                                 ;; :shader-preset being SVG-expressible

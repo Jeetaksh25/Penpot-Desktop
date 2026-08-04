@@ -67,12 +67,17 @@
            :type :stacked-blur
            :params {:radii radii}}])))
 
-   ;; GLASS (#61) — single-map slot appended after stacked-blur.
-   ;; apply-filters does (remove :hidden) internally, so an
-   ;; absent/nil/hidden slot yields an empty seq and NO entry is added
-   ;; -> filters vector stays at baseline count of 2 -> filters*
-   ;; count-guard false -> no <filter> (byte-identical).
-   (->> shape :glass list (apply-filters :type :glass))
+   ;; GLASS (#61) — :glass is a VECTOR slot (one map), like :texture /
+   ;; :noise. Pass the vector directly to apply-filters — do NOT wrap it
+   ;; in `list`: (list [map]) is a one-element seq whose element is the
+   ;; VECTOR, so (:type vector) = nil and the entry would be filtered
+   ;; out, never appending a :glass entry -> filters count stays 2 ->
+   ;; filters* count-guard false -> no <filter> emitted (this was the
+   ;; bug: glass never rendered). apply-filters does (remove :hidden)
+   ;; internally, so an absent/empty/all-hidden slot yields an empty seq
+   ;; and NO entry is added -> filters vector stays at baseline count of
+   ;; 2 -> filters* count-guard false -> no <filter> (byte-identical).
+   (->> shape :glass (apply-filters :type :glass))
 
    ;; SHADER (#64) — :shader-effect is a VECTOR slot; index 0 (first
    ;; non-hidden item) is the active shader-effect map. SVG-expressible
@@ -127,11 +132,17 @@
 
       (= :glass (:type filter-entry))
       ;; Glass grows the region by the max of refraction scale, frost
-      ;; blur and dispersion offset. Absent slot -> no :glass entry
+      ;; blur, dispersion offset, depth displacement (depth*4) and splay
+      ;; dilation (splay*3). The depth*4 / splay*3 multipliers MUST match
+      ;; glass-filter* in filters.cljs (those are the actual pixel extents
+      ;; the primitives produce) or the filter region would clip the
+      ;; displaced content / dilated edge. Absent slot -> no :glass entry
       ;; -> never reached (byte-identical).
       (let [grow     (max (or (-> filter-entry :params :refraction) 0)
                           (or (-> filter-entry :params :frost-blur) 0)
-                          (or (-> filter-entry :params :dispersion) 0))
+                          (or (-> filter-entry :params :dispersion) 0)
+                          (* (or (-> filter-entry :params :depth) 0) 4)
+                          (* (or (-> filter-entry :params :splay) 0) 3))
             filter-x (- x grow 5)
             filter-y (- y grow 5)
             filter-w (+ w (* grow 2) 10)

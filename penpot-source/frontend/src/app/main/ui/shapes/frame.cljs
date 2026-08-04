@@ -111,7 +111,17 @@
                                   (some? t3d-style) (assoc :style t3d-style))
      [:g.frame-container-blur {:filter filter-str-blur}
       [:defs
-       [:> filters/filters* {:shape (dissoc shape :blur) :filter-id filter-id-shadows}]
+       ;; GLASS (#61) — dissoc :glass here too, mirroring filter-str-shadows
+       ;; (L73) which already dissocs :glass. Glass renders via the BLUR
+       ;; container (filter-str-blur wires filter-id-blur, emitted at L115).
+       ;; Without this dissoc, shape->filters appends a :glass entry to the
+       ;; SHADOWS <filter> def -> an orphan <filter> when only glass is
+       ;; active (filter-str-shadows is nil, nothing references it), OR glass
+       ;; is double-applied when shadows+glass coexist (the shadows container
+       ;; IS wired and its filter would contain glass primitives too). (The
+       ;; pre-existing :texture/:noise slots share this asymmetry — out of
+       ;; scope for P1.18; only glass is corrected here.)
+       [:> filters/filters* {:shape (dissoc shape :blur :glass) :filter-id filter-id-shadows}]
        [:> filters/filters* {:shape (assoc shape :shadow []) :filter-id filter-id-blur}]]
 
       ;; This need to be separated in two layers so the clip doesn't affect the shadow filters
