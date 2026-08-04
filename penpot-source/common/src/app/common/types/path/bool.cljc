@@ -367,6 +367,32 @@
   ;; Pick all segments
   (d/concat-vec content-a content-b))
 
+(defn create-add
+  "Combine open paths into one multi-subpath path content WITHOUT a set
+  operation (Sketch 'Add', Cmd+Opt+A). Purely concatenates the subpaths
+  of every supplied content into a single flat content list, preserving
+  each subpath's open/closed flag (the trailing :close-path command, if
+  present, is what marks a subpath closed in Penpot's flat command
+  encoding). Unlike :union/:difference/:intersection/:exclude this works
+  on open paths, which have no interior for a set operation to evaluate.
+
+  Nil-safe: contents without path data are skipped. Byte-identical to a
+  no-op when given a single shape — returns that content unchanged.
+
+  `modes` is accepted for signature parity with `calculate-content`'s
+  per-child fold path but ignored: :add is a pure concat, so the
+  per-child shape-mode machinery does not apply."
+  ([contents]
+   (create-add contents nil))
+  ([contents modes]
+   (let [contents (->> contents
+                       (filter #(and (some? %) (seq %)))
+                       (into []))]
+     (case (count contents)
+       0 []
+       1 (first contents)
+       (into [] cat contents)))))
+
 (defn content-bool-pair
   [bool-type content-a content-b]
 
@@ -431,13 +457,19 @@
   left-to-right, accumulator starts as the first child, each subsequent
   child is combined with the accumulator using THAT child's mode."
   ([bool-type contents]
-   ;; We apply the boolean operation in to each pair and the result to the next
-   ;; element
-   (if (seq contents)
-     (->> contents
-          (reduce (partial content-bool-pair bool-type))
-          (vec))
-     []))
+   ;; :add is a pure subpath concatenation, not a set operation — it must
+   ;; NOT go through `content-bool-pair` (which closes paths, splits at
+   ;; intersections and closes subpaths, destroying the open-path data
+   ;; that makes Add useful for stroke/open-path compositing).
+   (if (= bool-type :add)
+     (create-add contents)
+     ;; We apply the boolean operation in to each pair and the result to the next
+     ;; element
+     (if (seq contents)
+       (->> contents
+            (reduce (partial content-bool-pair bool-type))
+            (vec))
+       [])))
 
   ([bool-type contents modes]
    ;; Per-child mode path. The first child is the initial accumulator; each
@@ -445,12 +477,15 @@
    ;; effective mode (`:shape-mode` or `bool-type` when absent). When every
    ;; mode is nil this is equivalent to the 2-arg form, but callers gate on
    ;; `has-per-child-mode?` and use the 2-arg fast path in that case.
-   (if (seq contents)
-     (let [effective-modes (map #(or % bool-type) modes)
-           pairs           (map vector contents effective-modes)]
-       (->> (rest pairs)
-            (reduce (fn [acc [content mode]]
-                      (content-bool-pair mode acc content))
-                    (first contents))
-            (vec)))
-     [])))
+   ;; `:add` ignores per-child modes entirely (pure concat).
+   (if (= bool-type :add)
+     (create-add contents modes)
+     (if (seq contents)
+       (let [effective-modes (map #(or % bool-type) modes)
+             pairs           (map vector contents effective-modes)]
+         (->> (rest pairs)
+              (reduce (fn [acc [content mode]]
+                        (content-bool-pair mode acc content))
+                      (first contents))
+              (vec)))
+       []))))

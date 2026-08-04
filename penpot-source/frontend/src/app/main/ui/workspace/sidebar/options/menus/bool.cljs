@@ -191,7 +191,12 @@
                            :value "exclude"
                            :disabled disabled-bool-btns
                            :title (str (tr "workspace.shape.menu.exclude") " (" (sc/get-tooltip :bool-exclude) ")")
-                           :id "bool-opt-exclude"}]]]
+                           :id "bool-opt-exclude"}]
+         [:& radio-button {:icon i/boolean-add
+                           :value "add"
+                           :disabled disabled-bool-btns
+                           :title (str (tr "workspace.shape.menu.add") " (" (sc/get-tooltip :bool-add) ")")
+                           :id "bool-opt-add"}]]]
 
        (when show-child-mode?
          [:div {:class (stl/css :bool-child-mode)}

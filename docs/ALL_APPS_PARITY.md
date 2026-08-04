@@ -16,15 +16,15 @@
 
 | Status | Count | Meaning |
 |---|---|---|
-| ✅ done | **61** | Implemented end-to-end + verified (commit referenced). |
+| ✅ done | **65** | Implemented end-to-end + verified (commit referenced). |
 | 🟡 half-done | **1** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **34** | Not implemented yet. |
+| 🔴 missing | **30** | Not implemented yet. |
 | ⚠️ not-working | **0** | Present but broken. |
-| **Remaining** | **35** | half-done + missing + not-working. |
+| **Remaining** | **31** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next.
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next. Wave 1 ✅ (4 gaps: P1.21 Compose export, P2.10 Boolean Add, P2.33 Selection Colors, P1.07 Auto helpers). Dashboard: 65 done / 1 half / 30 missing / 0 not-working / 31 remaining.
 
-Most-recent done: **P0.08 / P0.09 / P0.18 / P1.17 / P1.25 / P1.26 / P1.27** — reconciled 7 stale State lines to ✅ done (Shape Builder cluster + outline-stroke, built in Phase 1 daa9d6c/da885ee, code-verified 2026-08-04).
+Most-recent done: **P1.21 / P2.10 / P2.33 / P1.07** — C5 missing-sweep wave 1: Jetpack Compose exporter, Boolean Add (open-path merge), Selection Colors panel, Auto smart helpers (auto-color/z-index/text-color + auto-refresh on duplicate).
 
 ## Contents
 
@@ -235,7 +235,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.07 Auto smart helpers (auto shape colors, auto z-index, auto text color, auto-refresh of generated content on duplicate)
 
-- **State:** 🔴 missing  ·  **Sources:** Lunacy
+- **State:** ✅ done (C5 missing-sweep wave 1) — Auto smart helpers: auto shape color (palette contrast), auto z-index (smaller-on-top), auto text color (luminance contrast), auto-refresh on duplicate (re-randomize AI seed / copy-suffix text); auto_helpers.cljs data + menu + scss, mounted in options.cljs; AI-generated shapes flagged via :ovion "ai-generated" plugin-data at design_gen add-object; refresh-selected-duplicates fires after duplicate-selected.  ·  **Sources:** Lunacy
 - **Detail / build direction:** No ambient automation: shape creation uses active fill, layer ordering is manual, text color is user-set, duplicated AI content does not regenerate. Recommended: add toggleable AI-menu helpers — auto shape color (recolor by size/background), auto z-index (smaller dragged layers land on top), auto text color (contrast against layer beneath), auto-refresh (regenerate avatar/text on duplicate). Heuristic rules, no LLM needed; unblocked.
 
 #### P1.08 Code Connect / D2C+ Component Parsers with actual per-framework template body emission
@@ -305,7 +305,7 @@ Sorted P0 → P1 → P2.
 
 #### P1.21 Jetpack Compose (Kotlin) code export with Material 3 tokens
 
-- **State:** 🔴 missing  ·  **Sources:** Google Stitch
+- **State:** ✅ done (C5 missing-sweep wave 1) — Jetpack Compose (Kotlin) exporter in util/code_gen/frameworks/compose.cljs; @Composable + Modifier + Material 3 color tokens; registered in code_gen.cljs framework-types/meta + both case dispatches; surfaced in inspect code/exports + workspace exports pickers; Code Connect + MCP auto-surface via framework-meta.  ·  **Sources:** Google Stitch
 - **Detail / build direction:** app/util/code_gen/frameworks ships react/react_native/tailwind/flutter/swift/android_xml/winui3_xml — no compose.cljs. Recommended: add a compose.cljs framework emitting idiomatic Jetpack Compose (Modifier chains, @Preview, Material 3 color tokens mapped from Ovion tokens) + an asset zip for Android Studio res dirs. Reuse the existing framework scaffolding; the M3 token mapping consumes the tokens system. Straightforward addition.
 
 #### P1.22 Native .sketch file open/edit/save and first-class .fig import (and broad native file import: Axure/XD)
@@ -434,7 +434,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.10 Boolean 'Add' operation (combine open paths without a boolean, for stroke/open-path compositing)
 
-- **State:** 🔴 missing  ·  **Sources:** Sketch
+- **State:** ✅ done (C5 missing-sweep wave 1) — Boolean Add (open-path merge): create-add in bool.cljc concatenates subpath contents without a set op (byte-identical for a single shape); :add dispatched in calculate-content (skips content-bool-pair to preserve open paths); 5th radio in bool.cljs menu + Lucide boolean-add.svg icon + :bool-add shortcut (Alt+A); en.po workspace.shape.menu.add.  ·  **Sources:** Sketch
 - **Detail / build direction:** Ovion's bool engine implements only union/difference/intersection/exclusion; no Add that merges open subpaths without running a boolean. Recommended: add a create-add in bool.cljc that combines open subpaths into one multi-subpath shape without set operation (for joining open stroke outlines). Pure CLJC, unblocked.
 
 #### P2.11 Built-in Material Design 3 component kit + Material theming
@@ -549,7 +549,7 @@ Sorted P0 → P1 → P2.
 
 #### P2.33 Selection Colors (adjust colors across multiple selected layers at once, sort by frequency/color)
 
-- **State:** 🔴 missing  ·  **Sources:** Sketch
+- **State:** ✅ done (C5 missing-sweep wave 1) — Selection Colors panel: aggregate-colors across multi-selection fills/strokes (solid by hex, gradient by first-stop signature), sort by frequency/color, bulk replace-color in one undo; selection_colors.cljs data + menu + scss, mounted in options.cljs (self-hides <2 selected); reuses :colorpicker modal.  ·  **Sources:** Sketch
 - **Detail / build direction:** No multi-selection color aggregation in fill.cljs or the color picker. Recommended: add a Selection Colors panel that aggregates fills/strokes across the selection, sortable by frequency, with bulk replace. Frontend, unblocked.
 
 #### P2.34 Show-Code reveal of AI-generated components inline in the AI panel

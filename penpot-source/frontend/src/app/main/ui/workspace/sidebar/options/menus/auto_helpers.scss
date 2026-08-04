@@ -1,0 +1,95 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+
+// Auto smart helpers menu (ALL_APPS_PARITY P1.07).
+// Styles for the panel rendered by
+// `app.main.ui.workspace.sidebar.options.menus.auto-helpers`. Shares the
+// `.element-set` / `.element-title` / `.element-set-content` /
+// `.element-group` classes with the surrounding options chrome; only
+// auto-helpers-specific classes are declared here. Class names mirror the
+// `stl/css` keys declared in auto_helpers.cljs. Coral #f28b82 is the Ovion
+// brand accent; reduced-motion users get instant transitions.
+
+.auto-helpers-row {
+  @include deprecated.flex-row;
+
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-xs);
+  padding-block: deprecated.$s-2;
+  padding-inline: deprecated.$s-2;
+  border-radius: deprecated.$br-4;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-foreground-secondary-alpha, rgba(125, 125, 125, 0.08));
+  }
+}
+
+.auto-helpers-label {
+  @include deprecated.flex-row;
+  @include deprecated.body-small-typography;
+
+  align-items: center;
+  gap: 6px;
+  color: var(--color-foreground-primary);
+  user-select: none;
+}
+
+.auto-helpers-checkbox {
+  // Coral accent checkbox (Ovion brand). The native control is sized to
+  // match the surrounding options chrome and recolored via accent-color so
+  // the checked state reads coral without a custom widget.
+  inline-size: 16px;
+  block-size: 16px;
+  cursor: pointer;
+  accent-color: #f28b82;
+  flex-shrink: 0;
+}
+
+.auto-helpers-apply-btn {
+  @include deprecated.body-small-typography;
+
+  // Coral "Apply now" action — a subtle filled-chip button matching the
+  // notes panel's spec-copy affordance. Inherits the button reset.
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  margin-block-start: deprecated.$s-3;
+  padding-block: deprecated.$s-2;
+  padding-inline: deprecated.$s-4;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid color-mix(in srgb, #f28b82 45%, transparent);
+  background-color: color-mix(in srgb, #f28b82 12%, transparent);
+  color: #f28b82;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+
+  &:hover {
+    background-color: color-mix(in srgb, #f28b82 20%, transparent);
+    border-color: color-mix(in srgb, #f28b82 65%, transparent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 deprecated.$s-2 color-mix(in srgb, #f28b82 35%, transparent);
+  }
+
+  &:active {
+    background-color: color-mix(in srgb, #f28b82 28%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auto-helpers-apply-btn,
+  .auto-helpers-row {
+    transition: none !important;
+  }
+}

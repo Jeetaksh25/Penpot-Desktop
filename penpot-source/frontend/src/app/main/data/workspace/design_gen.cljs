@@ -608,10 +608,15 @@
                           (pcb/remove-objects changes (into [] selected))
                           changes)
 
-                ;; Add every shape parent-first (order is pre-order).
+                ;; Add every shape parent-first (order is pre-order). Each
+                ;; AI-generated shape is stamped with the plugin-data flag
+                ;; `:ovion "ai-generated" = "true"` so P1.07 auto-refresh can
+                ;; detect duplicates of generated content. Additive: the flag
+                ;; is a plain map entry on the stored object, byte-identical
+                ;; for any non-AI caller of this code path.
                 changes (reduce (fn [ch id]
                                   (if-let [s (get obj-map id)]
-                                    (pcb/add-object ch s)
+                                    (pcb/add-object ch (assoc-in s [:plugin-data :ovion "ai-generated"] "true"))
                                     ch))
                                 changes order)
 

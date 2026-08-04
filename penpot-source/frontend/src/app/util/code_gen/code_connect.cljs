@@ -189,6 +189,32 @@
          (map (fn [[k v]] (xml-attr k v)))
          (str/join " "))))
 
+(defn- kotlin-string [s]
+  (dm/str "\"" (-> (str s)
+                   (str/replace "\\" "\\\\")
+                   (str/replace "\"" "\\\"")
+                   (str/replace "\r" "")
+                   (str/replace "\n" "\\n")) "\""))
+
+(defn- kotlin-attr [k v]
+  (let [kn (name k)]
+    (cond
+      (string? v)          (dm/str kn " = " (kotlin-string v))
+      (boolean? v)         (dm/str kn " = " (if v "true" "false"))
+      (number? v)          (dm/str kn " = " v)
+      (nil? v)             (dm/str kn " = null")
+      :else                (dm/str kn " = " (kotlin-string (js/JSON.stringify v))))))
+
+(defn format-props-kotlin
+  "Render `binding`'s props as a comma-separated Kotlin named-argument body
+  (e.g. `variant = \"primary\", size = 42`) suitable for a `@Composable`
+  call. Empty when the binding has no props."
+  [binding]
+  (let [props (:props binding)]
+    (->> (seq props)
+         (map (fn [[k v]] (kotlin-attr k v)))
+         (str/join ", "))))
+
 (defn- pascal-key [s]
   (let [s (str s)]
     (if (str/blank? s) s

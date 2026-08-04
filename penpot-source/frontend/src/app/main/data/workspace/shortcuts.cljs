@@ -719,6 +719,11 @@
                           :subsections [:shape]
                           :fn #(emit-when-no-readonly (dw/create-bool :exclude))}
 
+   :bool-add             {:tooltip (ds/meta (ds/alt "A"))
+                          :command (ds/c-mod "alt+a")
+                          :subsections [:shape]
+                          :fn #(emit-when-no-readonly (dw/create-bool :add))}
+
    ;; THEME
    :toggle-theme         {:tooltip (ds/alt "M")
                           :command (ds/a-mod "m")

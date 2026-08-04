@@ -1,0 +1,165 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) KALEIDOS INC Sucursal en España SL
+
+@use "refactor/common-refactor.scss" as deprecated;
+
+// Selection Colors panel (ALL_APPS_PARITY P2.33).
+// Styles for the panel rendered by
+// `app.main.ui.workspace.sidebar.options.menus.selection-colors`. Shares
+// the `.element-set` / `.element-title` / `.element-set-content` classes
+// with the surrounding options chrome; only selection-colors-specific
+// classes are declared here. Class names mirror the `stl/css` keys
+// declared in selection_colors.cljs. Coral #f28b82 is the Ovion brand
+// accent; reduced-motion users get instant transitions.
+
+.selection-colors-header {
+  @include deprecated.flex-row;
+
+  align-items: center;
+  justify-content: space-between;
+  gap: deprecated.$s-8;
+  margin-block-end: deprecated.$s-4;
+}
+
+.selection-colors-chip {
+  @include deprecated.flex-row;
+
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(242, 139, 130, 0.12);
+  color: #f28b82;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.selection-colors-sort-toggle {
+  @include deprecated.flex-row;
+
+  align-items: center;
+  gap: 0;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid var(--input-border-color);
+  overflow: hidden;
+}
+
+.selection-colors-sort-btn {
+  background-color: var(--input-background-color);
+  color: var(--color-foreground-secondary);
+  border: none;
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+
+  &:hover {
+    background-color: var(--input-background-color-hover);
+  }
+
+  // Coral active state (Ovion brand).
+  &.selection-colors-sort-btn-active {
+    background-color: rgba(242, 139, 130, 0.18);
+    color: #f28b82;
+    font-weight: 600;
+  }
+}
+
+.selection-colors-list {
+  @include deprecated.flex-column;
+
+  gap: 4px;
+  max-block-size: 220px;
+  overflow-y: auto;
+  padding-inline: 2px;
+}
+
+.selection-colors-row {
+  @include deprecated.flex-row;
+
+  align-items: center;
+  gap: deprecated.$s-8;
+  padding: 4px 6px;
+  border-radius: deprecated.$br-4;
+  border: deprecated.$s-1 solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: start;
+  transition: border-color 120ms ease, background-color 120ms ease;
+
+  &:hover {
+    border-color: rgba(242, 139, 130, 0.4);
+    background-color: rgba(242, 139, 130, 0.06);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: #f28b82;
+    box-shadow: 0 0 0 deprecated.$s-2
+      color-mix(in srgb, #f28b82 35%, transparent);
+  }
+}
+
+.selection-colors-swatch {
+  flex-shrink: 0;
+  inline-size: 20px;
+  block-size: 20px;
+  border-radius: deprecated.$br-2;
+  border: deprecated.$s-1 solid var(--color-foreground-secondary);
+  background-size: cover;
+}
+
+.selection-colors-type-chip {
+  @include deprecated.body-small-typography;
+
+  flex-grow: 1;
+  color: var(--color-foreground-secondary);
+  font-size: 11px;
+}
+
+.selection-colors-count {
+  flex-shrink: 0;
+  min-inline-size: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background-color: var(--color-neutral-100, rgba(125, 125, 125, 0.14));
+  color: var(--color-foreground-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.selection-colors-empty {
+  @include deprecated.flex-column;
+
+  align-items: center;
+  gap: 4px;
+  padding: deprecated.$s-12 deprecated.$s-8;
+  color: var(--color-foreground-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.selection-colors-hint {
+  @include deprecated.flex-row;
+
+  align-items: flex-start;
+  gap: 6px;
+  margin-block-start: deprecated.$s-8;
+  color: var(--token-color-neutral-600, #7d7d7d);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selection-colors-sort-btn,
+  .selection-colors-row {
+    transition: none !important;
+  }
+}

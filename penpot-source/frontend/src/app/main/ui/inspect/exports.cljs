@@ -183,7 +183,8 @@
                         {:value "android-xml" :label "Android XML"}
                         {:value "winui3-xml" :label "WinUI 3 XAML"}
                         {:value "flutter" :label "Flutter"}
-                        {:value "tailwind" :label "Tailwind CSS"}]]
+                        {:value "tailwind" :label "Tailwind CSS"}
+                        {:value "compose" :label "Jetpack Compose"}]]
 
     (mf/use-effect
      (mf/deps shapes)

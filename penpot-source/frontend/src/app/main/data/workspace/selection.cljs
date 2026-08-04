@@ -22,6 +22,7 @@
    [app.main.data.event :as ev]
    [app.main.data.helpers :as dsh]
    [app.main.data.modal :as md]
+   [app.main.data.workspace.auto-helpers :as dwah]
    [app.main.data.workspace.collapse :as dwc]
    [app.main.data.workspace.edition :as dwe]
    [app.main.data.workspace.pages :as-alias dwpg]
@@ -547,7 +548,12 @@
          (let [selected (dsh/lookup-selected state)]
            (rx/of (duplicate-shapes selected
                                     :move-delta? move-delta?
-                                    :alt-duplication? alt-duplication?))))))))
+                                    :alt-duplication? alt-duplication?)
+                  ;; P1.07 auto-refresh: after the duplicate commits, refresh
+                  ;; each AI-generated duplicate (re-randomize seed / copy-suffix
+                  ;; text) for shapes whose auto-refresh toggle is on. No-op
+                  ;; (returns rx/empty) when no AI-generated shape is selected.
+                  (dwah/refresh-selected-duplicates))))))))
 
 (defn change-hover-state
   [id value]

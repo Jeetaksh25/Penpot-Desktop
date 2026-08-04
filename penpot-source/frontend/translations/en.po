@@ -9561,6 +9561,10 @@ msgstr "Edit"
 msgid "workspace.shape.menu.exclude"
 msgstr "Exclude"
 
+#: src/app/main/ui/workspace/sidebar/options/menus/bool.cljs
+msgid "workspace.shape.menu.add"
+msgstr "Add"
+
 #: src/app/main/ui/workspace/context_menu.cljs:447, src/app/main/ui/workspace/context_menu.cljs:476, src/app/main/ui/workspace/sidebar/options/menus/bool.cljs:104
 msgid "workspace.shape.menu.flatten"
 msgstr "Flatten"
@@ -13110,4 +13114,76 @@ msgstr "States"
 #: ovion/all-apps-parity/half-done
 msgid "workspace.path.point-type.label"
 msgstr "Point type"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.title"
+msgstr "Selection Colors"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.label"
+msgstr "Colors in selection"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.sort.aria"
+msgstr "Sort selection colors"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.sort.frequency"
+msgstr "Frequency"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.sort.color"
+msgstr "Color"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.type.fill"
+msgstr "Fill"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.type.stroke"
+msgstr "Stroke"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.kind.gradient"
+msgstr "Gradient"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.row.aria"
+msgstr "%s %s, %s layers"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.empty"
+msgstr "No fills or strokes in the selection"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.selection-colors.hint"
+msgstr "Click a swatch to replace it across all selected layers in one undo."
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.auto-helpers.title"
+msgstr "Auto helpers"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.auto-helpers.toggle.auto-color"
+msgstr "Auto shape color"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.auto-helpers.toggle.auto-z-index"
+msgstr "Auto z-index"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.auto-helpers.toggle.auto-text-color"
+msgstr "Auto text color"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.auto-helpers.toggle.auto-refresh"
+msgstr "Auto-refresh on duplicate"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.auto-helpers.apply-now"
+msgstr "Apply now"
+
+#: ovion/all-apps-parity/missing-sweep
+msgid "workspace.options.auto-helpers.hint"
+msgstr "Toggle ambient helpers, then click Apply now to run them on the selection."
 

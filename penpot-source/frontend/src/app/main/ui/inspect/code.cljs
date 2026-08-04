@@ -55,7 +55,8 @@
    {:value "winui3-xml"    :label "WinUI 3 XAML"}
    {:value "flutter"       :label "Flutter"}
    {:value "tailwind"      :label "Tailwind CSS"}
-   {:value "swift"         :label "SwiftUI"}])
+   {:value "swift"         :label "SwiftUI"}
+   {:value "compose"       :label "Jetpack Compose"}])
 
 (def page-template
   "<!DOCTYPE html>
