@@ -18,11 +18,11 @@
 |---|---|---|
 | ✅ done | **61** | Implemented end-to-end + verified (commit referenced). |
 | 🟡 half-done | **1** | Partial / stubbed / runtime-no-op — needs finishing. |
-| 🔴 missing | **33** | Not implemented yet. |
+| 🔴 missing | **34** | Not implemented yet. |
 | ⚠️ not-working | **0** | Present but broken. |
-| **Remaining** | **34** | half-done + missing + not-working. |
+| **Remaining** | **35** | half-done + missing + not-working. |
 
-**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 33 missing / 0 not-working / 34 remaining. Building the 33 🔴 missing next.
+**Checkpoints:** C1 ✅ (f3755b9) · C2 ✅ (3e9d82d) · C3 ✅ complete (4beb26a) (Phase 5 craft polish — render effects + vector networks + Scissors/Rotate Copies + Smart Layout + Repeat Grid + Concentric Corners + ARIA authoring + Image cutout) · **C4 ✅ complete** (Phase 4 web-builder — responsive breakpoints + CMS collections + multi-page site-gen + Ovion Cloud publish MVP + per-page SEO + scroll-driven export) · C5 in progress — missing/not-working sweep. Reconciled 7 stale State lines (Shape Builder cluster P0.08/P0.09/P0.18/P1.17/P1.26/P1.27 + outline-stroke P1.25) to ✅ done — these were built in Phase 1 (daa9d6c/da885ee) but never flipped. Dashboard: 61 done / 1 half / 34 missing / 0 not-working / 35 remaining. Building the 34 🔴 missing next.
 
 Most-recent done: **P0.08 / P0.09 / P0.18 / P1.17 / P1.25 / P1.26 / P1.27** — reconciled 7 stale State lines to ✅ done (Shape Builder cluster + outline-stroke, built in Phase 1 daa9d6c/da885ee, code-verified 2026-08-04).
 
