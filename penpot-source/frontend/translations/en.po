@@ -14211,3 +14211,235 @@ msgstr "Use the active swatch color"
 msgid "workspace.shape.bool.color-source.custom"
 msgstr "Custom color"
 
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.devlink.export-no-file"
+msgstr "No file open — cannot export DevLink manifest."
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.devlink.exported"
+msgstr "Exported DevLink manifest (%s components, %s instances) to clipboard and download."
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.devlink.resync-empty"
+msgstr "No code components registered — nothing to re-sync."
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.devlink.resync-no-storybook"
+msgstr "Re-sync: %s components, %s non-Storybook (manual URL update required)."
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.devlink.resync-done"
+msgstr "Re-synced %s Storybook components from %s source(s); %s non-Storybook skipped."
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.devlink.title"
+msgstr "DevLink sync"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.devlink.registered-count"
+msgstr "Registered components"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.devlink.export"
+msgstr "Export DevLink manifest"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.devlink.export-hint"
+msgstr "Copy the DevLink manifest JSON to clipboard and download it for your code runtime"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.devlink.resync"
+msgstr "Re-sync from source"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.devlink.resync-hint"
+msgstr "Re-pull Storybook-sourced components to reconcile code-side changes back into Ovion"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.on-page-edit.toolbar"
+msgstr "On-page edit"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.on-page-edit.title"
+msgstr "On-page edit"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.on-page-edit.exit"
+msgstr "Exit on-page edit"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.on-page-edit.preview"
+msgstr "On-page edit preview"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.on-page-edit.title"
+msgstr "On-page edit"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.on-page-edit.enter"
+msgstr "Enter on-page edit mode"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.on-page-edit.hint"
+msgstr "Edit CMS-bound text directly on a preview of your published page. Edits sync back to the project."
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.localization.title"
+msgstr "Localization"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.localization.active-locale"
+msgstr "Active locale"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.localization.locales"
+msgstr "Locales"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.localization.locale-placeholder"
+msgstr "locale-code"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.localization.add"
+msgstr "Add"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.localization.remove-locale"
+msgstr "Remove locale"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.localization.strings-for-shape"
+msgstr "Translated content per locale"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.localization.enable"
+msgstr "Enable locale strings on this shape"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.localization.remove-localization"
+msgstr "Remove localization"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.toggle"
+msgstr "Comments"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.pin"
+msgstr "Comment"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.anonymous"
+msgstr "Anonymous"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.resolved"
+msgstr "Resolved"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.unresolve"
+msgstr "Unresolve"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.resolve"
+msgstr "Resolve"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.delete"
+msgstr "Delete"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.send"
+msgstr "Send"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.new-comment"
+msgstr "New comment"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.body-placeholder"
+msgstr "Write a comment…"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.add"
+msgstr "Add"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.cancel"
+msgstr "Cancel"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.author"
+msgstr "Author"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.comments.author-placeholder"
+msgstr "Your name"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.title"
+msgstr "Comments"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.none"
+msgstr "No comments yet"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.sending"
+msgstr "Sending…"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.sent"
+msgstr "Sent"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.webhook-url-missing"
+msgstr "Set a webhook URL in the webhook section below."
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.webhook-post-failed"
+msgstr "Webhook post failed. Check the URL and try again."
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.add-placeholder"
+msgstr "Add a comment…"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.provider"
+msgstr "Provider"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.webhook-url"
+msgstr "Webhook URL"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.saved"
+msgstr "Saved"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.save"
+msgstr "Save"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.generate-link"
+msgstr "Generate share link"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.link"
+msgstr "Link"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.copy"
+msgstr "Copy"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.qr-alt"
+msgstr "QR code for the share link"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.webhook-section"
+msgstr "Webhook integration"
+
+#: ovion/all-apps-parity/missing-sweep-wave8
+msgid "workspace.options.comments.share-section"
+msgstr "Share link"
+

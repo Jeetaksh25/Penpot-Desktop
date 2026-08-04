@@ -33,6 +33,10 @@
    [app.main.ui.workspace.sidebar.options.menus.repeaters :refer [repeaters-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.css-anim :refer [css-anim-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.data-binding :refer [data-binding-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.devlink :refer [devlink-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.on-page-edit :refer [on-page-edit-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.localization :refer [localization-menu*]]
+   [app.main.ui.workspace.sidebar.options.menus.comments :refer [comments-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.pathfinder :refer [pathfinder-options*]]
    [app.main.ui.workspace.sidebar.options.menus.component :refer [component-menu*]]
    [app.main.ui.workspace.sidebar.options.menus.grid-cell :as grid-cell]
@@ -196,6 +200,11 @@
         ;; P0.14: code-component host — self-hides unless exactly one
         ;; rect/frame is selected (or the shape already carries the slot).
         [:> code-component-menu* {:shapes shapes}]
+        ;; P2.25: localization — self-hides unless exactly one text shape
+        ;; is selected (or the shape already carries the locale-strings slot).
+        [:> localization-menu* {:shapes shapes}]
+        ;; P2.37: comments — shape-anchored comments on the selection.
+        [:> comments-menu* {:shapes shapes}]
         [:> scroll-motion-menu* {:shapes shapes}]
         [:> repeaters-menu* {:shapes shapes}]
         [:> css-anim-menu* {:shapes shapes}]])
@@ -226,7 +235,15 @@
         ;; mounted when nothing is selected (library concern).
         [:> ds-versions-menu*]
         ;; P1.12/P2.06: file-level CSV data sets (bound to repeaters).
-        [:> data-binding-menu*]]
+        [:> data-binding-menu*]
+        ;; P2.16: DevLink two-way component sync — file-level/registry-level,
+        ;; self-hides when the code-component registry is empty.
+        [:> devlink-menu* {:shapes shapes}]
+        ;; P1.24: on-page edit — page-level, self-hides when no CMS-bound
+        ;; text shapes exist on the page.
+        [:> on-page-edit-menu* {:shapes shapes}]
+        ;; P2.37: comments — page-floating comments when nothing selected.
+        [:> comments-menu* {:shapes shapes}]]
 
        :else
        [:> shape-options*

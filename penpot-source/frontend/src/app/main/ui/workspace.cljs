@@ -49,6 +49,10 @@
    [app.main.ui.workspace.webgl-unavailable-modal]
    [app.main.ui.workspace.workshop :refer [workshop-panel*]]
    [app.main.data.workspace.workshop :as wsp]
+   [app.main.data.workspace.team-sharing :as ts]
+   [app.main.ui.workspace.comments-overlay :refer [comments-overlay*]]
+   [app.main.data.workspace.on-page-edit :as dope]
+   [app.main.ui.workspace.on-page-preview :refer [on-page-preview*]]
    [app.util.debug :as dbg]
    [app.util.dom :as dom]
    [app.util.globals :as globals]
@@ -73,6 +77,19 @@
         ;; distraction-free layout. Off by default — byte-identical to the
         ;; prior render when false.
         focus-mode? (mf/deref refs/focus-mode?)
+
+        ;; Comments mode (P2.37): when ON, a coral comment-pin overlay is
+        ;; rendered on the canvas. Off by default — byte-identical to the
+        ;; prior render when false (the overlay emits nothing).
+        comments-mode? (mf/deref ts/comments-mode-ref)
+
+        ;; On-page edit (P1.24): when ON, a full-canvas preview overlay
+        ;; renders the published HTML in a sandboxed iframe with
+        ;; contenteditable CMS-bound elements. Off by default — byte-
+        ;; identical to the prior render when false (overlay emits nothing).
+        on-page-edit-active? (mf/deref dope/on-page-edit-active)
+        vbox           (mf/deref refs/vbox)
+        zoom           (mf/deref refs/selected-zoom)
 
         ;; FIXME: pass this down to viewport and reuse it from here
         ;; instead of making an other deref on viewport for the same
@@ -130,6 +147,20 @@
          :palete-size
          (when (and (or colorpalette? textpalette?) (not hide-ui?))
            @palete-size)}]
+
+       ;; P2.37 — on-screen comments overlay. Mounted ONLY when comments
+       ;; mode is ON (off by default → byte-identical canvas). Renders coral
+       ;; pins for page-floating + shape-anchored comments. Reduced-motion
+       ;; safe (no transitions).
+       (when (and ^boolean comments-mode? (not ^boolean hide-ui?))
+         [:> comments-overlay*
+          {:vbox vbox :vport vport :zoom zoom :page page}])
+
+       ;; P1.24 — on-page edit preview overlay. Mounted ONLY when the
+       ;; on-page-edit flag is ON (off by default → byte-identical canvas).
+       ;; Full-canvas sandboxed iframe (position:fixed) — no viewport props.
+       (when (and ^boolean on-page-edit-active? (not ^boolean hide-ui?))
+         [:> on-page-preview*])
 
        ;; Floating "Exit focus" indicator — the only chrome overlay shown on
        ;; the canvas while focus mode is active. Reuses the existing
@@ -285,7 +316,19 @@
         (mf/use-fn #(reset! ws-entry-hover? true))
 
         on-ws-entry-leave
-        (mf/use-fn #(reset! ws-entry-hover? false))]
+        (mf/use-fn #(reset! ws-entry-hover? false))
+
+        ;; Comments mode (P2.37) — header toggle button state. Off by
+        ;; default → canvas byte-identical. Coral Lucide message-circle.
+        ;; Reduced-motion-safe: no transition, just a swapped background.
+        comments-mode? (mf/deref ts/comments-mode-ref)
+        comments-hover? (mf/use-state false)
+        toggle-comments
+        (mf/use-fn #(st/emit! (ts/toggle-comments-mode)))
+        on-comments-enter
+        (mf/use-fn #(reset! comments-hover? true))
+        on-comments-leave
+        (mf/use-fn #(reset! comments-hover? false))]
 
     (mf/with-effect []
       (st/emit! (dps/initialize-persistence)
@@ -341,6 +384,48 @@
           ;; AI design bar (Feature 3 + 4) — floats above the viewport.
           (when (and file-loaded? page-id)
             [:> ai-bar*])
+          ;; P2.37 — Comments mode header toggle button (top-right, left of
+          ;; the Workshop button). A single unobtrusive header icon; emits
+          ;; `toggle-comments-mode`. Coral Lucide message-circle. Inline
+          ;; styles keep it SCSS-pipeline-free; hover swaps the background
+          ;; (no transition = reduced-motion-safe). Active state (mode ON)
+          ;; fills coral so the user sees it is armed.
+          (when (and file-loaded? page-id)
+            [:button
+             {:type "button"
+              :on-click toggle-comments
+              :on-mouse-enter on-comments-enter
+              :on-mouse-leave on-comments-leave
+              :title (tr "workspace.comments.toggle")
+              :aria-label (tr "workspace.comments.toggle")
+              :aria-pressed (if ^boolean comments-mode? "true" "false")
+              :style
+              {:position "fixed"
+               :top "56px"
+               :right "54px"
+               :width "34px"
+               :height "34px"
+               :border "none"
+               :border-radius "10px"
+               :cursor "pointer"
+               :z-index 90
+               :display "flex"
+               :align-items "center"
+               :justify-content "center"
+               :background (cond
+                             ^boolean comments-mode? "#f28b82"
+                             @comments-hover? "rgba(242,139,130,0.20)"
+                             :else "rgba(242,139,130,0.12)")
+               :color (if (or ^boolean comments-mode? @comments-hover?)
+                        "#ffffff" "#f28b82")
+               :box-shadow (when (or ^boolean comments-mode? @comments-hover?)
+                             "0 2px 8px rgba(242,139,130,0.4)")}}
+             [:svg {:xmlns "http://www.w3.org/2000/svg"
+                    :width "20" :height "20" :viewBox "0 0 24 24"
+                    :fill "none" :stroke "currentColor" :stroke-width 2
+                    :stroke-linecap "round" :stroke-linejoin "round"
+                    :aria-hidden "true"}
+              [:path {:d "M7.9 20A9 9 0 1 0 4 16.1L2 22Z"}]]])
           ;; Workshop (P1.35) — floating entry button (top-right). A single
           ;; unobtrusive header icon; emits `toggle-workshop`. Inline styles
           ;; keep it SCSS-pipeline-free; hover swaps the background (no

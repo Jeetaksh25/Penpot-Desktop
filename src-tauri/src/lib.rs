@@ -23,6 +23,7 @@ mod cms_import;
 mod stock_assets;
 mod file_import;
 mod storybook;
+mod team_sharing;
 
 /// Hide the console window for a spawned process. The Tauri app uses the
 /// `windows` subsystem (GUI, no parent console), so without this every
@@ -787,6 +788,7 @@ pub fn run() {
             file_import::import_sketch,
             file_import::import_figma,
             storybook::storybook_fetch,
+            team_sharing::post_webhook,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
