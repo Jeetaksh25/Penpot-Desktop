@@ -191,13 +191,15 @@
   ([objects shape origin level]
    (let [ind (indent level)
          tag (element-tag shape)
-         attrs (box-attrs objects shape origin level)]
+         attrs (box-attrs objects shape origin level)
+         cc-binding (fc/code-connect-binding objects shape)]
      (cond
        (fc/hidden? shape) nil
 
        ;; Code Connect binding (P1.08): emit the mapped custom view tag with
        ;; layout params + authored props instead of a generic element.
-       (when-let [binding (fc/code-connect-binding objects shape)]
+       (some? cc-binding)
+       (let [binding cc-binding]
          (let [tag (:tag binding)
                lattrs (layout-attrs-only objects shape origin)
                props (cc/format-props-xml binding)

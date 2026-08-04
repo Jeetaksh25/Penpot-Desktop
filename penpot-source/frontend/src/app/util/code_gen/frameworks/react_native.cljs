@@ -114,13 +114,15 @@
   ([objects shape origin] (render-shape objects shape origin 1))
   ([objects shape origin level]
    (let [ind (indent level)
-         style-str (style->js (box-style objects shape origin))]
+         style-str (style->js (box-style objects shape origin))
+         cc-binding (fc/code-connect-binding objects shape)]
      (cond
        (fc/hidden? shape) nil
 
        ;; Code Connect binding (P1.08): emit the mapped code component tag
        ;; with positioning style + authored props instead of a generic View.
-       (when-let [binding (fc/code-connect-binding objects shape)]
+       (some? cc-binding)
+       (let [binding cc-binding]
          (let [props (cc/format-props-jsx binding)
                style-str (style->js (box-style objects shape origin))
                attrs (cond-> (dm/str "style={{" style-str "}")

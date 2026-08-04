@@ -634,7 +634,7 @@
           (when-not (paste-data-valid? pdata)
             (ex/raise :type :validation
                       :code :invalid-paste-data
-                      :hibt "invalid paste data found"))
+                      :hint "invalid paste data found"))
 
           (cfeat/check-paste-features! features (:features pdata))
 

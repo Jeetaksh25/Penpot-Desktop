@@ -1443,9 +1443,7 @@
     (mf/with-effect [preview]
       (reset! variant-idx* 0)
       (when (and preview file-id active-session-id)
-        (let [nframes (count (:frames (:spec preview)))
-              summary (tr "workspace.ai.bar.chat.assistant-generated"
-                          (max 1 (or nframes 1)))
+        (let [summary (tr "workspace.ai.bar.chat.assistant-generated")
               sess (some #(when (= (:id %) active-session-id) %) sessions)]
           (when sess
             (let [sess' (aich/append-message sess {:role "assistant" :content summary})

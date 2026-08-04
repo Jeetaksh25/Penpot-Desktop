@@ -107,3 +107,18 @@
     ptk/WatchEvent
     (watch [it state _]
       (commit-plugin-data it state shape-id nil))))
+
+(defn add-video-config
+  "Add the video slot to shape `shape-id` with `config` (the default
+  empty-src config), UNCONDITIONALLY — unlike `set-video-config` this
+  does NOT treat an empty :src as a clear, so the inspector 'Add video'
+  button actually creates the slot (writing the pr-str'd config map, not
+  the empty string) and reveals the full URL/poster/loop/muted/controls/
+  autoplay controls. Subsequent edits go through `set-video-config`
+  (which clears on empty :src). One undo."
+  [{:keys [shape-id config]}]
+  (ptk/reify ::add-video-config
+    ptk/WatchEvent
+    (watch [it state _]
+      (let [cfg (if (map? config) config nil)]
+        (commit-plugin-data it state shape-id cfg)))))

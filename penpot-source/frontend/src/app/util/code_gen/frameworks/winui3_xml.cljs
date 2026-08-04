@@ -107,14 +107,16 @@
          opacity-attr (when opacity (dm/fmt " Opacity=\"%\"" (fc/fmt-num opacity)))
          rot-attr (when (not (zero? rot))
                     (dm/fmt " RenderTransformOrigin=\"0.5,0.5\"><Canvas.RenderTransform><RotateTransform Angle=\"%\"/></Canvas.RenderTransform>"
-                             (fc/fmt-num rot)))]
+                             (fc/fmt-num rot)))
+         cc-binding (fc/code-connect-binding objects shape)]
      (cond
        (fc/hidden? shape) nil
 
        ;; Code Connect binding (P1.08): emit the mapped custom control tag
        ;; with Canvas positioning + authored props (PascalCased keys) instead
        ;; of a generic element.
-       (when-let [binding (fc/code-connect-binding objects shape)]
+       (some? cc-binding)
+       (let [binding cc-binding]
          (let [tag (:tag binding)
                pos (pos-attrs objects shape origin)
                props (cc/format-props-xaml binding)

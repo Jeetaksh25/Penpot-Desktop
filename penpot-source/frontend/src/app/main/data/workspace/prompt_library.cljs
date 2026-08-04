@@ -54,9 +54,11 @@
 
 ;; --- Default library (always present, never persisted) ---------------------
 
-(defn- default-presets
+(defn default-presets
   "A fresh vector of the built-in example prompt groups. Kept as a
   function (not a constant) so callers never mutate a shared reference.
+  Public (not private) because `ui.workspace.ai-bar` seeds its picker
+  defaults via `plib/default-presets` cross-namespace.
   Each entry is {:group :label :prompt}. Groups are stable so the picker
   can cluster presets by group for both defaults and user additions."
   []

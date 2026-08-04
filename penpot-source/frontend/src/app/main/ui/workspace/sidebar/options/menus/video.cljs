@@ -115,17 +115,23 @@
 
 (mf/defc video-menu*
   "Inspector menu for the video/GIF playback slot. `shapes` is the vector of
-  currently selected shapes (one expected; the first is authored). Self-hides
-  (returns nil) unless the first shape is a rect OR already carries the slot."
+  currently selected shapes. Self-hides (returns nil) unless exactly one shape
+  is selected AND it is a rect OR already carries the slot (mirrors the
+  code-component-menu* single-selection guard — all emits author only the one
+  selected shape)."
   [{:keys [shapes]}]
   (let [shape    (first shapes)
         shape-id (:id shape)
         stype    (:type shape)
         cfg      (mf/deref (video-ref shape-id))
         has-slot (some? cfg)
-        ;; Show for rects (the carrier) or any shape that already has the slot
-        ;; (so it can be edited/cleared on whatever carries it).
-        show?    (or (= :rect stype) has-slot)]
+        ;; Show for a single selected rect (the carrier) or a single shape
+        ;; that already has the slot (so it can be edited/cleared on whatever
+        ;; carries it). The single-selection guard matches the sibling
+        ;; code-component-menu*: all emits author only the first shape, so a
+        ;; multi-select would silently change just one of the selected rects.
+        show?    (and (= 1 (count shapes))
+                      (or (= :rect stype) has-slot))]
     (when show?
       (let [;; Helper: merge `f` into cfg and re-emit. When the slot is absent
             ;; we seed an empty config map so the first edit adds it.
@@ -143,7 +149,7 @@
             (mf/use-fn
              (mf/deps shape-id)
              (fn []
-               (st/emit! (dwv/set-video-config
+               (st/emit! (dwv/add-video-config
                           {:shape-id shape-id
                            :config {:src "" :poster nil
                                     :loop? false :muted? true

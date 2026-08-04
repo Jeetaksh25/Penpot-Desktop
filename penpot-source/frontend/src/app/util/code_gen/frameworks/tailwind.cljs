@@ -196,7 +196,8 @@
    (render-shape objects shape origin 1))
   ([objects shape origin level]
    (let [ind     (indent level)
-         classes (box-classes objects shape origin)]
+         classes (box-classes objects shape origin)
+         cc-binding (fc/code-connect-binding objects shape)]
      (cond
        (fc/hidden? shape)
        nil
@@ -204,7 +205,8 @@
        ;; Code Connect binding (P1.08): emit the mapped code component tag
        ;; with Tailwind positioning classes + authored props instead of a
        ;; generic <div className="...">.
-       (when-let [binding (fc/code-connect-binding objects shape)]
+       (some? cc-binding)
+       (let [binding cc-binding]
          (let [props (cc/format-props-jsx binding)
                tag (:tag binding)
                attrs (cond-> (dm/str "className=\"" classes "\"")

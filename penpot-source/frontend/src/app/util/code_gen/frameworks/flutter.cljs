@@ -132,14 +132,16 @@
   ([objects shape origin level]
    (let [ind (indent level)
          opacity (fc/shape-opacity shape)
-         opacity-wrap (fn [c] (if opacity (dm/fmt "Opacity(opacity: %, child: %)" (fc/fmt-num opacity) c) c))]
+         opacity-wrap (fn [c] (if opacity (dm/fmt "Opacity(opacity: %, child: %)" (fc/fmt-num opacity) c) c))
+         cc-binding (fc/code-connect-binding objects shape)]
      (cond
        (fc/hidden? shape) nil
 
        ;; Code Connect binding (P1.08): emit the mapped code component widget
        ;; `Tag(props)` wrapped in Positioned for layout, instead of a generic
        ;; Container/Stack.
-       (when-let [binding (fc/code-connect-binding objects shape)]
+       (some? cc-binding)
+       (let [binding cc-binding]
          (let [ci (indent (+ level 1))
                tag (:tag binding)
                props (cc/format-props-dart binding)]

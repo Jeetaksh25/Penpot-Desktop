@@ -232,14 +232,16 @@
          base-mod (dm/str (offset-size-mod objects shape origin level)
                           (background-mod shape level)
                           (border-mod shape level)
-                          opacity-mod)]
+                          opacity-mod)
+         cc-binding (fc/code-connect-binding objects shape)]
      (cond
        (fc/hidden? shape) nil
 
        ;; Code Connect binding (P1.08): emit the mapped code component
        ;; `Tag(props)` with the shape's offset+size modifiers, instead of
        ;; recursing into a generic Box.
-       (when-let [binding (fc/code-connect-binding objects shape)]
+       (some? cc-binding)
+       (let [binding cc-binding]
          (let [tag (:tag binding)
                props (cc/format-props-kotlin binding)]
            (dm/str ind "// Code Connect: " tag "\n"

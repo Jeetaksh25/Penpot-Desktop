@@ -14443,3 +14443,11 @@ msgstr "Webhook integration"
 msgid "workspace.options.comments.share-section"
 msgstr "Share link"
 
+#: ovion/all-apps-parity/end-audit-r1
+msgid "workspace.shape.menu.expand"
+msgstr "Expand"
+
+#: ovion/all-apps-parity/end-audit-r1
+msgid "workspace.ai.bar.adapt-select"
+msgstr "Select a region to adapt"
+

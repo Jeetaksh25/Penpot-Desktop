@@ -33,6 +33,7 @@
   (:require
    ["@tauri-apps/api/core" :refer [invoke]]
    [app.common.data.macros :as dm]
+   [cuerdas.core :as str]
    [promesa.core :as p]))
 
 ;; ── Pexels key (browser localStorage, user-supplied) ─────────────────────────

@@ -142,14 +142,16 @@
   ([objects shape origin level]
    (let [ind (indent level)
          opacity (fc/shape-opacity shape)
-         frame-mod (frame+position objects shape origin level)]
+         frame-mod (frame+position objects shape origin level)
+         cc-binding (fc/code-connect-binding objects shape)]
      (cond
        (fc/hidden? shape) nil
 
        ;; Code Connect binding (P1.08): emit the mapped code component
        ;; `Tag(props)` with the shape's frame + position modifiers, instead
        ;; of recursing into a generic ZStack.
-       (when-let [binding (fc/code-connect-binding objects shape)]
+       (some? cc-binding)
+       (let [binding cc-binding]
          (let [tag (:tag binding)
                props (cc/format-props-swift binding)]
            (dm/str ind "// Code Connect: " tag "\n"

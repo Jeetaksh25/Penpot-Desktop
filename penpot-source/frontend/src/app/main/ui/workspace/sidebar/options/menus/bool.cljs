@@ -422,7 +422,7 @@
                              :id (dm/str "bool-child-intersection-" head-id)}]
            [:& radio-button {:icon i/boolean-exclude
                              :value "exclude"
-                             :title (tr "workspace.shape.bool.child-mode.exclude")
+                             :title (tr "workspace.shape.bool.child-mode.exclusion")
                              :id (dm/str "bool-child-exclude-" head-id)}]]])
 
        [:div {:class (stl/css :bool-actions)}

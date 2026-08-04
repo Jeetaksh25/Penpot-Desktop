@@ -144,7 +144,8 @@
   ([objects shape origin level]
    (let [ind (indent level)
          style-pairs (box-style objects shape origin)
-         style-str (style->js style-pairs)]
+         style-str (style->js style-pairs)
+         cc-binding (fc/code-connect-binding objects shape)]
      (cond
        (fc/hidden? shape)
        nil
@@ -154,7 +155,8 @@
        ;; component (self-closing — the code component owns its content) with
        ;; absolute-positioning style so layout matches the canvas, instead of
        ;; a generic <div>. Falls through to the generic path when no binding.
-       (when-let [binding (fc/code-connect-binding objects shape)]
+       (some? cc-binding)
+       (let [binding cc-binding]
          (let [props (cc/format-props-jsx binding)
                style-str (style->js (box-style objects shape origin))
                attrs (cond-> (dm/str "style={{" style-str "}")

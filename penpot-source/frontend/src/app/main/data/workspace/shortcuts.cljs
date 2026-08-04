@@ -378,13 +378,14 @@
    ;; Figma-parity brush tool (gap #52). A path-following stroke tool.
    ;; The actual renderer path-following + scatter is DEFERRED; toggling
    ;; the :brush-mode layout flag is a safe no-op until the renderer
-   ;; lands (mirrors the :lasso toggle). "b" is the path-editor
-   ;; shape-builder chord too, but that binds only in the :path-editor
-   ;; subsection (never active simultaneously with the global :tools
-   ;; binding) — same dual-subsection pattern as :lasso "q" vs the path
-   ;; editor's vector-lasso "q".
-   :brush                {:tooltip "B"
-                          :command "b"
+   ;; lands (mirrors the :lasso toggle). Bound to Shift+B — the bare "b"
+   ;; key is the Frame tool (:draw-frame, command ["b" "a"]) in this same
+   ;; :tools subsection, so a bare "b" binding would collide (mousetrap
+   ;; pushes rather than replaces callbacks, so both would fire and the
+   ;; brush :interrupt would cancel the just-armed frame tool). Shift+B
+   ;; keeps the B mnemonic with no collision.
+   :brush                {:tooltip "Shift+B"
+                          :command "shift+b"
                           :subsections [:tools]
                           :fn #(st/emit! :interrupt
                                         (dwdc/clear-drawing)
