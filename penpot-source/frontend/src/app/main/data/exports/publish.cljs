@@ -125,7 +125,7 @@
             html       (page-html-document page objects css body)
             slug       "index"  ;; MVP: single page → index
             index-html html]    ;; single page → index is the page itself
-        {:index_html index-html
+        {:indexHtml index-html
          :pages       [{:slug slug :html html}]
          :css         css}))))
 

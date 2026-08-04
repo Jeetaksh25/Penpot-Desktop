@@ -216,7 +216,7 @@
   `shape-id` (page `page-id`). `strings` is a map {kw str} or nil to clear.
   `changes` must carry file-data + page context."
   [changes shape-id page-id strings]
-  (let [value (if (nil? strings) "" (pr-str strings))]
+  (let [value (if (nil? strings) nil (pr-str strings))]
     (pcb/set-plugin-data changes :shape shape-id page-id ovion-namespace slot-key value)))
 
 ;; --- Event commit helpers (one undo transaction) ----------------------------
@@ -255,7 +255,7 @@
             shape    (get-in page [:objects shape-id])
             existing (or (read-locale-strings shape) {})
             new-str  (update-fn existing)
-            value    (if (nil? new-str) "" (pr-str new-str))]
+            value    (if (nil? new-str) nil (pr-str new-str))]
         (rx/of (dwu/start-undo-transaction undo-id)
                (dch/commit-changes
                 (-> (pcb/empty-changes it)

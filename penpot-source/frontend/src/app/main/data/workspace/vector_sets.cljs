@@ -242,7 +242,7 @@
                        :always
                        (pcb/set-plugin-data :shape shape-id page-id
                                             ovion-namespace vector-set-key
-                                            (if (nil? set-id) "" (pr-str set-id))))]
+                                            (if (nil? set-id) nil (pr-str set-id))))]
         (rx/of (dwu/start-undo-transaction undo-id)
                (dch/commit-changes changes)
                (dwu/commit-undo-transaction undo-id))))))
@@ -266,7 +266,7 @@
                                              page-id
                                              ovion-namespace
                                              stroke-anim-key
-                                             (if (nil? value) "" (pr-str value))))]
+                                             (if (nil? value) nil (pr-str value))))]
         (rx/of (dwu/start-undo-transaction undo-id)
                (dch/commit-changes changes)
                (dwu/commit-undo-transaction undo-id))))))

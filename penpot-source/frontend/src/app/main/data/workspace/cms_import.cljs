@@ -224,7 +224,7 @@
     (watch [it state _]
       (let [plat (or platform "wordpress")
             request (clj->js {:platform plat
-                              :base_url (or base-url "")
+                              :baseUrl (or base-url "")
                               :token    (or token nil)
                               :options  nil})
             on-ok

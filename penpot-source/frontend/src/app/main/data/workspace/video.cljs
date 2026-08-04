@@ -81,7 +81,7 @@
                                              page-id
                                              ovion-namespace
                                              video-key
-                                             (if (nil? value) "" (pr-str value))))]
+                                             (if (nil? value) nil (pr-str value))))]
         (rx/of (dwu/start-undo-transaction undo-id)
                (dch/commit-changes changes)
                (dwu/commit-undo-transaction undo-id))))))
