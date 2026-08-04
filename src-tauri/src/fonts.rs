@@ -9,7 +9,6 @@
 // files at the same URLs the SPA already uses, so the frontend needs no
 // offline/online branching.
 
-use std::path::PathBuf;
 use tauri::AppHandle;
 
 use crate::commands::fonts_cache_dir;

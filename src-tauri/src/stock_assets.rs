@@ -280,7 +280,7 @@ pub fn stock_search_icons(query: String, limit: Option<u32>) -> Result<Value, St
         let coll_url = format!(
             "https://api.iconify.design/{}.json?icons={}",
             prefix,
-            urlencoding::encode(joined)
+            urlencoding::encode(&joined)
         );
         let coll_text = match fetch_text(&client, &coll_url) {
             Ok(t) => t,

@@ -2043,7 +2043,7 @@ fn parse_size(size: &str) -> (u32, u32) {
 // call_provider) with a tailored prompt. The model emits a JSON object that
 // Rust returns verbatim (parsed via extract_json like llm_generate does).
 
-const DESIGN_SYSTEM_PROMPT: &str = r#"You are the design-system extraction engine inside an Ovion-based desktop design studio. Produce a concrete design system as a single JSON object. Return ONLY valid JSON — no markdown, no prose, no fences.
+const DESIGN_SYSTEM_PROMPT: &str = r##"You are the design-system extraction engine inside an Ovion-based desktop design studio. Produce a concrete design system as a single JSON object. Return ONLY valid JSON — no markdown, no prose, no fences.
 
 Output shape:
 {
@@ -2061,7 +2061,7 @@ Rules:
 - All colors must be valid hex with AA-contrast for text on background.
 - Use a REAL typographic scale (a clear type scale with real line-heights) and a REAL spacing/radius scale (multiples of 4 or 8).
 - Honor any design-system guidelines provided verbatim.
-- Output ONLY the JSON object."#;
+- Output ONLY the JSON object."##;
 
 const REVIEW_PROMPT: &str = r#"You are a senior UX/design reviewer inside an Ovion-based desktop design studio. You are given a screenshot of the current canvas (and optional selection metadata). Produce a NON-mutating design review as a single JSON object. Return ONLY valid JSON — no markdown, no prose, no fences.
 
@@ -2080,7 +2080,7 @@ Rules:
 - Honor any design-system guidelines provided as the benchmark.
 - Output ONLY the JSON object."#;
 
-const SPEC_DOC_PROMPT: &str = r#"You are the specification-document engine inside an Ovion-based desktop design studio. You are given a serialized scene (page or selection) and a scope. Produce a spec document as a single JSON object containing both markdown and html. Return ONLY valid JSON — no markdown, no prose, no fences.
+const SPEC_DOC_PROMPT: &str = r##"You are the specification-document engine inside an Ovion-based desktop design studio. You are given a serialized scene (page or selection) and a scope. Produce a spec document as a single JSON object containing both markdown and html. Return ONLY valid JSON — no markdown, no prose, no fences.
 
 Output shape:
 {
@@ -2092,7 +2092,7 @@ Rules:
 - The markdown is the canonical spec; the html is a rendered version of the same content (semantic HTML, no scripts).
 - Document components, layout, typography, colors, spacing, interactions, and flows present in the scene.
 - Honor any design-system guidelines provided when describing tokens.
-- Output ONLY the JSON object."#;
+- Output ONLY the JSON object."##;
 
 // ── Tauri commands ──────────────────────────────────────────────────────────
 

@@ -318,7 +318,7 @@ async fn handle_connection(app: AppHandle, mut stream: tokio::net::TcpStream) {
 /// task. Calling start while already running is an error.
 pub async fn start(app: AppHandle, port: u16) -> Result<(), String> {
     {
-        let mut g = MCP.lock().map_err(|e| format!("mcp lock poisoned: {e}"))?;
+        let g = MCP.lock().map_err(|e| format!("mcp lock poisoned: {e}"))?;
         if g.handle.is_some() {
             return Err("MCP server already running".into());
         }

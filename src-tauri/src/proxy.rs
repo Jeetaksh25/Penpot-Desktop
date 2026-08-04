@@ -12,7 +12,7 @@
 // Logout is intercepted and returns a no-op success response so the
 // frontend's "log out" action doesn't delete the server-side session.
 
-use std::io::{self, BufRead, BufReader, Read, Write};
+use std::io::{self, BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream, Shutdown};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
