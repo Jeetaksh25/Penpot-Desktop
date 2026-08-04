@@ -256,7 +256,7 @@ impl Default for LlmConfig {
 /// ARE returned (they're not secret) so the Settings panel can show/edit them;
 /// API keys are masked.
 #[derive(Serialize)]
-struct LlmConfigView {
+pub struct LlmConfigView {
     provider: String,
     mode: String,
     deepinfra_base: String,
@@ -571,7 +571,7 @@ struct GenerateOptions {
 }
 
 #[derive(Debug, Deserialize)]
-struct GenerateRequest {
+pub struct GenerateRequest {
     prompt: String,
     #[serde(default)]
     files: Vec<FileInput>,
@@ -1139,7 +1139,7 @@ fn build_prompt(template: &str) -> String {
 // (`message.content`).
 
 #[derive(Debug, Clone, Deserialize)]
-struct ImageInput {
+pub struct ImageInput {
     mime: String,
     b64: String,
 }
@@ -1422,7 +1422,7 @@ struct ChatMessage {
 }
 
 #[derive(Debug, Deserialize)]
-struct AgentStepRequest {
+pub struct AgentStepRequest {
     messages: Vec<ChatMessage>,
     #[serde(default)]
     tools: Option<serde_json::Value>,
@@ -1434,7 +1434,7 @@ struct AgentStepRequest {
 }
 
 #[derive(Debug, Serialize)]
-struct AgentStepResponse {
+pub struct AgentStepResponse {
     kind: String, // "tool_calls" | "spec" | "text" | "error"
     #[serde(skip_serializing_if = "Option::is_none")]
     spec: Option<serde_json::Value>,
