@@ -109,7 +109,17 @@
    ;; single-page DesignSpec the AI bar has always emitted. When present,
    ;; `app.main.data.workspace.site-gen/apply-site-spec` fans the `:pages`
    ;; out across real Penpot pages (one page per site-page).
-   [:site {:optional true} schema:site]])
+   ;;
+   ;; NOTE: `schema:site` must be referenced through a lazy `[:fn ...]`
+   ;; wrapper, NOT as a bare symbol. `schema:site` is defined below (the
+   ;; mutual recursion design-spec → site → site-page → design-spec), so a
+   ;; direct vector reference would eagerly capture the still-unbound var
+   ;; (nil/undefined in CLJS) and make malli throw `invalid-schema
+   ;; {:schema nil :form nil}` while compiling this schema at load time —
+   ;; crashing the whole frontend with a white screen. A fn body resolves
+   ;; the var at call time, by which point it is always defined.
+   [:site {:optional true}
+    [:fn (fn [v] (sm/validate schema:site v))]]])
 
 ;; ── Site (multi-page) ───────────────────────────────────────────────────────
 ;;

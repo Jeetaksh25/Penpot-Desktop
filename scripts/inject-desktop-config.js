@@ -220,12 +220,30 @@ async function main() {
   // #boot-status / navigates to index.html once the backend is ready, so the
   // app is never an invisible background process.
   const loadingPath = path.join(path.dirname(indexPath), "loading.html");
-  // Inline the real Penpot logo (white-on-dark) instead of a "P" placeholder,
-  // so the loading screen shows the actual brand mark. Read at inject time so
-  // it stays in sync with data/assets/penpot-light.svg.
-  const logoSvg = await fs
-    .readFile(path.resolve(__dirname, "../data/assets/penpot-light.svg"), "utf-8")
-    .catch(() => "");
+
+  // Fullscreen boot splash: copy the Loading_Screen.png artwork into the
+  // served public dir so BOTH proxies (the Node dev proxy and the Rust
+  // release proxy — they serve the same resources/public folder) can load it
+  // as the fullscreen background of the loading page. Re-run on every inject
+  // so the splash stays in sync with Logo/Loading_Screen.png.
+  const splashSrc = path.resolve(__dirname, "../Logo/Loading_Screen.png");
+  const splashDest = path.join(path.dirname(indexPath), "loading-splash.png");
+  try {
+    await fs.copyFile(splashSrc, splashDest);
+    console.log(`Copied splash ${splashSrc} -> ${splashDest}`);
+  } catch (err) {
+    console.warn(
+      `Could not copy splash image (${err.message}); the loading page will fall back to its cream background.`,
+    );
+  }
+
+  // The loading page IS the brand artwork: Loading_Screen.png covers the
+  // whole borderless window (drag region so it can be moved). The only text
+  // on it is a lowercase "loading" label + rotating loader pinned to the
+  // bottom-right corner. #boot-status is kept in the DOM (the Rust boot
+  // thread writes progress/failures into it via eval) but stays hidden unless
+  // boot actually FAILS, so failures still surface without cluttering the
+  // happy-path screen.
   const loadingHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -233,37 +251,62 @@ async function main() {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ovion Desktop</title>
 <style>
-  /* Warm coral design-studio boot screen — matches ds/colors.scss dark theme
-     (mocha-950 surface, cream text, coral accent). The window is
-     borderless, so #wrap is a Tauri drag region (move + double-click
-     maximize) until the SPA's custom titlebar takes over. */
-  html, body { margin: 0; height: 100%; background: #1c1612; color: #fffaf6;
+  html, body { margin: 0; height: 100%; overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  #wrap { display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 100%; gap: 28px; }
-  #logo { display: flex; align-items: center; justify-content: center; }
-  #logo svg { height: 84px; width: auto; display: block; }
-  #title { font-size: 20px; font-weight: 600; letter-spacing: .3px; }
-  #boot-status { font-size: 14px; color: #9a7f70; min-height: 1.2em; text-align: center; }
-  #boot-note { font-size: 12px; color: #6e564a; max-width: 380px; text-align: center; line-height: 1.4; margin-top: 6px; }
-  .spinner { width: 28px; height: 28px; border: 3px solid #362b24; border-top-color: #f28b82;
-    border-radius: 50%; animation: spin 1s linear infinite; }
+  /* Fullscreen splash artwork. Cream background is the pre-image fallback. */
+  #wrap { position: fixed; inset: 0;
+    background-color: #f6efe4;
+    background-image: url("/loading-splash.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex; align-items: flex-end; justify-content: flex-end; }
+  /* Bottom-right: the only text — "loading" next to a rotating loader. */
+  #boot-indicator { display: flex; align-items: center; gap: 10px;
+    margin: 0 28px 26px 0; padding: 10px 16px; border-radius: 999px;
+    background: rgba(255, 251, 245, 0.55);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    color: #4a342a; user-select: none; }
+  .spinner { width: 16px; height: 16px; border: 2px solid rgba(74, 52, 42, 0.22);
+    border-top-color: #e2544a; border-radius: 50%; animation: spin 0.9s linear infinite; }
+  #boot-label { font-size: 13px; font-weight: 500; letter-spacing: 0.05em; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* Boot failures still surface (hidden during the happy path). */
+  #boot-status { position: fixed; right: 28px; bottom: 74px; max-width: 340px;
+    padding: 8px 12px; border-radius: 10px; display: none;
+    background: rgba(255, 243, 240, 0.92); color: #b3261e;
+    font-size: 12px; line-height: 1.45; }
 </style>
 </head>
 <body>
   <div id="wrap" data-tauri-drag-region="true">
-    <div id="logo">${logoSvg}</div>
-    <div id="title">Ovion Desktop</div>
-    <div class="spinner"></div>
-    <div id="boot-status">Starting Ovion Desktop…</div>
-    <div id="boot-note">First launch takes a little longer while the local database and backend start up — please wait.</div>
+    <div id="boot-indicator">
+      <div class="spinner"></div>
+      <span id="boot-label">loading</span>
+    </div>
   </div>
+  <div id="boot-status"></div>
+  <script>
+    // The Rust boot thread writes progress ("Starting local database…") and
+    // failures into #boot-status via eval. Show it only for failures so the
+    // loading screen keeps just the "loading" label in the happy path.
+    (function () {
+      var el = document.getElementById("boot-status");
+      if (!el) return;
+      function check() {
+        if (/failed|did not become ready|could not|error/i.test(el.textContent || ""))
+          el.style.display = "block";
+      }
+      new MutationObserver(check).observe(el, { childList: true, subtree: true, characterData: true });
+      check();
+    })();
+  </script>
 </body>
 </html>
 `;
   await fs.writeFile(loadingPath, loadingHtml, "utf-8");
   console.log(`Wrote ${loadingPath}`);
+
 
   // Ensure a render.js exists so the worker's importScripts('./render.js')
   // (shadow-cljs.edn :prepend-js) does not 404. The real render.js is an

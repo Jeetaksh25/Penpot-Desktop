@@ -832,7 +832,10 @@ pub fn run() {
             );
             let main_window = tauri::WebviewWindowBuilder::new(&handle, "main", loading_url)
                 .title("Ovion Desktop")
-                .inner_size(1280.0, 800.0)
+                // 16:9 default window — matches the Loading_Screen.png splash
+                // aspect ratio so the fullscreen artwork is not letterboxed.
+                // The window stays resizable; the min size below is the floor.
+                .inner_size(1280.0, 720.0)
                 .min_inner_size(900.0, 600.0)
                 // Borderless window — the OS titlebar is replaced by the
                 // in-app `window-titlebar` component (custom drag region +
