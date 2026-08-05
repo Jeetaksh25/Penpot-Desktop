@@ -84,6 +84,18 @@
                [id (or (:name comp) (str id))]))
         components))
 
+(defn read-active-version
+  "Return the active-version uuid for `file-data`, or nil when the slot
+  is absent / blank / unparsable."
+  [file-data]
+  (let [raw (dm/get-in file-data [:plugin-data ds-versions-namespace ds-active-version-key])]
+    (when (and (some? raw) (not-empty raw))
+      (try
+        (let [v (reader/read-string raw)]
+          (if (uuid? v) v nil))
+        (catch :default _
+          nil)))))
+
 (defn read-ds-versions
   "Parse the file-data ds-versions slot back into a vector of snapshot
   maps. Returns [] when the slot is absent / unparsable. Stamps the
@@ -102,18 +114,6 @@
             (catch :default _
               [])))]
     (mapv #(assoc % :active (= (:id %) active-id)) parsed)))
-
-(defn read-active-version
-  "Return the active-version uuid for `file-data`, or nil when the slot
-  is absent / blank / unparsable."
-  [file-data]
-  (let [raw (dm/get-in file-data [:plugin-data ds-versions-namespace ds-active-version-key])]
-    (when (and (some? raw) (not-empty raw))
-      (try
-        (let [v (reader/read-string raw)]
-          (if (uuid? v) v nil))
-        (catch :default _
-          nil)))))
 
 ;; --- Diff helper ------------------------------------------------------------
 

@@ -131,7 +131,7 @@
              (let [new-cfg (f cfg e)]
                (st/emit! (dwme/set-motion-effect
                           {:shape-id shape-id
-                           :effect {:type etype :config new-cfg}})))))
+                           :effect {:type etype :config new-cfg}}))))))
 
         on-pick-type
         (mf/use-fn
@@ -145,8 +145,10 @@
                         {:shape-id shape-id :effect {:type t :config defaults}})))))
 
         on-clear
-        (mf/use-fn (mf/deps shape-id)
-                   #(st/emit! (dwme/clear-motion-effect {:shape-id shape-id}))))]
+        (mf/use-fn
+         (mf/deps shape-id)
+         (fn []
+           (st/emit! (dwme/clear-motion-effect {:shape-id shape-id}))))]
 
     [:div {:class (stl/css :element-set)}
      [:div {:class (stl/css :element-title)}

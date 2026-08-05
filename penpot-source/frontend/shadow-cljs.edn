@@ -14,7 +14,7 @@
 
    :dev {;; allows remote-relay per parallel environment
          ;; inside :dev so the integration tests won't use it
-         :devtools {:devtools-url #shadow/env ["SHADOW_SERVER_URL" :default ""]}}
+         :devtools {:devtools-url #shadow/env ["SHADOW_SERVER_URL" :default "http://localhost:3449"]}}
    :build-options {:manifest-name "manifest.json"}
    :modules
    {:shared
@@ -95,7 +95,7 @@
               :browser-inject :main}
    :dev {;; allows remote-relay per parallel environment
          ;; inside :dev so the integration tests won't use it
-         :devtools {:devtools-url #shadow/env ["SHADOW_SERVER_URL" :default ""]}}
+         :devtools {:devtools-url #shadow/env ["SHADOW_SERVER_URL" :default "http://localhost:3449"]}}
    :build-options {:manifest-name "manifest.json"}
    :modules
    {:main

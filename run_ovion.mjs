@@ -128,7 +128,7 @@ const winExe = (exe) =>
   isWin && !/\.(exe|bat|cmd|ps1)$/i.test(exe) ? `${exe}.cmd` : exe;
 
 function runSync(cmd, args, opts = {}) {
-  return spawnSync(cmd, args, { encoding: "utf8", shell: false, windowsHide: true, ...opts });
+  return spawnSync(cmd, args, { encoding: "utf8", shell: isWin, windowsHide: true, ...opts });
 }
 
 function toolOk(cmd, args) {
@@ -206,8 +206,8 @@ function findVsDevCmd() {
     }
   }
   candidates.push(
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\Common7\\Tools\\VsDevCmd.bat",
     "D:\\Microsoft Visual Studio\\18\\Community\\Common7\\Tools\\VsDevCmd.bat",
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\Common7\\Tools\\VsDevCmd.bat",
     "C:\\Program Files\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\VsDevCmd.bat",
     "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\VsDevCmd.bat",
   );
@@ -217,8 +217,12 @@ function findVsDevCmd() {
 function cleanPathForMsBuild() {
   // Git's usr/bin ships a link.exe that shadows the MSVC linker.
   const keep = [];
+  if (process.env.USERPROFILE) {
+    const cargoBin = path.join(process.env.USERPROFILE, ".cargo", "bin");
+    if (exists(cargoBin)) keep.push(cargoBin);
+  }
   for (const p of (process.env.PATH || "").split(path.delimiter)) {
-    if (!/git[\\/]usr[\\/]bin$/i.test(p)) keep.push(p);
+    if (!/git[\\/]usr[\\/]bin$/i.test(p) && !keep.includes(p)) keep.push(p);
   }
   return keep.join(path.delimiter);
 }
@@ -227,6 +231,13 @@ function cleanPathForMsBuild() {
 function checkPrereqs({ needFrontendBuild, needRust }) {
   log.step("Checking prerequisites");
   let ok = true;
+
+  if (process.env.USERPROFILE) {
+    const cargoBin = path.join(process.env.USERPROFILE, ".cargo", "bin");
+    if (exists(cargoBin) && !process.env.PATH.includes(cargoBin)) {
+      process.env.PATH = `${cargoBin}${path.delimiter}${process.env.PATH}`;
+    }
+  }
 
   const report = (name, good, hint) => {
     if (good) log.ok(name);
@@ -274,9 +285,13 @@ async function buildFrontend() {
   const env = { ...process.env };
   if (process.env.USERPROFILE) {
     const depsClj = path.join(process.env.USERPROFILE, "deps.clj");
-    if (exists(depsClj)) env.PATH = `${depsClj}${path.delimiter}${env.PATH}`;
+    const currentPath = process.env.PATH || process.env.Path || "";
+    if (exists(depsClj)) {
+      env.PATH = `${depsClj}${path.delimiter}${currentPath}`;
+      env.Path = `${depsClj}${path.delimiter}${currentPath}`;
+    }
   }
-  await runInherit(winExe("npm"), ["run", "build:penpot"], ROOT, env);
+  await runInherit("npm", ["run", "build:penpot"], ROOT, env);
   log.ok("Frontend built");
 }
 
@@ -294,7 +309,8 @@ function checkBackendJar() {
 // Spawn a process with inherited stdio and await its exit (reject on nonzero).
 function runInherit(cmd, args, cwd = ROOT, env = process.env) {
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { cwd, env, stdio: "inherit", windowsHide: true, shell: false });
+    const formattedCmd = isWin && cmd.includes(" ") && !cmd.startsWith('"') ? `"${cmd}"` : cmd;
+    const child = spawn(formattedCmd, args, { cwd, env, stdio: "inherit", windowsHide: true, shell: isWin });
     child.on("error", reject);
     child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`${cmd} exited with code ${code}`))));
   });

@@ -33,9 +33,10 @@
 ;; ── Lucide glyphs — stroke-width 2, currentColor ─────────────────────────────
 
 (defn- li [body]
-  [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"} body])
+  (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+               :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+               :aria-hidden "true"}]
+        body))
 
 (def ^:private lucide-git-branch
   (li [[:line {:x1 6 :y1 3 :x2 6 :y2 15}]
@@ -188,12 +189,12 @@
                          :title (tr "workspace.ai.branches.discard")}
        [:span.aibr-i lucide-trash-2]]]
      (when (seq children)
-       [:div.aibr-children
-        (for [c children]
-          [branch-node* {:key (:id (:branch c))
-                         :node c
-                         :on-rerun on-rerun
-                         :on-discard on-discard}])])]))
+       (into [:div.aibr-children]
+             (for [c children]
+               [:> branch-node* {:key (:id (:branch c))
+                                 :node c
+                                 :on-rerun on-rerun
+                                 :on-discard on-discard}])))]))
 
 ;; ── Root component ───────────────────────────────────────────────────────────
 
@@ -232,9 +233,9 @@
            [:button.aibr-close {:type "button" :on-click on-close
                                 :aria-label (tr "workspace.ai.branches.close")}
             [:span.aibr-i lucide-x]])]
-        [:div.aibr-tree
-         (for [node tree]
-           [branch-node* {:key (:id (:branch node))
-                          :node node
-                          :on-rerun on-rerun
-                          :on-discard on-discard}])]]])))
+        (into [:div.aibr-tree]
+              (for [node tree]
+                [:> branch-node* {:key (:id (:branch node))
+                                  :node node
+                                  :on-rerun on-rerun
+                                  :on-discard on-discard}]))]])))

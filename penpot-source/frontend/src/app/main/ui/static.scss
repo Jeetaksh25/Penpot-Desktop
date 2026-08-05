@@ -412,3 +412,185 @@
     margin-inline-start: var(--sp-xxl);
   }
 }
+
+/* ── Branded full-screen error screen (Ovion artwork) ────────────────────────
+   `internal-error*` renders this standalone (no `error-container*` chrome):
+   the brand artwork is the full-bleed background (logo + "Oops! Something
+   went wrong." baked into the image), and the overlay below the baked
+   heading carries the sub-text, the orange→purple Try Again pill and the
+   Go Back link, matching the Error_Screen reference layout. ─────────────── */
+.branded-error {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  font-family: "worksans", "vazirmatn", sans-serif;
+  /* Cream fallback matching the artwork so a missing asset never shows a
+     blank page (the background div also paints it via cover). */
+  background-color: #fbf3ee;
+}
+
+/* Visually-hidden heading for screen readers (the artwork's "Oops!" is a
+   baked image, not real text). */
+.branded-sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.branded-error-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* The baked heading ends at ~66% of the artwork height, so the overlay
+   column is anchored just below it (78% of the viewport) and centered;
+   the artwork's bottom blob starts ~87%, so the column stays above it. */
+.branded-error-content {
+  position: absolute;
+  left: 50%;
+  top: 78%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  width: min(560px, 90vw);
+}
+
+.branded-sub {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #2d3142;
+}
+
+.branded-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff9f45 0%, #f43f9e 55%, #8b5cf6 100%);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgb(168 85 247 / 0.38);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 34px rgb(168 85 247 / 0.45);
+    filter: brightness(1.05);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.99);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgb(244 63 158 / 0.35);
+  }
+}
+
+.branded-btn-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.branded-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  color: #7c3aed;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: #6d28d9;
+  }
+}
+
+.branded-back-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.branded-footer {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgb(255 251 245 / 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-size: 11.5px;
+  color: rgb(45 49 66 / 0.6);
+}
+
+.branded-footer-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+
+  &:hover {
+    color: rgb(45 49 66 / 0.9);
+  }
+}
+
+.branded-footer-sep {
+  opacity: 0.6;
+}
+
+/* Short windows (e.g. the 900×600 minimum): tighten the overlay so it stays
+   clear of the baked heading above and the artwork's bottom blob below. */
+@media (max-height: 720px) {
+  .branded-error-content {
+    top: 79%;
+    gap: 6px;
+  }
+
+  .branded-sub {
+    font-size: 13.5px;
+    line-height: 1.35;
+  }
+
+  .branded-btn {
+    padding: 10px 26px;
+    font-size: 13px;
+  }
+}

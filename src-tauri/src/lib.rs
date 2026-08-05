@@ -305,7 +305,23 @@ fn start_postgres(root: &Path) -> Result<(), String> {
         // poll the port ourselves — pg_ctl's `-w` readiness wait is unreliable
         // on Windows, and `run_cmd`/`output()` would deadlock on the piped
         // stdio inherited by the long-lived postmaster grandchild.
-        pg_ctl_start(root, data_dir_s.as_str(), log_s.as_str())?;
+        if let Err(e) = pg_ctl_start(root, data_dir_s.as_str(), log_s.as_str()) {
+            eprintln!("[penpot-desktop] Initial pg_ctl start failed: {}; performing cleanup recovery...", e);
+            let _ = run_cmd(
+                &postgres_bin(root, "pg_ctl.exe"),
+                &[
+                    "-D",
+                    data_dir_s.as_str(),
+                    "-m",
+                    "immediate",
+                    "stop",
+                ],
+            );
+            if pid_file.exists() {
+                let _ = std::fs::remove_file(&pid_file);
+            }
+            pg_ctl_start(root, data_dir_s.as_str(), log_s.as_str())?;
+        }
         if wait_for_port("PostgreSQL", POSTGRES_PORT, Duration::from_secs(30)).is_err() {
             // Recovery: stop anything still holding the lock, clear the pid,
             // and retry once.

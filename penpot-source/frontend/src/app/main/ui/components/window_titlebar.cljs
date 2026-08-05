@@ -13,13 +13,22 @@
    [app.main.data.profile :as dp]
    [app.main.store :as st]
    [app.util.i18n :as i18n :refer [tr]]
+   ;; Side-effect require: registers the :ai-settings modal component into
+   ;; `data.modal/components` (the `ai-settings*` mf/defc uses
+   ;; `::mf/register modal/components`). The gear button below emits
+   ;; `(modal/show {:type :ai-settings})` from EVERY route — including the
+   ;; dashboard, where the workspace-only `ai_bar.cljs` require (the previous
+   ;; sole registration point) is never loaded. Without this the modal show
+   ;; silently renders nothing on the dashboard.
+   [app.main.ui.workspace.ai-settings]
    [rumext.v2 :as mf]))
 
-;; The Tauri webview window handle. This ns is only loaded inside the
-;; desktop webview (it's required by the root `app.main.ui/app`), so
-;; `getCurrentWindow` is safe to call at load time. `defonce` keeps it
-;; stable across figwheel/reload cycles.
-(defonce ^:private current-window (getCurrentWindow))
+(defn- get-window []
+  (try
+    (getCurrentWindow)
+    (catch :default e
+      (js/console.warn "Failed to get current window:" e)
+      nil)))
 
 (defn- toggle-theme
   [profile]
@@ -46,9 +55,42 @@
                       (mf/deps profile)
                       #(toggle-theme profile))
 
-        on-minimize  (mf/use-fn #(.minimize current-window))
-        on-maximize  (mf/use-fn #(.toggleMaximize current-window))
-        on-close     (mf/use-fn #(.close current-window))]
+        on-drag      (mf/use-fn
+                      (fn [e]
+                        (when (= (.-button ^js e) 0)
+                          (when-let [^js w (get-window)]
+                            (try
+                              (.startDragging w)
+                              (catch :default err
+                                (js/console.warn "startDragging failed:" err)))))))
+
+        on-minimize  (mf/use-fn
+                      (fn []
+                        (when-let [^js w (get-window)]
+                          (try
+                            (.minimize w)
+                            (catch :default err
+                              (js/console.warn "minimize failed:" err))))))
+        on-maximize  (mf/use-fn
+                      (fn []
+                        (when-let [^js w (get-window)]
+                          (try
+                            (some-> (.isMaximized w)
+                                    (.then (fn [maxed?]
+                                             (if maxed?
+                                               (.unmaximize ^js w)
+                                               (.maximize ^js w))))
+                                    (.catch (fn [_]
+                                              (try (.toggleMaximize ^js w) (catch :default _ nil)))))
+                            (catch :default err
+                              (js/console.warn "maximize failed:" err))))))
+        on-close     (mf/use-fn
+                      (fn []
+                        (when-let [^js w (get-window)]
+                          (try
+                            (.close w)
+                            (catch :default err
+                              (js/console.warn "close failed:" err))))))]
 
     [:div {:class (stl/css :window-titlebar)}
      ;; Left: drag region. `data-tauri-drag-region` makes Tauri handle window
@@ -57,7 +99,8 @@
      ;; permissions). Interactive controls live in a SIBLING without the
      ;; attribute, so clicking them never starts a drag.
      [:div {:class (stl/css :titlebar-drag)
-            :data-tauri-drag-region "true"}
+            :data-tauri-drag-region "true"
+            :on-mouse-down on-drag}
       [:span {:class (stl/css :titlebar-title)} "Ovion Desktop"]]
 
      ;; Right: settings gear, theme toggle, then a gap, then the window controls.

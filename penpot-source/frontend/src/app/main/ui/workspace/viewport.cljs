@@ -520,16 +520,16 @@
                    :font-size 20 :fill "currentColor" :fill-opacity 0.6}
             (:name section)]]))
 
-      [:& (mf/provider ctx/outline-mode?) {:value outline-mode?}
-       [:& (mf/provider ctx/wireframe-mode?) {:value wireframe-mode?}
-        [:& (mf/provider ctx/current-vbox) {:value vbox'}
-        [:& (mf/provider use/include-metadata-ctx) {:value (dbg/enabled? :show-export-metadata)}
-         ;; Render root shape
-         [:& shapes/root-shape {:key (str page-id)
-                                :objects base-objects
-                                :active-frames @active-frames
-                                ;; disable thumbnails when previewing a version
-                                :disable-thumbnails (some? preview-id)}]]]]]]
+      [:> (mf/provider ctx/outline-mode?) {:value outline-mode?}
+       [:> (mf/provider ctx/wireframe-mode?) {:value wireframe-mode?}
+        [:> (mf/provider ctx/current-vbox) {:value vbox'}
+         [:> (mf/provider use/include-metadata-ctx) {:value (dbg/enabled? :show-export-metadata)}
+          ;; Render root shape
+          [:> shapes/root-shape {:key (str page-id)
+                                  :objects base-objects
+                                  :active-frames @active-frames
+                                  ;; disable thumbnails when previewing a version
+                                  :disable-thumbnails (some? preview-id)}]]]]]]
 
      [:svg.viewport-controls
       {:xmlns "http://www.w3.org/2000/svg"

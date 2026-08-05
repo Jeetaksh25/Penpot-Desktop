@@ -3091,6 +3091,26 @@ msgstr "You can retry the operation or contact support to report the error."
 msgid "labels.internal-error.main-message"
 msgstr "Internal Error"
 
+#: src/app/main/ui/static.cljs:449
+msgid "labels.internal-error.branded-title"
+msgstr "Oops! Something went wrong."
+
+#: src/app/main/ui/static.cljs:452
+msgid "labels.internal-error.branded-desc-first"
+msgstr "We couldn't load this page."
+
+#: src/app/main/ui/static.cljs:453
+msgid "labels.internal-error.branded-desc-second"
+msgstr "Please check your connection and try again."
+
+#: src/app/main/ui/static.cljs:457
+msgid "labels.internal-error.try-again"
+msgstr "Try Again"
+
+#: src/app/main/ui/static.cljs:462
+msgid "labels.internal-error.go-back"
+msgstr "Go Back"
+
 #: src/app/main/ui/onboarding/questions.cljs:162
 msgid "labels.invision"
 msgstr "InVision"

@@ -263,8 +263,8 @@
              :on-pointer-enter #(reset! is-hover-disabled true)
              :on-pointer-leave #(reset! is-hover-disabled false)}
          [:g {:transform (gmt/translate-matrix (gpt/point (- marker-x dest-x) (- marker-y dest-y)))}
-          [:& (mf/provider muc/render-thumbnails) {:value true}
-           [:& (mf/provider embed/context) {:value false}
+          [:> (mf/provider muc/render-thumbnails) {:value true}
+           [:> (mf/provider embed/context) {:value false}
             [:& shape-wrapper {:shape dest-shape}]]]]
          [:path {:stroke "var(--color-accent-tertiary)"
                  :fill "var(--app-black)"

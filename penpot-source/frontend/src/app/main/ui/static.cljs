@@ -348,6 +348,27 @@
       [:> button* {:variant "primary" :on-click on-reload}
        (tr "labels.reload-page")]]]))
 
+;; Lucide refresh + back glyphs as inline SVGs (stroke-width 2, currentColor)
+;; so the branded error screen has zero dependency on the `lucide-react` npm
+;; module — whose desktop bundle only ships the icons the titlebar uses
+;; (Minus/Moon/Settings/Square/Sun/X); referencing other icons yields
+;; `undefined` element types at runtime (React error #130).
+(def ^:private lucide-rotate-cw
+  [:svg {:viewBox "0 0 24 24" :width 18 :height 18 :fill "none"
+         :stroke "currentColor" :stroke-width 2
+         :stroke-linecap "round" :stroke-linejoin "round"
+         :aria-hidden "true" :class (stl/css :branded-btn-icon)}
+   [:path {:d "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"}]
+   [:path {:d "M21 3v5h-5"}]])
+
+(def ^:private lucide-arrow-left
+  [:svg {:viewBox "0 0 24 24" :width 16 :height 16 :fill "none"
+         :stroke "currentColor" :stroke-width 2
+         :stroke-linecap "round" :stroke-linejoin "round"
+         :aria-hidden "true" :class (stl/css :branded-back-icon)}
+   [:path {:d "m12 19-7-7 7-7"}]
+   [:path {:d "M19 12H5"}]])
+
 (defn- generate-report
   [data]
   (try
@@ -396,9 +417,22 @@
       nil)))
 
 (mf/defc internal-error*
-  [{:keys [on-reset report] :as props}]
+  [{:keys [on-reset report]}]
   (let [report-uri (mf/use-ref nil)
         on-reset   (or on-reset #(st/emit! (rt/assign-exception nil)))
+
+        on-go-back
+        (mf/use-fn
+         (fn []
+           (if (> (.-length js/history) 1)
+             (js/history.back)
+             ;; No history to go back to (fresh window landing on the error
+             ;; page): route to the dashboard for logged-in users, else root.
+             (let [profile-id  (:id (mf/deref refs/profile))
+                   default-team (:default-team-id (mf/deref refs/profile))]
+               (if (and profile-id (some? default-team))
+                 (st/emit! (dcm/go-to-dashboard-recent :team-id default-team))
+                 (st/emit! (rt/nav-root)))))))
 
         support-contact-click
         (mf/use-fn
@@ -429,25 +463,43 @@
           (fn []
             (wapi/revoke-uri uri)))))
 
-    [:> error-container* {}
-     [:div {:class (stl/css :main-message)} (tr "labels.internal-error.main-message")]
+    [:section {:class (stl/css :branded-error) :role "alert"}
+     ;; Screen-reader equivalent of the artwork's baked-in heading.
+     [:h1 {:class (stl/css :branded-sr-only)} (tr "labels.internal-error.branded-title")]
 
-     [:div {:class (stl/css :desc-message)}
-      [:p {:class (stl/css :desc-text)} (tr "labels.internal-error.desc-message-first")]
-      [:p {:class (stl/css :desc-text)} (tr "labels.internal-error.desc-message-second")]]
+     ;; Full-bleed brand artwork. The logo + "Oops! Something went wrong."
+     ;; heading are baked into the image (assets are 16:9 and cover-scaled);
+     ;; this overlay supplies the sub-text, retry button and back link below
+     ;; the baked heading, matching the Error_Screen reference layout.
+     [:div {:class (stl/css :branded-error-bg)
+            :style #js {"backgroundImage" "url(/images/error-screen.png)"}}]
 
-     (when (some? report)
-       [:a {:class (stl/css :download-link) :on-click on-download} (tr "labels.download" "report.txt")])
+     [:div {:class (stl/css :branded-error-content)}
+      [:p {:class (stl/css :branded-sub)} (tr "labels.internal-error.branded-desc-first")]
+      [:p {:class (stl/css :branded-sub)} (tr "labels.internal-error.branded-desc-second")]
 
-     [:div {:class (stl/css :buttons-container)}
-      [:> button* {:variant "secondary"
-                   :type "button"
-                   :class (stl/css :support-btn)
-                   :on-click support-contact-click} (tr "labels.contact-support")]
-      [:> button* {:variant "primary"
-                   :type "button"
-                   :class (stl/css :retry-btn)
-                   :on-click on-reset} (tr "labels.retry")]]]))
+      [:button {:class (stl/css :branded-btn)
+                :type "button"
+                :on-click on-reset}
+       lucide-rotate-cw
+       (tr "labels.internal-error.try-again")]
+
+      [:button {:class (stl/css :branded-back)
+                :type "button"
+                :on-click on-go-back}
+       lucide-arrow-left
+       (tr "labels.internal-error.go-back")]]
+
+     ;; Subtle pill footer keeps the app's debugging/support workflow alive
+     ;; (report download + contact support) without cluttering the screen.
+     [:div {:class (stl/css :branded-footer)}
+      (when (some? report)
+        [:button {:class (stl/css :branded-footer-link) :type "button" :on-click on-download}
+         (tr "labels.download" "report.txt")])
+      (when (some? report)
+        [:span {:class (stl/css :branded-footer-sep)} "·"])
+      [:button {:class (stl/css :branded-footer-link) :type "button" :on-click support-contact-click}
+       (tr "labels.contact-support")]]]))
 
 (defn- load-info
   "Load exception page info"

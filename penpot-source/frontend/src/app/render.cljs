@@ -86,7 +86,7 @@
           :scale scale
           :skip-children skip-children}]
 
-        [:& (mf/provider ctx/is-render?) {:value true}
+        [:> (mf/provider ctx/is-render?) {:value true}
          [:& render/object-svg
           {:objects objects
            :object-id object-id
@@ -117,7 +117,7 @@
               :skip-children skip-children
               :on-render cb-fn}]
 
-            [:& (mf/provider ctx/is-render?) {:value true}
+            [:> (mf/provider ctx/is-render?) {:value true}
              [:& render/object-svg
               {:objects objects
                :key (str object-id)

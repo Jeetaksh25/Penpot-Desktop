@@ -1027,11 +1027,11 @@
         (mf/with-memo [tokens-map]
           (into [{:value "" :label (tr "workspace.options.interaction-variable-select-placeholder")}]
                 (for [[vname token] tokens-map]
-                  {:value (str (:id token)) :label vname})))
+                  {:value (str (:id token)) :label (d/name vname)})))
 
         variable-names
         (mf/with-memo [tokens-map]
-          (vec (keys tokens-map)))
+          (vec (map d/name (keys tokens-map))))
 
         ;; C2: every object on the page, for set-style / set-error-state /
         ;; condition property / error-state target selects.
@@ -1040,7 +1040,7 @@
           (->> objects
                (filter (fn [[_ s]] (some? (:name s))))
                (map (fn [[id s]]
-                      {:value (str id) :label (:name s)}))
+                      {:value (str id) :label (str (:name s))}))
                (into [{:value "" :label (tr "workspace.options.interaction-none")}])))
 
         style-target-opts [{:value :this  :label (tr "workspace.options.interaction-style-target-this")}

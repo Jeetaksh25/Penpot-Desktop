@@ -769,9 +769,9 @@
      ;; from a Storybook index as code-component entries (additive, opt-in).
      [:> storybook-section*]
 
-     [:& (mf/provider cmm/assets-filters) {:value filters}
-      [:& (mf/provider cmm/assets-toggle-ordering) {:value toggle-ordering}
-       [:& (mf/provider cmm/assets-toggle-list-style) {:value toggle-list-style}
+     [:> (mf/provider cmm/assets-filters) {:value filters}
+      [:> (mf/provider cmm/assets-toggle-ordering) {:value toggle-ordering}
+       [:> (mf/provider cmm/assets-toggle-list-style) {:value toggle-list-style}
         [:*
          [:> assets-local-library* {:filters filters}]
          [:> assets-libraries* {:filters filters}]]]]]]))

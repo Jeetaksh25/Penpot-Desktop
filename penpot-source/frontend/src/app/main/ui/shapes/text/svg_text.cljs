@@ -165,7 +165,7 @@
               ;; Need to create new render-id per text-block
               render-id (dm/str render-id "-" index)]
 
-          [:& (mf/provider muc/render-id) {:key index :value render-id}
+          [:> (mf/provider muc/render-id) {:key index :value render-id}
            ;; Text fills definition. Need to be defined per-text block
            [:defs
             [:& fills/fills          {:shape shape :render-id render-id}]]

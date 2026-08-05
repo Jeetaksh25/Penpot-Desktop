@@ -1,6 +1,6 @@
 @echo off
 REM Initialize Visual Studio MSVC development environment
-call "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\Common7\Tools\VsDevCmd.bat"
+call "D:\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat"
 
 REM Remove Git's /usr/bin from PATH (conflicts with MSVC link.exe)
 set PATH=%PATH:C:\Program Files\Git\usr\bin;=%

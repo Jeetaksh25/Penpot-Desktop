@@ -116,8 +116,8 @@
         (mf/use-fn
          (fn [t]
            (when-not busy
-             (mf/set-state! tab* t)
-             (mf/set-state! error* nil))))
+             (reset! tab* t)
+             (reset! error* nil))))
 
         on-pick-sketch
         (mf/use-fn
@@ -128,8 +128,8 @@
                                                        :extensions #js ["sketch"]}]})
                  (p/then (fn [picked]
                            (when (and (string? picked) (not (str/blank? picked)))
-                             (mf/set-state! path* picked)
-                             (mf/set-state! error* nil))))
+                             (reset! path* picked)
+                             (reset! error* nil))))
                  (p/catch (fn [_] nil))))))
 
         commit-spec
@@ -137,7 +137,7 @@
          (mf/deps tab)
          (fn [spec]
            (if (or (nil? spec) (empty? (:frames spec)))
-             (mf/set-state! error* (tr "workspace.import.empty"))
+             (reset! error* (tr "workspace.import.empty"))
              (do
                (st/emit! (file-import/apply-imported-spec {:spec spec}))
                (st/emit! (modal/hide))))))
@@ -147,18 +147,18 @@
          (mf/deps path)
          (fn []
            (if (str/blank? path)
-             (mf/set-state! error* (tr "workspace.import.pick-file"))
+             (reset! error* (tr "workspace.import.pick-file"))
              (do
-               (mf/set-state! busy* true)
-               (mf/set-state! error* nil)
+               (reset! busy* true)
+               (reset! error* nil)
                (-> (file-import/import-sketch path)
                    (p/then (fn [sketch-json]
                              (let [spec (file-import/convert-sketch->spec sketch-json)]
-                               (mf/set-state! busy* false)
+                               (reset! busy* false)
                                (commit-spec spec))))
                    (p/catch (fn [err]
-                              (mf/set-state! busy* false)
-                              (mf/set-state! error* (str (tr "workspace.import.failed") ": " err)))))))))
+                              (reset! busy* false)
+                              (reset! error* (str (tr "workspace.import.failed") ": " err)))))))))
 
         on-import-figma
         (mf/use-fn
@@ -167,34 +167,34 @@
            (let [fk (str/trim file-key)]
              (cond
                (str/blank? fk)
-               (mf/set-state! error* (tr "workspace.import.figma-key-missing"))
+               (reset! error* (tr "workspace.import.figma-key-missing"))
 
                (str/blank? (str/trim token))
-               (mf/set-state! error* (tr "workspace.import.figma-token-missing"))
+               (reset! error* (tr "workspace.import.figma-token-missing"))
 
                :else
                (do
                  ;; Persist the token for next time.
                  (file-import/save-figma-token (str/trim token))
-                 (mf/set-state! busy* true)
-                 (mf/set-state! error* nil)
+                 (reset! busy* true)
+                 (reset! error* nil)
                  (-> (file-import/import-figma fk (str/trim token))
                      (p/then (fn [figma-json]
                                (let [spec (file-import/convert-figma->spec figma-json)]
-                                 (mf/set-state! busy* false)
+                                 (reset! busy* false)
                                  (commit-spec spec))))
                      (p/catch (fn [err]
-                                (mf/set-state! busy* false)
+                                (reset! busy* false)
                                 (let [s (str err)]
                                   (cond
                                     (= s "figma-token-missing")
-                                    (mf/set-state! error* (tr "workspace.import.figma-token-missing"))
+                                    (reset! error* (tr "workspace.import.figma-token-missing"))
                                     (= s "figma-token-invalid")
-                                    (mf/set-state! error* (tr "workspace.import.figma-token-invalid"))
+                                    (reset! error* (tr "workspace.import.figma-token-invalid"))
                                     (= s "figma-file-key-missing")
-                                    (mf/set-state! error* (tr "workspace.import.figma-key-missing"))
+                                    (reset! error* (tr "workspace.import.figma-key-missing"))
                                     :else
-                                    (mf/set-state! error* (str (tr "workspace.import.failed") ": " s))))))))))))]
+                                    (reset! error* (str (tr "workspace.import.failed") ": " s))))))))))))]
 
     [:div {:class (stl/css :modal-overlay)}
      [:div {:class (stl/css :modal-container)}
@@ -284,7 +284,7 @@
           [:input {:type "text"
                    :value file-key
                    :disabled busy
-                   :on-change #(mf/set-state! file-key* (dom/get-target-val %))
+                   :on-change #(reset! file-key* (dom/get-target-val %))
                    :placeholder "https://www.figma.com/file/<key>/…"
                    :style #js {:padding "8px 10px"
                                :border "1px solid #e5e7eb"
@@ -296,7 +296,7 @@
           [:input {:type "password"
                    :value token
                    :disabled busy
-                   :on-change #(mf/set-state! token* (dom/get-target-val %))
+                   :on-change #(reset! token* (dom/get-target-val %))
                    :placeholder (tr "workspace.import.figma-token-placeholder")
                    :style #js {:padding "8px 10px"
                                :border "1px solid #e5e7eb"

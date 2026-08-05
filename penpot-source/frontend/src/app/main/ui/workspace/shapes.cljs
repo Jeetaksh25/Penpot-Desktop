@@ -85,7 +85,7 @@
                            (filter frame-overlap?)))]
 
     [:g {:id (dm/str "shape-" uuid/zero)}
-     [:& (mf/provider ctx/active-frames) {:value active-frames}
+     [:> (mf/provider ctx/active-frames) {:value active-frames}
       ;; Render font faces only for shapes that are part of the root
       ;; frame but don't belongs to any other frame.
       (let [xform (comp

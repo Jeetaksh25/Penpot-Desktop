@@ -673,7 +673,7 @@
              :interactions-mode interactions-mode
              :share-id share-id}]
 
-           [:& (mf/provider ctx/current-zoom) {:value zoom}
+           [:> (mf/provider ctx/current-zoom) {:value zoom}
             [:& viewer-wrapper
              {:wrapper-size wrapper-size
               :orig-frame orig-frame

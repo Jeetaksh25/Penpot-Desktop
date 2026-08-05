@@ -184,7 +184,7 @@
              (not= (:release-notes-viewed props) (:main cf/version))
              (not= "0.0" (:main cf/version)))]
 
-    [:& (mf/provider ctx/current-route) {:value route}
+    [:> (mf/provider ctx/current-route) {:value route}
      (case section
        (:auth-login
         :auth-register
@@ -192,7 +192,7 @@
         :auth-register-success
         :auth-recovery-request
         :auth-recovery)
-       [:? [:& auth-page {:route route}]]
+       [:? [:> auth-page {:route route}]]
 
        :auth-verify-token
        [:? [:> verify-token-page* {:route route}]]
@@ -249,13 +249,13 @@
 
           (cond
             show-question-modal?
-            [:& questions-modal]
+            [:> questions-modal]
 
             show-team-modal?
             [:> onboarding-team-modal* {:go-to-team true}]
 
             show-release-modal?
-            [:& release-notes-modal {:version (:main cf/version)}])
+            [:> release-notes-modal {:version (:main cf/version)}])
 
           [:> team-container* {:team-id team-id}
            [:> dashboard-page* {:profile profile
@@ -277,13 +277,13 @@
           (when (cf/external-feature-flag "onboarding-03" "test")
             (cond
               show-question-modal?
-              [:& questions-modal]
+              [:> questions-modal]
 
               show-team-modal?
               [:> onboarding-team-modal* {:go-to-team false}]
 
               show-release-modal?
-              [:& release-notes-modal {:version (:main cf/version)}]))
+              [:> release-notes-modal {:version (:main cf/version)}]))
 
           [:> team-container* {:team-id team-id}
            [:> workspace-page* {:team-id team-id
@@ -397,12 +397,12 @@
                    :display "flex"
                    :flexDirection "column"
                    :overflow "hidden"}}
-     [:& window-titlebar* {:profile profile}]
+     [:> window-titlebar* {:profile profile}]
      [:div {:style {:flex "1 1 auto"
                     :minHeight 0
                     :overflow "hidden"}}
-      [:& (mf/provider ctx/current-route) {:value route}
-       [:& (mf/provider ctx/current-profile) {:value profile}
+      [:> (mf/provider ctx/current-route) {:value route}
+       [:> (mf/provider ctx/current-profile) {:value profile}
         (if edata
           [:> static/exception-page* {:data edata :route route}]
           [:> error-boundary* {:fallback static/exception-page*}

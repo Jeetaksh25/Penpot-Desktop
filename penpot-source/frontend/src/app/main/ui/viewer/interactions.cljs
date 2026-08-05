@@ -117,8 +117,8 @@
             (dissoc :fills)
             (assoc :interactions non-delay-interactions))]
 
-    [:& (mf/provider shapes/base-frame-ctx) {:value base}
-     [:& (mf/provider shapes/frame-offset-ctx) {:value offset}
+    [:> (mf/provider shapes/base-frame-ctx) {:value base}
+     [:> (mf/provider shapes/frame-offset-ctx) {:value offset}
       (if is-fixed
         [:svg {:class (stl/css :fixed)
                :view-box vbox

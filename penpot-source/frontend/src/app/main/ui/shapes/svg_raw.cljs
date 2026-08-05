@@ -45,7 +45,7 @@
                           (obj/set! "height" h)
                           (obj/set! "preserveAspectRatio" "none")))]
 
-    [:& (mf/provider svg-ids-ctx) {:value ids-mapping}
+    [:> (mf/provider svg-ids-ctx) {:value ids-mapping}
      [:g.svg-raw {:transform (gsh/transform-str shape)}
       [:> "svg" props children]]]))
 

@@ -132,7 +132,7 @@
           svg-group?
           (propagate-wrapper-styles wrapper-props))]
 
-    [:& (mf/provider muc/render-id) {:value render-id}
+    [:> (mf/provider muc/render-id) {:value render-id}
      [:> :g wrapper-props
       (when include-metadata?
         [:> ed/export-data* {:shape shape}])

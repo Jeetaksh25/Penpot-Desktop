@@ -63,3 +63,5 @@ LPT2
 scan2.py
 __pycache__/
 *.pyc
+
+*.env

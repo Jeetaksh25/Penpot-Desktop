@@ -327,7 +327,7 @@
     (use-nitrate-entry-popup)
     (use-pending-action pending-action-id)
 
-    [:& (mf/provider ctx/current-project-id) {:value project-id}
+    [:> (mf/provider ctx/current-project-id) {:value project-id}
      [:> modal-container*]
      ;; NOTE: dashboard events and other related functions assumes
      ;; that the team is a implicit context variable that is

@@ -225,9 +225,9 @@
          (mf/deps objects)
          #(shape-wrapper-factory objects))]
 
-    [:& (mf/provider muc/render-thumbnails) {:value use-thumbnails}
-     [:& (mf/provider embed/context) {:value embed}
-      [:& (mf/provider export/include-metadata-ctx) {:value include-metadata}
+    [:> (mf/provider muc/render-thumbnails) {:value use-thumbnails}
+     [:> (mf/provider embed/context) {:value embed}
+      [:> (mf/provider export/include-metadata-ctx) {:value include-metadata}
        [:svg {:view-box vbox
               :version "1.1"
               :xmlns "http://www.w3.org/2000/svg"
@@ -255,7 +255,7 @@
   {::mf/wrap-props false}
   [{:keys [objects frame vbox x y width height background]}]
   (let [shape-wrapper (shape-wrapper-factory objects)]
-    [:& (mf/provider muc/render-thumbnails) {:value false}
+    [:> (mf/provider muc/render-thumbnails) {:value false}
      [:svg {:view-box vbox
             :width (ust/format-precision width viewbox-decimal-precision)
             :height (ust/format-precision height viewbox-decimal-precision)
@@ -318,7 +318,7 @@
         height (* (:height bounds) zoom)
         vbox   (format-viewbox {:width (:width bounds 0) :height (:height bounds 0)})]
 
-    [:& (mf/provider muc/render-thumbnails) {:value use-thumbnails}
+    [:> (mf/provider muc/render-thumbnails) {:value use-thumbnails}
      [:svg {:view-box vbox
             :width (ust/format-precision width viewbox-decimal-precision)
             :height (ust/format-precision height viewbox-decimal-precision)
@@ -391,7 +391,7 @@
        (when-not is-hidden
          [:*
           [:> shape-container {:shape root-shape'}
-           [:& (mf/provider muc/is-component?) {:value true}
+           [:> (mf/provider muc/is-component?) {:value true}
             [:& root-shape-wrapper {:shape root-shape' :view-box vbox}]]]
 
           (when show-grids?
@@ -468,8 +468,8 @@
         (mf/with-memo [objects]
           (shape-wrapper-factory objects))]
 
-    [:& (mf/provider export/include-metadata-ctx) {:value false}
-     [:& (mf/provider embed/context) {:value embed}
+    [:> (mf/provider export/include-metadata-ctx) {:value false}
+     [:> (mf/provider embed/context) {:value embed}
       [:svg {:id (dm/str "screenshot-" object-id)
              :view-box vbox
              :width (ust/format-precision width viewbox-decimal-precision)
@@ -511,8 +511,8 @@
         (mf/with-memo [objects]
           (shape-wrapper-factory objects))]
 
-    [:& (mf/provider export/include-metadata-ctx) {:value false}
-     [:& (mf/provider embed/context) {:value embed}
+    [:> (mf/provider export/include-metadata-ctx) {:value false}
+     [:> (mf/provider embed/context) {:value embed}
       [:svg {:view-box vbox
              :width (ust/format-precision width viewbox-decimal-precision)
              :height (ust/format-precision height viewbox-decimal-precision)
@@ -616,8 +616,8 @@
   (let [components (if (not deleted?)
                      (ctkl/components-seq data)
                      (ctkl/deleted-components-seq data))]
-    [:& (mf/provider embed/context) {:value embed}
-     [:& (mf/provider export/include-metadata-ctx) {:value include-metadata}
+    [:> (mf/provider embed/context) {:value embed}
+     [:> (mf/provider export/include-metadata-ctx) {:value include-metadata}
       [:svg {:version "1.1"
              :xmlns "http://www.w3.org/2000/svg"
              :xmlnsXlink "http://www.w3.org/1999/xlink"

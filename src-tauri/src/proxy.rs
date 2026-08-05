@@ -662,6 +662,29 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf, storage_dir: PathBu
     }
 
     // ── Static files (fallback) ───────────────────────────────────────────
+    if clean_path == "/favicon.ico" {
+        let fav_png = public_dir.join("images/favicon.png");
+        let fav_ico = public_dir.join("favicon.ico");
+        if let Ok(data) = std::fs::read(&fav_ico).or_else(|_| std::fs::read(&fav_png)) {
+            let response = format!(
+                "HTTP/1.1 200 OK\r\n\
+                 Content-Type: image/x-icon\r\n\
+                 Content-Length: {}\r\n\
+                 Cache-Control: max-age=86400\r\n\
+                 Connection: close\r\n\
+                 {}\r\n",
+                data.len(), cors
+            );
+            let _ = stream.write_all(response.as_bytes());
+            let _ = stream.write_all(&data);
+            let _ = stream.flush();
+            return;
+        } else {
+            send_response(&mut stream, "204 No Content", "image/x-icon", b"", &cors);
+            return;
+        }
+    }
+
     let file_path = resolve_path(path, &public_dir);
     if let Ok(data) = std::fs::read(&file_path) {
         let path_str = file_path.to_string_lossy();
@@ -681,8 +704,17 @@ fn handle_client(mut stream: TcpStream, public_dir: PathBuf, storage_dir: PathBu
         let _ = stream.write_all(&data);
         let _ = stream.flush();
     } else {
-        // SPA fallback: serve index.html. Stays no-store so injector changes
-        // to index.html are picked up immediately.
+        // If request path contains a file extension (e.g. .ico, .png, .js, .css), return 404
+        // instead of HTML fallback to prevent MIME type mismatch errors in the browser.
+        let has_ext = clean_path.rfind('.').map_or(false, |i| {
+            i > clean_path.rfind('/').unwrap_or(0) && i < clean_path.len() - 1
+        });
+        if has_ext {
+            send_response(&mut stream, "404 Not Found", "text/plain", b"File not found", &cors);
+            return;
+        }
+
+        // SPA fallback: serve index.html for client-side routing.
         let index_path = public_dir.join("index.html");
         match std::fs::read(&index_path) {
             Ok(data) => {

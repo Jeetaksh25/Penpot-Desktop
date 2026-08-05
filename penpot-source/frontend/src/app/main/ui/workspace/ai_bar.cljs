@@ -594,9 +594,10 @@
 (defn- li
   "Wrap a seq of SVG children in a Lucide 24×24 icon frame."
   [body]
-  [:svg.ai-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-              :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-              :aria-hidden "true"} body])
+  (into [:svg.ai-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                    :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                    :aria-hidden "true"}]
+        body))
 
 (def ^:private lucide-arrow-up
   (li [[:path {:d "M12 19V5"}]
@@ -1619,17 +1620,17 @@
          ;; P1.13 — Screenshot/Sketch to UI mode picker. A 3-option segmented
          ;; control next to the paperclip; selects how an attached image is
          ;; interpreted by the vision model (none / screenshot / sketch).
-         [:div.ai-seg {:role "group"
-                      :aria-label (tr "workspace.ai.bar.image-mode-label")}
-          (for [m [{:v "none" :l (tr "workspace.ai.bar.image-mode-none")}
-                    {:v "screenshot" :l (tr "workspace.ai.bar.image-mode-screenshot")}
-                    {:v "sketch" :l (tr "workspace.ai.bar.image-mode-sketch")}]]
-            [:button.ai-seg-opt
-             {:type "button" :key (:v m)
-              :class (when (= image-mode (:v m)) "is-cur")
-              :aria-pressed (str (= image-mode (:v m)))
-              :on-click #(on-pick-image-mode (:v m))}
-             (:l m)])]
+         (into [:div.ai-seg {:role "group"
+                             :aria-label (tr "workspace.ai.bar.image-mode-label")}]
+               (for [m [{:v "none" :l (tr "workspace.ai.bar.image-mode-none")}
+                         {:v "screenshot" :l (tr "workspace.ai.bar.image-mode-screenshot")}
+                         {:v "sketch" :l (tr "workspace.ai.bar.image-mode-sketch")}]]
+                 [:button.ai-seg-opt
+                  {:type "button" :key (:v m)
+                   :class (when (= image-mode (:v m)) "is-cur")
+                   :aria-pressed (str (= image-mode (:v m)))
+                   :on-click #(on-pick-image-mode (:v m))}
+                  (:l m)]))
          [:button.ai-circle
           {:type "button" :on-click open-settings
            :title (tr "workspace.ai.bar.settings")
@@ -1832,7 +1833,7 @@
             :on-mouse-up aim/press-white-out}
            lucide-history]
           (when chat-open?
-            [aich/chat-history-popover
+            [:> aich/chat-history-popover
              {:sessions sessions
               :active-id active-session-id
               :on-new on-new-chat

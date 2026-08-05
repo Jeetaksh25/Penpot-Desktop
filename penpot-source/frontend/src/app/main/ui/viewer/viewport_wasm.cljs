@@ -153,8 +153,8 @@
      not-fixed-include-ids fixed-include-ids fixed-clear-fills-ids
      delta)
 
-    [:& (mf/provider shapes/base-frame-ctx) {:value (get prepared-all (:id base))}
-     [:& (mf/provider shapes/frame-offset-ctx) {:value offset}
+    [:> (mf/provider shapes/base-frame-ctx) {:value (get prepared-all (:id base))}
+     [:> (mf/provider shapes/frame-offset-ctx) {:value offset}
       [:*
        [:> wasm-layer* not-fixed-props]
 
