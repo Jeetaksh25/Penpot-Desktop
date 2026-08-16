@@ -144,7 +144,7 @@
 (defn- shape-summary
   "One compact map for a shape, safe for JSON serialization to the model."
   [id shape]
-  (when (and (map? shape) (uuid/uuid? id))
+  (when (and (map? shape) (uuid? id))
     {:id     (str id)
      :name   (:name shape "")
      :type   (name (:type shape :rect))

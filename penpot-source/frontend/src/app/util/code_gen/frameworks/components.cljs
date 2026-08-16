@@ -36,7 +36,8 @@
    [app.common.data.macros :as dm]
    [app.common.files.helpers :as cfh]
    [app.common.types.component :as ctk]
-   [app.util.code-gen.frameworks.common :as fc]))
+   [app.util.code-gen.frameworks.common :as fc]
+   [cuerdas.core :as str]))
 
 (defn- reachable-shapes
   "All shapes reachable from `roots` through `:shapes` (children), in a

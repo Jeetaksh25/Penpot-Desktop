@@ -114,44 +114,44 @@
 
 (defn- icon-languages
   []
-  [:svg {:width 14 :height 14 :viewBox "0 0 24 24" :fill "none"
-         :stroke coral :stroke-width 2 :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :style {:flex-shrink "0"}}
-   [:path {:d "M5 8l6 6"}]
-   [:path {:d "m4 14 6-6 2-3"}]
-   [:path {:d "M2 5h12"}]
-   [:path {:d "M7 7h6"}]
-   [:path {:d "M22 22l-5-10-5 10"}]
-   [:path {:d "M14 18h6"}]])
+  (mf/html [:svg {:width 14 :height 14 :viewBox "0 0 24 24" :fill "none"
+                  :stroke coral :stroke-width 2 :stroke-linecap "round"
+                  :stroke-linejoin "round"
+                  :style {:flex-shrink "0"}}
+            [:path {:d "M5 8l6 6"}]
+            [:path {:d "m4 14 6-6 2-3"}]
+            [:path {:d "M2 5h12"}]
+            [:path {:d "M7 7h6"}]
+            [:path {:d "M22 22l-5-10-5 10"}]
+            [:path {:d "M14 18h6"}]]))
 
 (defn- icon-globe
   []
-  [:svg {:width 14 :height 14 :viewBox "0 0 24 24" :fill "none"
-         :stroke coral :stroke-width 2 :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :style {:flex-shrink "0"}}
-   [:circle {:cx 12 :cy 12 :r 10}]
-   [:path {:d "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"}]
-   [:path {:d "M2 12h20"}]])
+  (mf/html [:svg {:width 14 :height 14 :viewBox "0 0 24 24" :fill "none"
+                  :stroke coral :stroke-width 2 :stroke-linecap "round"
+                  :stroke-linejoin "round"
+                  :style {:flex-shrink "0"}}
+            [:circle {:cx 12 :cy 12 :r 10}]
+            [:path {:d "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"}]
+            [:path {:d "M2 12h20"}]]))
 
 (defn- icon-plus
   []
-  [:svg {:width 12 :height 12 :viewBox "0 0 24 24" :fill "none"
-         :stroke coral :stroke-width 2 :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :style {:flex-shrink "0"}}
-   [:path {:d "M5 12h14"}]
-   [:path {:d "M12 5v14"}]])
+  (mf/html [:svg {:width 12 :height 12 :viewBox "0 0 24 24" :fill "none"
+                  :stroke coral :stroke-width 2 :stroke-linecap "round"
+                  :stroke-linejoin "round"
+                  :style {:flex-shrink "0"}}
+            [:path {:d "M5 12h14"}]
+            [:path {:d "M12 5v14"}]]))
 
 (defn- icon-x
   []
-  [:svg {:width 12 :height 12 :viewBox "0 0 24 24" :fill "none"
-         :stroke coral :stroke-width 2 :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :style {:flex-shrink "0"}}
-   [:path {:d "M18 6 6 18"}]
-   [:path {:d "m6 6 12 12"}]])
+  (mf/html [:svg {:width 12 :height 12 :viewBox "0 0 24 24" :fill "none"
+                  :stroke coral :stroke-width 2 :stroke-linecap "round"
+                  :stroke-linejoin "round"
+                  :style {:flex-shrink "0"}}
+            [:path {:d "M18 6 6 18"}]
+            [:path {:d "m6 6 12 12"}]]))
 
 ;; --- Derived refs -----------------------------------------------------------
 ;;

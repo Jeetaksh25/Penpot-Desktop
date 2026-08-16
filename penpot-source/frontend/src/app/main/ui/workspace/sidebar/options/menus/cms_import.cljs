@@ -29,6 +29,7 @@
    [app.main.data.workspace.cms-import :as cmsi]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
+   [app.main.ui.hiccup :as hic]
    [app.util.i18n :as i18n :refer [tr]]
    [clojure.string :as cstr]
    [okulary.core :as l]
@@ -39,10 +40,11 @@
 (defn- lucide
   "Wrap a seq of SVG children in a Lucide 24×24 icon frame."
   [body]
-  [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"
-         :style {:width "16px" :height "16px" :flex-shrink "0"}} body])
+  (hic/el (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                       :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                       :aria-hidden "true"
+                       :style {:width "16px" :height "16px" :flex-shrink "0"}}]
+                body)))
 
 (defn- icon-download
   "Lucide `download` — coral accent on the section header."

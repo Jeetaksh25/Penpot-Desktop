@@ -239,6 +239,13 @@
 ;; reached solely when render-wasm/v1 is active AND the frontend impl
 ;; produced no geometry (e.g. unsupported shape types). Shapes with no
 ;; stroke or zero-width strokes are left unchanged.
+
+;; Forward declaration: `outline-content-for-shape` is defined below in
+;; the outline-stroke helpers section but referenced inside
+;; `outline-stroke`. CLJS analyzes top-level forms top-down, so a forward
+;; reference to a not-yet-analyzed private var trips `:undeclared-var`.
+(declare outline-content-for-shape)
+
 (defn outline-stroke
   "Convert strokes on the selected shapes (or the given ids) into
    sibling filled path shapes — Figma's Outline Stroke."
@@ -301,6 +308,14 @@
                         (dws/select-shapes (into (d/ordered-set) new-ids))))))))))))
 
 ;; --- Outline-stroke private helpers -----------------------------------------
+
+;; Forward declarations: `segs->plain` and `content->subpaths` are defined
+;; further down in this namespace but referenced above (in
+;; `build-outline-subpath` / `outline-content-for-shape`). CLJS analyzes
+;; top-level forms top-down, so a forward reference to a not-yet-analyzed
+;; private var trips `:undeclared-var`; `declare` resolves them eagerly.
+(declare segs->plain content->subpaths offset-subpath
+         seg-tangent-start seg-tangent-end cleanup-self-intersection)
 
 (defn- reverse-subpath
   "Reverse a subpath of offset segment maps (each {:type :line/:curve

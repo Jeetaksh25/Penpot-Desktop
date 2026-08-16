@@ -562,7 +562,7 @@
                                         (map #(drp/select-node % true)
                                              (rest base-pts)))]
                        (apply st/emit! events)))))
-               (reset! lasso-points nil)))))]
+               (reset! lasso-points nil)))))
 
         ;; Figma-parity Scissors tool (ALL_APPS_PARITY P2.32). On
         ;; pointer-down in :scissors mode, find the nearest point on the
@@ -682,7 +682,7 @@
                                 (:id shape)
                                 (path/content
                                  (bool/calculate-content :union contents))))
-                     :else nil)))))))
+                     :else nil)))))))]
 
     (mf/with-layout-effect [edit-mode]
       (let [key (events/listen (dom/get-root) "dblclick"

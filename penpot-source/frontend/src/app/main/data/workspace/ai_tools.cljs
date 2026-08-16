@@ -831,7 +831,7 @@
               (if component?
                 ;; Component: duplicate (keep original selected), then combine
                 ;; the [original duplicate] pair into a variant container.
-                (let [res (safe-emit! (dw/duplicate-shapes
+                (let [res (safe-emit! (dws/duplicate-shapes
                                         #{id}
                                         :change-selection? false
                                         :return-ref return-ref))
@@ -843,7 +843,7 @@
                     (let [res2 (safe-emit! (dwv/combine-as-variants [id new-id] {}))]
                       (cond-> res2 (true? (:ok res2)) (assoc :id new-id)))))
                 ;; Non-component: plain sibling duplicate, select the new shape.
-                (let [res (safe-emit! (dw/duplicate-shapes
+                (let [res (safe-emit! (dws/duplicate-shapes
                                         #{id}
                                         :change-selection? true
                                         :return-ref return-ref))]

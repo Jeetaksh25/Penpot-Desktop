@@ -26,6 +26,7 @@
    [app.main.data.workspace.selection-colors :as dwsc]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
+   [app.main.ui.hiccup :as hic]
    [app.util.dom :as dom]
    [app.util.i18n :refer [tr]]
    [cuerdas.core :as str]
@@ -35,16 +36,16 @@
 
 (defn- lucide-icon
   [children]
-  [:svg {:viewBox "0 0 24 24"
-         :fill "none"
-         :stroke "currentColor"
-         :stroke-width 2
-         :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :width 14
-         :height 14
-         :style {:flex-shrink 0}}
-   children])
+  (hic/el (into [:svg {:viewBox "0 0 24 24"
+                       :fill "none"
+                       :stroke "currentColor"
+                       :stroke-width 2
+                       :stroke-linecap "round"
+                       :stroke-linejoin "round"
+                       :width 14
+                       :height 14
+                       :style {:flex-shrink 0}}]
+                children)))
 
 (defn- icon-palette []    (lucide-icon [[:circle {:cx 13.5 :cy 6.5 :r 0.5 :fill "currentColor"}]
                                         [:circle {:cx 17.5 :cy 10.5 :r 0.5 :fill "currentColor"}]

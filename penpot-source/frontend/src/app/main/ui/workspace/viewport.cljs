@@ -524,8 +524,20 @@
        [:> (mf/provider ctx/wireframe-mode?) {:value wireframe-mode?}
         [:> (mf/provider ctx/current-vbox) {:value vbox'}
          [:> (mf/provider use/include-metadata-ctx) {:value (dbg/enabled? :show-export-metadata)}
-          ;; Render root shape
-          [:> shapes/root-shape {:key (str page-id)
+          ;; Render root shape. NOTE: must be `[:&` (not `[:>`). `root-shape` is
+          ;; declared `::mf/wrap-props false` in shapes.cljs and reads its props
+          ;; by DASHED STRING keys — `(obj/get props "active-frames")`,
+          ;; `(obj/get props "disable-thumbnails")`. The `:>` hiccup handler
+          ;; camelCases keyword prop keys (`:active-frames` -> "activeFrames"),
+          ;; so those reads would return nil and every frame would render as a
+          ;; blank thumbnail imposter — the workspace canvas goes blank the
+          ;; moment a file/page is opened. `[:&` leaves the keys as dashed
+          ;; strings ("active-frames"/"disable-thumbnails"), matching the
+          ;; reads. (Regression introduced in commit 8367594, which had flipped
+          ;; this to `:>`.) The surrounding `(mf/provider ...)` wrappers stay
+          ;; `:>` because Context.Provider's `:value` prop is a single word
+          ;; and is identical under either transform.
+          [:& shapes/root-shape {:key (str page-id)
                                   :objects base-objects
                                   :active-frames @active-frames
                                   ;; disable thumbnails when previewing a version

@@ -131,12 +131,16 @@
 ")
 
 ;; ── Lucide icons (stroke-width 2, currentColor) ──────────────────────────────
+;; `li` returns a real React element (via `ad/icon-el`), not a hiccup vector —
+;; a bare vector as a React child throws Minified error #31. Children are
+;; spliced with `into` so `icon-el` sees each path/circle as a child.
 (defn- li
-  "Wrap a seq of SVG children in a Lucide 24×24 icon frame."
   [body]
-  [:svg.aimg-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-                :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-                :aria-hidden "true"} body])
+  (ad/icon-el
+   (into [:svg.aimg-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                       :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                       :aria-hidden "true"}]
+         body)))
 
 (def ^:private lucide-image
   (li [[:rect {:x 3 :y 3 :width 18 :height 18 :rx 2 :ry 2}]
@@ -165,7 +169,7 @@
        [:path {:d "M3 16v3a2 2 0 0 0 2 2h3"}]
        [:path {:d "M16 21h3a2 2 0 0 0 2-2v-3"}]]))
 
-(defn- spinner [] [:span.aimg-spin])
+(defn- spinner [] (ad/icon-el [:span.aimg-spin]))
 
 ;; ── Size presets ─────────────────────────────────────────────────────────────
 ;; UI ratio -> backend size string (contract section 1: 1024x1024 | 1024x1792

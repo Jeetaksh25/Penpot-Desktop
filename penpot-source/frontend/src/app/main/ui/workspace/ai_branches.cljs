@@ -32,11 +32,14 @@
 
 ;; ── Lucide glyphs — stroke-width 2, currentColor ─────────────────────────────
 
+;; `li` returns a real React element (via `ad/icon-el`), not a hiccup
+;; vector — a bare vector as a React child throws Minified error #31.
 (defn- li [body]
-  (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-               :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-               :aria-hidden "true"}]
-        body))
+  (ad/icon-el
+   (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                :aria-hidden "true"}]
+         body)))
 
 (def ^:private lucide-git-branch
   (li [[:line {:x1 6 :y1 3 :x2 6 :y2 15}]
@@ -61,11 +64,11 @@
        [:path {:d "m6 6 12 12"}]]))
 
 (def ^:private lucide-loader-2
-  [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"
-         :style #js {"animation" "ai-spin 0.9s linear infinite"}}
-   [:path {:d "M21 12a9 9 0 1 1-6.219-8.56"}]])
+  (mf/html [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                  :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                  :aria-hidden "true"
+                  :style #js {"animation" "ai-spin 0.9s linear infinite"}}
+            [:path {:d "M21 12a9 9 0 1 1-6.219-8.56"}]]))
 
 ;; ── Component CSS (scoped under .aibr-root) ──────────────────────────────────
 
@@ -189,12 +192,12 @@
                          :title (tr "workspace.ai.branches.discard")}
        [:span.aibr-i lucide-trash-2]]]
      (when (seq children)
-       (into [:div.aibr-children]
+       [:div.aibr-children
              (for [c children]
                [:> branch-node* {:key (:id (:branch c))
                                  :node c
                                  :on-rerun on-rerun
-                                 :on-discard on-discard}])))]))
+                                 :on-discard on-discard}])])]))
 
 ;; ── Root component ───────────────────────────────────────────────────────────
 
@@ -233,9 +236,9 @@
            [:button.aibr-close {:type "button" :on-click on-close
                                 :aria-label (tr "workspace.ai.branches.close")}
             [:span.aibr-i lucide-x]])]
-        (into [:div.aibr-tree]
+        [:div.aibr-tree
               (for [node tree]
                 [:> branch-node* {:key (:id (:branch node))
                                   :node node
                                   :on-rerun on-rerun
-                                  :on-discard on-discard}]))]])))
+                                  :on-discard on-discard}])]]])))

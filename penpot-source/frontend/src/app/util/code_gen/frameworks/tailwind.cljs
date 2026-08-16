@@ -210,7 +210,7 @@
          (let [props (cc/format-props-jsx binding)
                tag (:tag binding)
                attrs (cond-> (dm/str "className=\"" classes "\"")
-                       (str/not-blank? props) (dm/str " " props))]
+                       (not (str/blank? props)) (dm/str " " props))]
            (dm/fmt "%{/* Code Connect: % */}\n%<% % />"
                    ind tag ind tag attrs)))
 

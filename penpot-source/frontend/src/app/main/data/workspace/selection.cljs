@@ -563,6 +563,12 @@
       (let [hover-value (if value #{id} #{})]
         (assoc-in state [:workspace-local :hover] hover-value)))))
 
+;; Forward declaration: `toggle-focus-mode` is defined below but referenced
+;; above (in `update-focus-shapes`'s watch, to auto-exit focus mode when the
+;; focus set becomes empty). CLJS analyzes top-level forms top-down, so a
+;; forward reference to a not-yet-analyzed var trips `:undeclared-var`.
+(declare toggle-focus-mode)
+
 (defn update-focus-shapes
   [added removed]
   (ptk/reify ::update-focus-shapes

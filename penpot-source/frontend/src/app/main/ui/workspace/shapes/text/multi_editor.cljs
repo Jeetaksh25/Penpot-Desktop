@@ -123,18 +123,19 @@
         screen-rect
         (mf/use-memo
          (mf/deps lead-shape vbox zoom)
-         (when (and lead-shape vbox)
-           (let [vx (:x vbox 0)
-                 vy (:y vbox 0)
-                 z  (or zoom 1)
-                 sx (dm/get-prop lead-shape :x)
-                 sy (dm/get-prop lead-shape :y)
-                 sw (dm/get-prop lead-shape :width)
-                 sh (dm/get-prop lead-shape :height)]
-             {:x      (* (- sx vx) z)
-              :y      (* (- sy vy) z)
-              :width  (* sw z)
-              :height (* sh z)})))]
+         (fn []
+           (when (and lead-shape vbox)
+             (let [vx (:x vbox 0)
+                   vy (:y vbox 0)
+                   z  (or zoom 1)
+                   sx (dm/get-prop lead-shape :x)
+                   sy (dm/get-prop lead-shape :y)
+                   sw (dm/get-prop lead-shape :width)
+                   sh (dm/get-prop lead-shape :height)]
+               {:x      (* (- sx vx) z)
+                :y      (* (- sy vy) z)
+                :width  (* sw z)
+                :height (* sh z)}))))]
 
     (when (and multi-edit? lead-shape screen-rect)
       ;; A single visible, editable surface. We render the lead shape's

@@ -257,6 +257,11 @@
      (fc/fmt-num (:height size))
      body)))
 
+;; Forward declaration: `comp-name-from` is defined below but referenced
+;; above (in `generate`). CLJS analyzes top-level forms top-down, so a forward
+;; reference to a not-yet-analyzed private var trips `:undeclared-var`.
+(declare comp-name-from)
+
 (defn generate
   "Single-string Inspect-panel preview (no hoisting — the preview can't
   represent multi-file components)."

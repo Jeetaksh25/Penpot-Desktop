@@ -110,6 +110,11 @@
     (when data
       (dm/fmt "{uri: %}" (quote-js (cfg/resolve-file-media data))))))
 
+;; Forward declaration: `escape-jsx-text` is defined below but referenced
+;; above (in `render-shape`). CLJS analyzes top-level forms top-down, so a
+;; forward reference to a not-yet-analyzed var trips `:undeclared-var`.
+(declare escape-jsx-text)
+
 (defn- render-shape
   ([objects shape origin] (render-shape objects shape origin 1))
   ([objects shape origin level]
@@ -126,7 +131,7 @@
          (let [props (cc/format-props-jsx binding)
                style-str (style->js (box-style objects shape origin))
                attrs (cond-> (dm/str "style={{" style-str "}")
-                       (str/not-blank? props) (dm/str " " props))
+                       (not (str/blank? props)) (dm/str " " props))
                tag (:tag binding)]
            (dm/fmt "%{/* Code Connect: % */}\n%<% % />"
                    ind tag ind tag attrs)))

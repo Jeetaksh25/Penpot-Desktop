@@ -26,6 +26,7 @@
    [app.main.ui.ds.foundations.assets.icon :refer [icon*] :as i]
    [app.main.ui.hooks :as h]
    [app.main.ui.icons :as deprecated-icon]
+   [app.main.ui.workspace.ai-design :as ad]
    [app.util.dom :as dom]
    [app.util.i18n :as i18n :refer [tr]]
    [app.util.keyboard :as kbd]
@@ -620,11 +621,14 @@
 
 (defn- li
   "Wrap a seq of SVG children in a Lucide 24×24 icon frame — matches the
-  ai_bar.cljs idiom."
+  ai_bar.cljs idiom. Returns a real React element (via `ad/icon-el`), not
+  a hiccup vector — a bare vector as a React child throws Minified #31."
   [body]
-  [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"} body])
+  (ad/icon-el
+   (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                :aria-hidden "true"}]
+         body)))
 
 (def ^:private lucide-smile
   (li [[:circle {:cx 12 :cy 12 :r 10}]

@@ -73,7 +73,7 @@
           (when (and (object? obj)
                      (not (array? obj))
                      (string? (.-tag obj))
-                     (str/not-blank? (str/trim (.-tag obj))))
+                     (not (str/blank? (str/trim (.-tag obj)))))
             (let [raw-props (.-props obj)
                   props (if (and (some? raw-props)
                                 (object? raw-props)

@@ -27,6 +27,7 @@
    [app.main.data.workspace.on-page-edit :as dope]
    [app.main.refs :as refs]
    [app.main.store :as st]
+   [app.main.ui.hiccup :as hic]
    [app.util.i18n :refer [tr]]
    [cuerdas.core :as str]
    [rumext.v2 :as mf]))
@@ -35,16 +36,16 @@
 
 (defn- lucide-icon
   [children]
-  [:svg {:viewBox "0 0 24 24"
-         :fill "none"
-         :stroke "currentColor"
-         :stroke-width 2
-         :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :width 16
-         :height 16
-         :style {:flex-shrink "0"}}
-   children])
+  (hic/el (into [:svg {:viewBox "0 0 24 24"
+                       :fill "none"
+                       :stroke "currentColor"
+                       :stroke-width 2
+                       :stroke-linecap "round"
+                       :stroke-linejoin "round"
+                       :width 16
+                       :height 16
+                       :style {:flex-shrink "0"}}]
+                children)))
 
 (defn- icon-exit []
   ;; Lucide `x` (close) icon.

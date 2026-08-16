@@ -26,6 +26,7 @@
    [app.main.data.workspace.shapes :as dwsh]
    [app.main.data.workspace.undo :as dwu]
    [beicon.v2.core :as rx]
+   [clojure.string :as cstr]
    [potok.v2.core :as ptk]))
 
 (defn add-property
@@ -148,7 +149,7 @@
                         (pcb/update-component component-id
                           (fn [component]
                             (let [current (or (:code-connect component) {})
-                                  updated (if (str/blank? tpl)
+                                  updated (if (cstr/blank? tpl)
                                             (dissoc current framework)
                                             (assoc current framework tpl))]
                               (if (empty? updated)

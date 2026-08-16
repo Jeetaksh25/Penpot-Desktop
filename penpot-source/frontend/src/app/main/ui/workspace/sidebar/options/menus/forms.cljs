@@ -27,6 +27,7 @@
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
+   [app.main.ui.hiccup :as hic]
    [app.util.i18n :as i18n :refer [tr]]
    [clojure.string :as cstr]
    [okulary.core :as l]
@@ -108,16 +109,16 @@
   "Render an inline Lucide-style SVG icon. `children` is a vector of
   Hiccup children. Uses currentColor so the icon inherits text color."
   [children]
-  [:svg {:viewBox "0 0 24 24"
-         :fill "none"
-         :stroke "currentColor"
-         :stroke-width 2
-         :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :width 16
-         :height 16
-         :style {:flex-shrink 0}}
-   children])
+  (hic/el (into [:svg {:viewBox "0 0 24 24"
+                       :fill "none"
+                       :stroke "currentColor"
+                       :stroke-width 2
+                       :stroke-linecap "round"
+                       :stroke-linejoin "round"
+                       :width 16
+                       :height 16
+                       :style {:flex-shrink 0}}]
+                children)))
 
 (defn- icon-form []
   (lucide-icon [[:rect {:x 3 :y 4 :width 18 :height 4 :rx 1}]
@@ -306,7 +307,7 @@
                              (st/emit! (dwf/add-field
                                         {:frame-id frame-id
                                          :field {:name  (str "field" n)
-                                                 :label (str "Field " n)}}))))
+                                                 :label (str "Field " n)}})))))
           on-update    (mf/use-fn
                          (mf/deps frame-id)
                          (fn [fid patch]
@@ -323,7 +324,7 @@
                          (mf/deps frame-id)
                          #(st/emit! (dwf/set-action
                                      {:frame-id frame-id
-                                      :action {:name (cstr/trim (deref name*))}}))))
+                                      :action {:name (cstr/trim (deref name*))}})))
           commit-endpoint (mf/use-fn
                             (mf/deps frame-id)
                             #(st/emit! (dwf/set-action

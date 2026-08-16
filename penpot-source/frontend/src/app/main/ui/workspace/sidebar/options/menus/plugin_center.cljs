@@ -36,6 +36,7 @@
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
    [app.main.ui.ds.buttons.icon-button :refer [icon-button*]]
+   [app.main.ui.hiccup :as hic]
    [app.util.i18n :as i18n :refer [tr]]
    [clojure.string :as cstr]
    [okulary.core :as l]
@@ -68,16 +69,16 @@
   "Render an inline Lucide-style SVG icon. `children` is a vector of Hiccup
   children. Uses currentColor so the icon inherits text color."
   [children]
-  [:svg {:viewBox "0 0 24 24"
-         :fill "none"
-         :stroke "currentColor"
-         :stroke-width 2
-         :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :width 16
-         :height 16
-         :style {:flex-shrink 0}}
-   children])
+  (hic/el (into [:svg {:viewBox "0 0 24 24"
+                       :fill "none"
+                       :stroke "currentColor"
+                       :stroke-width 2
+                       :stroke-linecap "round"
+                       :stroke-linejoin "round"
+                       :width 16
+                       :height 16
+                       :style {:flex-shrink 0}}]
+                children)))
 
 (defn- icon-plus []     (lucide-icon [[:path {:d "M12 5v14"}] [:path {:d "M5 12h14"}]]))
 (defn- icon-chevron []  (lucide-icon [[:path {:d "m6 9 6 6 6-6"}]]))

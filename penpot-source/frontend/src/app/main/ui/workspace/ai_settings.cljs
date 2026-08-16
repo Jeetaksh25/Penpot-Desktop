@@ -34,6 +34,7 @@
    [app.main.store :as st]
    [app.main.ui.workspace.ai-design :as ad]
    [app.main.ui.workspace.ai-motion :as aim]
+   [app.main.ui.hiccup :as hic]
    [app.util.i18n :as i18n :refer [tr]]
    [promesa.core :as p]
    [rumext.v2 :as mf]))
@@ -140,31 +141,33 @@
 ")
 
 ;; Lucide close glyph (one family, stroke-width 2, currentColor) — matches
-;; the AI bar's icon language.
+;; the AI bar's icon language. Wrapped in `mf/html` so the hiccup compiles to
+;; a real React element; a bare vector rendered as a child throws Minified
+;; React error #31 (which blanked this modal on open).
 (def ^:private lucide-x
-  [:svg.ais-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-               :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-               :aria-hidden "true"}
-   [:path {:d "M18 6 6 18"}]
-   [:path {:d "m6 6 12 12"}]])
+  (mf/html [:svg.ais-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                        :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                        :aria-hidden "true"}
+            [:path {:d "M18 6 6 18"}]
+            [:path {:d "m6 6 12 12"}]]))
 
 ;; Lucide pencil + type glyphs for the relocated Selection tools.
 (def ^:private lucide-pencil
-  [:svg.ais-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-               :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-               :aria-hidden "true"}
-   [:path {:d "M21.174 6.812a1 1 0 0 0-3.986-1.992L3.842 16.17a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"}]
-   [:path {:d "m15 5 4 4"}]])
+  (mf/html [:svg.ais-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                        :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                        :aria-hidden "true"}
+            [:path {:d "M21.174 6.812a1 1 0 0 0-3.986-1.992L3.842 16.17a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"}]
+            [:path {:d "m15 5 4 4"}]]))
 
 (def ^:private lucide-type
-  [:svg.ais-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-               :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-               :aria-hidden "true"}
-   [:path {:d "M4 7V4h16v3"}]
-   [:path {:d "M9 20h6"}]
-   [:path {:d "M12 4v16"}]])
+  (mf/html [:svg.ais-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                        :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                        :aria-hidden "true"}
+            [:path {:d "M4 7V4h16v3"}]
+            [:path {:d "M9 20h6"}]
+            [:path {:d "M12 4v16"}]]))
 
-(defn- spinner [] [:span.ais-spin])
+(defn- spinner [] (hic/el [:span.ais-spin]))
 
 (defn- safe-int
   "Parse `v` to a non-negative int in a sane range; if blank/NaN (e.g. the
@@ -182,35 +185,37 @@
 
 (defn- field
   [{:keys [label hint value on-change type placeholder]}]
-  [:div.ais-field
-   [:span.ais-label label]
-   [:input.ais-input
-    ;; Controlled when a :value is supplied (text fields: model slug, base
-    ;; URL — they bind to cfg so the loaded value renders). UNcontrolled when
-    ;; no :value is supplied (the API-key/password fields: the backend masks
-    ;; keys to a presence flag, so we show a "key set" placeholder and let the
-    ;; user type freely — a forced :value "" would make these React controlled
-    ;; inputs bound to the constant empty string and every keystroke would be
-    ;; reverted, making it impossible to enter a key on a packaged install).
-    (cond-> {:on-change on-change
-             :placeholder placeholder}
-      (some? value) (assoc :value (or value ""))
-      type          (assoc :type type))]
-   (when hint [:span.ais-hint hint])])
+  (hic/el
+   [:div.ais-field
+    [:span.ais-label label]
+    [:input.ais-input
+     ;; Controlled when a :value is supplied (text fields: model slug, base
+     ;; URL — they bind to cfg so the loaded value renders). UNcontrolled when
+     ;; no :value is supplied (the API-key/password fields: the backend masks
+     ;; keys to a presence flag, so we show a "key set" placeholder and let the
+     ;; user type freely — a forced :value "" would make these React controlled
+     ;; inputs bound to the constant empty string and every keystroke would be
+     ;; reverted, making it impossible to enter a key on a packaged install).
+     (cond-> {:on-change on-change
+              :placeholder placeholder}
+       (some? value) (assoc :value (or value ""))
+       type          (assoc :type type))]
+    (when hint [:span.ais-hint hint])]))
 
 (defn- textarea-field
   "Like `field` but renders a <textarea> for long-form guidelines text.
   Controlled by :value; auto-grow is left to the browser (rows attribute)."
   [{:keys [label hint value on-change rows placeholder]}]
-  [:div.ais-field
-   [:span.ais-label label]
-   [:textarea.ais-input
-    (cond-> {:on-change on-change
-             :rows (or rows 4)
-             :style #js {"resize" "vertical" "minHeight" "84px"}
-             :placeholder placeholder}
-      (some? value) (assoc :value (or value "")))]
-   (when hint [:span.ais-hint hint])])
+  (hic/el
+   [:div.ais-field
+    [:span.ais-label label]
+    [:textarea.ais-input
+     (cond-> {:on-change on-change
+              :rows (or rows 4)
+              :style #js {"resize" "vertical" "minHeight" "84px"}
+              :placeholder placeholder}
+       (some? value) (assoc :value (or value "")))]
+    (when hint [:span.ais-hint hint])]))
 
 ;; Registered as a modal so any surface (titlebar gear, AI bar gear) can open
 ;; it via `(st/emit! (modal/show {:type :ai-settings}))`. When opened through
@@ -239,7 +244,11 @@
       []
       (-> (ai/invoke-get-config)
           (p/then (fn [res] (reset! cfg* (js->clj res :keywordize-keys true))))
-          (p/catch (fn [e] (st/emit! (ntf/error (str e)))))))
+          (p/catch (fn [e] (st/emit! (ntf/error (str e))))))
+      ;; React effects may return only a cleanup function or nil. Returning the
+      ;; Tauri promise here makes React try to use it as a cleanup callback,
+      ;; which crashes the modal and takes down the application surface.
+      nil)
 
     ;; Arm the MCP tool-call listener whenever the settings modal is open.
     ;; `mcp/start-listener` is idempotent, so re-mounts never double-arm.
@@ -465,18 +474,25 @@
 
             ;; Ovion Cloud (subscription, "coming soon"). Rendered only while
             ;; the Ovion Cloud provider is selected, so the BYO DeepInfra/Ollama
-            ;; sections below stay fully working and unchanged.
+            ;; sections below stay fully working and unchanged. NOTE: the body
+            ;; is wrapped in a `display:contents` div (the same pattern used by
+            ;; every other multi-form section here) because a bare `when` with
+            ;; several body forms returns ONLY its last form — without the
+            ;; wrapper the section header and the endpoint/token `field` calls
+            ;; would be discarded and only the trailing `ais-note` span would
+            ;; render, making Ovion Cloud impossible to configure.
             (when (= (:provider cfg) "ovion-cloud")
-              [:div.ais-section (tr "workspace.ai.settings.section-ovion-cloud")]
-              (field {:label     (tr "workspace.ai.settings.ovion-cloud-endpoint")
-                      :value     (:ovion_cloud_endpoint cfg)
-                      :on-change (upd :ovion_cloud_endpoint)})
-              (field {:label     (tr "workspace.ai.settings.ovion-cloud-token")
-                      :type      "password"
-                      :placeholder (when (:ovion_cloud_token_set cfg)
-                                     (tr "workspace.ai.settings.key-set"))
-                      :on-change (upd :ovion_cloud_token)})
-              [:span.ais-note (tr "workspace.ai.settings.ovion-cloud-note")])
+              [:div {:style #js {"display" "contents"}}
+               [:div.ais-section (tr "workspace.ai.settings.section-ovion-cloud")]
+               (field {:label     (tr "workspace.ai.settings.ovion-cloud-endpoint")
+                       :value     (:ovion_cloud_endpoint cfg)
+                       :on-change (upd :ovion_cloud_endpoint)})
+               (field {:label     (tr "workspace.ai.settings.ovion-cloud-token")
+                       :type      "password"
+                       :placeholder (when (:ovion_cloud_token_set cfg)
+                                      (tr "workspace.ai.settings.key-set"))
+                       :on-change (upd :ovion_cloud_token)})
+               [:span.ais-note (tr "workspace.ai.settings.ovion-cloud-note")]])
 
             [:div.ais-section (tr "workspace.ai.settings.section-deepinfra")]
             (field {:label     (tr "workspace.ai.settings.deepinfra-glm")

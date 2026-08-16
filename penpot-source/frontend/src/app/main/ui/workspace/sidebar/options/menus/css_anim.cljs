@@ -38,6 +38,7 @@
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
+   [app.main.ui.hiccup :as hic]
    [app.util.i18n :refer [tr]]
    [cuerdas.core :as str]
    [okulary.core :as l]
@@ -69,10 +70,10 @@
 
 ;; Inline Lucide icons.
 (defn- lucide-icon [children]
-  [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :width 14 :height 14 :style {:flex-shrink 0}}
-   children])
+  (hic/el (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                       :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                       :width 14 :height 14 :style {:flex-shrink 0}}]
+                children)))
 
 (defn- icon-wand []
   (lucide-icon [[:path {:d "M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8L19 13M15 9h0M17.8 6.2L19 5M3 21l9-9M12.2 6.2L11 5"}]]))

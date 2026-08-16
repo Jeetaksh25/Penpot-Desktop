@@ -107,8 +107,17 @@
     ;; We need to separate blur from shadows because the blur is applied to the strokes
     ;; while the shadows have to be placed *under* the stroke (for example, the inner shadows)
     ;; and the shadows needs to be applied only to the content (without the stroke)
-    [:g.frame-container-wrapper (cond-> {:opacity opacity}
-                                  (some? t3d-style) (assoc :style t3d-style))
+    ;;
+    ;; NOTE: the props here MUST stay a LITERAL map. A `(cond-> {:opacity opacity}
+    ;; (some? t3d-style) (assoc :style t3d-style))` form is NOT a literal map, so
+    ;; rumext's `mf/html` treats it as the first CHILD (not props); it then
+    ;; evaluates to a CLJS PersistentHashMap at runtime, React iterates it and
+    ;; tries to render a cljs.core.MapEntry as a child → Minified React #31
+    ;; (the {key, $val$, …} object). This crashed file-open on every frame.
+    ;; `:style t3d-style` is nil when there is no 3D transform; React treats a
+    ;; null/undefined `style` as "no inline style", so the DOM is byte-identical
+    ;; to the pre-3D `{:opacity opacity}` in the common case.
+    [:g.frame-container-wrapper {:opacity opacity :style t3d-style}
      [:g.frame-container-blur {:filter filter-str-blur}
       [:defs
        ;; GLASS (#61) — dissoc :glass here too, mirroring filter-str-shadows

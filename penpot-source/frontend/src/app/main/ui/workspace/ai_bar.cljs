@@ -577,13 +577,20 @@
 ")
 
 (defn- style-block
-  "Render the shared base + AI bar <style> once. Wrapped in a
+  "Render the shared base + AI bar <style> once. Wrapped in
+  `ad/icon-el` (the runtime hiccup→element interpreter, = `hic/el`) so
+  the returned vector becomes a REAL React element — a bare
+  PersistentVector handed to react/createElement is iterable, so React
+  walks into it and throws Minified error #31 on the leading `:div`
+  keyword. This was the file-open blank: the AI bar mounts on workspace
+  load and calls `(style-block)` on every render. Wrapped in a
   display:contents div so it adds no layout (some rumext versions don't
   parse the `:<>` fragment keyword reliably)."
   []
-  [:div {:style #js {"display" "contents"}}
-   (ad/base-style-block)
-   [:style {:dangerouslySetInnerHTML #js {:__html ai-css}}]])
+  (ad/icon-el
+   [:div {:style #js {"display" "contents"}}
+    (ad/base-style-block)
+    [:style {:dangerouslySetInnerHTML #js {:__html ai-css}}]]))
 
 ;; ── Lucide icons (one family, stroke-width 2, currentColor) ──────────────────
 ;;
@@ -592,12 +599,20 @@
 ;; white on the coral send disc).
 
 (defn- li
-  "Wrap a seq of SVG children in a Lucide 24×24 icon frame."
+  "Wrap a seq of SVG children in a Lucide 24×24 icon frame.
+
+  Returns a REAL React element (via `ad/icon-el`), not a CLJS hiccup
+  vector. A bare PersistentVector rendered as a React child is iterable,
+  so React walks into it and throws Minified error #31 on the leading
+  `:svg` keyword — which blanked the workspace on every file-open (the
+  AI bar mounts here). `ad/icon-el` uses rumext's own `map->props` so
+  the SVG attrs are byte-identical to a `:>` compile."
   [body]
-  (into [:svg.ai-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-                    :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-                    :aria-hidden "true"}]
-        body))
+  (ad/icon-el
+   (into [:svg.ai-i {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                     :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                     :aria-hidden "true"}]
+         body)))
 
 (def ^:private lucide-arrow-up
   (li [[:path {:d "M12 19V5"}]
@@ -805,9 +820,9 @@
 (defn- preset-label [v] (or (:label (preset-by-v v)) "Auto"))
 (defn- preset-icon  [v] (or (:icon  (preset-by-v v)) lucide-layout-grid))
 
-(defn- spinner [] [:span.ai-spin])
+(defn- spinner [] (ad/icon-el [:span.ai-spin]))
 
-(defn- stage-dots [] [:span.ai-dots [:span] [:span] [:span]])
+(defn- stage-dots [] (ad/icon-el [:span.ai-dots [:span] [:span] [:span]]))
 
 ;; ── The bar ──────────────────────────────────────────────────────────────────
 
@@ -1620,8 +1635,8 @@
          ;; P1.13 — Screenshot/Sketch to UI mode picker. A 3-option segmented
          ;; control next to the paperclip; selects how an attached image is
          ;; interpreted by the vision model (none / screenshot / sketch).
-         (into [:div.ai-seg {:role "group"
-                             :aria-label (tr "workspace.ai.bar.image-mode-label")}]
+         [:div.ai-seg {:role "group"
+                             :aria-label (tr "workspace.ai.bar.image-mode-label")}
                (for [m [{:v "none" :l (tr "workspace.ai.bar.image-mode-none")}
                          {:v "screenshot" :l (tr "workspace.ai.bar.image-mode-screenshot")}
                          {:v "sketch" :l (tr "workspace.ai.bar.image-mode-sketch")}]]
@@ -1630,7 +1645,7 @@
                    :class (when (= image-mode (:v m)) "is-cur")
                    :aria-pressed (str (= image-mode (:v m)))
                    :on-click #(on-pick-image-mode (:v m))}
-                  (:l m)]))
+                  (:l m)])]
          [:button.ai-circle
           {:type "button" :on-click open-settings
            :title (tr "workspace.ai.bar.settings")

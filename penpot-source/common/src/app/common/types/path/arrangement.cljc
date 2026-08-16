@@ -631,6 +631,12 @@
       :unbounded-holes []}
      holes)))
 
+;; Forward declarations: `content->geom-data` and `face-rep-point` are defined
+;; further down in this namespace but referenced above (in `build-faces`).
+;; CLJS/CLJ analyze top-level forms top-down, so these forward references trip
+;; `:undeclared-var` without eager `declare`s.
+(declare content->geom-data face-rep-point)
+
 (defn- build-faces
   "Turns the walked cycles into FACE records.  Each bounded face has
   one outer (CCW) cycle and zero or more hole (CW) cycles; the

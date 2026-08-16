@@ -1019,7 +1019,7 @@
                         {:icon :easing-ease-out    :value :ease-out    :label (tr "workspace.options.interaction-easing-ease-out")}
                         {:icon :easing-ease-in-out :value :ease-in-out :label (tr "workspace.options.interaction-easing-ease-in-out")}
                         ;; Figma #34: custom cubic-bezier easing (4 control points).
-                        {:icon :easing-ease-in-out :value :custom-bezier :label (tr "workspace.options.interaction-easing-custom-bezier")}]]
+                        {:icon :easing-ease-in-out :value :custom-bezier :label (tr "workspace.options.interaction-easing-custom-bezier")}]
 
         ;; C2: file variables (tokens) for set-variable + condition operands.
         tokens-map          (mf/deref refs/workspace-all-tokens-map)
@@ -1151,7 +1151,7 @@
              [:> icon-button* {:variant "ghost"
                                :aria-label (tr "workspace.options.interaction-remove-action")
                                :icon i/remove
-                               :on-click #(remove-h idx)}]]))
+                               :on-click #(remove-h idx)}]]))]
 
     [:div {:class (stl/css :interaction-item)}
      [:> prototype-pill* {:title (event-type-name interaction)

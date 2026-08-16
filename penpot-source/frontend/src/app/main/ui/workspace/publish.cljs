@@ -42,6 +42,7 @@
    [app.main.data.exports.publish :as pub]
    [app.main.data.modal :as modal]
    [app.main.data.workspace.ai-gen :as ai]
+   [app.main.ui.workspace.ai-design :as ad]
    [app.main.refs :as refs]
    [app.util.clipboard :as clipboard]
    [app.util.i18n :as i18n :refer [tr]]
@@ -52,12 +53,17 @@
 ;; ── Lucide icons (inline, 24×24, stroke-width 2, currentColor) ──────────────
 
 (defn- li
-  "Wrap a seq of SVG children in a Lucide 24×24 icon frame (matches ai_bar)."
+  "Wrap a seq of SVG children in a Lucide 24×24 icon frame (matches ai_bar).
+  Returns a real React element (via `ad/icon-el`), not a hiccup vector — a
+  bare vector as a React child throws Minified #31. Children spliced with
+  `into` so `icon-el` sees each path as a child."
   [body]
-  [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"
-         :style {:width "16px" :height "16px" :vertical-align "middle"}} body])
+  (ad/icon-el
+   (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                :aria-hidden "true"
+                :style {:width "16px" :height "16px" :vertical-align "middle"}}]
+         body)))
 
 (def ^:private lucide-copy
   (li [[:rect {:x 9 :y 9 :width 13 :height 13 :rx 2 :ry 2}]

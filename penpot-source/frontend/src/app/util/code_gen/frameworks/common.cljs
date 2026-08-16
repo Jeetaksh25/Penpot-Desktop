@@ -482,7 +482,7 @@
            (empty? (remove :hidden (:fills shape))))
        (or (single-inner-color-stroke shape)
            (empty? (remove :hidden (:strokes shape))))
-       (str/not-blank (path-d-string shape))))
+       (not (str/blank? (path-d-string shape)))))
 
 (defn solid-fill-hex
   "The `#AARRGGBB` hex of a simple-svg? shape's single solid fill, or

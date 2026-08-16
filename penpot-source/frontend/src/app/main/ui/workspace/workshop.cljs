@@ -153,73 +153,81 @@
 
 (defn- icon-graduation-cap
   [size]
-  [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
-         :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"}
-   [:path {:d "M22 10v6M2 10l10-5 10 5-10 5z"}]
-   [:path {:d "M6 12v5c3 3 9 3 12 0v-5"}]])
+  (mf/html
+   [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
+          :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+          :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+          :aria-hidden "true"}
+    [:path {:d "M22 10v6M2 10l10-5 10 5-10 5z"}]
+    [:path {:d "M6 12v5c3 3 9 3 12 0v-5"}]]))
 
 (defn- icon-search
   [size]
-  [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
-         :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"}
-   [:circle {:cx "11" :cy "11" :r "8"}]
-   [:path {:d "m21 21-4.3-4.3"}]])
+  (mf/html
+   [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
+          :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+          :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+          :aria-hidden "true"}
+    [:circle {:cx "11" :cy "11" :r "8"}]
+    [:path {:d "m21 21-4.3-4.3"}]]))
 
 (defn- icon-check
   [size]
-  [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
-         :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"}
-   [:path {:d "M20 6 9 17l-5-5"}]])
+  (mf/html
+   [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
+          :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+          :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+          :aria-hidden "true"}
+    [:path {:d "M20 6 9 17l-5-5"}]]))
 
 (defn- icon-chevron-left
   [size]
-  [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
-         :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"}
-   [:path {:d "m15 18-6-6 6-6"}]])
+  (mf/html
+   [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
+          :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+          :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+          :aria-hidden "true"}
+    [:path {:d "m15 18-6-6 6-6"}]]))
 
 (defn- icon-chevron-right
   [size]
-  [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
-         :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"}
-   [:path {:d "m9 18 6-6-6-6"}]])
+  (mf/html
+   [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
+          :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+          :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+          :aria-hidden "true"}
+    [:path {:d "m9 18 6-6-6-6"}]]))
 
 (defn- icon-x
   [size]
-  [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
-         :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"}
-   [:path {:d "M18 6 6 18"}]
-   [:path {:d "m6 6 12 12"}]])
+  (mf/html
+   [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
+          :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+          :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+          :aria-hidden "true"}
+    [:path {:d "M18 6 6 18"}]
+    [:path {:d "m6 6 12 12"}]]))
 
 (defn- icon-rotate-ccw
   [size]
-  [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
-         :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"}
-   [:path {:d "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"}]
-   [:path {:d "M3 3v5h5"}]])
+  (mf/html
+   [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
+          :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+          :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+          :aria-hidden "true"}
+    [:path {:d "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"}]
+    [:path {:d "M3 3v5h5"}]]))
 
 (defn- icon-lightbulb
   [size]
-  [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
-         :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden "true"}
-   [:path {:d "M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"}]
-   [:path {:d "M9 18h6"}]
-   [:path {:d "M10 22h4"}]])
+  (mf/html
+   [:svg {:xmlns "http://www.w3.org/2000/svg" :width size :height size
+          :viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+          :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+          :aria-hidden "true"}
+    [:path {:d "M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"}]
+    [:path {:d "M9 18h6"}]
+    [:path {:d "M10 22h4"}]]))
 
 ;; --- Static option lists -----------------------------------------------------
 

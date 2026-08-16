@@ -46,6 +46,7 @@
    [app.main.data.workspace.selection :as dws]
    [app.main.data.workspace.site-gen :as site-gen]
    [app.main.data.workspace.undo :as dwu]
+   [app.main.ui.hiccup :as hic]
    [app.util.i18n :as i18n :refer [tr]]
    [beicon.v2.core :as rx]
    [cuerdas.core :as str]
@@ -693,15 +694,19 @@
         (shape->svg s))]]))
 
 (defn spec->preview
-  "Render a keywordized DesignSpec as hiccup (a column of per-frame SVGs)
-   for the preview modal. Returns hiccup, not a string."
+  "Render a keywordized DesignSpec as a React element (a column of
+   per-frame SVGs) for the preview modal. The hiccup is assembled at
+   runtime from the spec, so it must be converted to a real React
+   element via `hic/el` — returning the raw hiccup vector would land a
+  CLJS PersistentVector as a React child (Minified React error #31)."
   [spec]
   (let [frames (or (:frames spec) [])]
-    (if (empty? frames)
-      [:div {:style #js {"padding" "24px" "color" "#6b7280"}}
-       (tr "workspace.ai.bar.preview-empty")]
-      [:div {:style #js {"display" "flex" "flexDirection" "column"
-                         "gap" "16px" "padding" "16px"
-                         "maxHeight" "70vh" "overflow" "auto"}}
-       (for [f frames]
-         (frame->svg f))])))
+    (hic/el
+     (if (empty? frames)
+       [:div {:style #js {"padding" "24px" "color" "#6b7280"}}
+        (tr "workspace.ai.bar.preview-empty")]
+       [:div {:style #js {"display" "flex" "flexDirection" "column"
+                          "gap" "16px" "padding" "16px"
+                          "maxHeight" "70vh" "overflow" "auto"}}
+        (for [f frames]
+          (frame->svg f))]))))

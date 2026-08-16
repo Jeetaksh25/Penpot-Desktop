@@ -38,6 +38,7 @@
    [app.main.data.workspace.undo :as dwu]
    [beicon.v2.core :as rx]
    [cljs.reader :as reader]
+   [cuerdas.core :as str]
    [potok.v2.core :as ptk]))
 
 ;; --- Plugin-data slot constants --------------------------------------------

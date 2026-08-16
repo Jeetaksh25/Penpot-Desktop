@@ -24,6 +24,7 @@
    [app.main.data.workspace.html-authoring :as dha]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
+   [app.main.ui.hiccup :as hic]
    [app.util.dom :as dom]
    [app.util.i18n :refer [tr]]
    [app.util.keyboard :as kbd]
@@ -44,16 +45,16 @@
 
 (defn- lucide-icon
   [children]
-  [:svg {:viewBox "0 0 24 24"
-         :fill "none"
-         :stroke "currentColor"
-         :stroke-width 2
-         :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :width 14
-         :height 14
-         :style {:flex-shrink 0}}
-   children])
+  (hic/el (into [:svg {:viewBox "0 0 24 24"
+                       :fill "none"
+                       :stroke "currentColor"
+                       :stroke-width 2
+                       :stroke-linecap "round"
+                       :stroke-linejoin "round"
+                       :width 14
+                       :height 14
+                       :style {:flex-shrink 0}}]
+                children)))
 
 (defn- icon-code []
   ;; A `<code>` / angle-bracket icon to label the section chip.

@@ -42,7 +42,40 @@
   Motion thesis (Operate mode): the bar is a tool, not a stage. Motion serves
   feedback (press, toggle), state (mode-active cross-fade), and continuity
   (pill grow, calm entrance). No choreographed entrances, no loops, no
-  spectacle — the reference is calm and confident, so the motion is too.")
+  spectacle — the reference is calm and confident, so the motion is too."
+  (:require
+   [app.main.ui.hiccup :as hic]))
+
+;; ── Lucide icon → React element ──────────────────────────────────────────────
+;;
+;; `lucide-*` icons are authored as plain CLJS hiccup vectors and stored in
+;; top-level defs / built by the `li` helper at RUNTIME — outside the `mf/html`
+;; macro that would compile that hiccup into `react/createElement` calls. A raw
+;; CLJS PersistentVector handed to React as a child is iterable (CLJS collections
+;; expose Symbol.iterator), so React walks INTO `[:svg.ai-i {…} [:path …]]` and
+;; tries to render the leading `:svg` tag KEYWORD as a child → Minified React
+;; error #31 (the keyword object: {ns, name, $fqn$, $hash$, …}). This was the
+;; Ovion blank-screen-on-file-open crash: the AI bar mounts on workspace load and
+;; renders these icons, so every file-open threw #31 and blanked the workspace;
+;; the same vector-as-child in ai_settings blanked the AI-settings modal.
+;;
+;; `icon-el` interprets one icon vector into a real React element using
+;; `rumext.v2.util/map->props` — the SAME prop-casing path the `:>` compiler
+;; uses — so the rendered SVG attributes (strokeWidth, strokeLinecap, viewBox,
+;; aria-hidden, className …) are byte-identical to an inline `[:> :svg …]`.
+;; Handles the `.class` tag shorthand, string/number/element children, and
+;; recurses for path|circle|rect|line|polyline children. For icons whose
+;; hiccup is a compile-time literal, prefer wrapping the def in `(mf/html …)`
+;; directly; this helper is for the `li`-built icons whose children are
+;; assembled at runtime. The implementation lives in `app.main.ui.hiccup/el`
+;; (a neutral, non-AI namespace) so the sidebar panels can share it without
+;; depending on the AI design system.
+
+(def icon-el
+  "Alias of `app.main.ui.hiccup/el` — kept under the `ad` alias so the
+  AI surfaces (`ai_bar`, `ai_chat_history`, `ai_branches`, `ai_image`,
+  `comments`, `publish`) can call `ad/icon-el` without an extra require."
+  hic/el)
 
 ;; ── Motion constants (mirrored in CSS below) ─────────────────────────────────
 ;;
@@ -212,6 +245,10 @@
 (defn base-style-block
   "Render the shared base <style> (tokens + @font-face + keyframes + reduced
   motion). Call once near the top of each AI surface, before that surface's
-  own CSS."
+  own CSS. Returns a real React element via `hic/el` — a bare `[:style …]`
+  vector rendered as a child throws Minified React error #31 (the `:style`
+  keyword object is not a valid React child), which blanked every AI surface
+  (AI bar on file-open, AI-settings modal, branch tree, workshop) on first
+  render."
   []
-  [:style {:dangerouslySetInnerHTML #js {:__html ai-base-css}}])
+  (hic/el [:style {:dangerouslySetInnerHTML #js {:__html ai-base-css}}]))

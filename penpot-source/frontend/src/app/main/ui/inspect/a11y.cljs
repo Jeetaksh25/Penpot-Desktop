@@ -31,6 +31,7 @@
    [app.main.store :as st]
    [app.main.ui.components.select :refer [select]]
    [app.main.ui.components.title-bar :refer [title-bar*]]
+   [app.main.ui.hiccup :as hic]
    [app.util.code-gen.frameworks.common :as fc]
    [app.util.dom :as dom]
    [app.util.i18n :refer [tr]]
@@ -132,10 +133,10 @@
 
 (defn- pass-badge
   [ok?]
-  [:span {:class (stl/css-case :a11y-badge true
-                               :a11y-pass ok?
-                               :a11y-fail (not ok?))}
-   (if ok? (tr "inspect.a11y.pass") (tr "inspect.a11y.fail"))])
+  (hic/el [:span {:class (stl/css-case :a11y-badge true
+                                       :a11y-pass ok?
+                                       :a11y-fail (not ok?))}
+           (if ok? (tr "inspect.a11y.pass") (tr "inspect.a11y.fail"))]))
 
 (mf/defc a11y-contrast*
   "WCAG contrast checker for a single selected text shape. Returns nil
@@ -320,7 +321,7 @@
                        :on-collapsed toggle
                        :title (tr "inspect.a11y.authoring")
                        :class (stl/css :a11y-title-bar)}]
-       (when @open?
+       (when @open*
          [:div {:class (stl/css :a11y-content)}
           [:div {:class (stl/css :a11y-field)}
            [:label {:class (stl/css :a11y-field-label)

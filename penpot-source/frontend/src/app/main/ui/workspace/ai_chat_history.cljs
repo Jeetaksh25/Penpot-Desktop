@@ -150,11 +150,14 @@
 ")
 
 ;; Lucide glyphs (stroke-width 2, currentColor).
+;; `li` returns a real React element (via `ad/icon-el`), not a hiccup
+;; vector — a bare vector as a React child throws Minified error #31.
 (defn- li [body]
-  (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-               :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-               :aria-hidden "true"}]
-        body))
+  (ad/icon-el
+   (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                :aria-hidden "true"}]
+         body)))
 
 (def ^:private lucide-history
   (li [[:path {:d "M3 12a9 9 0 1 0 3-6.7L3 8"}]
@@ -180,9 +183,9 @@
     (cond
       (< diff 60000)            (tr "workspace.ai.bar.chat.just-now")
       (< diff 3600000)          (tr "workspace.ai.bar.chat.min-ago"
-                                  (Math.floor (/ diff 60000)))
+                                  (js/Math.floor (/ diff 60000)))
       (< diff 86400000)         (tr "workspace.ai.bar.chat.hour-ago"
-                                  (Math.floor (/ diff 3600000)))
+                                  (js/Math.floor (/ diff 3600000)))
       :else                     (let [d (js/Date. (or ms 0))]
                                   (.toLocaleDateString d)))))
 
@@ -217,7 +220,7 @@
       (tr "workspace.ai.bar.chat.new-chat")]]
     (if (empty? sessions)
       [:div.aich-empty (tr "workspace.ai.bar.chat.empty")]
-      (into [:div.aich-list]
+      [:div.aich-list
             (for [s sessions]
               (let [sid (:id s)
                active? (= sid active-id)]
@@ -245,7 +248,8 @@
                :stroke-width 2 :stroke-linecap "round"
                :stroke-linejoin "round" :aria-hidden "true"}
               [:path {:d "M18 6 6 18"}]
-              [:path {:d "m6 6 12 12"}]]]]))))]])
+              [:path {:d "m6 6 12 12"}]]]]))])]])
 
 ;; Expose the history glyph so the AI bar can reuse it for its trigger button.
 (def history-icon lucide-history)
+

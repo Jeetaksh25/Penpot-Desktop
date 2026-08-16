@@ -29,6 +29,7 @@
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
+   [app.main.ui.hiccup :as hic]
    [app.main.ui.workspace.ai-motion :as am]
    [app.util.i18n :refer [tr]]
    [okulary.core :as l]
@@ -60,10 +61,10 @@
 
 ;; Inline Lucide icons (stroke-width 2, currentColor — matches effects.cljs).
 (defn- lucide-icon [children]
-  [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :width 16 :height 16 :style {:flex-shrink 0}}
-   children])
+  (hic/el (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                       :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                       :width 16 :height 16 :style {:flex-shrink 0}}]
+                children)))
 
 (defn- icon-wand []
   ;; "sparkles / wand" — a curated-preset cue.

@@ -64,6 +64,15 @@
   []
   (some? @listener-state))
 
+;; Forward declarations: the handler/tool fns below are defined later in this
+;; namespace but referenced earlier (`start-listener` closes over `handle-call`;
+;; `handle-call` calls `run-tool`/`ship-result`; `run-tool` dispatches to the
+;; `tool-*` fns). CLJS analyzes top-level forms top-down, so these forward
+;; references trip `:undeclared-var` without eager `declare`s.
+(declare handle-call ship-result run-tool
+         tool-document-info tool-screenshot tool-tokens tool-libraries
+         tool-run-code tool-design->code tool-code->design)
+
 (defn start-listener
   "Arm the `mcp-tool-call` Tauri event listener. Idempotent — a no-op when
   already listening. Stores the listen promise in `listener-state` so

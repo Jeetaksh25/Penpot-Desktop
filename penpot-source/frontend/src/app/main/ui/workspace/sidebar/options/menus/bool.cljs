@@ -37,19 +37,19 @@
 ;; used for the non-destructive Expand action. Defined as a plain hiccup
 ;; vector so it drops in exactly like `flatten-icon` above.
 (def ^:private expand-icon
-  [:svg {:class (stl/css :expand-icon)
-         :width "16"
-         :height "16"
-         :viewBox "0 0 24 24"
-         :fill "none"
-         :stroke "currentColor"
-         :stroke-width "2"
-         :stroke-linecap "round"
-         :stroke-linejoin "round"}
-   [:path {:d "M15 3h6v6"}]
-   [:path {:d "M9 21H3v-6"}]
-   [:path {:d "M21 3l-7 7"}]
-   [:path {:d "M3 21l7-7"}]])
+  (mf/html [:svg {:class (stl/css :expand-icon)
+                  :width "16"
+                  :height "16"
+                  :viewBox "0 0 24 24"
+                  :fill "none"
+                  :stroke "currentColor"
+                  :stroke-width "2"
+                  :stroke-linecap "round"
+                  :stroke-linejoin "round"}
+            [:path {:d "M15 3h6v6"}]
+            [:path {:d "M9 21H3v-6"}]
+            [:path {:d "M21 3l-7 7"}]
+            [:path {:d "M3 21l7-7"}]]))
 
 ;; Non-destructive Expand: finalizes a live :bool into a static :path while
 ;; keeping a live copy of the original :bool. It composes two existing
@@ -217,11 +217,11 @@
         ;; byte-identically to the pre-feature behavior until the user
         ;; explicitly picks another source. `custom-color` seeds the native
         ;; color input with the coral accent.
-        [color-mode set-color-mode]   (mf/use-state :internal)
-        [custom-color set-custom-color] (mf/use-state "#f28b82")
-        [mouse-pos set-mouse-pos]     (mf/use-state nil)
+        color-mode*   (mf/use-state :internal)
+        custom-color* (mf/use-state "#f28b82")
+        mouse-pos*    (mf/use-state nil)
 
-        color-mode-non-internal? (not= color-mode :internal)
+        color-mode-non-internal? (not= @color-mode* :internal)
 
         ;; Reactive colorpicker state so we can resolve the active swatch
         ;; for the cursor-swatch preview (`refs/colorpicker` -> current
@@ -232,26 +232,26 @@
 
         ;; Color the cursor-swatch chip should show right now. nil when no
         ;; shape in the selection carries a solid fill at all.
-        preview-fill (dwbc/cursor-swatch-color color-mode shapes
-                                               active-swatch custom-color)
+        preview-fill (dwbc/cursor-swatch-color @color-mode* shapes
+                                               active-swatch @custom-color*)
         preview-hex  (:fill-color preview-fill)
 
         reduce-motion? (reduced-motion?)
 
         on-color-mode
         (mf/use-fn
-         (mf/deps color-mode)
+         (mf/deps @color-mode*)
          (fn [mode]
-           (when (not= mode color-mode)
-             (set-color-mode mode))))
+           (when (not= mode @color-mode*)
+             (reset! color-mode* mode))))
 
         on-custom-color
         (mf/use-fn
-         (mf/deps custom-color)
+         (mf/deps @custom-color*)
          (fn [event]
            (let [val (.. event -target -value)]
              (when (some? val)
-               (set-custom-color val)))))
+               (reset! custom-color* val)))))
 
         ;; Track the cursor while a non-:internal color-source is armed so
         ;; the swatch chip can follow the mouse. Added/removed on a window
@@ -259,15 +259,15 @@
         ;; the component unmounts.
         mouse-move-handler
         (mf/use-fn
-         (mf/deps color-mode)
+         (mf/deps @color-mode*)
          (fn [event]
            (let [x (.. event -clientX)
                  y (.. event -clientY)]
-             (set-mouse-pos {:x x :y y}))))
+             (reset! mouse-pos* {:x x :y y}))))
 
         on-change
         (mf/use-fn
-         (mf/deps total-selected is-group? is-bool? head-id head-bool-type color-mode custom-color)
+         (mf/deps total-selected is-group? is-bool? head-id head-bool-type @color-mode* @custom-color*)
          (fn [bool-type]
            (let [bool-type (keyword bool-type)]
              (cond
@@ -276,8 +276,8 @@
                ;; the bool op through the wrap event so the result gets the
                ;; chosen fill. :internal (default) -> raw `dwb/create-bool`,
                ;; byte-identical to the pre-feature behavior.
-               (if (not= color-mode :internal)
-                 (st/emit! (dwbc/bool-with-color-event bool-type color-mode custom-color))
+               (if (not= @color-mode* :internal)
+                 (st/emit! (dwbc/bool-with-color-event bool-type @color-mode* @custom-color*))
                  (st/emit! (dwb/create-bool bool-type)))
 
                (and (= total-selected 1) is-group?)
@@ -376,16 +376,16 @@
                 :type "button"
                 :title (tr (color-mode-tooltip mode))
                 :on-click #(on-color-mode mode)
-                :style (color-mode-btn-style (= color-mode mode))}
+                :style (color-mode-btn-style (= @color-mode* mode))}
                label])]]
-          (when (= color-mode :custom)
+          (when (= @color-mode* :custom)
             [:div {:style {:display "flex"
                            :align-items "center"
                            :gap "6px"
                            :margin-bottom "6px"}}
              [:input
               {:type "color"
-               :value (or custom-color "#f28b82")
+               :value (or @custom-color* "#f28b82")
                :on-change on-custom-color
                :title (tr "workspace.shape.bool.color-source.custom")
                :style {:width "28px"
@@ -398,7 +398,7 @@
              [:span {:style {:font-size "11px"
                              :color "var(--inspector-text-color, #7d7d7d)"
                              :font-family "monospace"}}
-              (or custom-color "#f28b82")]])])
+              (or @custom-color* "#f28b82")]])])
 
        (when show-child-mode?
          [:div {:class (stl/css :bool-child-mode)}
@@ -448,6 +448,6 @@
        ;; the mouse has moved at least once over the window. Reduced-motion:
        ;; shown statically (no transition). nil-safe: an empty/transparent
        ;; swatch is shown when no fill resolves.
-       (when (and color-mode-non-internal? (some? mouse-pos))
-         [:div {:style (cursor-swatch-style (:x mouse-pos) (:y mouse-pos)
+       (when (and color-mode-non-internal? (some? @mouse-pos*))
+         [:div {:style (cursor-swatch-style (:x @mouse-pos*) (:y @mouse-pos*)
                                             preview-hex reduce-motion?)}])])))

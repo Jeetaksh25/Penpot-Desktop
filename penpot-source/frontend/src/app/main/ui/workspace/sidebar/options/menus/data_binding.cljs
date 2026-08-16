@@ -24,6 +24,7 @@
    [app.main.refs :as refs]
    [app.main.store :as st]
    [app.main.ui.components.title-bar :refer [title-bar*]]
+   [app.main.ui.hiccup :as hic]
    [app.util.i18n :refer [tr]]
    [okulary.core :as l]
    [rumext.v2 :as mf]))
@@ -54,10 +55,10 @@
 
 ;; Inline Lucide icons (stroke-width 2, currentColor).
 (defn- lucide-icon [children]
-  [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
-         :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
-         :width 14 :height 14 :style {:flex-shrink 0}}
-   children])
+  (hic/el (into [:svg {:viewBox "0 0 24 24" :fill "none" :stroke "currentColor"
+                       :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"
+                       :width 14 :height 14 :style {:flex-shrink 0}}]
+                children)))
 
 (defn- icon-upload []
   (lucide-icon [[:path {:d "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"}]

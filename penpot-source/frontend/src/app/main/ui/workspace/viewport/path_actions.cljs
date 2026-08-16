@@ -62,19 +62,19 @@
 ;; Lucide-icons convention. The tool splits a segment at the nearest point
 ;; to a click (see shapes/path/editor.cljs ::on-scissors-pointer-down).
 (def ^:private scissors-icon
-  [:svg {:class (stl/css :pathbar-icon)
-         :viewBox "0 0 24 24"
-         :fill "none"
-         :stroke "currentColor"
-         :stroke-width 2
-         :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :aria-hidden true}
-   [:circle {:cx 6 :cy 6 :r 3}]
-   [:circle {:cx 6 :cy 18 :r 3}]
-   [:line {:x1 20 :y1 4 :x2 8.12 :y2 15.88}]
-   [:line {:x1 14.47 :y1 14.48 :x2 20 :y2 20}]
-   [:line {:x1 8.12 :y1 8.12 :x2 12 :y2 12}]])
+  (mf/html [:svg {:class (stl/css :pathbar-icon)
+                  :viewBox "0 0 24 24"
+                  :fill "none"
+                  :stroke "currentColor"
+                  :stroke-width 2
+                  :stroke-linecap "round"
+                  :stroke-linejoin "round"
+                  :aria-hidden true}
+            [:circle {:cx 6 :cy 6 :r 3}]
+            [:circle {:cx 6 :cy 18 :r 3}]
+            [:line {:x1 20 :y1 4 :x2 8.12 :y2 15.88}]
+            [:line {:x1 14.47 :y1 14.48 :x2 20 :y2 20}]
+            [:line {:x1 8.12 :y1 8.12 :x2 12 :y2 12}]]))
 
 ;; Figma-parity Offset vector (#55) / Simplify vector (#56) icons. Reuse
 ;; existing icon xrefs; the offset/simplify math lives in shapes_to_path.cljs.
@@ -89,29 +89,29 @@
 ;; non-destructive effect), "check" (Bake — finalize into path data) and
 ;; "eraser"/x (Clear — remove the effect, restore the original outline).
 (def ^:private offset-live-icon
-  [:svg {:class (stl/css :offset-btn-icon)
-         :viewBox "0 0 24 24" :fill "none"
-         :stroke "currentColor" :stroke-width 2
-         :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden true}
-   [:path {:d "M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"}]])
+  (mf/html [:svg {:class (stl/css :offset-btn-icon)
+                  :viewBox "0 0 24 24" :fill "none"
+                  :stroke "currentColor" :stroke-width 2
+                  :stroke-linecap "round" :stroke-linejoin "round"
+                  :aria-hidden true}
+            [:path {:d "M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"}]]))
 
 (def ^:private offset-bake-icon
-  [:svg {:class (stl/css :offset-btn-icon)
-         :viewBox "0 0 24 24" :fill "none"
-         :stroke "currentColor" :stroke-width 2
-         :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden true}
-   [:path {:d "M20 6L9 17l-5-5"}]])
+  (mf/html [:svg {:class (stl/css :offset-btn-icon)
+                  :viewBox "0 0 24 24" :fill "none"
+                  :stroke "currentColor" :stroke-width 2
+                  :stroke-linecap "round" :stroke-linejoin "round"
+                  :aria-hidden true}
+            [:path {:d "M20 6L9 17l-5-5"}]]))
 
 (def ^:private offset-clear-icon
-  [:svg {:class (stl/css :offset-btn-icon)
-         :viewBox "0 0 24 24" :fill "none"
-         :stroke "currentColor" :stroke-width 2
-         :stroke-linecap "round" :stroke-linejoin "round"
-         :aria-hidden true}
-   [:line {:x1 18 :y1 6 :x2 6 :y2 18}]
-   [:line {:x1 6 :y1 6 :x2 18 :y2 18}]])
+  (mf/html [:svg {:class (stl/css :offset-btn-icon)
+                  :viewBox "0 0 24 24" :fill "none"
+                  :stroke "currentColor" :stroke-width 2
+                  :stroke-linecap "round" :stroke-linejoin "round"
+                  :aria-hidden true}
+            [:line {:x1 18 :y1 6 :x2 6 :y2 18}]
+            [:line {:x1 6 :y1 6 :x2 18 :y2 18}]]))
 
 (defn check-enabled [content selected-points]
   (when content

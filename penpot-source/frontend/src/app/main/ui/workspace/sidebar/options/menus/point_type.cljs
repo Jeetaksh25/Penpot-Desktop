@@ -39,44 +39,44 @@
 ;; author the glyphs directly per the project Lucide-icons convention.
 
 (def ^:private straight-icon
-  [:svg {:class (stl/css :point-type-icon)
-         :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
-         :stroke "currentColor" :stroke-width "2"
-         :stroke-linecap "round" :stroke-linejoin "round"}
-   ;; A corner point: two segments meeting at a right angle, no handles.
-   [:path {:d "M4 20L12 4L20 20"}]])
+  (mf/html [:svg {:class (stl/css :point-type-icon)
+                  :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
+                  :stroke "currentColor" :stroke-width "2"
+                  :stroke-linecap "round" :stroke-linejoin "round"}
+            ;; A corner point: two segments meeting at a right angle, no handles.
+            [:path {:d "M4 20L12 4L20 20"}]]))
 
 (def ^:private mirror-angle-length-icon
-  [:svg {:class (stl/css :point-type-icon)
-         :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
-         :stroke "currentColor" :stroke-width "2"
-         :stroke-linecap "round" :stroke-linejoin "round"}
-   ;; A smooth point: symmetric handles of equal length through the node.
-   [:circle {:cx 12 :cy 12 :r 1.6}]
-   [:line {:x1 12 :y1 12 :x2 4 :y2 8}]
-   [:line {:x1 12 :y1 12 :x2 20 :y2 16}]
-   [:path {:d "M5 6C7 7 7 7 4 8"}]
-   [:path {:d "M19 14C17 15 17 15 20 16"}]])
+  (mf/html [:svg {:class (stl/css :point-type-icon)
+                  :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
+                  :stroke "currentColor" :stroke-width "2"
+                  :stroke-linecap "round" :stroke-linejoin "round"}
+            ;; A smooth point: symmetric handles of equal length through the node.
+            [:circle {:cx 12 :cy 12 :r 1.6}]
+            [:line {:x1 12 :y1 12 :x2 4 :y2 8}]
+            [:line {:x1 12 :y1 12 :x2 20 :y2 16}]
+            [:path {:d "M5 6C7 7 7 7 4 8"}]
+            [:path {:d "M19 14C17 15 17 15 20 16"}]]))
 
 (def ^:private independent-icon
-  [:svg {:class (stl/css :point-type-icon)
-         :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
-         :stroke "currentColor" :stroke-width "2"
-         :stroke-linecap "round" :stroke-linejoin "round"}
-   ;; A corner with two independent (non-collinear) handles.
-   [:circle {:cx 12 :cy 12 :r 1.6}]
-   [:line {:x1 12 :y1 12 :x2 5 :y2 6}]
-   [:line {:x1 12 :y1 12 :x2 18 :y2 7}]])
+  (mf/html [:svg {:class (stl/css :point-type-icon)
+                  :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
+                  :stroke "currentColor" :stroke-width "2"
+                  :stroke-linecap "round" :stroke-linejoin "round"}
+            ;; A corner with two independent (non-collinear) handles.
+            [:circle {:cx 12 :cy 12 :r 1.6}]
+            [:line {:x1 12 :y1 12 :x2 5 :y2 6}]
+            [:line {:x1 12 :y1 12 :x2 18 :y2 7}]]))
 
 (def ^:private mirror-angle-icon
-  [:svg {:class (stl/css :point-type-icon)
-         :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
-         :stroke "currentColor" :stroke-width "2"
-         :stroke-linecap "round" :stroke-linejoin "round"}
-   ;; Collinear handles of unequal length through the node.
-   [:circle {:cx 12 :cy 12 :r 1.6}]
-   [:line {:x1 12 :y1 12 :x2 3 :y2 8}]
-   [:line {:x1 12 :y1 12 :x2 20 :y2 15}]])
+  (mf/html [:svg {:class (stl/css :point-type-icon)
+                  :width "16" :height "16" :viewBox "0 0 24 24" :fill "none"
+                  :stroke "currentColor" :stroke-width "2"
+                  :stroke-linecap "round" :stroke-linejoin "round"}
+            ;; Collinear handles of unequal length through the node.
+            [:circle {:cx 12 :cy 12 :r 1.6}]
+            [:line {:x1 12 :y1 12 :x2 3 :y2 8}]
+            [:line {:x1 12 :y1 12 :x2 20 :y2 15}]]))
 
 (def ^:private type->icon
   {:straight            straight-icon

@@ -104,13 +104,13 @@
 ;; Lucide "spline" icon (lucide.dev, MIT) — 24x24, stroke currentColor, sw 2.
 (defn- icon-spline
   []
-  [:svg {:width 14 :height 14 :viewBox "0 0 24 24" :fill "none"
-         :stroke coral :stroke-width 2 :stroke-linecap "round"
-         :stroke-linejoin "round"
-         :style {:flex-shrink "0"}}
-   [:circle {:cx 19 :cy 5 :r 2}]
-   [:circle {:cx 5 :cy 19 :r 2}]
-   [:path {:d "M5 19A9 9 0 0 1 19 5"}]])
+  (mf/html [:svg {:width 14 :height 14 :viewBox "0 0 24 24" :fill "none"
+                  :stroke coral :stroke-width 2 :stroke-linecap "round"
+                  :stroke-linejoin "round"
+                  :style {:flex-shrink "0"}}
+            [:circle {:cx 19 :cy 5 :r 2}]
+            [:circle {:cx 5 :cy 19 :r 2}]
+            [:path {:d "M5 19A9 9 0 0 1 19 5"}]]))
 
 (mf/defc scroll-motion-menu*
   "Inspector menu for the path-draw + scroll-video slots. `shapes` is the

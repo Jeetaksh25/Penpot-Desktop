@@ -160,7 +160,7 @@
          (let [props (cc/format-props-jsx binding)
                style-str (style->js (box-style objects shape origin))
                attrs (cond-> (dm/str "style={{" style-str "}")
-                       (str/not-blank? props) (dm/str " " props))
+                       (not (str/blank? props)) (dm/str " " props))
                tag (:tag binding)]
            (dm/fmt "%{/* Code Connect: % */}\n%<% % />"
                    ind tag ind tag attrs)))
